@@ -27,7 +27,7 @@ public class InMemoryQueueManager implements QueueManager {
 
     @Override
     public EventQueue tap(String taskId) {
-        synchronized (taskId) {
+        synchronized (queues) {
             EventQueue queue = queues.get(taskId);
             if (queue == null) {
                 return queue;
