@@ -13,7 +13,7 @@ import io.a2a.spec.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class EventQueue {
+public abstract class EventQueue implements AutoCloseable {
 
     private static final Logger log = new TempLoggerWrapper(LoggerFactory.getLogger(EventQueue.class));
 
