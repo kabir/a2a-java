@@ -22,4 +22,4 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml -Dmaven.test.failure.ignore=true -fae
+      run: mvn -B package --file pom.xml -fae
