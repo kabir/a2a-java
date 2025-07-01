@@ -183,7 +183,7 @@
         <module>sdk-jakarta</module>
         <module>sdk-quarkus</module>
         <module>tck</module>
-        <module>examples</module>
+        <module>examples/helloworld</module>
         <module>tests/server-common</module>
     </modules>
 </project>
