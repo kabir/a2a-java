@@ -56,6 +56,7 @@ public abstract class EventQueue implements AutoCloseable {
         try {
             semaphore.acquire();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException("Unable to acquire the semaphore to enqueue the event", e);
         }
         queue.add(event);
@@ -75,8 +76,8 @@ public abstract class EventQueue implements AutoCloseable {
                 if (event != null) {
                     // Call toString() since for errors we don't really want the full stacktrace
                     log.debug("Dequeued event (no wait) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                    semaphore.release();
                 }
-                semaphore.release();
                 return event;
             }
             try {
@@ -84,8 +85,8 @@ public abstract class EventQueue implements AutoCloseable {
                 if (event != null) {
                     // Call toString() since for errors we don't really want the full stacktrace
                     log.debug("Dequeued event (waiting) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                    semaphore.release();
                 }
-                semaphore.release();
                 return event;
             } catch (InterruptedException e) {
                 log.debug("Interrupted dequeue (waiting) {}", this);
