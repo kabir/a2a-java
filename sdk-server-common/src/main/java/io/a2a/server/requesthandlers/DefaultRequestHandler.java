@@ -5,10 +5,7 @@ import static io.a2a.server.util.async.AsyncUtils.createTubeConfig;
 import static io.a2a.server.util.async.AsyncUtils.processor;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -151,45 +148,20 @@ public class DefaultRequestHandler implements RequestHandler {
     @Override
     public EventKind onMessageSend(MessageSendParams params) throws JSONRPCError {
         log.debug("onMessageSend - task: {}; context {}", params.message().getTaskId(), params.message().getContextId());
-        TaskManager taskManager = new TaskManager(
-                params.message().getTaskId(),
-                params.message().getContextId(),
-                taskStore,
-                params.message());
+        MessageSendSetup mss = initMessageSend(params);
 
-        Task task = taskManager.getTask();
-        if (task != null) {
-            log.debug("Found task updating with message {}", params.message());
-            task = taskManager.updateWithMessage(params.message(), task);
-
-            if (shouldAddPushInfo(params)) {
-                log.debug("Adding push info");
-                pushNotifier.setInfo(task.getId(), params.configuration().pushNotification());
-            }
-        }
-
-        RequestContext requestContext = requestContextBuilder.get()
-                .setParams(params)
-                .setTaskId(task == null ? null : task.getId())
-                .setContextId(params.message().getContextId())
-                .setTask(task)
-                .build();
-
-        String taskId = requestContext.getTaskId();
+        String taskId = mss.requestContext.getTaskId();
         log.debug("Request context taskId: {}", taskId);
 
         EventQueue queue = queueManager.createOrTap(taskId);
-        ResultAggregator resultAggregator = new ResultAggregator(taskManager, null);
-
-
-        EventConsumer consumer = new EventConsumer(queue);
-
+        ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null);
 
         boolean interrupted = false;
 
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId, requestContext, queue);
+        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId, mss.requestContext, queue);
         ResultAggregator.EventTypeAndInterrupt etai = null;
         try {
+            EventConsumer consumer = new EventConsumer(queue);
             etai = resultAggregator.consumeAndBreakOnInterrupt(consumer);
             producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
             if (etai == null) {
@@ -219,33 +191,14 @@ public class DefaultRequestHandler implements RequestHandler {
 
     @Override
     public Flow.Publisher<StreamingEventKind> onMessageSendStream(MessageSendParams params) throws JSONRPCError {
-        TaskManager taskManager = new TaskManager(
-                params.message().getTaskId(),
-                params.message().getContextId(),
-                taskStore,
-                params.message());
+        log.debug("onMessageSendStream - task: {}; context {}", params.message().getTaskId(), params.message().getContextId());
+        MessageSendSetup mss = initMessageSend(params);
 
-        Task task = taskManager.getTask();
-        if (task != null) {
-            task = taskManager.updateWithMessage(params.message(), task);
-
-            if (shouldAddPushInfo(params)) {
-                pushNotifier.setInfo(task.getId(), params.configuration().pushNotification());
-            }
-        }
-
-        RequestContext requestContext = requestContextBuilder.get()
-                .setParams(params)
-                .setTaskId(task == null ? null : task.getId())
-                .setContextId(params.message().getContextId())
-                .setTask(task)
-                .build();
-
-        AtomicReference<String> taskId = new AtomicReference<>(requestContext.getTaskId());
+        AtomicReference<String> taskId = new AtomicReference<>(mss.requestContext.getTaskId());
         EventQueue queue = queueManager.createOrTap(taskId.get());
-        ResultAggregator resultAggregator = new ResultAggregator(taskManager, null);
+        ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null);
 
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId.get(), requestContext, queue);
+        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId.get(), mss.requestContext, queue);
 
         try {
             EventConsumer consumer = new EventConsumer(queue);
@@ -385,4 +338,33 @@ public class DefaultRequestHandler implements RequestHandler {
                     runningAgents.remove(taskId);
                 });
     }
+
+    private MessageSendSetup initMessageSend(MessageSendParams params) {
+        TaskManager taskManager = new TaskManager(
+                params.message().getTaskId(),
+                params.message().getContextId(),
+                taskStore,
+                params.message());
+
+        Task task = taskManager.getTask();
+        if (task != null) {
+            log.debug("Found task updating with message {}", params.message());
+            task = taskManager.updateWithMessage(params.message(), task);
+
+            if (shouldAddPushInfo(params)) {
+                log.debug("Adding push info");
+                pushNotifier.setInfo(task.getId(), params.configuration().pushNotification());
+            }
+        }
+
+        RequestContext requestContext = requestContextBuilder.get()
+                .setParams(params)
+                .setTaskId(task == null ? null : task.getId())
+                .setContextId(params.message().getContextId())
+                .setTask(task)
+                .build();
+        return new MessageSendSetup(taskManager, task, requestContext);
+    }
+
+    private record MessageSendSetup(TaskManager taskManager, Task task, RequestContext requestContext) {}
 }
