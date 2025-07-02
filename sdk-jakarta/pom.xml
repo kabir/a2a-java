@@ -16,11 +16,13 @@
     <name>Java A2A SDK for Jakarta</name>
     <description>Java SDK for the Agent2Agent Protocol (A2A) - SDK - Jakarta</description>
     <properties>
-        <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
-        <arquillian.servlet.protocol>Servlet 5.0</arquillian.servlet.protocol>
         <version.org.wildfly.arquillian>5.1.0.Beta11</version.org.wildfly.arquillian>
-        <version.org.jboss.arquillian.core>1.10.0.Final</version.org.jboss.arquillian.core>
+        <version.org.jboss.arquillian>1.10.0.Final</version.org.jboss.arquillian>
+        <!--        <version.org.jboss.arquillian>1.9.3.Final</version.org.jboss.arquillian>
+        <version.org.wildfly.arquillian>5.1.0.Beta9</version.org.wildfly.arquillian>-->
         <version.org.jboss.shrinkwrap.shrinkwrap>1.2.6</version.org.jboss.shrinkwrap.shrinkwrap>
+        <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
+        <jboss.home>${project.build.directory}${file.separator}wildfly</jboss.home>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -34,14 +36,7 @@
             <dependency>
                 <groupId>org.jboss.arquillian</groupId>
                 <artifactId>arquillian-bom</artifactId>
-                <version>${version.org.jboss.arquillian.core}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.arquillian.jakarta</groupId>
-                <artifactId>arquillian-jakarta-bom</artifactId>
-                <version>${version.org.jboss.arquillian.jakarta}</version>
+                <version>${version.org.jboss.arquillian}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -86,7 +81,6 @@
         <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
-            <version>4.0.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -109,10 +103,9 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
-            <groupId>org.wildfly.arquillian</groupId>
-            <artifactId>wildfly-arquillian-container-managed</artifactId>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -121,29 +114,24 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.wildfly.arquillian</groupId>
+            <artifactId>wildfly-arquillian-container-managed</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.shrinkwrap</groupId>
             <artifactId>shrinkwrap-api</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.arquillian.junit5</groupId>
-            <artifactId>arquillian-junit5-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.wildfly.arquillian</groupId>
-            <artifactId>wildfly-arquillian-protocol-jmx</artifactId>
+            <groupId>org.jboss.threads</groupId>
+            <artifactId>jboss-threads</artifactId>
+            <version>3.9.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -179,7 +167,8 @@
                 <version>5.1.3.Final</version>
                 <configuration>
                     <provisioning-file>${project.build.directory}/glow-scan/provisioning.xml</provisioning-file>
-                    <provisioningDir>wildfly</provisioningDir>
+                    <jboss-home>${jboss.home}</jboss-home>
+                    <provisioning-dir>${jboss.home}</provisioning-dir>
                 </configuration>
                 <executions>
                     <execution>
@@ -196,21 +185,31 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.3</version>
                 <configuration>
-                    <!-- Parameters to test cases. -->
-                    <systemPropertyVariables combine.children="append">        
-                        <container.java.home>${java.home}</container.java.home>
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <jboss.dist>${jboss.dist}</jboss.dist>
-                        <jboss.home>${basedir}/target/wildfly</jboss.home>
-                        <jboss.args>${jboss.args}</jboss.args>
-                        <jboss.domain.server.args>${jboss.domain.server.args}</jboss.domain.server.args>
-                        <module.path>${jboss.dist}/modules${path.separator}${basedir}/target/modules</module.path>
-                        <org.wildfly.test.kill-servers-before-test>${org.wildfly.test.kill-servers-before-test}</org.wildfly.test.kill-servers-before-test>
-                        <jboss.inst>${basedir}/target/wildfly</jboss.inst>
-                        <jboss.install.dir>${basedir}/target/wildfly</jboss.install.dir>
-                        <jboss.server.config.file.name>standalone.xml</jboss.server.config.file.name>
+                    <systemPropertyVariables>
+                        <jboss.home>${jboss.home}</jboss.home>
                     </systemPropertyVariables>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>compile</includeScope>
+                            <excludeScope>provided</excludeScope>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
