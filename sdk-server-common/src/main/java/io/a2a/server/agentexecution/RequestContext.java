@@ -31,12 +31,12 @@ public class RequestContext {
 
         // if the taskId and contextId were specified, they must match the params
         if (params != null) {
-            if (taskId != null && ! params.message().getTaskId().equals(taskId)) {
+            if (taskId != null && !taskId.equals(params.message().getTaskId())) {
                 throw new InvalidParamsError("bad task id");
             } else {
                 checkOrGenerateTaskId();
             }
-            if (contextId != null && ! params.message().getContextId().equals(contextId)) {
+            if (contextId != null && !contextId.equals(params.message().getContextId())) {
                 throw new InvalidParamsError("bad context id");
             } else {
                 checkOrGenerateContextId();
