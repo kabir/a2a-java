@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -135,10 +136,8 @@ public class DefaultRequestHandler implements RequestHandler {
                         .build(),
                 queue);
 
-        CompletableFuture<Void> cf = runningAgents.get(task.getId());
-        if (cf != null) {
-            cf.cancel(true);
-        }
+        Optional.ofNullable(runningAgents.get(task.getId()))
+                .ifPresent(cf -> cf.cancel(true));
 
         EventConsumer consumer = new EventConsumer(queue);
         EventKind type = resultAggregator.consumeAll(consumer);
@@ -182,16 +181,17 @@ public class DefaultRequestHandler implements RequestHandler {
         EventQueue queue = queueManager.createOrTap(taskId);
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null);
 
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId, requestContext, queue);
 
         EventConsumer consumer = new EventConsumer(queue);
 
-        producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
 
         boolean interrupted = false;
-        ResultAggregator.EventTypeAndInterrupt etai = resultAggregator.consumeAndBreakOnInterrupt(consumer);
 
+        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId, requestContext, queue);
+        ResultAggregator.EventTypeAndInterrupt etai = null;
         try {
+            etai = resultAggregator.consumeAndBreakOnInterrupt(consumer);
+            producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
             if (etai == null) {
                 log.debug("No result, throwing InternalError");
                 throw new InternalError("No result");
@@ -247,11 +247,11 @@ public class DefaultRequestHandler implements RequestHandler {
 
         EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId.get(), requestContext, queue);
 
-        EventConsumer consumer = new EventConsumer(queue);
-
-        producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
-
         try {
+            EventConsumer consumer = new EventConsumer(queue);
+
+            producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
+
             Flow.Publisher<Event> results = resultAggregator.consumeAndEmit(consumer);
 
             Flow.Publisher<Event> eventPublisher =
@@ -379,13 +379,10 @@ public class DefaultRequestHandler implements RequestHandler {
 
     private void cleanupProducer(String taskId) {
         // TODO the Python implementation waits for the producerRunnable
-        CompletableFuture<Void> cf = runningAgents.get(taskId);
-        if (cf != null) {
-            cf.whenComplete((v, t) -> {
-                queueManager.close(taskId);
-                runningAgents.remove(taskId);
-            });
-        }
+        runningAgents.get(taskId)
+                .whenComplete((v, t) -> {
+                    queueManager.close(taskId);
+                    runningAgents.remove(taskId);
+                });
     }
-
 }
