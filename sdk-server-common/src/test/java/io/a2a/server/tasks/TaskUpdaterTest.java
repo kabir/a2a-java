@@ -53,7 +53,7 @@ public class TaskUpdaterTest {
     @Test
     public void testAddArtifactWithCustomIdAndName() throws Exception {
         taskUpdater.addArtifact(SAMPLE_PARTS, "custom-artifact-id", "Custom Artifact", null);
-        Event event = eventQueue.dequeueEvent(0);
+        Event event = eventQueue.dequeueEvent(0).get();
         assertNotNull(event);
         assertInstanceOf(TaskArtifactUpdateEvent.class, event);
 
@@ -154,7 +154,7 @@ public class TaskUpdaterTest {
     }
 
     private TaskStatusUpdateEvent checkTaskStatusUpdateEventOnQueue(boolean isFinal, TaskState state, Message statusMessage) throws Exception {
-        Event event = eventQueue.dequeueEvent(0);
+        Event event = eventQueue.dequeueEvent(0).get();
 
         assertNotNull(event);
         assertInstanceOf(TaskStatusUpdateEvent.class, event);
@@ -166,7 +166,7 @@ public class TaskUpdaterTest {
         assertEquals(state, tsue.getStatus().state());
         assertEquals(statusMessage, tsue.getStatus().message());
 
-        assertNull(eventQueue.dequeueEvent(0));
+        assertNull(eventQueue.dequeueEvent(0).get());
 
         return tsue;
     }

@@ -53,7 +53,7 @@ public class EventQueueTest {
     public void testEnqueueAndDequeueEvent() throws Exception {
         Event event = Utils.unmarshalFrom(MESSAGE_PAYLOAD, Message.TYPE_REFERENCE);
         eventQueue.enqueueEvent(event);
-        Event dequeuedEvent = eventQueue.dequeueEvent(200);
+        Event dequeuedEvent = eventQueue.dequeueEvent(200).get();
         assertSame(event, dequeuedEvent);
     }
 
@@ -61,13 +61,13 @@ public class EventQueueTest {
     public void testDequeueEventNoWait() throws Exception {
         Event event = Utils.unmarshalFrom(MINIMAL_TASK, Task.TYPE_REFERENCE);
         eventQueue.enqueueEvent(event);
-        Event dequeuedEvent = eventQueue.dequeueEvent(-1);
+        Event dequeuedEvent = eventQueue.dequeueEvent(-1).get();
         assertSame(event, dequeuedEvent);
     }
 
     @Test
     public void testDequeueEventEmptyQueueNoWait() throws Exception {
-        Event dequeuedEvent = eventQueue.dequeueEvent(-1);
+        Event dequeuedEvent = eventQueue.dequeueEvent(-1).get();
         assertNull(dequeuedEvent);
     }
 
@@ -81,7 +81,7 @@ public class EventQueueTest {
                 .build();
 
         eventQueue.enqueueEvent(event);
-        Event dequeuedEvent = eventQueue.dequeueEvent(1000);
+        Event dequeuedEvent = eventQueue.dequeueEvent(1000).get();
         assertSame(event, dequeuedEvent);
     }
 
@@ -96,7 +96,7 @@ public class EventQueueTest {
                         .build())
                 .build();
         eventQueue.enqueueEvent(event);
-        Event dequeuedEvent = eventQueue.dequeueEvent(1000);
+        Event dequeuedEvent = eventQueue.dequeueEvent(1000).get();
         assertSame(event, dequeuedEvent);
         eventQueue.taskDone();
     }
@@ -109,7 +109,7 @@ public class EventQueueTest {
 
         for (Event event : events) {
             eventQueue.enqueueEvent(event);
-            Event dequeuedEvent = eventQueue.dequeueEvent(100);
+            Event dequeuedEvent = eventQueue.dequeueEvent(100).get();
             assertSame(event, dequeuedEvent);
         }
     }

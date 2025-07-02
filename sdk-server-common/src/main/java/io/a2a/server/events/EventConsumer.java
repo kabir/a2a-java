@@ -1,6 +1,7 @@
 package io.a2a.server.events;
 
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
 
 import io.a2a.spec.A2AServerException;
@@ -25,11 +26,18 @@ public class EventConsumer {
     }
 
     public Event consumeOne() throws A2AServerException, EventQueueClosedException {
-        Event event = queue.dequeueEvent(NO_WAIT);
-        if (event == null) {
-            throw new A2AServerException(ERROR_MSG, new InternalError(ERROR_MSG));
+        try {
+            Event event = queue.dequeueEvent(NO_WAIT).get();
+            if (event == null) {
+                throw new A2AServerException(ERROR_MSG, new InternalError(ERROR_MSG));
+            }
+            return event;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new A2AServerException("Queue poll was interrupted");
+        } catch (ExecutionException e) {
+            throw new A2AServerException(e.getCause());
         }
-        return event;
     }
 
     public Flow.Publisher<Event> consumeAll() {
@@ -54,7 +62,14 @@ public class EventConsumer {
                     // TODO the callback mentioned above seems unused in the Python 0.2.1 tag
                     Event event;
                     try {
-                        event = queue.dequeueEvent(QUEUE_WAIT_MILLISECONDS);
+                        try {
+                            event = queue.dequeueEvent(QUEUE_WAIT_MILLISECONDS).get();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        } catch (ExecutionException e) {
+                            throw e.getCause();
+                        }
                         if (event == null) {
                             continue;
                         }

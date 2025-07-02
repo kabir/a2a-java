@@ -3,12 +3,15 @@ package io.a2a.server.events;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import io.a2a.server.util.TempLoggerWrapper;
 import io.a2a.spec.Event;
@@ -47,55 +50,62 @@ public abstract class EventQueue implements AutoCloseable {
 
     abstract void signalQueuePollerStarted();
 
-    public void enqueueEvent(Event event) {
+    public CompletableFuture<Void> enqueueEvent(Event event) {
         if (closed) {
             log.warn("Queue is closed. Event will not be enqueued. {} {}", this, event);
-            return;
+            return CompletableFuture.completedFuture(null);
         }
-        // Call toString() since for errors we don't really want the full stacktrace
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Unable to acquire the semaphore to enqueue the event", e);
-        }
-        queue.add(event);
-        log.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
+
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                semaphore.acquire();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Unable to acquire the semaphore to enqueue the event", e);
+            }
+            queue.add(event);
+            // Call toString() since for errors we don't really want the full stacktrace
+            log.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
+            return null;
+        });
+
     }
 
     abstract EventQueue tap();
 
-    public Event dequeueEvent(int waitMilliSeconds) throws EventQueueClosedException {
+    public CompletableFuture<Event> dequeueEvent(int waitMilliSeconds) throws EventQueueClosedException {
         if (closed && queue.isEmpty()) {
             log.debug("Queue is closed, and empty. Sending termination message. {}", this);
             throw new EventQueueClosedException();
         }
-        try {
-            if (waitMilliSeconds <= 0) {
-                Event event = queue.poll();
-                if (event != null) {
-                    // Call toString() since for errors we don't really want the full stacktrace
-                    log.debug("Dequeued event (no wait) {} {}", this, event instanceof Throwable ? event.toString() : event);
-                    semaphore.release();
-                }
-                return event;
-            }
+        return CompletableFuture.supplyAsync(() -> {
             try {
-                Event event = queue.poll(waitMilliSeconds, TimeUnit.MILLISECONDS);
-                if (event != null) {
-                    // Call toString() since for errors we don't really want the full stacktrace
-                    log.debug("Dequeued event (waiting) {} {}", this, event instanceof Throwable ? event.toString() : event);
-                    semaphore.release();
+                if (waitMilliSeconds <= 0) {
+                    Event event = queue.poll();
+                    if (event != null) {
+                        // Call toString() since for errors we don't really want the full stacktrace
+                        log.debug("Dequeued event (no wait) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                        semaphore.release();
+                    }
+                    return event;
                 }
-                return event;
-            } catch (InterruptedException e) {
-                log.debug("Interrupted dequeue (waiting) {}", this);
-                Thread.currentThread().interrupt();
-                return null;
+                try {
+                    Event event = queue.poll(waitMilliSeconds, TimeUnit.MILLISECONDS);
+                    if (event != null) {
+                        // Call toString() since for errors we don't really want the full stacktrace
+                        log.debug("Dequeued event (waiting) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                        semaphore.release();
+                    }
+                    return event;
+                } catch (InterruptedException e) {
+                    log.debug("Interrupted dequeue (waiting) {}", this);
+                    Thread.currentThread().interrupt();
+                    return null;
+                }
+            } finally {
+                signalQueuePollerStarted();
             }
-        } finally {
-            signalQueuePollerStarted();
-        }
+        });
     }
 
     public void taskDone() {
@@ -131,9 +141,11 @@ public abstract class EventQueue implements AutoCloseable {
             return child;
         }
 
-        public void enqueueEvent(Event event) {
-            super.enqueueEvent(event);
-            children.forEach(eq -> eq.internalEnqueueEvent(event));
+        public CompletableFuture<Void> enqueueEvent(Event event) {
+            CompletableFuture<Void> cf = super.enqueueEvent(event);
+            //children.forEach(eq -> eq.internalEnqueueEvent(event));
+            children.forEach(eq -> cf.thenCompose(v -> eq.internalEnqueueEvent(event)));
+            return cf;
         }
 
         @Override
@@ -168,12 +180,12 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
         @Override
-        public void enqueueEvent(Event event) {
-            parent.enqueueEvent(event);
+        public CompletableFuture<Void> enqueueEvent(Event event) {
+            return parent.enqueueEvent(event);
         }
 
-        private void internalEnqueueEvent(Event event) {
-            super.enqueueEvent(event);
+        private CompletableFuture<Void> internalEnqueueEvent(Event event) {
+            return super.enqueueEvent(event);
         }
 
         @Override
