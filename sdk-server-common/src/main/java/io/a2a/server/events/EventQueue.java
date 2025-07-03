@@ -29,11 +29,12 @@ public abstract class EventQueue {
     }
 
     protected EventQueue(EventQueue parent) {
-        log.trace("Creating {}, parent: {}", this, parent);
+        new RuntimeException("*****************************************").printStackTrace();
         this.parent = parent;
     }
 
     public static EventQueue create() {
+        
         return new MainQueue();
     }
 

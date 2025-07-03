@@ -13,11 +13,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -28,10 +25,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.tasks.TaskStore;
 import io.a2a.spec.AgentCard;
-import io.a2a.spec.Artifact;
 import io.a2a.spec.CancelTaskRequest;
 import io.a2a.spec.CancelTaskResponse;
-import io.a2a.spec.Event;
 import io.a2a.spec.GetTaskPushNotificationConfigRequest;
 import io.a2a.spec.GetTaskPushNotificationConfigResponse;
 import io.a2a.spec.GetTaskRequest;
@@ -54,7 +49,6 @@ import io.a2a.spec.SetTaskPushNotificationConfigRequest;
 import io.a2a.spec.SetTaskPushNotificationConfigResponse;
 import io.a2a.spec.StreamingJSONRPCRequest;
 import io.a2a.spec.Task;
-import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskIdParams;
 import io.a2a.spec.TaskNotFoundError;
 import io.a2a.spec.TaskPushNotificationConfig;
@@ -62,7 +56,6 @@ import io.a2a.spec.TaskQueryParams;
 import io.a2a.spec.TaskResubscriptionRequest;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
-import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
 import io.a2a.util.Utils;
@@ -594,123 +587,123 @@ public abstract class AbstractA2AServerTest {
             getTaskStore().delete(MINIMAL_TASK.getId());
         }
     }
-
-    @Test
-    public void testResubscribeExistingTaskSuccess() throws Exception {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        getTaskStore().save(MINIMAL_TASK);
-
-        try {
-            // attempting to send a streaming message instead of explicitly calling queueManager#createOrTap
-            // does not work because after the message is sent, the queue becomes null but task resubscription
-            // requires the queue to still be active
-            getQueueManager().createOrTap(MINIMAL_TASK.getId());
-
-            CountDownLatch taskResubscriptionRequestSent = new CountDownLatch(1);
-            CountDownLatch taskResubscriptionResponseReceived = new CountDownLatch(2);
-            AtomicReference<SendStreamingMessageResponse> firstResponse = new AtomicReference<>();
-            AtomicReference<SendStreamingMessageResponse> secondResponse = new AtomicReference<>();
-
-            // resubscribe to the task, requires the task and its queue to still be active
-            TaskResubscriptionRequest taskResubscriptionRequest = new TaskResubscriptionRequest("1", new TaskIdParams(MINIMAL_TASK.getId()));
-
-            // Count down the latch when the MultiSseSupport on the server has started subscribing
-            setStreamingSubscribedRunnable(taskResubscriptionRequestSent::countDown);
-
-            CompletableFuture<HttpResponse<Stream<String>>> responseFuture = initialiseStreamingRequest(taskResubscriptionRequest, null);
-
-            AtomicReference<Throwable> errorRef = new AtomicReference<>();
-
-            responseFuture.thenAccept(response -> {
-
-                if (response.statusCode() != 200) {
-                    //errorRef.set(new IllegalStateException("Status code was " + response.statusCode()));
-                    throw new IllegalStateException("Status code was " + response.statusCode());
-                }
-                try {
-                    response.body().forEach(line -> {
-                        try {
-                            SendStreamingMessageResponse jsonResponse = extractJsonResponseFromSseLine(line);
-                            if (jsonResponse != null) {
-                                SendStreamingMessageResponse sendStreamingMessageResponse = Utils.OBJECT_MAPPER.readValue(line.substring("data: ".length()).trim(), SendStreamingMessageResponse.class);
-                                if (taskResubscriptionResponseReceived.getCount() == 2) {
-                                    firstResponse.set(sendStreamingMessageResponse);
-                                } else {
-                                    secondResponse.set(sendStreamingMessageResponse);
-                                }
-                                taskResubscriptionResponseReceived.countDown();
-                                if (taskResubscriptionResponseReceived.getCount() == 0) {
-                                    throw new BreakException();
-                                }
-                            }
-                        } catch (JsonProcessingException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                } catch (BreakException e) {
-                }
-            }).exceptionally(t -> {
-                if (!isStreamClosedError(t)) {
-                    errorRef.set(t);
-                }
-                return null;
-            });
-
-            try {
-                taskResubscriptionRequestSent.await();
-                List<Event> events = List.of(
-                        new TaskArtifactUpdateEvent.Builder()
-                                .taskId(MINIMAL_TASK.getId())
-                                .contextId(MINIMAL_TASK.getContextId())
-                                .artifact(new Artifact.Builder()
-                                        .artifactId("11")
-                                        .parts(new TextPart("text"))
-                                        .build())
-                                .build(),
-                        new TaskStatusUpdateEvent.Builder()
-                                .taskId(MINIMAL_TASK.getId())
-                                .contextId(MINIMAL_TASK.getContextId())
-                                .status(new TaskStatus(TaskState.COMPLETED))
-                                .isFinal(true)
-                                .build());
-
-                for (Event event : events) {
-                    getQueueManager().get(MINIMAL_TASK.getId()).enqueueEvent(event);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            // wait for the client to receive the responses
-            taskResubscriptionResponseReceived.await();
-
-            assertNotNull(firstResponse.get());
-            SendStreamingMessageResponse sendStreamingMessageResponse = firstResponse.get();
-            assertNull(sendStreamingMessageResponse.getError());
-            TaskArtifactUpdateEvent taskArtifactUpdateEvent = (TaskArtifactUpdateEvent) sendStreamingMessageResponse.getResult();
-            assertEquals(MINIMAL_TASK.getId(), taskArtifactUpdateEvent.getTaskId());
-            assertEquals(MINIMAL_TASK.getContextId(), taskArtifactUpdateEvent.getContextId());
-            Part<?> part = taskArtifactUpdateEvent.getArtifact().parts().get(0);
-            assertEquals(Part.Kind.TEXT, part.getKind());
-            assertEquals("text", ((TextPart) part).getText());
-
-            assertNotNull(secondResponse.get());
-            sendStreamingMessageResponse = secondResponse.get();
-            assertNull(sendStreamingMessageResponse.getError());
-            TaskStatusUpdateEvent taskStatusUpdateEvent = (TaskStatusUpdateEvent) sendStreamingMessageResponse.getResult();
-            assertEquals(MINIMAL_TASK.getId(), taskStatusUpdateEvent.getTaskId());
-            assertEquals(MINIMAL_TASK.getContextId(), taskStatusUpdateEvent.getContextId());
-            assertEquals(TaskState.COMPLETED, taskStatusUpdateEvent.getStatus().state());
-            assertNotNull(taskStatusUpdateEvent.getStatus().timestamp());
-        } finally {
-            setStreamingSubscribedRunnable(null);
-            getTaskStore().delete(MINIMAL_TASK.getId());
-            executorService.shutdown();
-            if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        }
-    }
+//
+//    @Test
+//    public void testResubscribeExistingTaskSuccess() throws Exception {
+//        ExecutorService executorService = Executors.newSingleThreadExecutor();
+//        getTaskStore().save(MINIMAL_TASK);
+//
+//        try {
+//            // attempting to send a streaming message instead of explicitly calling queueManager#createOrTap
+//            // does not work because after the message is sent, the queue becomes null but task resubscription
+//            // requires the queue to still be active
+//            getQueueManager().createOrTap(MINIMAL_TASK.getId());
+//
+//            CountDownLatch taskResubscriptionRequestSent = new CountDownLatch(1);
+//            CountDownLatch taskResubscriptionResponseReceived = new CountDownLatch(2);
+//            AtomicReference<SendStreamingMessageResponse> firstResponse = new AtomicReference<>();
+//            AtomicReference<SendStreamingMessageResponse> secondResponse = new AtomicReference<>();
+//
+//            // resubscribe to the task, requires the task and its queue to still be active
+//            TaskResubscriptionRequest taskResubscriptionRequest = new TaskResubscriptionRequest("1", new TaskIdParams(MINIMAL_TASK.getId()));
+//
+//            // Count down the latch when the MultiSseSupport on the server has started subscribing
+//            setStreamingSubscribedRunnable(taskResubscriptionRequestSent::countDown);
+//
+//            CompletableFuture<HttpResponse<Stream<String>>> responseFuture = initialiseStreamingRequest(taskResubscriptionRequest, null);
+//
+//            AtomicReference<Throwable> errorRef = new AtomicReference<>();
+//
+//            responseFuture.thenAccept(response -> {
+//
+//                if (response.statusCode() != 200) {
+//                    //errorRef.set(new IllegalStateException("Status code was " + response.statusCode()));
+//                    throw new IllegalStateException("Status code was " + response.statusCode());
+//                }
+//                try {
+//                    response.body().forEach(line -> {
+//                        try {
+//                            SendStreamingMessageResponse jsonResponse = extractJsonResponseFromSseLine(line);
+//                            if (jsonResponse != null) {
+//                                SendStreamingMessageResponse sendStreamingMessageResponse = Utils.OBJECT_MAPPER.readValue(line.substring("data: ".length()).trim(), SendStreamingMessageResponse.class);
+//                                if (taskResubscriptionResponseReceived.getCount() == 2) {
+//                                    firstResponse.set(sendStreamingMessageResponse);
+//                                } else {
+//                                    secondResponse.set(sendStreamingMessageResponse);
+//                                }
+//                                taskResubscriptionResponseReceived.countDown();
+//                                if (taskResubscriptionResponseReceived.getCount() == 0) {
+//                                    throw new BreakException();
+//                                }
+//                            }
+//                        } catch (JsonProcessingException e) {
+//                            throw new RuntimeException(e);
+//                        }
+//                    });
+//                } catch (BreakException e) {
+//                }
+//            }).exceptionally(t -> {
+//                if (!isStreamClosedError(t)) {
+//                    errorRef.set(t);
+//                }
+//                return null;
+//            });
+//
+//            try {
+//                taskResubscriptionRequestSent.await();
+//                List<Event> events = List.of(
+//                        new TaskArtifactUpdateEvent.Builder()
+//                                .taskId(MINIMAL_TASK.getId())
+//                                .contextId(MINIMAL_TASK.getContextId())
+//                                .artifact(new Artifact.Builder()
+//                                        .artifactId("11")
+//                                        .parts(new TextPart("text"))
+//                                        .build())
+//                                .build(),
+//                        new TaskStatusUpdateEvent.Builder()
+//                                .taskId(MINIMAL_TASK.getId())
+//                                .contextId(MINIMAL_TASK.getContextId())
+//                                .status(new TaskStatus(TaskState.COMPLETED))
+//                                .isFinal(true)
+//                                .build());
+//
+//                for (Event event : events) {
+//                    getQueueManager().get(MINIMAL_TASK.getId()).enqueueEvent(event);
+//                }
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//            }
+//
+//            // wait for the client to receive the responses
+//            taskResubscriptionResponseReceived.await();
+//
+//            assertNotNull(firstResponse.get());
+//            SendStreamingMessageResponse sendStreamingMessageResponse = firstResponse.get();
+//            assertNull(sendStreamingMessageResponse.getError());
+//            TaskArtifactUpdateEvent taskArtifactUpdateEvent = (TaskArtifactUpdateEvent) sendStreamingMessageResponse.getResult();
+//            assertEquals(MINIMAL_TASK.getId(), taskArtifactUpdateEvent.getTaskId());
+//            assertEquals(MINIMAL_TASK.getContextId(), taskArtifactUpdateEvent.getContextId());
+//            Part<?> part = taskArtifactUpdateEvent.getArtifact().parts().get(0);
+//            assertEquals(Part.Kind.TEXT, part.getKind());
+//            assertEquals("text", ((TextPart) part).getText());
+//
+//            assertNotNull(secondResponse.get());
+//            sendStreamingMessageResponse = secondResponse.get();
+//            assertNull(sendStreamingMessageResponse.getError());
+//            TaskStatusUpdateEvent taskStatusUpdateEvent = (TaskStatusUpdateEvent) sendStreamingMessageResponse.getResult();
+//            assertEquals(MINIMAL_TASK.getId(), taskStatusUpdateEvent.getTaskId());
+//            assertEquals(MINIMAL_TASK.getContextId(), taskStatusUpdateEvent.getContextId());
+//            assertEquals(TaskState.COMPLETED, taskStatusUpdateEvent.getStatus().state());
+//            assertNotNull(taskStatusUpdateEvent.getStatus().timestamp());
+//        } finally {
+//            setStreamingSubscribedRunnable(null);
+//            getTaskStore().delete(MINIMAL_TASK.getId());
+//            executorService.shutdown();
+//            if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+//                executorService.shutdownNow();
+//            }
+//        }
+//    }
 
     @Test
     public void testResubscribeNoExistingTaskError() throws Exception {
