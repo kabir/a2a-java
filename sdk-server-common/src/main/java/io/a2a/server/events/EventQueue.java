@@ -38,6 +38,7 @@ public abstract class EventQueue implements AutoCloseable {
     }
 
     public static EventQueue create() {
+        
         return new MainQueue();
     }
 

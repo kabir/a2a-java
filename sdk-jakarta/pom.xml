@@ -22,6 +22,7 @@
         <version.org.wildfly.arquillian>5.1.0.Beta9</version.org.wildfly.arquillian>-->
         <version.org.jboss.shrinkwrap.shrinkwrap>1.2.6</version.org.jboss.shrinkwrap.shrinkwrap>
         <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
+        <version.shrinkwrap.resolvers>3.3.4</version.shrinkwrap.resolvers>
         <jboss.home>${project.build.directory}${file.separator}wildfly</jboss.home>
     </properties>
     <dependencyManagement>
@@ -134,6 +135,11 @@
             <version>3.9.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -169,12 +175,19 @@
                     <provisioning-file>${project.build.directory}/glow-scan/provisioning.xml</provisioning-file>
                     <jboss-home>${jboss.home}</jboss-home>
                     <provisioning-dir>${jboss.home}</provisioning-dir>
+                    <packagingScripts>
+                        <packaging-script>
+                            <scripts>
+                                <script>./src/scripts/configure_logger.cli</script>
+                            </scripts>
+                        </packaging-script>
+                    </packagingScripts>
                 </configuration>
                 <executions>
                     <execution>
                         <id>test-provisioning</id>
                         <goals>
-                            <goal>provision</goal>
+                            <goal>package</goal>
                         </goals>
                         <phase>test-compile</phase>
                     </execution>
@@ -205,7 +218,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includeScope>compile</includeScope>
+                            <includeScope>test</includeScope>
                             <excludeScope>provided</excludeScope>
                         </configuration>
                     </execution>
