@@ -24,6 +24,7 @@
         <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
         <version.shrinkwrap.resolvers>3.3.4</version.shrinkwrap.resolvers>
         <jboss.home>${project.build.directory}${file.separator}wildfly</jboss.home>
+        <surefire.jpda.args></surefire.jpda.args>
         <as.debug.port>8787</as.debug.port>
     </properties>
     <dependencyManagement>
@@ -201,6 +202,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <jboss.home>${jboss.home}</jboss.home>
+                        <arquillian.xml>arquillian.xml</arquillian.xml>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

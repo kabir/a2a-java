@@ -77,6 +77,7 @@ public class A2AServerResource {
     @Produces(MediaType.APPLICATION_JSON)
     public JSONRPCResponse<?> handleNonStreamingRequests(NonStreamingJSONRPCRequest<?> request) {
         System.out.println("====> Handle streaming request");
+        if (true) throw new RuntimeException("Non-Streaming");
         return processNonStreamingRequest(request);
     }
 
@@ -89,6 +90,7 @@ public class A2AServerResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void handleStreamingRequests(StreamingJSONRPCRequest<?> request, @Context SseEventSink sseEventSink, @Context Sse sse) {
         System.out.println("====> Handle streaming request");
+        if (true) throw new RuntimeException("Streaming");
         executor.execute(() -> processStreamingRequest(request, sseEventSink, sse));
     }
 
