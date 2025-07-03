@@ -184,7 +184,7 @@ public abstract class AbstractA2AServerTest {
         getTaskStore().save(CANCEL_TASK_NOT_SUPPORTED);
         try {
             CancelTaskRequest request = new CancelTaskRequest("1", new TaskIdParams(CANCEL_TASK_NOT_SUPPORTED.getId()));
-            CancelTaskResponse response = given()
+            CancelTaskResponse response = given().log().all()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .when()
@@ -207,7 +207,7 @@ public abstract class AbstractA2AServerTest {
     @Test
     public void testCancelTaskNotFound() {
         CancelTaskRequest request = new CancelTaskRequest("1", new TaskIdParams("non-existent-task"));
-        CancelTaskResponse response = given()
+        CancelTaskResponse response = given().log().all()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
                 .when()
@@ -215,7 +215,8 @@ public abstract class AbstractA2AServerTest {
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(CancelTaskResponse.class);
+                .as(CancelTaskResponse.class)
+                ;
         assertEquals(request.getId(), response.getId());
         assertNull(response.getResult());
         // this should be an instance of UnsupportedOperationError, see https://github.com/a2aproject/a2a-java/issues/23
@@ -231,7 +232,7 @@ public abstract class AbstractA2AServerTest {
                 .contextId(MINIMAL_TASK.getContextId())
                 .build();
         SendMessageRequest request = new SendMessageRequest("1", new MessageSendParams(message, null, null));
-        SendMessageResponse response = given()
+        SendMessageResponse response = given().log().all()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
                 .when()
