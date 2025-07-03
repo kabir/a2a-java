@@ -26,32 +26,38 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 @ArquillianTest
 @ApplicationScoped
 public class JakartaA2AServerTest extends AbstractA2AServerTest {
+
+    public JakartaA2AServerTest() {
+        super(8080);
+    }
+
     @Deployment
     public static WebArchive createTestArchive() throws IOException {
-        List<File> librairies = new ArrayList<>();
+        final List<String> prefixes = List.of(
+                    "a2a-java-sdk-core",
+                    "a2a-java-sdk-server-common",
+                    "jackson",
+                    "mutiny",
+                    "slf4j",
+                    "rest-assured",
+                    "groovy",
+                    "http",
+                    "commons",
+                    "xml-path",
+                    "json-path",
+                    "hamcrest"
+            );
+        List<File> libraries = new ArrayList<>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get("target").resolve("lib"))) {
-            Iterator<Path> iter = stream.iterator();
-            while(iter.hasNext()) {
-                Path file = iter.next();
+            for (Path file : stream) {
                 String fileName = file.getFileName().toString();
-                if(fileName.startsWith("a2a-java-sdk-core") ||
-                        fileName.startsWith("a2a-java-sdk-server-common") ||
-                        fileName.startsWith("jackson") ||
-                        fileName.startsWith("mutiny") ||
-                        fileName.startsWith("slf4j") ||
-                        fileName.startsWith("rest-assured") ||
-                        fileName.startsWith("groovy") ||
-                        fileName.startsWith("http") ||
-                        fileName.startsWith("commons") ||
-                        fileName.startsWith("xml-path") ||
-                        fileName.startsWith("json-path") ||
-                        fileName.startsWith("hamcrest")) {
-                    librairies.add(file.toFile());
-                } 
+                if (prefixes.stream().anyMatch(fileName::startsWith)) {
+                    libraries.add(file.toFile());
+                }
             }
         }
         WebArchive archive = ShrinkWrap.create(WebArchive.class, "ROOT.war")
-                .addAsLibraries(librairies.toArray(new File[librairies.size()]))
+                .addAsLibraries(libraries.toArray(new File[libraries.size()]))
                 .addClass(AbstractA2AServerTest.class)
                 .addClass(AgentCardProducer.class)
                 .addClass(AgentExecutorProducer.class)
@@ -62,7 +68,6 @@ public class JakartaA2AServerTest extends AbstractA2AServerTest {
                 .addAsManifestResource("META-INF/beans.xml", "beans.xml")
                 .addAsWebInfResource("META-INF/beans.xml", "beans.xml")
                 .addAsWebInfResource("WEB-INF/web.xml", "web.xml");
-//        archive.as(ZipExporter.class).exportTo(Files.newOutputStream(Paths.get("ROOT.war"), StandardOpenOption.CREATE));
         return archive;
     }
     

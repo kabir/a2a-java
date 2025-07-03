@@ -24,6 +24,8 @@
         <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
         <version.shrinkwrap.resolvers>3.3.4</version.shrinkwrap.resolvers>
         <jboss.home>${project.build.directory}${file.separator}wildfly</jboss.home>
+        <arquillian.java.vm.args></arquillian.java.vm.args>
+        <server.debug.port>8787</server.debug.port>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -200,6 +202,8 @@
                 <configuration>
                     <systemPropertyVariables>
                         <jboss.home>${jboss.home}</jboss.home>
+                        <arquillian.xml>arquillian.xml</arquillian.xml>
+                        <arquillian.java.vm.args>${arquillian.java.vm.args}</arquillian.java.vm.args>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -226,4 +230,13 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>debug.profile</id>
+            <activation><property><name>debug</name></property></activation>
+            <properties>
+                <arquillian.java.vm.args>-agentlib:jdwp=transport=dt_socket,address=*:${server.debug.port},server=y,suspend=y</arquillian.java.vm.args>
+            </properties>
+        </profile>
+    </profiles>
 </project>
