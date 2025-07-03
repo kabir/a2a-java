@@ -15,21 +15,17 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit5.container.annotation.ArquillianTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 
 @ArquillianTest
 @ApplicationScoped
 public class JakartaA2AServerTest extends AbstractA2AServerTest {
-
     @Deployment
     public static WebArchive createTestArchive() throws IOException {
         List<File> librairies = new ArrayList<>();
@@ -55,15 +51,18 @@ public class JakartaA2AServerTest extends AbstractA2AServerTest {
             }
         }
         WebArchive archive = ShrinkWrap.create(WebArchive.class, "ROOT.war")
-                 .addAsLibraries(librairies.toArray(new File[0]))
+                .addAsLibraries(librairies.toArray(new File[librairies.size()]))
                 .addClass(AbstractA2AServerTest.class)
                 .addClass(AgentCardProducer.class)
                 .addClass(AgentExecutorProducer.class)
                 .addClass(JakartaA2AServerTest.class)
+                .addClass(A2ARequestFilter.class)
+                .addClass(A2AServerResource.class)
                 .addClass(RestApplication.class)
                 .addAsManifestResource("META-INF/beans.xml", "beans.xml")
-                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
-        archive.as(ZipExporter.class).exportTo(Files.newOutputStream(Paths.get("test.war"), StandardOpenOption.CREATE));
+                .addAsWebInfResource("META-INF/beans.xml", "beans.xml")
+                .addAsWebInfResource("WEB-INF/web.xml", "web.xml");
+//        archive.as(ZipExporter.class).exportTo(Files.newOutputStream(Paths.get("ROOT.war"), StandardOpenOption.CREATE));
         return archive;
     }
     
