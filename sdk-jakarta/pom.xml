@@ -24,6 +24,7 @@
         <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
         <version.shrinkwrap.resolvers>3.3.4</version.shrinkwrap.resolvers>
         <jboss.home>${project.build.directory}${file.separator}wildfly</jboss.home>
+        <as.debug.port>8787</as.debug.port>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -226,4 +227,13 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>debug.profile</id>
+            <activation><property><name>debug</name></property></activation>
+            <properties>
+                <surefire.jpda.args>-agentlib:jdwp=transport=dt_socket,address=*:${as.debug.port},server=y,suspend=y</surefire.jpda.args>
+            </properties>
+        </profile>
+    </profiles>
 </project>

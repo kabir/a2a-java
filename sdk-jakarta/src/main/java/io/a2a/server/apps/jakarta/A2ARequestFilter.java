@@ -24,6 +24,7 @@ public class A2ARequestFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
+        System.out.println("====> In Filter");
         if (requestContext.getMethod().equals("POST") && requestContext.hasEntity()) {
             try (InputStream entityInputStream = requestContext.getEntityStream()) {
                 byte[] requestBodyBytes = entityInputStream.readAllBytes();
@@ -31,8 +32,10 @@ public class A2ARequestFilter implements ContainerRequestFilter {
                 // ensure the request is treated as a streaming request or a non-streaming request
                 // based on the method in the request body
                 if (isStreamingRequest(requestBody)) {
+                    System.out.println("====> Filter to streaming request");
                     putAcceptHeader(requestContext, MediaType.SERVER_SENT_EVENTS);
                 } else if (isNonStreamingRequest(requestBody)) {
+                    System.out.println("====> Filter to non-streaming request");
                     putAcceptHeader(requestContext, MediaType.APPLICATION_JSON);
                 }
                 // reset the entity stream
