@@ -1,7 +1,6 @@
 package io.a2a.server.events;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -16,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class EventQueue implements AutoCloseable {
 
-    private static final Logger log = LoggerFactory.getLogger(EventQueue.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventQueue.class);
 
     // TODO decide on a capacity
     private static final int queueSize = 1000;
@@ -34,7 +33,7 @@ public abstract class EventQueue implements AutoCloseable {
     }
 
     protected EventQueue(EventQueue parent) {
-        log.trace("Creating {}, parent: {}", this, parent);
+        LOGGER.trace("Creating {}, parent: {}", this, parent);
         this.parent = parent;
     }
 
@@ -48,7 +47,7 @@ public abstract class EventQueue implements AutoCloseable {
 
     public void enqueueEvent(Event event) {
         if (closed) {
-            log.warn("Queue is closed. Event will not be enqueued. {} {}", this, event);
+            LOGGER.warn("Queue is closed. Event will not be enqueued. {} {}", this, event);
             return;
         }
         // Call toString() since for errors we don't really want the full stacktrace
@@ -59,14 +58,14 @@ public abstract class EventQueue implements AutoCloseable {
             throw new RuntimeException("Unable to acquire the semaphore to enqueue the event", e);
         }
         queue.add(event);
-        log.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
+        LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
     }
 
     abstract EventQueue tap();
 
     public Event dequeueEvent(int waitMilliSeconds) throws EventQueueClosedException {
         if (closed && queue.isEmpty()) {
-            log.debug("Queue is closed, and empty. Sending termination message. {}", this);
+            LOGGER.debug("Queue is closed, and empty. Sending termination message. {}", this);
             throw new EventQueueClosedException();
         }
         try {
@@ -74,7 +73,7 @@ public abstract class EventQueue implements AutoCloseable {
                 Event event = queue.poll();
                 if (event != null) {
                     // Call toString() since for errors we don't really want the full stacktrace
-                    log.debug("Dequeued event (no wait) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                    LOGGER.debug("Dequeued event (no wait) {} {}", this, event instanceof Throwable ? event.toString() : event);
                     semaphore.release();
                 }
                 return event;
@@ -83,12 +82,12 @@ public abstract class EventQueue implements AutoCloseable {
                 Event event = queue.poll(waitMilliSeconds, TimeUnit.MILLISECONDS);
                 if (event != null) {
                     // Call toString() since for errors we don't really want the full stacktrace
-                    log.debug("Dequeued event (waiting) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                    LOGGER.debug("Dequeued event (waiting) {} {}", this, event instanceof Throwable ? event.toString() : event);
                     semaphore.release();
                 }
                 return event;
             } catch (InterruptedException e) {
-                log.debug("Interrupted dequeue (waiting) {}", this);
+                LOGGER.debug("Interrupted dequeue (waiting) {}", this);
                 Thread.currentThread().interrupt();
                 return null;
             }
@@ -108,7 +107,7 @@ public abstract class EventQueue implements AutoCloseable {
             if (closed) {
                 return;
             }
-            log.debug("Closing {}", this);
+            LOGGER.debug("Closing {}", this);
             closed = true;
         }
         // Although the Python implementation drains the queue on closing,
@@ -137,9 +136,9 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public void awaitQueuePollerStart() throws InterruptedException {
-            log.debug("Waiting for queue poller to start on {}", this);
+            LOGGER.debug("Waiting for queue poller to start on {}", this);
             pollingStartedLatch.await(10, TimeUnit.SECONDS);
-            log.debug("Queue poller started on {}", this);
+            LOGGER.debug("Queue poller started on {}", this);
         }
 
         @Override
@@ -147,7 +146,7 @@ public abstract class EventQueue implements AutoCloseable {
             if (pollingStarted.get()) {
                 return;
             }
-            log.debug("Signalling that queue polling started {}", this);
+            LOGGER.debug("Signalling that queue polling started {}", this);
             pollingStartedLatch.countDown();
             pollingStarted.set(true);
           }
