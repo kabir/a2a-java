@@ -730,6 +730,7 @@ public class JSONRPCHandlerTest {
             // TODO - this is very strange. The results array is synchronized, and the latch is counted down
             //  AFTER adding items to the list. Still, I am seeing intermittently, but frequently that
             //  the results list only has two items.
+            //  Remove System.out.printlns in this test when done.
             long end = System.currentTimeMillis() + 5000;
             while (results.size() != 3 && System.currentTimeMillis() < end) {
                 Thread.sleep(1000);
@@ -1105,7 +1106,6 @@ public class JSONRPCHandlerTest {
         SendMessageRequest request = new SendMessageRequest("1", new MessageSendParams(MESSAGE, null, null));
         SendMessageResponse response = handler.onMessageSend(request);
 
-        System.out.println(response);
         assertInstanceOf(InternalError.class, response.getError());
     }
 
