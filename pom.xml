@@ -4,7 +4,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.a2a.sdk</groupId>
+    <groupId>io.github.a2asdk</groupId>
     <artifactId>a2a-java-sdk-parent</artifactId>
     <version>0.2.4-SNAPSHOT</version>
 
@@ -17,6 +17,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+        <sonatype-central-publishing-plugin.version>0.8.0</sonatype-central-publishing-plugin.version>
         <jackson.version>2.17.0</jackson.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jakarta.inject.jakarta.inject-api.version>2.0.1</jakarta.inject.jakarta.inject-api.version>
@@ -180,6 +181,15 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
             </plugin>
+            <plugin>
+              <groupId>org.sonatype.central</groupId>
+              <artifactId>central-publishing-maven-plugin</artifactId>
+              <version>${sonatype-central-publishing-plugin.version}</version>
+              <extensions>true</extensions>
+              <configuration>
+                <publishingServerId>central-a2asdk-temp</publishingServerId>
+              </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -194,4 +204,5 @@
         <module>examples/helloworld</module>
         <module>tests/server-common</module>
     </modules>
+
 </project>
