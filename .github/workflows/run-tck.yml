@@ -12,7 +12,7 @@ on:
 env:
   # Tag of the TCK
   TCK_VERSION: 0.2.3
-  # Tells astral-sh/setup-uv@v5 to not need a venv, and instead use system
+  # Tells uv to not need a venv, and instead use system
   UV_SYSTEM_PYTHON: 1
 
 # Only run the latest job
@@ -43,18 +43,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - name: Install uv
+          python-version-file: "tck/a2a-tck/pyproject.toml"
+      - name: Install uv and Python dependencies
         run: |
           pip install uv
           uv pip install -e .
         working-directory: tck/a2a-tck
       - name: Build with Maven, skipping tests
         run: mvn -B install -DskipTests
-      - name: Start SUT & Run TCK
+      - name: Start SUT
+        run: mvn -B quarkus:dev &
+        working-directory: tck
+      - name: Wait for SUT to start
         run: |
-          mvn -B quarkus:dev &
-          
           URL="http://localhost:9999/.well-known/agent.json"
           EXPECTED_STATUS=200
           TIMEOUT=120
@@ -87,7 +88,7 @@ jobs:
             sleep "$RETRY_INTERVAL"
           done
           
-          # Run TCK
-          cd a2a-tck
+      - name: Run TCK
+        run: |
           ./run_tck.py --sut-url http://localhost:9999 --category all --compliance-report report.json
-        working-directory: tck
+        working-directory: tck/a2a-tck
