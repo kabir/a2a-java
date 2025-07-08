@@ -42,7 +42,7 @@ The A2A Java SDK provides two A2A server endpoint implementations, one based on 
 
 Add **one** of the following dependencies to your project:
 
-> *⚠️ The `io.github.a2asdk` `groupId` below is temporary and will likely change for future releases. Substitute `${io.a2a.sdk.version}` with the latest released version of the project.*
+> *⚠️ The `io.github.a2asdk` `groupId` below is temporary and will likely change for future releases.*
 
 ```xml
 <dependency>

@@ -182,13 +182,13 @@
                 <version>${maven-surefire-plugin.version}</version>
             </plugin>
             <plugin>
-              <groupId>org.sonatype.central</groupId>
-              <artifactId>central-publishing-maven-plugin</artifactId>
-              <version>${sonatype-central-publishing-plugin.version}</version>
-              <extensions>true</extensions>
-              <configuration>
-                <publishingServerId>central-a2asdk-temp</publishingServerId>
-              </configuration>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${sonatype-central-publishing-plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central-a2asdk-temp</publishingServerId>
+                </configuration>
             </plugin>
         </plugins>
     </build>
