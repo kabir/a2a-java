@@ -35,16 +35,14 @@ The A2A Java SDK provides a Java server implementation of the [Agent2Agent (A2A)
 
 ### 1. Add an A2A Java SDK Server Maven dependency to your project
 
-<<<<<<< HEAD
 Adding a dependency on an A2A Java SDK Server will provide access to the core classes that make up the A2A specification
 and allow you to run your agentic Java application as an A2A server agent.
 
 The A2A Java SDK provides two A2A server endpoint implementations, one based on Jakarta REST (`a2a-java-sdk-server-jakarta`) and one based on Quarkus Reactive Routes (`a2a-java-sdk-server-quarkus`). You can choose the one that best fits your application.
 
 Add **one** of the following dependencies to your project:
-----
+
 > *⚠️ The `io.github.a2asdk` `groupId` below is temporary and will likely change for future releases. Substitute `${io.a2a.sdk.version}` with the latest released version of the project.*
-----
 
 ```xml
 <dependency>
