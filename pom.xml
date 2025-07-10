@@ -271,7 +271,7 @@
         <module>common</module>
         <module>spec</module>
         <module>client</module>
-        <module>sdk-quarkus</module>
+        <module>reference-impl</module>
         <module>tck</module>
         <module>examples/helloworld</module>
         <module>tests/server-common</module>
