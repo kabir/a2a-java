@@ -53,6 +53,7 @@ public abstract class AbstractA2AServerClientTest {
             assertEquals(TaskState.SUBMITTED, response.getResult().getStatus().state());
             assertNull(response.getError());
         } catch (A2AServerException e) {
+            org.junit.jupiter.api.Assertions.fail("A2AServerException was thrown when not expected: " + e.getMessage(), e);
         } finally {
             getTaskStore().delete(MINIMAL_TASK.getId());
         }
