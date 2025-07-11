@@ -98,7 +98,7 @@ public abstract class AbstractA2AServerClientTest {
             assertTrue(agentCard.capabilities().stateTransitionHistory());
             assertTrue(agentCard.skills().isEmpty());
         } catch (A2AClientError e) {
-            // Handle exception
+            org.junit.jupiter.api.Assertions.fail("A2AClientError was thrown when not expected: " + e.getMessage(), e);
         }
     }
 
