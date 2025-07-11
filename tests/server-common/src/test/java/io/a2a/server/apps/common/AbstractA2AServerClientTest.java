@@ -78,7 +78,7 @@ public abstract class AbstractA2AServerClientTest {
             assertEquals(Part.Kind.TEXT, part.getKind());
             assertEquals("test message", ((TextPart) part).getText());
         } catch (A2AServerException e) {
-            // Handle exception
+            org.junit.jupiter.api.Assertions.fail("A2AServerException was thrown when not expected: " + e.getMessage(), e);
         }
     }
 
