@@ -66,8 +66,7 @@ public class JakartaA2AServerClientTest extends AbstractA2AServerClientTest {
                 .addClass(A2ARequestFilter.class)
                 .addClass(A2AServerResource.class)
                 .addClass(RestApplication.class)
-                .addAsManifestResource("META-INF/beans.xml", "beans.xml")
-                .addAsWebInfResource("META-INF/beans.xml", "beans.xml")
+                .addAsWebInfResource("WEB-INF/beans.xml", "beans.xml")
                 .addAsWebInfResource("WEB-INF/web.xml", "web.xml");
         return archive;
     }
