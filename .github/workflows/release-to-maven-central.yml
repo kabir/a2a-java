@@ -46,6 +46,7 @@ jobs:
           -s ~/.m2/settings.xml
           -P release
           -DskipTests
+          -Drelease.auto.publish=true
         env:
           # GPG passphrase is set as an environment variable for the gpg plugin to use
           GPG_PASSPHRASE: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
