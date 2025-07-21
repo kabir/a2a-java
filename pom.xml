@@ -206,6 +206,7 @@
                     <configuration>
                         <!-- This should point to a server entry in your settings.xml -->
                         <publishingServerId>central-a2asdk-temp</publishingServerId>
+                        <autoPublish>true</autoPublish>
                     </configuration>
                 </plugin>
                 <plugin>
