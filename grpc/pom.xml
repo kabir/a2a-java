@@ -18,6 +18,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.github.a2asdk</groupId>
+            <artifactId>a2a-java-sdk-spec</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
         </dependency>
@@ -30,5 +35,5 @@
             <artifactId>grpc-stub</artifactId>
         </dependency>
     </dependencies>
-
+    
 </project>
