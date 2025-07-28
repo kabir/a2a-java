@@ -16,6 +16,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import io.a2a.server.ServerCallContext;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.agentexecution.SimpleRequestContextBuilder;
@@ -87,7 +88,7 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public Task onGetTask(TaskQueryParams params) throws JSONRPCError {
+    public Task onGetTask(TaskQueryParams params, ServerCallContext context) throws JSONRPCError {
         LOGGER.debug("onGetTask {}", params.id());
         Task task = taskStore.get(params.id());
         if (task == null) {
@@ -114,7 +115,7 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public Task onCancelTask(TaskIdParams params) throws JSONRPCError {
+    public Task onCancelTask(TaskIdParams params, ServerCallContext context) throws JSONRPCError {
         Task task = taskStore.get(params.id());
         if (task == null) {
             throw new TaskNotFoundError();
@@ -136,6 +137,7 @@ public class DefaultRequestHandler implements RequestHandler {
                         .setTaskId(task.getId())
                         .setContextId(task.getContextId())
                         .setTask(task)
+                        .setServerCallContext(context)
                         .build(),
                 queue);
 
@@ -152,9 +154,9 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public EventKind onMessageSend(MessageSendParams params) throws JSONRPCError {
+    public EventKind onMessageSend(MessageSendParams params, ServerCallContext context) throws JSONRPCError {
         LOGGER.debug("onMessageSend - task: {}; context {}", params.message().getTaskId(), params.message().getContextId());
-        MessageSendSetup mss = initMessageSend(params);
+        MessageSendSetup mss = initMessageSend(params, context);
 
         String taskId = mss.requestContext.getTaskId();
         LOGGER.debug("Request context taskId: {}", taskId);
@@ -200,9 +202,10 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public Flow.Publisher<StreamingEventKind> onMessageSendStream(MessageSendParams params) throws JSONRPCError {
+    public Flow.Publisher<StreamingEventKind> onMessageSendStream(
+            MessageSendParams params, ServerCallContext context) throws JSONRPCError {
         LOGGER.debug("onMessageSendStream - task: {}; context {}", params.message().getTaskId(), params.message().getContextId());
-        MessageSendSetup mss = initMessageSend(params);
+        MessageSendSetup mss = initMessageSend(params, context);
 
         AtomicReference<String> taskId = new AtomicReference<>(mss.requestContext.getTaskId());
         EventQueue queue = queueManager.createOrTap(taskId.get());
@@ -260,7 +263,8 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public TaskPushNotificationConfig onSetTaskPushNotificationConfig(TaskPushNotificationConfig params) throws JSONRPCError {
+    public TaskPushNotificationConfig onSetTaskPushNotificationConfig(
+            TaskPushNotificationConfig params, ServerCallContext context) throws JSONRPCError {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -275,7 +279,8 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public TaskPushNotificationConfig onGetTaskPushNotificationConfig(GetTaskPushNotificationConfigParams params) throws JSONRPCError {
+    public TaskPushNotificationConfig onGetTaskPushNotificationConfig(
+            GetTaskPushNotificationConfigParams params, ServerCallContext context) throws JSONRPCError {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -305,7 +310,8 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public Flow.Publisher<StreamingEventKind> onResubscribeToTask(TaskIdParams params) throws JSONRPCError {
+    public Flow.Publisher<StreamingEventKind> onResubscribeToTask(
+            TaskIdParams params, ServerCallContext context) throws JSONRPCError {
         Task task = taskStore.get(params.id());
         if (task == null) {
             throw new TaskNotFoundError();
@@ -325,7 +331,8 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public List<TaskPushNotificationConfig> onListTaskPushNotificationConfig(ListTaskPushNotificationConfigParams params) throws JSONRPCError {
+    public List<TaskPushNotificationConfig> onListTaskPushNotificationConfig(
+            ListTaskPushNotificationConfigParams params, ServerCallContext context) throws JSONRPCError {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -347,7 +354,8 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public void onDeleteTaskPushNotificationConfig(DeleteTaskPushNotificationConfigParams params) {
+    public void onDeleteTaskPushNotificationConfig(
+            DeleteTaskPushNotificationConfigParams params, ServerCallContext context) {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -398,7 +406,7 @@ public class DefaultRequestHandler implements RequestHandler {
                 });
     }
 
-    private MessageSendSetup initMessageSend(MessageSendParams params) {
+    private MessageSendSetup initMessageSend(MessageSendParams params, ServerCallContext context) {
         TaskManager taskManager = new TaskManager(
                 params.message().getTaskId(),
                 params.message().getContextId(),
@@ -421,6 +429,7 @@ public class DefaultRequestHandler implements RequestHandler {
                 .setTaskId(task == null ? null : task.getId())
                 .setContextId(params.message().getContextId())
                 .setTask(task)
+                .setServerCallContext(context)
                 .build();
         return new MessageSendSetup(taskManager, task, requestContext);
     }

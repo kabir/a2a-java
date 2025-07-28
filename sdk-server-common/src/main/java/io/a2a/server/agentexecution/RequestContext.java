@@ -22,13 +22,21 @@ public class RequestContext {
     private String contextId;
     private Task task;
     private List<Task> relatedTasks;
+    private final ServerCallContext callContext;
 
-    public RequestContext(MessageSendParams params, String taskId, String contextId, Task task, List<Task> relatedTasks) throws InvalidParamsError {
+    public RequestContext(
+            MessageSendParams params,
+            String taskId,
+            String contextId,
+            Task task,
+            List<Task> relatedTasks,
+            ServerCallContext callContext) throws InvalidParamsError {
         this.params = params;
         this.taskId = taskId;
         this.contextId = contextId;
         this.task = task;
         this.relatedTasks = relatedTasks == null ? new ArrayList<>() : relatedTasks;
+        this.callContext = callContext;
 
         // if the taskId and contextId were specified, they must match the params
         if (params != null) {
@@ -71,6 +79,10 @@ public class RequestContext {
 
     public MessageSendConfiguration getConfiguration() {
         return params != null ? params.configuration() : null;
+    }
+
+    public ServerCallContext getCallContext() {
+        return callContext;
     }
 
     public String getUserInput(String delimiter) {
@@ -187,7 +199,7 @@ public class RequestContext {
         }
 
         public RequestContext build() {
-            return new RequestContext(params, taskId, contextId, task, relatedTasks);
+            return new RequestContext(params, taskId, contextId, task, relatedTasks, serverCallContext);
         }
     }
 

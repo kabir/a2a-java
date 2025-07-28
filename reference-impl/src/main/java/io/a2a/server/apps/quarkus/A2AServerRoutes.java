@@ -3,6 +3,9 @@ package io.a2a.server.apps.quarkus;
 import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,6 +21,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.a2a.server.ExtendedAgentCard;
+import io.a2a.server.ServerCallContext;
+import io.a2a.server.auth.UnauthenticatedUser;
+import io.a2a.server.auth.User;
 import io.a2a.server.requesthandlers.JSONRPCHandler;
 import io.a2a.server.util.async.Internal;
 import io.a2a.spec.AgentCard;
@@ -78,9 +84,13 @@ public class A2AServerRoutes {
     @Internal
     Executor executor;
 
+    @Inject
+    Instance<CallContextFactory> callContextFactory;
+
     @Route(path = "/", methods = {Route.HttpMethod.POST}, consumes = {APPLICATION_JSON}, type = Route.HandlerType.BLOCKING)
     public void invokeJSONRPCHandler(@Body String body, RoutingContext rc) {
         boolean streaming = false;
+        ServerCallContext context = createCallContext(rc);
         JSONRPCResponse<?> nonStreamingResponse = null;
         Multi<? extends JSONRPCResponse<?>> streamingResponse = null;
         JSONRPCErrorResponse error = null;
@@ -89,10 +99,10 @@ public class A2AServerRoutes {
             if (isStreamingRequest(body)) {
                 streaming = true;
                 StreamingJSONRPCRequest<?> request = Utils.OBJECT_MAPPER.readValue(body, StreamingJSONRPCRequest.class);
-                streamingResponse = processStreamingRequest(request);
+                streamingResponse = processStreamingRequest(request, context);
             } else {
                 NonStreamingJSONRPCRequest<?> request = Utils.OBJECT_MAPPER.readValue(body, NonStreamingJSONRPCRequest.class);
-                nonStreamingResponse = processNonStreamingRequest(request);
+                nonStreamingResponse = processNonStreamingRequest(request, context);
             }
         } catch (JsonProcessingException e) {
             error = handleError(e);
@@ -183,32 +193,34 @@ public class A2AServerRoutes {
         }
     }
 
-    private JSONRPCResponse<?> processNonStreamingRequest(NonStreamingJSONRPCRequest<?> request) {
-        if (request instanceof GetTaskRequest) {
-            return jsonRpcHandler.onGetTask((GetTaskRequest) request);
-        } else if (request instanceof CancelTaskRequest) {
-            return jsonRpcHandler.onCancelTask((CancelTaskRequest) request);
-        } else if (request instanceof SetTaskPushNotificationConfigRequest) {
-            return jsonRpcHandler.setPushNotificationConfig((SetTaskPushNotificationConfigRequest) request);
-        } else if (request instanceof GetTaskPushNotificationConfigRequest) {
-            return jsonRpcHandler.getPushNotificationConfig((GetTaskPushNotificationConfigRequest) request);
-        } else if (request instanceof SendMessageRequest) {
-            return jsonRpcHandler.onMessageSend((SendMessageRequest) request);
-        } else if (request instanceof ListTaskPushNotificationConfigRequest) {
-            return jsonRpcHandler.listPushNotificationConfig((ListTaskPushNotificationConfigRequest) request);
-        } else if (request instanceof DeleteTaskPushNotificationConfigRequest) {
-            return jsonRpcHandler.deletePushNotificationConfig((DeleteTaskPushNotificationConfigRequest) request);
+    private JSONRPCResponse<?> processNonStreamingRequest(
+            NonStreamingJSONRPCRequest<?> request, ServerCallContext context) {
+        if (request instanceof GetTaskRequest req) {
+            return jsonRpcHandler.onGetTask(req, context);
+        } else if (request instanceof CancelTaskRequest req) {
+            return jsonRpcHandler.onCancelTask(req, context);
+        } else if (request instanceof SetTaskPushNotificationConfigRequest req) {
+            return jsonRpcHandler.setPushNotificationConfig(req, context);
+        } else if (request instanceof GetTaskPushNotificationConfigRequest req) {
+            return jsonRpcHandler.getPushNotificationConfig(req, context);
+        } else if (request instanceof SendMessageRequest req) {
+            return jsonRpcHandler.onMessageSend(req, context);
+        } else if (request instanceof ListTaskPushNotificationConfigRequest req) {
+            return jsonRpcHandler.listPushNotificationConfig(req, context);
+        } else if (request instanceof DeleteTaskPushNotificationConfigRequest req) {
+            return jsonRpcHandler.deletePushNotificationConfig(req, context);
         } else {
             return generateErrorResponse(request, new UnsupportedOperationError());
         }
     }
 
-    private Multi<? extends JSONRPCResponse<?>> processStreamingRequest(JSONRPCRequest<?> request) {
+    private Multi<? extends JSONRPCResponse<?>> processStreamingRequest(
+            JSONRPCRequest<?> request, ServerCallContext context) {
         Flow.Publisher<? extends JSONRPCResponse<?>> publisher;
-        if (request instanceof SendStreamingMessageRequest) {
-            publisher = jsonRpcHandler.onMessageSendStream((SendStreamingMessageRequest) request);
-        } else if (request instanceof TaskResubscriptionRequest) {
-            publisher = jsonRpcHandler.onResubscribeToTask((TaskResubscriptionRequest) request);
+        if (request instanceof SendStreamingMessageRequest req) {
+            publisher = jsonRpcHandler.onMessageSendStream(req, context);
+        } else if (request instanceof TaskResubscriptionRequest req) {
+            publisher = jsonRpcHandler.onResubscribeToTask(req, context);
         } else {
             return Multi.createFrom().item(generateErrorResponse(request, new UnsupportedOperationError()));
         }
@@ -232,6 +244,42 @@ public class A2AServerRoutes {
 
     static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
         streamingMultiSseSupportSubscribedRunnable = runnable;
+    }
+
+    private ServerCallContext createCallContext(RoutingContext rc) {
+
+        if (callContextFactory.isUnsatisfied()) {
+            User user;
+            if (rc.user() == null) {
+                user = UnauthenticatedUser.INSTANCE;
+            } else {
+                user = new User() {
+                    @Override
+                    public boolean isAuthenticated() {
+                        return rc.userContext().authenticated();
+                    }
+
+                    @Override
+                    public String getUsername() {
+                        return rc.user().subject();
+                    }
+                };
+            }
+            Map<String, Object> state = new HashMap<>();
+            // TODO Python's impl has
+            //    state['auth'] = request.auth
+            //  in jsonrpc_app.py. Figure out what this maps to in what Vert.X gives us
+
+            Map<String, String> headers = new HashMap<>();
+            Set<String> headerNames = rc.request().headers().names();
+            headerNames.forEach(name -> headers.put(name, rc.request().getHeader(name)));
+            state.put("headers", headers);
+
+            return new ServerCallContext(user, state);
+        } else {
+            CallContextFactory builder = callContextFactory.get();
+            return builder.build(rc);
+        }
     }
 
     // Port of import io.quarkus.vertx.web.runtime.MultiSseSupport, which is considered internal API

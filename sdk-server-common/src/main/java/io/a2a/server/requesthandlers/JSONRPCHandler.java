@@ -2,12 +2,14 @@ package io.a2a.server.requesthandlers;
 
 import static io.a2a.server.util.async.AsyncUtils.createTubeConfig;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.concurrent.Flow;
 
 import io.a2a.server.PublicAgentCard;
+import io.a2a.server.ServerCallContext;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.CancelTaskRequest;
 import io.a2a.spec.CancelTaskResponse;
@@ -52,9 +54,9 @@ public class JSONRPCHandler {
         this.requestHandler = requestHandler;
     }
 
-    public SendMessageResponse onMessageSend(SendMessageRequest request) {
+    public SendMessageResponse onMessageSend(SendMessageRequest request, ServerCallContext context) {
         try {
-            EventKind taskOrMessage = requestHandler.onMessageSend(request.getParams());
+            EventKind taskOrMessage = requestHandler.onMessageSend(request.getParams(), context);
             return new SendMessageResponse(request.getId(), taskOrMessage);
         } catch (JSONRPCError e) {
             return new SendMessageResponse(request.getId(), e);
@@ -64,7 +66,8 @@ public class JSONRPCHandler {
     }
 
 
-    public Flow.Publisher<SendStreamingMessageResponse> onMessageSendStream(SendStreamingMessageRequest request) {
+    public Flow.Publisher<SendStreamingMessageResponse> onMessageSendStream(
+            SendStreamingMessageRequest request, ServerCallContext context) {
         if (!agentCard.capabilities().streaming()) {
             return ZeroPublisher.fromItems(
                     new SendStreamingMessageResponse(
@@ -73,7 +76,8 @@ public class JSONRPCHandler {
         }
 
         try {
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(request.getParams());
+            Flow.Publisher<StreamingEventKind> publisher =
+                    requestHandler.onMessageSendStream(request.getParams(), context);
             // We can't use the convertingProcessor convenience method since that propagates any errors as an error handled
             // via Subscriber.onError() rather than as part of the SendStreamingResponse payload
             return convertToSendStreamingMessageResponse(request.getId(), publisher);
@@ -84,9 +88,9 @@ public class JSONRPCHandler {
         }
     }
 
-    public CancelTaskResponse onCancelTask(CancelTaskRequest request) {
+    public CancelTaskResponse onCancelTask(CancelTaskRequest request, ServerCallContext context) {
         try {
-            Task task = requestHandler.onCancelTask(request.getParams());
+            Task task = requestHandler.onCancelTask(request.getParams(), context);
             if (task != null) {
                 return new CancelTaskResponse(request.getId(), task);
             }
@@ -98,7 +102,8 @@ public class JSONRPCHandler {
         }
     }
 
-    public Flow.Publisher<SendStreamingMessageResponse> onResubscribeToTask(TaskResubscriptionRequest request) {
+    public Flow.Publisher<SendStreamingMessageResponse> onResubscribeToTask(
+            TaskResubscriptionRequest request, ServerCallContext context) {
         if (!agentCard.capabilities().streaming()) {
             return ZeroPublisher.fromItems(
                     new SendStreamingMessageResponse(
@@ -107,7 +112,8 @@ public class JSONRPCHandler {
         }
 
         try {
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onResubscribeToTask(request.getParams());
+            Flow.Publisher<StreamingEventKind> publisher =
+                    requestHandler.onResubscribeToTask(request.getParams(), context);
             // We can't use the convertingProcessor convenience method since that propagates any errors as an error handled
             // via Subscriber.onError() rather than as part of the SendStreamingResponse payload
             return convertToSendStreamingMessageResponse(request.getId(), publisher);
@@ -118,13 +124,15 @@ public class JSONRPCHandler {
         }
     }
 
-    public GetTaskPushNotificationConfigResponse getPushNotificationConfig(GetTaskPushNotificationConfigRequest request) {
+    public GetTaskPushNotificationConfigResponse getPushNotificationConfig(
+            GetTaskPushNotificationConfigRequest request, ServerCallContext context) {
         if (!agentCard.capabilities().pushNotifications()) {
             return new GetTaskPushNotificationConfigResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
         try {
-            TaskPushNotificationConfig config = requestHandler.onGetTaskPushNotificationConfig(request.getParams());
+            TaskPushNotificationConfig config =
+                    requestHandler.onGetTaskPushNotificationConfig(request.getParams(), context);
             return new GetTaskPushNotificationConfigResponse(request.getId(), config);
         } catch (JSONRPCError e) {
             return new GetTaskPushNotificationConfigResponse(request.getId().toString(), e);
@@ -133,13 +141,15 @@ public class JSONRPCHandler {
         }
     }
 
-    public SetTaskPushNotificationConfigResponse setPushNotificationConfig(SetTaskPushNotificationConfigRequest request) {
+    public SetTaskPushNotificationConfigResponse setPushNotificationConfig(
+            SetTaskPushNotificationConfigRequest request, ServerCallContext context) {
         if (!agentCard.capabilities().pushNotifications()) {
             return new SetTaskPushNotificationConfigResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
         try {
-            TaskPushNotificationConfig config = requestHandler.onSetTaskPushNotificationConfig(request.getParams());
+            TaskPushNotificationConfig config =
+                    requestHandler.onSetTaskPushNotificationConfig(request.getParams(), context);
             return new SetTaskPushNotificationConfigResponse(request.getId().toString(), config);
         } catch (JSONRPCError e) {
             return new SetTaskPushNotificationConfigResponse(request.getId(), e);
@@ -148,9 +158,9 @@ public class JSONRPCHandler {
         }
     }
 
-    public GetTaskResponse onGetTask(GetTaskRequest request) {
+    public GetTaskResponse onGetTask(GetTaskRequest request, ServerCallContext context) {
         try {
-            Task task = requestHandler.onGetTask(request.getParams());
+            Task task = requestHandler.onGetTask(request.getParams(), context);
             return new GetTaskResponse(request.getId(), task);
         } catch (JSONRPCError e) {
             return new GetTaskResponse(request.getId(), e);
@@ -159,13 +169,15 @@ public class JSONRPCHandler {
         }
     }
 
-    public ListTaskPushNotificationConfigResponse listPushNotificationConfig(ListTaskPushNotificationConfigRequest request) {
+    public ListTaskPushNotificationConfigResponse listPushNotificationConfig(
+            ListTaskPushNotificationConfigRequest request, ServerCallContext context) {
         if ( !agentCard.capabilities().pushNotifications()) {
             return new ListTaskPushNotificationConfigResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
         try {
-            List<TaskPushNotificationConfig> pushNotificationConfigList = requestHandler.onListTaskPushNotificationConfig(request.getParams());
+            List<TaskPushNotificationConfig> pushNotificationConfigList =
+                    requestHandler.onListTaskPushNotificationConfig(request.getParams(), context);
             return new ListTaskPushNotificationConfigResponse(request.getId(), pushNotificationConfigList);
         } catch (JSONRPCError e) {
             return new ListTaskPushNotificationConfigResponse(request.getId(), e);
@@ -174,13 +186,14 @@ public class JSONRPCHandler {
         }
     }
 
-    public DeleteTaskPushNotificationConfigResponse deletePushNotificationConfig(DeleteTaskPushNotificationConfigRequest request) {
+    public DeleteTaskPushNotificationConfigResponse deletePushNotificationConfig(
+            DeleteTaskPushNotificationConfigRequest request, ServerCallContext context) {
         if ( !agentCard.capabilities().pushNotifications()) {
             return new DeleteTaskPushNotificationConfigResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
         try {
-            requestHandler.onDeleteTaskPushNotificationConfig(request.getParams());
+            requestHandler.onDeleteTaskPushNotificationConfig(request.getParams(), context);
             return new DeleteTaskPushNotificationConfigResponse(request.getId());
         } catch (JSONRPCError e) {
             return new DeleteTaskPushNotificationConfigResponse(request.getId(), e);
