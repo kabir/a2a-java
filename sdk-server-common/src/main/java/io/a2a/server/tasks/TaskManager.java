@@ -16,8 +16,13 @@ import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TaskManager {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskManager.class);
+
     private volatile String taskId;
     private volatile String contextId;
     private final TaskStore taskStore;
@@ -101,16 +106,18 @@ public class TaskManager {
             // This represents the first chunk for this artifact index
             if (existingArtifactIndex >= 0) {
                 // Replace the existing artifact entirely with the new artifact
+                LOGGER.debug("Replacing artifact at id {} for task {}", artifactId, taskId);
                 artifacts.set(existingArtifactIndex, newArtifact);
             } else {
                 // Append the new artifact since no artifact with this id/index exists yet
+                LOGGER.debug("Adding artifact at id {} for task {}", artifactId, taskId);
                 artifacts.add(newArtifact);
             }
 
         } else if (existingArtifact != null) {
             // Append new parts to the existing artifact's parts list
             // Do this to a copy
-
+            LOGGER.debug("Appending parts to artifact id {} for task {}", artifactId, taskId);
             List<Part<?>> parts = new ArrayList<>(existingArtifact.parts());
             parts.addAll(newArtifact.parts());
             Artifact updated = new Artifact.Builder(existingArtifact)
@@ -120,6 +127,9 @@ public class TaskManager {
         } else {
             // We received a chunk to append, but we don't have an existing artifact.
             // We will ignore this chunk
+            LOGGER.warn(
+                    "Received append=true for nonexistent artifact index for artifact {} in task {}. Ignoring chunk.",
+                    artifactId, taskId);
         }
 
         task = new Task.Builder(task)
