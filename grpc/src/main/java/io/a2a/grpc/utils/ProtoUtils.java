@@ -182,8 +182,8 @@ public class ProtoUtils {
             builder.setTaskId(event.getTaskId());
             builder.setContextId(event.getContextId());
             builder.setArtifact(artifact(event.getArtifact()));
-            builder.setAppend(event.isAppend());
-            builder.setLastChunk(event.isLastChunk());
+            builder.setAppend(event.isAppend() == null ? false : event.isAppend());
+            builder.setLastChunk(event.isLastChunk() == null ? false : event.isLastChunk());
             if (event.getMetadata() != null) {
                 builder.setMetadata(struct(event.getMetadata()));
             }
@@ -626,8 +626,15 @@ public class ProtoUtils {
         }
 
         public static TaskPushNotificationConfig taskPushNotificationConfig(io.a2a.grpc.TaskPushNotificationConfig config) {
-            PushNotificationConfig pnc = pushNotification(config.getPushNotificationConfig());
-            return new TaskPushNotificationConfig(config.getName(), pnc);
+            String name = config.getName(); // "tasks/{id}/pushNotificationConfigs/{push_id}"
+            String[] parts = name.split("/");
+            if (parts.length < 4) {
+                throw new IllegalArgumentException("Invalid name format for TaskPushNotificationConfig: " + name);
+            }
+            String taskId = parts[1];
+            String configId = parts[3];
+            PushNotificationConfig pnc = pushNotification(config.getPushNotificationConfig(), configId);
+            return new TaskPushNotificationConfig(taskId, pnc);
         }
 
         public static GetTaskPushNotificationConfigParams getTaskPushNotificationConfigParams(io.a2a.grpc.GetTaskPushNotificationConfigRequest request) {
@@ -688,13 +695,17 @@ public class ProtoUtils {
             );
         }
 
-        private static PushNotificationConfig pushNotification(io.a2a.grpc.PushNotificationConfig pushNotification) {
+        private static PushNotificationConfig pushNotification(io.a2a.grpc.PushNotificationConfig pushNotification, String configId) {
             return new PushNotificationConfig(
                     pushNotification.getUrl(),
                     pushNotification.getToken(),
                     authenticationInfo(pushNotification.getAuthentication()),
-                    pushNotification.getId()
+                    pushNotification.getId().isEmpty() ? configId : pushNotification.getId()
             );
+        }
+
+        private static PushNotificationConfig pushNotification(io.a2a.grpc.PushNotificationConfig pushNotification) {
+            return pushNotification(pushNotification, pushNotification.getId());
         }
 
         private static PushNotificationAuthenticationInfo authenticationInfo(io.a2a.grpc.AuthenticationInfo authenticationInfo) {
