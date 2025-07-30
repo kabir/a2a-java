@@ -486,7 +486,7 @@ public abstract class AbstractA2AServerTest {
         testGetTask(MediaType.APPLICATION_JSON);
     }
     
-
+    
     
     @Test
     public void testSendMessageStreamExistingTaskSuccess() throws Exception {
@@ -504,32 +504,32 @@ public abstract class AbstractA2AServerTest {
             
             // Replace the native HttpClient with A2AClient's sendStreamingMessage method.
             client.sendStreamingMessage(
-                "1",
-                messageSendParams,
-                // eventHandler
-                (streamingEvent) -> {
-                    try {
-                        if (streamingEvent instanceof Message) {
-                            messageResponseRef.set((Message) streamingEvent);
+                    "1",
+                    messageSendParams,
+                    // eventHandler
+                    (streamingEvent) -> {
+                        try {
+                            if (streamingEvent instanceof Message) {
+                                messageResponseRef.set((Message) streamingEvent);
+                                latch.countDown();
+                            }
+                        } catch (Exception e) {
+                            errorRef.set(e);
                             latch.countDown();
                         }
-                    } catch (Exception e) {
-                        errorRef.set(e);
+                    },
+                    // errorHandler
+                    (jsonRpcError) -> {
+                        errorRef.set(new RuntimeException("JSON-RPC Error: " + jsonRpcError.getMessage()));
+                        latch.countDown();
+                    },
+                    // failureHandler
+                    () -> {
+                        if (errorRef.get() == null) {
+                            errorRef.set(new RuntimeException("Stream processing failed"));
+                        }
                         latch.countDown();
                     }
-                },
-                // errorHandler
-                (jsonRpcError) -> {
-                    errorRef.set(new RuntimeException("JSON-RPC Error: " + jsonRpcError.getMessage()));
-                    latch.countDown();
-                },
-                // failureHandler
-                () -> {
-                    if (errorRef.get() == null) {
-                        errorRef.set(new RuntimeException("Stream processing failed"));
-                    }
-                    latch.countDown();
-                }
             );
             
             boolean dataRead = latch.await(20, TimeUnit.SECONDS);
@@ -577,39 +577,39 @@ public abstract class AbstractA2AServerTest {
             
             // Use A2AClient-like resubscribeToTask Method
             client.resubscribeToTask(
-                "1", // requestId
-                taskIdParams,
-                // eventHandler
-                (streamingEvent) -> {
-                    try {
-                        if (streamingEvent instanceof TaskArtifactUpdateEvent) {
-                            if (taskResubscriptionResponseReceived.getCount() == 2) {
-                                firstResponse.set((TaskArtifactUpdateEvent) streamingEvent);
-                            } else {
-                                secondResponse.set((TaskStatusUpdateEvent) streamingEvent);
+                    "1", // requestId
+                    taskIdParams,
+                    // eventHandler
+                    (streamingEvent) -> {
+                        try {
+                            if (streamingEvent instanceof TaskArtifactUpdateEvent) {
+                                if (taskResubscriptionResponseReceived.getCount() == 2) {
+                                    firstResponse.set((TaskArtifactUpdateEvent) streamingEvent);
+                                } else {
+                                    secondResponse.set((TaskStatusUpdateEvent) streamingEvent);
+                                }
+                                taskResubscriptionResponseReceived.countDown();
                             }
+                        } catch (Exception e) {
+                            errorRef.set(e);
                             taskResubscriptionResponseReceived.countDown();
+                            taskResubscriptionResponseReceived.countDown(); // Make sure the counter is zeroed
                         }
-                    } catch (Exception e) {
-                        errorRef.set(e);
+                    },
+                    // errorHandler
+                    (jsonRpcError) -> {
+                        errorRef.set(new RuntimeException("JSON-RPC Error: " + jsonRpcError.getMessage()));
+                        taskResubscriptionResponseReceived.countDown();
+                        taskResubscriptionResponseReceived.countDown(); // Make sure the counter is zeroed
+                    },
+                    // failureHandler
+                    () -> {
+                        if (errorRef.get() == null) {
+                            errorRef.set(new RuntimeException("Stream processing failed"));
+                        }
                         taskResubscriptionResponseReceived.countDown();
                         taskResubscriptionResponseReceived.countDown(); // Make sure the counter is zeroed
                     }
-                },
-                // errorHandler
-                (jsonRpcError) -> {
-                    errorRef.set(new RuntimeException("JSON-RPC Error: " + jsonRpcError.getMessage()));
-                    taskResubscriptionResponseReceived.countDown();
-                    taskResubscriptionResponseReceived.countDown(); // Make sure the counter is zeroed
-                },
-                // failureHandler
-                () -> {
-                    if (errorRef.get() == null) {
-                        errorRef.set(new RuntimeException("Stream processing failed"));
-                    }
-                    taskResubscriptionResponseReceived.countDown();
-                    taskResubscriptionResponseReceived.countDown(); // Make sure the counter is zeroed
-                }
             );
             
             try {
@@ -675,26 +675,26 @@ public abstract class AbstractA2AServerTest {
         
         // Use A2AClient-like resubscribeToTask Method
         client.resubscribeToTask(
-            "1", // requestId
-            taskIdParams,
-            // eventHandler
-            (streamingEvent) -> {
-                // Do not expect to receive any success events, as the task does not exist
-                errorRef.set(new RuntimeException("Unexpected event received for non-existent task"));
-                latch.countDown();
-            },
-            // errorHandler
-            (jsonRpcError) -> {
-                jsonRpcErrorRef.set(jsonRpcError);
-                latch.countDown();
-            },
-            // failureHandler
-            () -> {
-                if (errorRef.get() == null && jsonRpcErrorRef.get() == null) {
-                    errorRef.set(new RuntimeException("Expected error for non-existent task"));
+                "1", // requestId
+                taskIdParams,
+                // eventHandler
+                (streamingEvent) -> {
+                    // Do not expect to receive any success events, as the task does not exist
+                    errorRef.set(new RuntimeException("Unexpected event received for non-existent task"));
+                    latch.countDown();
+                },
+                // errorHandler
+                (jsonRpcError) -> {
+                    jsonRpcErrorRef.set(jsonRpcError);
+                    latch.countDown();
+                },
+                // failureHandler
+                () -> {
+                    if (errorRef.get() == null && jsonRpcErrorRef.get() == null) {
+                        errorRef.set(new RuntimeException("Expected error for non-existent task"));
+                    }
+                    latch.countDown();
                 }
-                latch.countDown();
-            }
         );
         
         boolean dataRead = latch.await(20, TimeUnit.SECONDS);
@@ -730,32 +730,32 @@ public abstract class AbstractA2AServerTest {
         
         // Using A2AClient's sendStreamingMessage method
         client.sendStreamingMessage(
-            "1", // requestId
-            messageSendParams,
-            // eventHandler
-            (streamingEvent) -> {
-                try {
-                    if (streamingEvent instanceof Message) {
-                        messageResponseRef.set((Message) streamingEvent);
+                "1", // requestId
+                messageSendParams,
+                // eventHandler
+                (streamingEvent) -> {
+                    try {
+                        if (streamingEvent instanceof Message) {
+                            messageResponseRef.set((Message) streamingEvent);
+                            latch.countDown();
+                        }
+                    } catch (Exception e) {
+                        errorRef.set(e);
                         latch.countDown();
                     }
-                } catch (Exception e) {
-                    errorRef.set(e);
+                },
+                // errorHandler
+                (jsonRpcError) -> {
+                    errorRef.set(new RuntimeException("JSON-RPC Error: " + jsonRpcError.getMessage()));
+                    latch.countDown();
+                },
+                // failureHandler
+                () -> {
+                    if (errorRef.get() == null) {
+                        errorRef.set(new RuntimeException("Stream processing failed"));
+                    }
                     latch.countDown();
                 }
-            },
-            // errorHandler
-            (jsonRpcError) -> {
-                errorRef.set(new RuntimeException("JSON-RPC Error: " + jsonRpcError.getMessage()));
-                latch.countDown();
-            },
-            // failureHandler
-            () -> {
-                if (errorRef.get() == null) {
-                    errorRef.set(new RuntimeException("Stream processing failed"));
-                }
-                latch.countDown();
-            }
         );
         
         boolean dataRead = latch.await(20, TimeUnit.SECONDS);
