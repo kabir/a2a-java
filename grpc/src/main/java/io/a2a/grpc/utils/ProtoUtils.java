@@ -614,11 +614,15 @@ public class ProtoUtils {
         }
 
         public static MessageSendParams messageSendParams(io.a2a.grpc.SendMessageRequest request) {
-            return new MessageSendParams(
-                    message(request.getRequest()),
-                    messageSendConfiguration(request.getConfiguration()),
-                    struct(request.getMetadata())
-            );
+            MessageSendParams.Builder builder = new MessageSendParams.Builder();
+            builder.message(message(request.getRequest()));
+            if (request.hasConfiguration()) {
+                builder.configuration(messageSendConfiguration(request.getConfiguration()));
+            }
+            if (request.hasMetadata()) {
+                builder.metadata(struct(request.getMetadata()));
+            }
+            return builder.build();
         }
 
         public static TaskPushNotificationConfig taskPushNotificationConfig(io.a2a.grpc.CreateTaskPushNotificationConfigRequest request) {
