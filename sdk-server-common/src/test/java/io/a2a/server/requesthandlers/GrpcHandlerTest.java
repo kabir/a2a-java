@@ -52,7 +52,6 @@ import io.grpc.stub.StreamObserver;
 import mutiny.zero.ZeroPublisher;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
@@ -502,7 +501,6 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         assertGrpcError(streamRecorder, Status.Code.NOT_FOUND);
     }
 
-    @Disabled
     @Test
     public void testOnResubscribeExistingTaskSuccess() throws Exception {
         GrpcHandler handler = new GrpcHandler(CARD, requestHandler);

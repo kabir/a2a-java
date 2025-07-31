@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
 import com.google.protobuf.Empty;
@@ -212,35 +213,37 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
     private void convertToStreamResponse(Flow.Publisher<StreamingEventKind> publisher,
                                          StreamObserver<io.a2a.grpc.StreamResponse> responseObserver) {
-        publisher.subscribe(new Flow.Subscriber<StreamingEventKind>() {
-            private Flow.Subscription subscription;
+        CompletableFuture.runAsync(() -> {
+            publisher.subscribe(new Flow.Subscriber<StreamingEventKind>() {
+                private Flow.Subscription subscription;
 
-            @Override
-            public void onSubscribe(Flow.Subscription subscription) {
-                this.subscription = subscription;
-                subscription.request(1);
-            }
-
-            @Override
-            public void onNext(StreamingEventKind event) {
-                responseObserver.onNext(ToProto.streamResponse(event));
-                subscription.request(1);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                if (throwable instanceof JSONRPCError jsonrpcError) {
-                    handleError(responseObserver, jsonrpcError);
-                } else {
-                    handleInternalError(responseObserver, throwable);
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    this.subscription = subscription;
+                    subscription.request(1);
                 }
-                responseObserver.onCompleted();
-            }
 
-            @Override
-            public void onComplete() {
-                responseObserver.onCompleted();
-            }
+                @Override
+                public void onNext(StreamingEventKind event) {
+                    responseObserver.onNext(ToProto.streamResponse(event));
+                    subscription.request(1);
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                    if (throwable instanceof JSONRPCError jsonrpcError) {
+                        handleError(responseObserver, jsonrpcError);
+                    } else {
+                        handleInternalError(responseObserver, throwable);
+                    }
+                    responseObserver.onCompleted();
+                }
+
+                @Override
+                public void onComplete() {
+                    responseObserver.onCompleted();
+                }
+            });
         });
     }
 
