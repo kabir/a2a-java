@@ -511,44 +511,73 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
             eventQueue.enqueueEvent(context.getMessage());
         };
 
-        List<StreamResponse> results = new ArrayList<>();
-        List<Throwable> errors = new ArrayList<>();
-        StreamObserver<StreamResponse> streamObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(StreamResponse streamResponse) {
-                results.add(streamResponse);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                errors.add(throwable);
-            }
-
-            @Override
-            public void onCompleted() {
-            }
-        };
-
+        StreamRecorder<StreamResponse> streamRecorder = StreamRecorder.create();
         TaskSubscriptionRequest request = TaskSubscriptionRequest.newBuilder()
                 .setName("tasks/" + MINIMAL_TASK.getId())
                 .build();
-        handler.taskSubscription(request, streamObserver);
+        handler.taskSubscription(request, streamRecorder);
 
         // We need to send some events in order for those to end up in the queue
         SendMessageRequest sendMessageRequest = SendMessageRequest.newBuilder()
                 .setRequest(GRPC_MESSAGE)
                 .build();
-        StreamRecorder<SendMessageResponse> streamRecorder = StreamRecorder.create();
-        handler.sendMessage(sendMessageRequest, streamRecorder);
-        streamRecorder.awaitCompletion(5, TimeUnit.SECONDS);
-        assertNull(streamRecorder.getError());
+        StreamRecorder<StreamResponse> messageRecorder = StreamRecorder.create();
+        handler.sendStreamingMessage(sendMessageRequest, messageRecorder);
+        messageRecorder.awaitCompletion(5, TimeUnit.SECONDS);
+        assertNull(messageRecorder.getError());
 
-        assertNotNull(results);
-        assertEquals(1, results.size());
-        StreamResponse response = results.get(0);
+        streamRecorder.awaitCompletion(5, TimeUnit.SECONDS);
+        List<StreamResponse> result = streamRecorder.getValues();
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        StreamResponse response = result.get(0);
         assertTrue(response.hasMsg());
         assertEquals(GRPC_MESSAGE, response.getMsg());
-        assertTrue(errors.isEmpty());
+        assertNull(streamRecorder.getError());
+    }
+
+    @Test
+    public void testOnResubscribeExistingTaskSuccessMocks() throws Exception {
+        GrpcHandler handler = new GrpcHandler(CARD, requestHandler);
+        taskStore.save(MINIMAL_TASK);
+        queueManager.createOrTap(MINIMAL_TASK.getId());
+
+        List<Event> events = List.of(
+                new TaskArtifactUpdateEvent.Builder()
+                        .taskId(MINIMAL_TASK.getId())
+                        .contextId(MINIMAL_TASK.getContextId())
+                        .artifact(new Artifact.Builder()
+                                .artifactId("11")
+                                .parts(new TextPart("text"))
+                                .build())
+                        .build(),
+                new TaskStatusUpdateEvent.Builder()
+                        .taskId(MINIMAL_TASK.getId())
+                        .contextId(MINIMAL_TASK.getContextId())
+                        .status(new io.a2a.spec.TaskStatus(io.a2a.spec.TaskState.WORKING))
+                        .build());
+
+        StreamRecorder<StreamResponse> streamRecorder = StreamRecorder.create();
+        TaskSubscriptionRequest request = TaskSubscriptionRequest.newBuilder()
+                .setName("tasks/" + MINIMAL_TASK.getId())
+                .build();
+        try (MockedConstruction<EventConsumer> mocked = Mockito.mockConstruction(
+                EventConsumer.class,
+                (mock, context) -> {
+                    Mockito.doReturn(ZeroPublisher.fromIterable(events)).when(mock).consumeAll();})){
+            handler.taskSubscription(request, streamRecorder);
+            streamRecorder.awaitCompletion(5, TimeUnit.SECONDS);
+        }
+        List<StreamResponse> result = streamRecorder.getValues();
+        assertEquals(events.size(), result.size());
+        StreamResponse first = result.get(0);
+        assertTrue(first.hasArtifactUpdate());
+        io.a2a.grpc.TaskArtifactUpdateEvent event = first.getArtifactUpdate();
+        assertEquals("11", event.getArtifact().getArtifactId());
+        assertEquals("text", (event.getArtifact().getParts(0)).getText());
+        StreamResponse second = result.get(1);
+        assertTrue(second.hasStatusUpdate());
+        assertEquals(TaskState.TASK_STATE_WORKING, second.getStatusUpdate().getStatus().getState());
     }
 
     @Test
