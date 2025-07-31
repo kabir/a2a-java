@@ -30,7 +30,6 @@ public class SSEStreamObserver implements StreamObserver<StreamResponse> {
             event = FromProto.task(response.getTask());
         } else if (response.hasStatusUpdate()) {
             event = FromProto.taskStatusUpdateEvent(response.getStatusUpdate());
-            // TODO determine how to handle a final TaskStatusUpdateEvent
         } else if (response.hasArtifactUpdate()) {
             event = FromProto.taskArtifactUpdateEvent(response.getArtifactUpdate());
         } else {

@@ -12,6 +12,7 @@ import java.util.concurrent.Flow;
 
 import com.google.protobuf.Empty;
 import io.a2a.grpc.A2AServiceGrpc;
+import io.a2a.grpc.StreamResponse;
 import io.a2a.server.PublicAgentCard;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.ContentTypeNotSupportedError;
@@ -225,8 +226,13 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
                 @Override
                 public void onNext(StreamingEventKind event) {
-                    responseObserver.onNext(ToProto.streamResponse(event));
-                    subscription.request(1);
+                    StreamResponse response = ToProto.streamResponse(event);
+                    responseObserver.onNext(response);
+                    if (response.hasStatusUpdate() && response.getStatusUpdate().getFinal()) {
+                        responseObserver.onCompleted();
+                    } else {
+                        subscription.request(1);
+                    }
                 }
 
                 @Override
