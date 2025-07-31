@@ -23,7 +23,7 @@ import static io.grpc.MethodDescriptor.generateFullMethodName;
 //@javax.annotation.Generated(
 //    value = "by gRPC proto compiler (version 1.73.0)",
 //    comments = "Source: a2a.proto")
-//@io.grpc.stub.annotations.GrpcGenerated
+@io.grpc.stub.annotations.GrpcGenerated
 public final class A2AServiceGrpc {
 
   private A2AServiceGrpc() {}
