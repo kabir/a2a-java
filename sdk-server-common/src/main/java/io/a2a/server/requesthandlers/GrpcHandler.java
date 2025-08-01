@@ -4,6 +4,7 @@ import static io.a2a.grpc.utils.ProtoUtils.FromProto;
 import static io.a2a.grpc.utils.ProtoUtils.ToProto;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import java.util.List;
@@ -14,6 +15,9 @@ import com.google.protobuf.Empty;
 import io.a2a.grpc.A2AServiceGrpc;
 import io.a2a.grpc.StreamResponse;
 import io.a2a.server.PublicAgentCard;
+import io.a2a.server.ServerCallContext;
+import io.a2a.server.auth.UnauthenticatedUser;
+import io.a2a.server.auth.User;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
@@ -40,11 +44,21 @@ import io.a2a.spec.UnsupportedOperationError;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @ApplicationScoped
 public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
     private AgentCard agentCard;
     private RequestHandler requestHandler;
+
+    // Hook so testing can wait until streaming subscriptions are established.
+    // Without this we get intermittent failures
+    private static volatile Runnable streamingSubscribedRunnable;
+
+    @Inject
+    Instance<CallContextFactory> callContextFactory;
 
     protected GrpcHandler() {
     }
@@ -59,8 +73,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     public void sendMessage(io.a2a.grpc.SendMessageRequest request,
                            StreamObserver<io.a2a.grpc.SendMessageResponse> responseObserver) {
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             MessageSendParams params = FromProto.messageSendParams(request);
-            EventKind taskOrMessage = requestHandler.onMessageSend(params);
+            EventKind taskOrMessage = requestHandler.onMessageSend(params, context);
             io.a2a.grpc.SendMessageResponse response = ToProto.taskOrMessage(taskOrMessage);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -75,8 +90,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     public void getTask(io.a2a.grpc.GetTaskRequest request,
                        StreamObserver<io.a2a.grpc.Task> responseObserver) {
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             TaskQueryParams params = FromProto.taskQueryParams(request);
-            Task task = requestHandler.onGetTask(params);
+            Task task = requestHandler.onGetTask(params, context);
             if (task != null) {
                 responseObserver.onNext(ToProto.task(task));
                 responseObserver.onCompleted();
@@ -94,8 +110,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     public void cancelTask(io.a2a.grpc.CancelTaskRequest request,
                           StreamObserver<io.a2a.grpc.Task> responseObserver) {
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             TaskIdParams params = FromProto.taskIdParams(request);
-            Task task = requestHandler.onCancelTask(params);
+            Task task = requestHandler.onCancelTask(params, context);
             if (task != null) {
                 responseObserver.onNext(ToProto.task(task));
                 responseObserver.onCompleted();
@@ -118,8 +135,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         }
 
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             TaskPushNotificationConfig config = FromProto.taskPushNotificationConfig(request);
-            TaskPushNotificationConfig responseConfig = requestHandler.onSetTaskPushNotificationConfig(config);
+            TaskPushNotificationConfig responseConfig = requestHandler.onSetTaskPushNotificationConfig(config, context);
             responseObserver.onNext(ToProto.taskPushNotificationConfig(responseConfig));
             responseObserver.onCompleted();
         } catch (JSONRPCError e) {
@@ -138,8 +156,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         }
 
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             GetTaskPushNotificationConfigParams params = FromProto.getTaskPushNotificationConfigParams(request);
-            TaskPushNotificationConfig config = requestHandler.onGetTaskPushNotificationConfig(params);
+            TaskPushNotificationConfig config = requestHandler.onGetTaskPushNotificationConfig(params, context);
             responseObserver.onNext(ToProto.taskPushNotificationConfig(config));
             responseObserver.onCompleted();
         } catch (JSONRPCError e) {
@@ -158,8 +177,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         }
 
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             ListTaskPushNotificationConfigParams params = FromProto.listTaskPushNotificationConfigParams(request);
-            List<TaskPushNotificationConfig> configList = requestHandler.onListTaskPushNotificationConfig(params);
+            List<TaskPushNotificationConfig> configList = requestHandler.onListTaskPushNotificationConfig(params, context);
             io.a2a.grpc.ListTaskPushNotificationConfigResponse.Builder responseBuilder = 
                 io.a2a.grpc.ListTaskPushNotificationConfigResponse.newBuilder();
             for (TaskPushNotificationConfig config : configList) {
@@ -183,8 +203,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         }
 
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             MessageSendParams params = FromProto.messageSendParams(request);
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(params);
+            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(params, context);
             convertToStreamResponse(publisher, responseObserver);
         } catch (JSONRPCError e) {
             handleError(responseObserver, e);
@@ -202,8 +223,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         }
 
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             TaskIdParams params = FromProto.taskIdParams(request);
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onResubscribeToTask(params);
+            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onResubscribeToTask(params, context);
             convertToStreamResponse(publisher, responseObserver);
         } catch (JSONRPCError e) {
             handleError(responseObserver, e);
@@ -222,6 +244,12 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
                 public void onSubscribe(Flow.Subscription subscription) {
                     this.subscription = subscription;
                     subscription.request(1);
+
+                    // Notify tests that we are subscribed
+                    Runnable runnable = streamingSubscribedRunnable;
+                    if (runnable != null) {
+                        runnable.run();
+                    }
                 }
 
                 @Override
@@ -273,8 +301,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         }
 
         try {
+            ServerCallContext context = createCallContext(responseObserver);
             DeleteTaskPushNotificationConfigParams params = FromProto.deleteTaskPushNotificationConfigParams(request);
-            requestHandler.onDeleteTaskPushNotificationConfig(params);
+            requestHandler.onDeleteTaskPushNotificationConfig(params, context);
             // void response
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
@@ -282,6 +311,32 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             handleError(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
+        }
+    }
+
+    private <V> ServerCallContext createCallContext(StreamObserver<V> responseObserver) {
+        if (callContextFactory == null || callContextFactory.isUnsatisfied()) {
+            // Default implementation when no custom CallContextFactory is provided
+            // This handles both CDI injection scenarios and test scenarios where callContextFactory is null
+            User user = UnauthenticatedUser.INSTANCE;
+            Map<String, Object> state = new HashMap<>();
+            
+            // TODO: ARCHITECTURAL LIMITATION - StreamObserver is NOT equivalent to Python's grpc.aio.ServicerContext
+            // In Python: context parameter provides metadata, peer info, cancellation, etc.
+            // In Java: the proper equivalent would be ServerCall<ReqT,RespT> + Metadata from ServerInterceptor
+            // Current compromise: Store StreamObserver for basic functionality, but it lacks rich context
+            // 
+            // FUTURE ENHANCEMENT: Implement ServerInterceptor to capture ServerCall + Metadata,
+            // store in gRPC Context using Context.Key, then access via Context.current().get(key)
+            // This would provide proper equivalence to Python's ServicerContext
+            state.put("grpc_response_observer", responseObserver);
+            
+            return new ServerCallContext(user, state);
+        } else {
+            CallContextFactory factory = callContextFactory.get();
+            // TODO: CallContextFactory interface expects ServerCall + Metadata, but we only have StreamObserver
+            // This is another manifestation of the architectural limitation mentioned above
+            return factory.create(responseObserver); // Fall back to basic create() method for now
         }
     }
 
@@ -330,6 +385,10 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
     private <V> void handleInternalError(StreamObserver<V> responseObserver, Throwable t) {
         handleError(responseObserver, new InternalError(t.getMessage()));
+    }
+
+    public static void setStreamingSubscribedRunnable(Runnable runnable) {
+        streamingSubscribedRunnable = runnable;
     }
 
 }

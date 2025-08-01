@@ -34,6 +34,7 @@ import io.a2a.grpc.TaskPushNotificationConfig;
 import io.a2a.grpc.TaskState;
 import io.a2a.grpc.TaskStatus;
 import io.a2a.grpc.TaskSubscriptionRequest;
+import io.a2a.server.ServerCallContext;
 import io.a2a.server.events.EventConsumer;
 import io.a2a.server.tasks.TaskUpdater;
 import io.a2a.spec.AgentCard;
@@ -605,7 +606,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testOnMessageStreamInternalError() throws Exception {
         DefaultRequestHandler mocked = Mockito.mock(DefaultRequestHandler.class);
-        Mockito.doThrow(new InternalError("Internal Error")).when(mocked).onMessageSendStream(Mockito.any(MessageSendParams.class));
+        Mockito.doThrow(new InternalError("Internal Error")).when(mocked).onMessageSendStream(Mockito.any(MessageSendParams.class), Mockito.any(ServerCallContext.class));
         GrpcHandler handler = new GrpcHandler(CARD, mocked);
         StreamRecorder<StreamResponse> streamRecorder = sendStreamingMessageRequest(handler);
         assertGrpcError(streamRecorder, Status.Code.INTERNAL);
