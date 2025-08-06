@@ -3,18 +3,17 @@ package io.a2a.grpc.handler;
 import static io.a2a.grpc.utils.ProtoUtils.FromProto;
 import static io.a2a.grpc.utils.ProtoUtils.ToProto;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
+
+import jakarta.inject.Inject;
 
 import com.google.protobuf.Empty;
 import io.a2a.grpc.A2AServiceGrpc;
 import io.a2a.grpc.StreamResponse;
-import io.a2a.server.PublicAgentCard;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
@@ -46,10 +45,6 @@ import io.a2a.spec.UnsupportedOperationError;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
-import java.util.HashMap;
-import java.util.Map;
-
-@ApplicationScoped
 public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
     private AgentCard agentCard;
@@ -59,14 +54,11 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     // Without this we get intermittent failures
     private static volatile Runnable streamingSubscribedRunnable;
 
-    @Inject
-    Instance<CallContextFactory> callContextFactory;
-
     protected GrpcHandler() {
     }
 
     @Inject
-    public GrpcHandler(@PublicAgentCard AgentCard agentCard, RequestHandler requestHandler) {
+    public GrpcHandler(AgentCard agentCard, RequestHandler requestHandler) {
         this.agentCard = agentCard;
         this.requestHandler = requestHandler;
     }
@@ -317,7 +309,8 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     }
 
     private <V> ServerCallContext createCallContext(StreamObserver<V> responseObserver) {
-        if (callContextFactory == null || callContextFactory.isUnsatisfied()) {
+        CallContextFactory callContextFactory = getCallContextFactory();
+        if (callContextFactory == null ) {
             // Default implementation when no custom CallContextFactory is provided
             // This handles both CDI injection scenarios and test scenarios where callContextFactory is null
             User user = UnauthenticatedUser.INSTANCE;
@@ -335,10 +328,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             
             return new ServerCallContext(user, state);
         } else {
-            CallContextFactory factory = callContextFactory.get();
             // TODO: CallContextFactory interface expects ServerCall + Metadata, but we only have StreamObserver
             // This is another manifestation of the architectural limitation mentioned above
-            return factory.create(responseObserver); // Fall back to basic create() method for now
+            return callContextFactory.create(responseObserver); // Fall back to basic create() method for now
         }
     }
 
@@ -393,4 +385,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         streamingSubscribedRunnable = runnable;
     }
 
+    protected CallContextFactory getCallContextFactory() {
+        return null;
+    }
 }
