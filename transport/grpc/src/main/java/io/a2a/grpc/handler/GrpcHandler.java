@@ -54,7 +54,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     // Without this we get intermittent failures
     private static volatile Runnable streamingSubscribedRunnable;
 
-    protected GrpcHandler() {
+    public GrpcHandler() {
     }
 
     @Inject
