@@ -3,18 +3,15 @@ package io.a2a.grpc.handler;
 import static io.a2a.grpc.utils.ProtoUtils.FromProto;
 import static io.a2a.grpc.utils.ProtoUtils.ToProto;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
 import com.google.protobuf.Empty;
 import io.a2a.grpc.A2AServiceGrpc;
 import io.a2a.grpc.StreamResponse;
-import io.a2a.server.PublicAgentCard;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
@@ -46,29 +43,14 @@ import io.a2a.spec.UnsupportedOperationError;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
-import java.util.HashMap;
-import java.util.Map;
-
-@ApplicationScoped
-public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
-
-    private AgentCard agentCard;
-    private RequestHandler requestHandler;
+public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
     // Hook so testing can wait until streaming subscriptions are established.
     // Without this we get intermittent failures
     private static volatile Runnable streamingSubscribedRunnable;
 
-    @Inject
-    Instance<CallContextFactory> callContextFactory;
 
-    protected GrpcHandler() {
-    }
-
-    @Inject
-    public GrpcHandler(@PublicAgentCard AgentCard agentCard, RequestHandler requestHandler) {
-        this.agentCard = agentCard;
-        this.requestHandler = requestHandler;
+    public GrpcHandler() {
     }
 
     @Override
@@ -77,7 +59,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             MessageSendParams params = FromProto.messageSendParams(request);
-            EventKind taskOrMessage = requestHandler.onMessageSend(params, context);
+            EventKind taskOrMessage = getRequestHandler().onMessageSend(params, context);
             io.a2a.grpc.SendMessageResponse response = ToProto.taskOrMessage(taskOrMessage);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -94,7 +76,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             TaskQueryParams params = FromProto.taskQueryParams(request);
-            Task task = requestHandler.onGetTask(params, context);
+            Task task = getRequestHandler().onGetTask(params, context);
             if (task != null) {
                 responseObserver.onNext(ToProto.task(task));
                 responseObserver.onCompleted();
@@ -114,7 +96,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             TaskIdParams params = FromProto.taskIdParams(request);
-            Task task = requestHandler.onCancelTask(params, context);
+            Task task = getRequestHandler().onCancelTask(params, context);
             if (task != null) {
                 responseObserver.onNext(ToProto.task(task));
                 responseObserver.onCompleted();
@@ -131,7 +113,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     @Override
     public void createTaskPushNotificationConfig(io.a2a.grpc.CreateTaskPushNotificationConfigRequest request,
                                                StreamObserver<io.a2a.grpc.TaskPushNotificationConfig> responseObserver) {
-        if (! agentCard.capabilities().pushNotifications()) {
+        if (!getAgentCard().capabilities().pushNotifications()) {
             handleError(responseObserver, new PushNotificationNotSupportedError());
             return;
         }
@@ -139,7 +121,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             TaskPushNotificationConfig config = FromProto.taskPushNotificationConfig(request);
-            TaskPushNotificationConfig responseConfig = requestHandler.onSetTaskPushNotificationConfig(config, context);
+            TaskPushNotificationConfig responseConfig = getRequestHandler().onSetTaskPushNotificationConfig(config, context);
             responseObserver.onNext(ToProto.taskPushNotificationConfig(responseConfig));
             responseObserver.onCompleted();
         } catch (JSONRPCError e) {
@@ -152,7 +134,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     @Override
     public void getTaskPushNotificationConfig(io.a2a.grpc.GetTaskPushNotificationConfigRequest request,
                                             StreamObserver<io.a2a.grpc.TaskPushNotificationConfig> responseObserver) {
-        if (! agentCard.capabilities().pushNotifications()) {
+        if (!getAgentCard().capabilities().pushNotifications()) {
             handleError(responseObserver, new PushNotificationNotSupportedError());
             return;
         }
@@ -160,7 +142,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             GetTaskPushNotificationConfigParams params = FromProto.getTaskPushNotificationConfigParams(request);
-            TaskPushNotificationConfig config = requestHandler.onGetTaskPushNotificationConfig(params, context);
+            TaskPushNotificationConfig config = getRequestHandler().onGetTaskPushNotificationConfig(params, context);
             responseObserver.onNext(ToProto.taskPushNotificationConfig(config));
             responseObserver.onCompleted();
         } catch (JSONRPCError e) {
@@ -173,7 +155,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     @Override
     public void listTaskPushNotificationConfig(io.a2a.grpc.ListTaskPushNotificationConfigRequest request,
                                              StreamObserver<io.a2a.grpc.ListTaskPushNotificationConfigResponse> responseObserver) {
-        if (! agentCard.capabilities().pushNotifications()) {
+        if (!getAgentCard().capabilities().pushNotifications()) {
             handleError(responseObserver, new PushNotificationNotSupportedError());
             return;
         }
@@ -181,7 +163,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             ListTaskPushNotificationConfigParams params = FromProto.listTaskPushNotificationConfigParams(request);
-            List<TaskPushNotificationConfig> configList = requestHandler.onListTaskPushNotificationConfig(params, context);
+            List<TaskPushNotificationConfig> configList = getRequestHandler().onListTaskPushNotificationConfig(params, context);
             io.a2a.grpc.ListTaskPushNotificationConfigResponse.Builder responseBuilder = 
                 io.a2a.grpc.ListTaskPushNotificationConfigResponse.newBuilder();
             for (TaskPushNotificationConfig config : configList) {
@@ -199,7 +181,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     @Override
     public void sendStreamingMessage(io.a2a.grpc.SendMessageRequest request,
                                      StreamObserver<io.a2a.grpc.StreamResponse> responseObserver) {
-        if (! agentCard.capabilities().streaming()) {
+        if (!getAgentCard().capabilities().streaming()) {
             handleError(responseObserver, new InvalidRequestError());
             return;
         }
@@ -207,7 +189,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             MessageSendParams params = FromProto.messageSendParams(request);
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(params, context);
+            Flow.Publisher<StreamingEventKind> publisher = getRequestHandler().onMessageSendStream(params, context);
             convertToStreamResponse(publisher, responseObserver);
         } catch (JSONRPCError e) {
             handleError(responseObserver, e);
@@ -219,7 +201,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     @Override
     public void taskSubscription(io.a2a.grpc.TaskSubscriptionRequest request,
                                  StreamObserver<io.a2a.grpc.StreamResponse> responseObserver) {
-        if (! agentCard.capabilities().streaming()) {
+        if (!getAgentCard().capabilities().streaming()) {
             handleError(responseObserver, new InvalidRequestError());
             return;
         }
@@ -227,7 +209,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             TaskIdParams params = FromProto.taskIdParams(request);
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onResubscribeToTask(params, context);
+            Flow.Publisher<StreamingEventKind> publisher = getRequestHandler().onResubscribeToTask(params, context);
             convertToStreamResponse(publisher, responseObserver);
         } catch (JSONRPCError e) {
             handleError(responseObserver, e);
@@ -287,7 +269,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     public void getAgentCard(io.a2a.grpc.GetAgentCardRequest request,
                            StreamObserver<io.a2a.grpc.AgentCard> responseObserver) {
         try {
-            responseObserver.onNext(ToProto.agentCard(agentCard));
+            responseObserver.onNext(ToProto.agentCard(getAgentCard()));
             responseObserver.onCompleted();
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
@@ -297,7 +279,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     @Override
     public void deleteTaskPushNotificationConfig(io.a2a.grpc.DeleteTaskPushNotificationConfigRequest request,
                                                StreamObserver<Empty> responseObserver) {
-        if (! agentCard.capabilities().pushNotifications()) {
+        if (!getAgentCard().capabilities().pushNotifications()) {
             handleError(responseObserver, new PushNotificationNotSupportedError());
             return;
         }
@@ -305,7 +287,7 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             DeleteTaskPushNotificationConfigParams params = FromProto.deleteTaskPushNotificationConfigParams(request);
-            requestHandler.onDeleteTaskPushNotificationConfig(params, context);
+            getRequestHandler().onDeleteTaskPushNotificationConfig(params, context);
             // void response
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
@@ -317,7 +299,8 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     }
 
     private <V> ServerCallContext createCallContext(StreamObserver<V> responseObserver) {
-        if (callContextFactory == null || callContextFactory.isUnsatisfied()) {
+        CallContextFactory factory = getCallContextFactory();
+        if (factory == null) {
             // Default implementation when no custom CallContextFactory is provided
             // This handles both CDI injection scenarios and test scenarios where callContextFactory is null
             User user = UnauthenticatedUser.INSTANCE;
@@ -335,7 +318,6 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             
             return new ServerCallContext(user, state);
         } else {
-            CallContextFactory factory = callContextFactory.get();
             // TODO: CallContextFactory interface expects ServerCall + Metadata, but we only have StreamObserver
             // This is another manifestation of the architectural limitation mentioned above
             return factory.create(responseObserver); // Fall back to basic create() method for now
@@ -393,4 +375,9 @@ public class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         streamingSubscribedRunnable = runnable;
     }
 
+    protected abstract RequestHandler getRequestHandler();
+
+    protected abstract AgentCard getAgentCard();
+
+    protected abstract CallContextFactory getCallContextFactory();
 }

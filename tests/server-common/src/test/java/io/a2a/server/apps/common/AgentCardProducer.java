@@ -18,10 +18,11 @@ public class AgentCardProducer {
     @Produces
     @PublicAgentCard
     public AgentCard agentCard() {
+        String port = System.getProperty("test.agent.card.port", "8081");
         return new AgentCard.Builder()
                 .name("test-card")
                 .description("A test agent card")
-                .url("http://localhost:8081")
+                .url("http://localhost:" + port)
                 .version("1.0")
                 .documentationUrl("http://example.com/docs")
                 .capabilities(new AgentCapabilities.Builder()
