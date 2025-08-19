@@ -18,6 +18,7 @@ import io.a2a.grpc.StreamResponse;
 import io.a2a.spec.APIKeySecurityScheme;
 import io.a2a.spec.AgentCapabilities;
 import io.a2a.spec.AgentCard;
+import io.a2a.spec.AgentCardSignature;
 import io.a2a.spec.AgentExtension;
 import io.a2a.spec.AgentInterface;
 import io.a2a.spec.AgentProvider;
@@ -35,10 +36,13 @@ import io.a2a.spec.FileWithUri;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.HTTPAuthSecurityScheme;
 import io.a2a.spec.ImplicitOAuthFlow;
+import io.a2a.spec.InvalidParamsError;
+import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.Message;
 import io.a2a.spec.MessageSendConfiguration;
 import io.a2a.spec.MessageSendParams;
+import io.a2a.spec.MutualTLSSecurityScheme;
 import io.a2a.spec.OAuth2SecurityScheme;
 import io.a2a.spec.OAuthFlows;
 import io.a2a.spec.OpenIdConnectSecurityScheme;
@@ -124,6 +128,9 @@ public class ProtoUtils {
                 builder.addAllSkills(agentCard.skills().stream().map(ToProto::agentSkill).collect(Collectors.toList()));
             }
             builder.setSupportsAuthenticatedExtendedCard(agentCard.supportsAuthenticatedExtendedCard());
+            if (agentCard.signatures() != null) {
+                builder.addAllSignatures(agentCard.signatures().stream().map(ToProto::agentCardSignature).collect(Collectors.toList()));
+            }
             return builder.build();
         }
 
@@ -395,6 +402,27 @@ public class ProtoUtils {
             if (agentSkill.outputModes() != null) {
                 builder.addAllOutputModes(agentSkill.outputModes());
             }
+            if (agentSkill.security() != null) {
+                builder.addAllSecurity(agentSkill.security().stream().map(s -> {
+                    io.a2a.grpc.Security.Builder securityBuilder = io.a2a.grpc.Security.newBuilder();
+                    s.forEach((key, value) -> {
+                        io.a2a.grpc.StringList.Builder stringListBuilder = io.a2a.grpc.StringList.newBuilder();
+                        stringListBuilder.addAllList(value);
+                        securityBuilder.putSchemes(key, stringListBuilder.build());
+                    });
+                    return securityBuilder.build();
+                }).collect(Collectors.toList()));
+            }
+            return builder.build();
+        }
+
+        private static io.a2a.grpc.AgentCardSignature agentCardSignature(AgentCardSignature agentCardSignature) {
+            io.a2a.grpc.AgentCardSignature.Builder builder = io.a2a.grpc.AgentCardSignature.newBuilder();
+            builder.setProtected(agentCardSignature.protectedHeader());
+            builder.setSignature(agentCardSignature.signature());
+            if (agentCardSignature.header() != null) {
+                builder.setHeader(struct(agentCardSignature.header()));
+            }
             return builder.build();
         }
 
@@ -408,6 +436,8 @@ public class ProtoUtils {
                 builder.setOauth2SecurityScheme(oauthSecurityScheme((OAuth2SecurityScheme) securityScheme));
             } else if (securityScheme instanceof OpenIdConnectSecurityScheme) {
                 builder.setOpenIdConnectSecurityScheme(openIdConnectSecurityScheme((OpenIdConnectSecurityScheme) securityScheme));
+            } else if (securityScheme instanceof MutualTLSSecurityScheme) {
+                builder.setMtlsSecurityScheme(mutualTlsSecurityScheme((MutualTLSSecurityScheme) securityScheme));
             }
             return builder.build();
         }
@@ -447,6 +477,9 @@ public class ProtoUtils {
             }
             if (oauth2SecurityScheme.getFlows() != null) {
                 builder.setFlows(oauthFlows(oauth2SecurityScheme.getFlows()));
+            }
+            if (oauth2SecurityScheme.getOauth2MetadataUrl() != null) {
+                builder.setOauth2MetadataUrl(oauth2SecurityScheme.getOauth2MetadataUrl());
             }
             return builder.build();
         }
@@ -534,6 +567,14 @@ public class ProtoUtils {
             }
             if (openIdConnectSecurityScheme.getOpenIdConnectUrl() != null) {
                 builder.setOpenIdConnectUrl(openIdConnectSecurityScheme.getOpenIdConnectUrl());
+            }
+            return builder.build();
+        }
+
+        private static io.a2a.grpc.MutualTlsSecurityScheme mutualTlsSecurityScheme(MutualTLSSecurityScheme mutualTlsSecurityScheme) {
+            io.a2a.grpc.MutualTlsSecurityScheme.Builder builder = io.a2a.grpc.MutualTlsSecurityScheme.newBuilder();
+            if (mutualTlsSecurityScheme.getDescription() != null) {
+                builder.setDescription(mutualTlsSecurityScheme.getDescription());
             }
             return builder.build();
         }
@@ -751,12 +792,15 @@ public class ProtoUtils {
         }
 
         public static Message message(io.a2a.grpc.Message message) {
+            if (message.getMessageId().isEmpty()) {
+                throw new InvalidParamsError();
+            }
             return new Message(
                     role(message.getRole()),
                     message.getContentList().stream().map(item -> part(item)).collect(Collectors.toList()),
                     message.getMessageId().isEmpty() ? null :  message.getMessageId(),
                     message.getContextId().isEmpty() ? null :  message.getContextId(),
-                    message.getTaskId(),
+                    message.getTaskId().isEmpty() ? null :  message.getTaskId(),
                     null, // referenceTaskIds is not in grpc message
                     struct(message.getMetadata())
             );
@@ -801,7 +845,7 @@ public class ProtoUtils {
             } else if (part.hasData()) {
                 return dataPart(part.getData());
             }
-            return null;
+            throw new InvalidRequestError();
         }
 
         private static TextPart textPart(String text) {
@@ -814,7 +858,7 @@ public class ProtoUtils {
             } else if (filePart.hasFileWithUri()) {
                 return new FilePart(new FileWithUri(filePart.getMimeType(), null, filePart.getFileWithUri()));
             }
-            return null;
+            throw new InvalidRequestError();
         }
 
         private static DataPart dataPart(io.a2a.grpc.DataPart dataPart) {
@@ -839,7 +883,7 @@ public class ProtoUtils {
                 case ROLE_AGENT ->
                     Message.Role.AGENT;
                 default ->
-                    null;
+                    throw new InvalidRequestError();
             };
         }
 
@@ -895,7 +939,7 @@ public class ProtoUtils {
                     return value.getStringValue();
                 case NULL_VALUE:
                 default:
-                    return null;
+                    throw new InvalidRequestError();
             }
         }
     }
