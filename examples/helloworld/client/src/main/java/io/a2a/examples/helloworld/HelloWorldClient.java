@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.a2a.A2A;
+import io.a2a.client.ClientFactory;
 import io.a2a.client.transport.jsonrpc.JSONRPCTransport;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.EventKind;
@@ -46,6 +47,7 @@ public class HelloWorldClient {
                 System.out.println("Public card does not indicate support for an extended card. Using public card.");
             }
 
+            ClientFactory clientFactory = new ClientFactory();
             JSONRPCTransport client = new JSONRPCTransport(finalAgentCard);
             Message message = A2A.toUserMessage(MESSAGE_TEXT); // the message ID will be automatically generated for you
             MessageSendParams params = new MessageSendParams.Builder()

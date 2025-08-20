@@ -28,7 +28,13 @@ public class ClientFactory {
     private final ClientConfig clientConfig;
     private final Map<String, ClientTransportProvider> transportProviderRegistry = new HashMap<>();
 
+    /**
+     * Create a client factory used to generate the appropriate client for the agent.
+     *
+     * @param clientConfig the client config to use
+     */
     public ClientFactory(ClientConfig clientConfig) {
+        checkNotNullParam("clientConfig", clientConfig);
         this.clientConfig = clientConfig;
         ServiceLoader<ClientTransportProvider> loader = ServiceLoader.load(ClientTransportProvider.class);
         for (ClientTransportProvider transport : loader) {

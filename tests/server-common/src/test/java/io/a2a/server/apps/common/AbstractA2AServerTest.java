@@ -149,7 +149,7 @@ public abstract class AbstractA2AServerTest {
     private void testGetTask(String mediaType) throws Exception {
         saveTaskInTaskStore(MINIMAL_TASK);
         try {
-            Task response = getClient().getTask(new TaskQueryParams(MINIMAL_TASK.getId()), null);
+            Task response = getClient().getTask(new TaskQueryParams(MINIMAL_TASK.getId()));
             assertEquals("task-123", response.getId());
             assertEquals("session-xyz", response.getContextId());
             assertEquals(TaskState.SUBMITTED, response.getStatus().state());
@@ -164,7 +164,7 @@ public abstract class AbstractA2AServerTest {
     public void testGetTaskNotFound() throws Exception {
         assertTrue(getTaskFromTaskStore("non-existent-task") == null);
         try {
-            getClient().getTask(new TaskQueryParams("non-existent-task"), null);
+            getClient().getTask(new TaskQueryParams("non-existent-task"));
             fail("Expected A2AClientException for non-existent task");
         } catch (A2AClientException e) {
             // Expected - the client should throw an exception for non-existent tasks
@@ -176,7 +176,7 @@ public abstract class AbstractA2AServerTest {
     public void testCancelTaskSuccess() throws Exception {
         saveTaskInTaskStore(CANCEL_TASK);
         try {
-            Task task = getClient().cancelTask(new TaskIdParams(CANCEL_TASK.getId()), null);
+            Task task = getClient().cancelTask(new TaskIdParams(CANCEL_TASK.getId()));
             assertEquals(CANCEL_TASK.getId(), task.getId());
             assertEquals(CANCEL_TASK.getContextId(), task.getContextId());
             assertEquals(TaskState.CANCELED, task.getStatus().state());
@@ -191,7 +191,7 @@ public abstract class AbstractA2AServerTest {
     public void testCancelTaskNotSupported() throws Exception {
         saveTaskInTaskStore(CANCEL_TASK_NOT_SUPPORTED);
         try {
-            getClient().cancelTask(new TaskIdParams(CANCEL_TASK_NOT_SUPPORTED.getId()), null);
+            getClient().cancelTask(new TaskIdParams(CANCEL_TASK_NOT_SUPPORTED.getId()));
             fail("Expected A2AClientException for unsupported cancel operation");
         } catch (A2AClientException e) {
             // Expected - the client should throw an exception for unsupported operations
@@ -204,7 +204,7 @@ public abstract class AbstractA2AServerTest {
     @Test
     public void testCancelTaskNotFound() {
         try {
-            getClient().cancelTask(new TaskIdParams("non-existent-task"), null);
+            getClient().cancelTask(new TaskIdParams("non-existent-task"));
             fail("Expected A2AClientException for non-existent task");
         } catch (A2AClientException e) {
             // Expected - the client should throw an exception for non-existent tasks
@@ -238,7 +238,7 @@ public abstract class AbstractA2AServerTest {
         };
 
         // testing the non-streaming send message
-        getNonStreamingClient().sendMessage(message, List.of(consumer), null, null);
+        getNonStreamingClient().sendMessage(message, List.of(consumer), null);
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
         assertFalse(wasUnexpectedEvent.get());
@@ -277,7 +277,7 @@ public abstract class AbstractA2AServerTest {
             };
 
             // testing the non-streaming send message
-            getNonStreamingClient().sendMessage(message, List.of(consumer), null, null);
+            getNonStreamingClient().sendMessage(message, List.of(consumer), null);
             assertFalse(wasUnexpectedEvent.get());
             assertTrue(latch.await(10, TimeUnit.SECONDS));
             Message messageResponse = receivedMessage.get();
@@ -301,7 +301,7 @@ public abstract class AbstractA2AServerTest {
             TaskPushNotificationConfig taskPushConfig =
                     new TaskPushNotificationConfig(
                             MINIMAL_TASK.getId(), new PushNotificationConfig.Builder().url("http://example.com").build());
-            TaskPushNotificationConfig config = getClient().setTaskPushNotificationConfiguration(taskPushConfig, null);
+            TaskPushNotificationConfig config = getClient().setTaskPushNotificationConfiguration(taskPushConfig);
             assertEquals(MINIMAL_TASK.getId(), config.taskId());
             assertEquals("http://example.com", config.pushNotificationConfig().url());
         } catch (A2AClientException e) {
@@ -320,11 +320,11 @@ public abstract class AbstractA2AServerTest {
                     new TaskPushNotificationConfig(
                             MINIMAL_TASK.getId(), new PushNotificationConfig.Builder().url("http://example.com").build());
 
-            TaskPushNotificationConfig setResult = getClient().setTaskPushNotificationConfiguration(taskPushConfig, null);
+            TaskPushNotificationConfig setResult = getClient().setTaskPushNotificationConfiguration(taskPushConfig);
             assertNotNull(setResult);
 
             TaskPushNotificationConfig config = getClient().getTaskPushNotificationConfiguration(
-                    new GetTaskPushNotificationConfigParams(MINIMAL_TASK.getId()), null);
+                    new GetTaskPushNotificationConfigParams(MINIMAL_TASK.getId()));
             assertEquals(MINIMAL_TASK.getId(), config.taskId());
             assertEquals("http://example.com", config.pushNotificationConfig().url());
         } catch (A2AClientException e) {
@@ -343,7 +343,7 @@ public abstract class AbstractA2AServerTest {
                 .build();
 
         try {
-            getNonStreamingClient().sendMessage(message, null);
+            getNonStreamingClient().sendMessage(message);
 
             // For non-streaming clients, the error should still be thrown as an exception
             fail("Expected A2AClientException for unsupported send message operation");
@@ -355,7 +355,7 @@ public abstract class AbstractA2AServerTest {
 
     @Test
     public void testGetAgentCard() throws A2AClientException {
-        AgentCard agentCard = getClient().getAgentCard(null);
+        AgentCard agentCard = getClient().getAgentCard();
         assertNotNull(agentCard);
         assertEquals("test-card", agentCard.name());
         assertEquals("A test agent card", agentCard.description());
@@ -402,7 +402,7 @@ public abstract class AbstractA2AServerTest {
             };
 
             // testing the streaming send message
-            getClient().sendMessage(message, List.of(consumer), errorHandler, null);
+            getClient().sendMessage(message, List.of(consumer), errorHandler);
 
             assertTrue(latch.await(10, TimeUnit.SECONDS));
             assertFalse(wasUnexpectedEvent.get());
@@ -469,7 +469,7 @@ public abstract class AbstractA2AServerTest {
                     .whenComplete((unused, throwable) -> subscriptionLatch.countDown());
 
             // Resubscribe to the task with specific consumer and error handler
-            getClient().resubscribe(new TaskIdParams(MINIMAL_TASK.getId()), List.of(consumer), errorHandler, null);
+            getClient().resubscribe(new TaskIdParams(MINIMAL_TASK.getId()), List.of(consumer), errorHandler);
 
             // Wait for subscription to be established
             assertTrue(subscriptionLatch.await(15, TimeUnit.SECONDS));
@@ -535,7 +535,7 @@ public abstract class AbstractA2AServerTest {
         };
 
         try {
-            getClient().resubscribe(new TaskIdParams("non-existent-task"), List.of(), errorHandler, null);
+            getClient().resubscribe(new TaskIdParams("non-existent-task"), List.of(), errorHandler);
 
             // Wait for error to be captured (may come via error handler for streaming)
             boolean errorReceived = errorLatch.await(10, TimeUnit.SECONDS);
@@ -586,7 +586,7 @@ public abstract class AbstractA2AServerTest {
 
         try {
             List<TaskPushNotificationConfig> result = getClient().listTaskPushNotificationConfigurations(
-                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()), null);
+                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()));
             assertEquals(2, result.size());
             assertEquals(new TaskPushNotificationConfig(MINIMAL_TASK.getId(), notificationConfig1), result.get(0));
             assertEquals(new TaskPushNotificationConfig(MINIMAL_TASK.getId(), notificationConfig2), result.get(1));
@@ -616,7 +616,7 @@ public abstract class AbstractA2AServerTest {
         savePushNotificationConfigInStore(MINIMAL_TASK.getId(), notificationConfig2);
         try {
             List<TaskPushNotificationConfig> result = getClient().listTaskPushNotificationConfigurations(
-                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()), null);
+                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()));
             assertEquals(1, result.size());
 
             PushNotificationConfig expectedNotificationConfig = new PushNotificationConfig.Builder()
@@ -637,7 +637,7 @@ public abstract class AbstractA2AServerTest {
     public void testListPushNotificationConfigTaskNotFound() {
         try {
             List<TaskPushNotificationConfig> result = getClient().listTaskPushNotificationConfigurations(
-                    new ListTaskPushNotificationConfigParams("non-existent-task"), null);
+                    new ListTaskPushNotificationConfigParams("non-existent-task"));
             fail();
         } catch (A2AClientException e) {
             assertInstanceOf(TaskNotFoundError.class, e.getCause());
@@ -649,7 +649,7 @@ public abstract class AbstractA2AServerTest {
         saveTaskInTaskStore(MINIMAL_TASK);
         try {
             List<TaskPushNotificationConfig> result = getClient().listTaskPushNotificationConfigurations(
-                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()), null);
+                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()));
             assertEquals(0, result.size());
         } catch (Exception e) {
             fail(e.getMessage());
@@ -684,17 +684,16 @@ public abstract class AbstractA2AServerTest {
         try {
             // specify the config ID to delete
             getClient().deleteTaskPushNotificationConfigurations(
-                    new DeleteTaskPushNotificationConfigParams(MINIMAL_TASK.getId(), "config1"),
-                    null);
+                    new DeleteTaskPushNotificationConfigParams(MINIMAL_TASK.getId(), "config1"));
 
             // should now be 1 left
             List<TaskPushNotificationConfig> result = getClient().listTaskPushNotificationConfigurations(
-                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()), null);
+                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()));
             assertEquals(1, result.size());
 
             // should remain unchanged, this is a different task
             result = getClient().listTaskPushNotificationConfigurations(
-                    new ListTaskPushNotificationConfigParams("task-456"), null);
+                    new ListTaskPushNotificationConfigParams("task-456"));
             assertEquals(1, result.size());
         } catch (Exception e) {
             fail(e.getMessage());
@@ -725,12 +724,11 @@ public abstract class AbstractA2AServerTest {
 
         try {
             getClient().deleteTaskPushNotificationConfigurations(
-                    new DeleteTaskPushNotificationConfigParams(MINIMAL_TASK.getId(), "non-existent-config-id"),
-                    null);
+                    new DeleteTaskPushNotificationConfigParams(MINIMAL_TASK.getId(), "non-existent-config-id"));
 
             // should remain unchanged
             List<TaskPushNotificationConfig> result = getClient().listTaskPushNotificationConfigurations(
-                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()), null);
+                    new ListTaskPushNotificationConfigParams(MINIMAL_TASK.getId()));
             assertEquals(2, result.size());
         } catch (Exception e) {
             fail();
@@ -746,8 +744,7 @@ public abstract class AbstractA2AServerTest {
         try {
             getClient().deleteTaskPushNotificationConfigurations(
                     new DeleteTaskPushNotificationConfigParams("non-existent-task",
-                            "non-existent-config-id"),
-                    null);
+                            "non-existent-config-id"));
             fail();
         } catch (A2AClientException e) {
             assertInstanceOf(TaskNotFoundError.class, e.getCause());
@@ -772,8 +769,7 @@ public abstract class AbstractA2AServerTest {
 
         try {
             getClient().deleteTaskPushNotificationConfigurations(
-                    new DeleteTaskPushNotificationConfigParams(MINIMAL_TASK.getId(), MINIMAL_TASK.getId()),
-                    null);
+                    new DeleteTaskPushNotificationConfigParams(MINIMAL_TASK.getId(), MINIMAL_TASK.getId()));
 
             // should now be 0
             List<TaskPushNotificationConfig> result = getClient().listTaskPushNotificationConfigurations(
