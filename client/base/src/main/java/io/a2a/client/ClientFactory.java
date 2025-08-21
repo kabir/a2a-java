@@ -80,8 +80,10 @@ public class ClientFactory {
     private static LinkedHashMap<String, String> getServerPreferredTransports(AgentCard agentCard) {
         LinkedHashMap<String, String> serverPreferredTransports = new LinkedHashMap<>();
         serverPreferredTransports.put(agentCard.preferredTransport(), agentCard.url());
-        for (AgentInterface agentInterface : agentCard.additionalInterfaces()) {
-            serverPreferredTransports.putIfAbsent(agentInterface.transport(), agentInterface.url());
+        if (agentCard.additionalInterfaces() != null) {
+            for (AgentInterface agentInterface : agentCard.additionalInterfaces()) {
+                serverPreferredTransports.putIfAbsent(agentInterface.transport(), agentInterface.url());
+            }
         }
         return serverPreferredTransports;
     }
