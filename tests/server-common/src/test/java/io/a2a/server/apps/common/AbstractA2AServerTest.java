@@ -791,6 +791,11 @@ public abstract class AbstractA2AServerTest {
             if (cause instanceof EOFException) {
                 return true;
             }
+            if (cause instanceof IOException && cause.getMessage() != null
+                    && cause.getMessage().contains("cancelled")) {
+                // stream is closed upon cancellation
+                return true;
+            }
             cause = cause.getCause();
         }
         return false;
