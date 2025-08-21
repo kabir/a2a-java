@@ -40,16 +40,19 @@ The A2A Java SDK provides a Java server implementation of the [Agent2Agent (A2A)
 - [Add a class that creates an A2A Agent Card](#2-add-a-class-that-creates-an-a2a-agent-card)
 - [Add a class that creates an A2A Agent Executor](#3-add-a-class-that-creates-an-a2a-agent-executor)
 
-### 1. Add the A2A Java SDK Server Maven dependency to your project
+### 1. Add an A2A Java SDK Reference Server dependency to your project
 
-Adding a dependency on an A2A Java SDK Server will provide access to the core classes that make up the A2A specification
-and allow you to run your agentic Java application as an A2A server agent.
+Adding a dependency on an A2A Java SDK Reference Server will provide access to the core classes
+that make up the A2A specification and allow you to run your agentic Java application as an A2A server agent.
 
-The A2A Java SDK provides a [reference A2A server implementation](reference-impl/README.md) based on [Quarkus](https://quarkus.io) for use with our tests and examples. However, the project is designed in such a way that it is trivial to integrate with various Java runtimes.
+The A2A Java SDK provides [reference A2A server implementations](reference) based on [Quarkus](https://quarkus.io) for use with our tests and examples. However, the project is designed in such a way that it is trivial to integrate with various Java runtimes.
 
 [Server Integrations](#server-integrations) contains a list of community contributed integrations of the server with various runtimes. You might be able to use one of these for your target runtime, or you can use them as inspiration to create your own.
 
-To use the reference implementation with the JSONRPC protocol add the following dependency to your project:
+#### Server Transports 
+The A2A Java SDK Reference Server implementations support a couple transports: JSON-RPC 2.0 and gRPC.
+
+To use the reference implementation with the JSON-RPC protocol, add the following dependency to your project:
 
 > *⚠️ The `io.github.a2asdk` `groupId` below is temporary and will likely change for future releases.*
 
@@ -62,7 +65,7 @@ To use the reference implementation with the JSONRPC protocol add the following 
 </dependency>
 ```
 
-To use the reference implementation with the gRPC protocol add the following dependency to your project:
+To use the reference implementation with the gRPC protocol, add the following dependency to your project:
 
 > *⚠️ The `io.github.a2asdk` `groupId` below is temporary and will likely change for future releases.*
 
@@ -74,6 +77,11 @@ To use the reference implementation with the gRPC protocol add the following dep
     <version>${io.a2a.sdk.version}</version>
 </dependency>
 ```
+
+Note that you can add more than one of the above dependencies to your project depending on the transports
+you'd like to support.
+
+Support for the HTTP+JSON/REST transport will be coming soon.
 
 ### 2. Add a class that creates an A2A Agent Card
 
@@ -233,7 +241,7 @@ that you can use to create your A2A `Client`.
 </dependency>
 ```
 
-### 2. Add dependencies on the A2A Java SDK Client Transport(s) you'd like to use
+### 2. Add one or more dependencies on the A2A Java SDK Client Transport(s) you'd like to use
 
 You need to add a dependency on at least one of the following client transport modules:
 
@@ -569,7 +577,8 @@ The following list contains community contributed integrations with various Java
 
 To contribute an integration, please see [CONTRIBUTING_INTEGRATIONS.md](CONTRIBUTING_INTEGRATIONS.md).
 
-* [reference-impl/README.md](reference-impl/README.md) - Reference implementation, based on Quarkus.
+* [reference/jsonrpc/README.md](reference/jsonrpc/README.md) - JSON-RPC 2.0 Reference implementation, based on Quarkus.
+* [reference/grpc/README.md](reference/grpc/README.md) - gRPC Reference implementation, based on Quarkus.
 * https://github.com/wildfly-extras/a2a-java-sdk-server-jakarta - This integration is based on Jakarta EE, and should work in all runtimes supporting the [Jakarta EE Web Profile](https://jakarta.ee/specifications/webprofile/).
 
 
