@@ -752,6 +752,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         // Track if the main thread gets blocked during streaming
         AtomicBoolean eventReceived = new AtomicBoolean(false);
         CountDownLatch streamStarted = new CountDownLatch(1);
+        GrpcHandler.setStreamingSubscribedRunnable(streamStarted::countDown);
         CountDownLatch eventProcessed = new CountDownLatch(1);
         
         agentExecutorExecute = (context, eventQueue) -> {
@@ -788,18 +789,14 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         };
 
         sendStreamingMessageRequest(handler, streamObserver);
-        streamStarted.countDown(); // Simulate subscription started
 
         // The main thread should not be blocked - we should be able to continue immediately
         Assertions.assertTrue(streamStarted.await(100, TimeUnit.MILLISECONDS), 
             "Streaming subscription should start quickly without blocking main thread");
 
         // This proves the main thread is not blocked - we can do other work
-        long startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < 50) {
-            // Simulate main thread doing other work
-            Thread.sleep(1);
-        }
+        // Simulate main thread doing other work
+        Thread.sleep(50);
 
         // Wait for the actual event processing to complete
         Assertions.assertTrue(eventProcessed.await(2, TimeUnit.SECONDS), 

@@ -1397,7 +1397,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler);
 
         // Track if the main thread gets blocked during streaming
-        AtomicBoolean mainThreadBlocked = new AtomicBoolean(false);
+        AtomicBoolean mainThreadBlocked = new AtomicBoolean(true);
         AtomicBoolean eventReceived = new AtomicBoolean(false);
         CountDownLatch streamStarted = new CountDownLatch(1);
         CountDownLatch eventProcessed = new CountDownLatch(1);
@@ -1456,11 +1456,9 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
             "Streaming subscription should start quickly without blocking main thread");
 
         // This proves the main thread is not blocked - we can do other work
-        long startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < 50) {
-            // Simulate main thread doing other work
-            Thread.sleep(1);
-        }
+        // Simulate main thread doing other work
+        Thread.sleep(50);
+
         mainThreadBlocked.set(false); // If we get here, main thread was not blocked
 
         // Wait for the actual event processing to complete
