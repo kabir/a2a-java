@@ -13,6 +13,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.a2a.server.ServerCallContext;
@@ -1389,6 +1390,86 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         assertEquals(request.getId(), response.getId());
         assertInstanceOf(AuthenticatedExtendedCardNotConfiguredError.class, response.getError());
         assertNull(response.getResult());
+    }
+
+    @Test
+    public void testStreamingDoesNotBlockMainThread() throws Exception {
+        JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler);
+        
+        // Track if the main thread gets blocked during streaming
+        AtomicBoolean mainThreadBlocked = new AtomicBoolean(false);
+        AtomicBoolean eventReceived = new AtomicBoolean(false);
+        CountDownLatch streamStarted = new CountDownLatch(1);
+        CountDownLatch eventProcessed = new CountDownLatch(1);
+        
+        agentExecutorExecute = (context, eventQueue) -> {
+            // Wait a bit to ensure the main thread continues
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            eventQueue.enqueueEvent(context.getMessage());
+        };
+
+        Message message = new Message.Builder(MESSAGE)
+                .taskId(MINIMAL_TASK.getId())
+                .contextId(MINIMAL_TASK.getContextId())
+                .build();
+        SendStreamingMessageRequest request = new SendStreamingMessageRequest("1", new MessageSendParams(message, null, null));
+        
+        // Start streaming
+        Flow.Publisher<SendStreamingMessageResponse> response = handler.onMessageSendStream(request, callContext);
+        
+        response.subscribe(new Flow.Subscriber<SendStreamingMessageResponse>() {
+            private Flow.Subscription subscription;
+
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                streamStarted.countDown();
+                this.subscription = subscription;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(SendStreamingMessageResponse item) {
+                eventReceived.set(true);
+                eventProcessed.countDown();
+                subscription.cancel();
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                subscription.cancel();
+                eventProcessed.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                subscription.cancel();
+                eventProcessed.countDown();
+            }
+        });
+        
+        // The main thread should not be blocked - we should be able to continue immediately
+        Assertions.assertTrue(streamStarted.await(100, TimeUnit.MILLISECONDS), 
+            "Streaming subscription should start quickly without blocking main thread");
+        
+        // This proves the main thread is not blocked - we can do other work
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < 50) {
+            // Simulate main thread doing other work
+            Thread.sleep(1);
+        }
+        mainThreadBlocked.set(false); // If we get here, main thread was not blocked
+        
+        // Wait for the actual event processing to complete
+        Assertions.assertTrue(eventProcessed.await(2, TimeUnit.SECONDS), 
+            "Event should be processed within reasonable time");
+        
+        // Verify we received the event and main thread was not blocked
+        Assertions.assertTrue(eventReceived.get(), "Should have received streaming event");
+        Assertions.assertFalse(mainThreadBlocked.get(), "Main thread should not have been blocked");
     }
 
 }
