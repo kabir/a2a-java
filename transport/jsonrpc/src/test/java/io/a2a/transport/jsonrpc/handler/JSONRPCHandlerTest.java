@@ -1395,13 +1395,13 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testStreamingDoesNotBlockMainThread() throws Exception {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler);
-        
+
         // Track if the main thread gets blocked during streaming
         AtomicBoolean mainThreadBlocked = new AtomicBoolean(false);
         AtomicBoolean eventReceived = new AtomicBoolean(false);
         CountDownLatch streamStarted = new CountDownLatch(1);
         CountDownLatch eventProcessed = new CountDownLatch(1);
-        
+
         agentExecutorExecute = (context, eventQueue) -> {
             // Wait a bit to ensure the main thread continues
             try {
@@ -1417,10 +1417,10 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .contextId(MINIMAL_TASK.getContextId())
                 .build();
         SendStreamingMessageRequest request = new SendStreamingMessageRequest("1", new MessageSendParams(message, null, null));
-        
+
         // Start streaming
         Flow.Publisher<SendStreamingMessageResponse> response = handler.onMessageSendStream(request, callContext);
-        
+
         response.subscribe(new Flow.Subscriber<SendStreamingMessageResponse>() {
             private Flow.Subscription subscription;
 
@@ -1450,11 +1450,11 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 eventProcessed.countDown();
             }
         });
-        
+
         // The main thread should not be blocked - we should be able to continue immediately
         Assertions.assertTrue(streamStarted.await(100, TimeUnit.MILLISECONDS), 
             "Streaming subscription should start quickly without blocking main thread");
-        
+
         // This proves the main thread is not blocked - we can do other work
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < 50) {
@@ -1462,11 +1462,11 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
             Thread.sleep(1);
         }
         mainThreadBlocked.set(false); // If we get here, main thread was not blocked
-        
+
         // Wait for the actual event processing to complete
         Assertions.assertTrue(eventProcessed.await(2, TimeUnit.SECONDS), 
             "Event should be processed within reasonable time");
-        
+
         // Verify we received the event and main thread was not blocked
         Assertions.assertTrue(eventReceived.get(), "Should have received streaming event");
         Assertions.assertFalse(mainThreadBlocked.get(), "Main thread should not have been blocked");

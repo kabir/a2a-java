@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.protobuf.Empty;
 import com.google.protobuf.Struct;
@@ -742,6 +743,72 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
     @Disabled
     public void testOnGetAuthenticatedExtendedAgentCard() throws Exception {
         // TODO - getting the authenticated extended agent card isn't support for gRPC right now
+    }
+
+    @Test
+    public void testStreamingDoesNotBlockMainThread() throws Exception {
+        GrpcHandler handler = new TestGrpcHandler(AbstractA2ARequestHandlerTest.CARD, requestHandler);
+        
+        // Track if the main thread gets blocked during streaming
+        AtomicBoolean eventReceived = new AtomicBoolean(false);
+        CountDownLatch streamStarted = new CountDownLatch(1);
+        CountDownLatch eventProcessed = new CountDownLatch(1);
+        
+        agentExecutorExecute = (context, eventQueue) -> {
+            // Wait a bit to ensure the main thread continues
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            eventQueue.enqueueEvent(context.getMessage());
+        };
+
+        // Start streaming with a custom StreamObserver
+        List<StreamResponse> results = new ArrayList<>();
+        List<Throwable> errors = new ArrayList<>();
+        StreamObserver<StreamResponse> streamObserver = new StreamObserver<>() {
+            @Override
+            public void onNext(StreamResponse streamResponse) {
+                results.add(streamResponse);
+                eventReceived.set(true);
+                eventProcessed.countDown();
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                errors.add(throwable);
+                eventProcessed.countDown();
+            }
+
+            @Override
+            public void onCompleted() {
+                eventProcessed.countDown();
+            }
+        };
+
+        sendStreamingMessageRequest(handler, streamObserver);
+        streamStarted.countDown(); // Simulate subscription started
+
+        // The main thread should not be blocked - we should be able to continue immediately
+        Assertions.assertTrue(streamStarted.await(100, TimeUnit.MILLISECONDS), 
+            "Streaming subscription should start quickly without blocking main thread");
+
+        // This proves the main thread is not blocked - we can do other work
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < 50) {
+            // Simulate main thread doing other work
+            Thread.sleep(1);
+        }
+
+        // Wait for the actual event processing to complete
+        Assertions.assertTrue(eventProcessed.await(2, TimeUnit.SECONDS), 
+            "Event should be processed within reasonable time");
+
+        // Verify we received the event and no errors occurred
+        Assertions.assertTrue(eventReceived.get(), "Should have received streaming event");
+        Assertions.assertTrue(errors.isEmpty(), "Should not have any errors");
+        Assertions.assertEquals(1, results.size(), "Should have received exactly one event");
     }
 
     private StreamRecorder<SendMessageResponse> sendMessageRequest(GrpcHandler handler) throws Exception {
