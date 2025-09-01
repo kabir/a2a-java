@@ -9,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -143,7 +144,7 @@ public class RestHandler {
     public HTTPRestResponse sendMessage(String body, ServerCallContext context) {
         io.a2a.grpc.SendMessageRequest.Builder request = io.a2a.grpc.SendMessageRequest.newBuilder();
         parseRequestBody(body, request);
-        EventKind result = requestHandler.onMessageSend(ProtoUtils.FromProto.messageSendParams(request), context);
+        EventKind result = requestHandler.onMessageSend(ProtoUtils.FromProto.messageSendParams(request.build()), context);
         return createSuccessResponse(200, io.a2a.grpc.SendMessageResponse.newBuilder(ProtoUtils.ToProto.taskOrMessage(result)));
     }
 
@@ -154,7 +155,7 @@ public class RestHandler {
         try {
             io.a2a.grpc.SendMessageRequest.Builder request = io.a2a.grpc.SendMessageRequest.newBuilder();
             parseRequestBody(body, request);
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(ProtoUtils.FromProto.messageSendParams(request), context);
+            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(ProtoUtils.FromProto.messageSendParams(request.build()), context);
             return createStreamingResponse(publisher);
         } catch (JSONRPCError e) {
             return new HTTPRestStreamingResponse(ZeroPublisher.fromItems(new HTTPRestErrorResponse(e).toJson()));
@@ -221,7 +222,7 @@ public class RestHandler {
         }
         ListTaskPushNotificationConfigParams params = new ListTaskPushNotificationConfigParams(taskId);
         List<TaskPushNotificationConfig> configs = requestHandler.onListTaskPushNotificationConfig(params, context);
-        return createSuccessResponse(200, io.a2a.grpc.ListTaskPushNotificationConfigResponse.newBuilder(ProtoUtils.ToProto.listTaskPushNotificationConfigResponse(configs)));
+        return createSuccessResponse(200, ProtoUtils.ToProto.listTaskPushNotificationConfigResponse(configs).toBuilder());
     }
 
     public HTTPRestResponse deleteTaskPushNotificationConfiguration(String taskId, String configId, ServerCallContext context) {
@@ -289,43 +290,45 @@ public class RestHandler {
         // We can't use the normal convertingProcessor since that propagates any errors as an error handled
         // via Subscriber.onError() rather than as part of the SendStreamingResponse payload
         return ZeroPublisher.create(createTubeConfig(), tube -> {
-            publisher.subscribe(new Flow.Subscriber<StreamingEventKind>() {
-                Flow.Subscription subscription;
+            CompletableFuture.runAsync(() -> {
+                publisher.subscribe(new Flow.Subscriber<StreamingEventKind>() {
+                    Flow.Subscription subscription;
 
-                @Override
-                public void onSubscribe(Flow.Subscription subscription) {
-                    this.subscription = subscription;
-                    subscription.request(1);
-                }
-
-                @Override
-                public void onNext(StreamingEventKind item) {
-                    try {
-                        String payload = JsonFormat.printer().omittingInsignificantWhitespace().print(ProtoUtils.ToProto.taskOrMessageStream(item));
-                        System.out.println("############## Sending event " + payload);
-                        tube.send(payload);
+                    @Override
+                    public void onSubscribe(Flow.Subscription subscription) {
+                        this.subscription = subscription;
                         subscription.request(1);
-                    } catch (InvalidProtocolBufferException ex) {
-                        onError(ex);
                     }
-                }
 
-                @Override
-                public void onError(Throwable throwable) {
-                    System.out.println("############## Sending error " + throwable);
-                    throwable.printStackTrace();
-                    if (throwable instanceof JSONRPCError jsonrpcError) {
-                        tube.send(new HTTPRestErrorResponse(jsonrpcError).toJson());
-                    } else {
-                        tube.send(new HTTPRestErrorResponse(new InternalError(throwable.getMessage())).toJson());
+                    @Override
+                    public void onNext(StreamingEventKind item) {
+                        try {
+                            String payload = JsonFormat.printer().omittingInsignificantWhitespace().print(ProtoUtils.ToProto.taskOrMessageStream(item));
+                            System.out.println("############## Sending event " + payload);
+                            tube.send(payload);
+                            subscription.request(1);
+                        } catch (InvalidProtocolBufferException ex) {
+                            onError(ex);
+                        }
                     }
-                    onComplete();
-                }
 
-                @Override
-                public void onComplete() {
-                    tube.complete();
-                }
+                    @Override
+                    public void onError(Throwable throwable) {
+                        System.out.println("############## Sending error " + throwable);
+                        throwable.printStackTrace();
+                        if (throwable instanceof JSONRPCError jsonrpcError) {
+                            tube.send(new HTTPRestErrorResponse(jsonrpcError).toJson());
+                        } else {
+                            tube.send(new HTTPRestErrorResponse(new InternalError(throwable.getMessage())).toJson());
+                        }
+                        onComplete();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        tube.complete();
+                    }
+                });
             });
         });
     }

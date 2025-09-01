@@ -2,6 +2,10 @@ package io.a2a.transport.rest.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
@@ -314,5 +318,88 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         // Test 405 for unsupported method
         response = handler.handleRequest("PATCH", "/v1/card", null, callContext);
         Assertions.assertEquals(405, response.getStatusCode());
+    }
+
+    @Test
+    public void testStreamingDoesNotBlockMainThread() throws Exception {
+        RestHandler handler = new RestHandler(CARD, requestHandler);
+
+        // Track if the main thread gets blocked during streaming
+        AtomicBoolean eventReceived = new AtomicBoolean(false);
+        CountDownLatch streamStarted = new CountDownLatch(1);
+        CountDownLatch eventProcessed = new CountDownLatch(1);
+        agentExecutorExecute = (context, eventQueue) -> {
+            // Wait a bit to ensure the main thread continues
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            eventQueue.enqueueEvent(context.getMessage());
+        };
+
+        String requestBody = """
+            {
+              "message": {
+                "role": "ROLE_USER",
+                "content": [
+                  {
+                    "text": "tell me some jokes"
+                  }
+                ],
+                "messageId": "message-1234",
+                "contextId": "context-1234"
+              },
+              "configuration": {
+                "acceptedOutputModes": ["text"]
+              }
+            }""";
+
+        // Start streaming
+        RestHandler.HTTPRestResponse response = handler.handleRequest("POST", "/v1/message:stream", requestBody, callContext);
+
+        Assertions.assertEquals(200, response.getStatusCode());
+        Assertions.assertInstanceOf(RestHandler.HTTPRestStreamingResponse.class, response);
+
+        RestHandler.HTTPRestStreamingResponse streamingResponse = (RestHandler.HTTPRestStreamingResponse) response;
+        Flow.Publisher<String> publisher = streamingResponse.getPublisher();
+        publisher.subscribe(new Flow.Subscriber<String>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                streamStarted.countDown();
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(String item) {
+                eventReceived.set(true);
+                eventProcessed.countDown();
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                eventProcessed.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                eventProcessed.countDown();
+            }
+        });
+
+        // The main thread should not be blocked - we should be able to continue immediately
+        Assertions.assertTrue(streamStarted.await(100, TimeUnit.MILLISECONDS),
+            "Streaming subscription should start quickly without blocking main thread");
+
+        // This proves the main thread is not blocked - we can do other work
+        // Simulate main thread doing other work
+        Thread.sleep(50);
+
+        // Wait for the actual event processing to complete
+        Assertions.assertTrue(eventProcessed.await(2, TimeUnit.SECONDS),
+            "Event should be processed within reasonable time");
+
+        // Verify we received the event
+        Assertions.assertTrue(eventReceived.get(), "Should have received streaming event");
     }
 }
