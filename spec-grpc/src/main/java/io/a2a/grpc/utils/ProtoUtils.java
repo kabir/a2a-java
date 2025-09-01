@@ -889,8 +889,11 @@ public class ProtoUtils {
         }
 
         private static TaskStatus taskStatus(io.a2a.grpc.TaskStatus taskStatus) {
-            return new TaskStatus(
-                    taskState(taskStatus.getState()),
+            TaskState state = taskState(taskStatus.getState());
+            if (state == null) {
+                return null;
+            }
+            return new TaskStatus(state,
                     taskStatus.hasUpdate() ? message(taskStatus.getUpdate()) : null,
                     OffsetDateTime.ofInstant(Instant.ofEpochSecond(taskStatus.getTimestamp().getSeconds(), taskStatus.getTimestamp().getNanos()), ZoneOffset.UTC)
             );
