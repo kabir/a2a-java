@@ -15,6 +15,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.a2a.transport.jsonrpc.handler.JSONRPCHandler;
 import io.a2a.server.ExtendedAgentCard;
 import io.a2a.server.ServerCallContext;
+import io.a2a.server.TransportMetadata;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
 import io.a2a.server.util.async.Internal;
@@ -52,6 +54,7 @@ import io.a2a.spec.SendStreamingMessageRequest;
 import io.a2a.spec.SetTaskPushNotificationConfigRequest;
 import io.a2a.spec.StreamingJSONRPCRequest;
 import io.a2a.spec.TaskResubscriptionRequest;
+import io.a2a.spec.TransportProtocol;
 import io.a2a.spec.UnsupportedOperationError;
 import io.a2a.util.Utils;
 import io.quarkus.vertx.web.Body;
@@ -344,6 +347,5 @@ public class A2AServerRoutes {
             response.end();
         }
     }
-
 }
 

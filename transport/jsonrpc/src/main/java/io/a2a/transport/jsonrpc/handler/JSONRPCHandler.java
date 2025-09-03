@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
+import io.a2a.server.AgentCardValidator;
 import io.a2a.server.ExtendedAgentCard;
 import io.a2a.server.PublicAgentCard;
 import io.a2a.server.ServerCallContext;
@@ -61,12 +62,13 @@ public class JSONRPCHandler {
         this.agentCard = agentCard;
         this.extendedAgentCard = extendedAgentCard;
         this.requestHandler = requestHandler;
+        
+        // Validate transport configuration
+        AgentCardValidator.validateTransportConfiguration(agentCard);
     }
 
     public JSONRPCHandler(@PublicAgentCard AgentCard agentCard, RequestHandler requestHandler) {
-        this.agentCard = agentCard;
-        this.extendedAgentCard = null;
-        this.requestHandler = requestHandler;
+        this(agentCard, null, requestHandler);
     }
 
     public SendMessageResponse onMessageSend(SendMessageRequest request, ServerCallContext context) {
