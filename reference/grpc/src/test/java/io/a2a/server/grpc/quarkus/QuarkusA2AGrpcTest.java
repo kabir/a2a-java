@@ -29,7 +29,9 @@ public class QuarkusA2AGrpcTest extends AbstractA2AServerTest {
 
     @Override
     protected String getTransportUrl() {
-        return "localhost:8081"; // gRPC server runs on port 9001
+        // gRPC server runs on port 8081, which is the same port as the main web server.
+        // This is from the setting on the
+        return "localhost:8081";
     }
 
     @Override
