@@ -1,16 +1,19 @@
 package io.a2a.server.requesthandlers;
 
-import jakarta.enterprise.context.Dependent;
-
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import jakarta.enterprise.context.Dependent;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpResponse;
@@ -36,6 +39,7 @@ import io.a2a.util.Utils;
 import io.quarkus.arc.profile.IfBuildProfile;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 
 public class AbstractA2ARequestHandlerTest {
@@ -53,6 +57,8 @@ public class AbstractA2ARequestHandlerTest {
             .role(Message.Role.AGENT)
             .parts(new TextPart("test message"))
             .build();
+    private static final String PREFERRED_TRANSPORT = "preferred-transport";
+    private static final String A2A_REQUESTHANDLER_TEST_PROPERTIES = "/a2a-requesthandler-test.properties";
 
     protected AgentExecutor executor;
     protected TaskStore taskStore;
@@ -98,7 +104,8 @@ public class AbstractA2ARequestHandlerTest {
     }
 
     protected static AgentCard createAgentCard(boolean streaming, boolean pushNotifications, boolean stateTransitionHistory) {
-        return new AgentCard.Builder()
+        String preferredTransport = loadPreferredTransportFromProperties();
+        AgentCard.Builder builder = new AgentCard.Builder()
                 .name("test-card")
                 .description("A test agent card")
                 .url("http://example.com")
@@ -111,9 +118,27 @@ public class AbstractA2ARequestHandlerTest {
                         .build())
                 .defaultInputModes(new ArrayList<>())
                 .defaultOutputModes(new ArrayList<>())
+                .preferredTransport(preferredTransport)
                 .skills(new ArrayList<>())
-                .protocolVersion("0.2.5")
-                .build();
+                .protocolVersion("0.2.5");
+        return builder.build();
+    }
+
+    private static String loadPreferredTransportFromProperties() {
+        URL url = AbstractA2ARequestHandlerTest.class.getResource(A2A_REQUESTHANDLER_TEST_PROPERTIES);
+        Assertions.assertNotNull(url);
+        Properties properties = new Properties();
+        try {
+            try (InputStream in = url.openStream()){
+                properties.load(in);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        String preferredTransport = properties.getProperty(PREFERRED_TRANSPORT);
+        Assertions.assertNotNull(preferredTransport);
+        return preferredTransport;
     }
 
     protected interface AgentExecutorMethod {

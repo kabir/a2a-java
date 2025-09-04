@@ -14,14 +14,11 @@ import java.util.function.Function;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import jakarta.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.a2a.transport.jsonrpc.handler.JSONRPCHandler;
-import io.a2a.server.ExtendedAgentCard;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
@@ -37,7 +34,6 @@ import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidParamsJsonMappingException;
 import io.a2a.spec.InvalidRequestError;
-import io.a2a.spec.JSONErrorResponse;
 import io.a2a.spec.JSONParseError;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.JSONRPCErrorResponse;
@@ -53,11 +49,11 @@ import io.a2a.spec.SetTaskPushNotificationConfigRequest;
 import io.a2a.spec.StreamingJSONRPCRequest;
 import io.a2a.spec.TaskResubscriptionRequest;
 import io.a2a.spec.UnsupportedOperationError;
+import io.a2a.transport.jsonrpc.handler.JSONRPCHandler;
 import io.a2a.util.Utils;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.ReactiveRoutes;
 import io.quarkus.vertx.web.Route;
-import io.quarkus.vertx.web.RoutingExchange;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -344,6 +340,5 @@ public class A2AServerRoutes {
             response.end();
         }
     }
-
 }
 

@@ -17,6 +17,8 @@ public class AgentCardProducer {
     @Produces
     @PublicAgentCard
     public AgentCard agentCard() {
+        // NOTE: Transport validation will automatically check that transports specified
+        // in this AgentCard match those available on the classpath when handlers are initialized
         return new AgentCard.Builder()
                 .name("Hello World Agent")
                 .description("Just a hello world agent")
