@@ -13,7 +13,7 @@ public interface TransportMetadata {
      * 
      * @return the transport protocol
      */
-    TransportProtocol getTransportProtocol();
+    String getTransportProtocol();
 
     /**
      * Checks if this transport endpoint is currently available/functional.

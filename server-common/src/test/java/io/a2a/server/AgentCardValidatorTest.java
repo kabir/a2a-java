@@ -34,7 +34,7 @@ public class AgentCardValidatorTest {
                 .build();
 
         // Define available transports
-        Set<TransportProtocol> availableTransports = Set.of(TransportProtocol.JSONRPC);
+        Set<String> availableTransports = Set.of(TransportProtocol.JSONRPC.asString());
 
         // Validation should now pass
         assertDoesNotThrow(() -> AgentCardValidator.validateTransportConfiguration(agentCard, availableTransports));
@@ -60,7 +60,8 @@ public class AgentCardValidatorTest {
                 .build();
 
         // Define available transports
-        Set<TransportProtocol> availableTransports = Set.of(TransportProtocol.JSONRPC, TransportProtocol.GRPC);
+        Set<String> availableTransports =
+                Set.of(TransportProtocol.JSONRPC.asString(), TransportProtocol.GRPC.asString());
 
         // Validation should now pass
         assertDoesNotThrow(() -> AgentCardValidator.validateTransportConfiguration(agentCard, availableTransports));
@@ -82,7 +83,8 @@ public class AgentCardValidatorTest {
                 .build();
 
         // Define available transports (more than in AgentCard)
-        Set<TransportProtocol> availableTransports = Set.of(TransportProtocol.JSONRPC, TransportProtocol.GRPC);
+        Set<String> availableTransports =
+                Set.of(TransportProtocol.JSONRPC.asString(), TransportProtocol.GRPC.asString());
 
         // Capture logs
         Logger logger = Logger.getLogger(AgentCardValidator.class.getName());
@@ -115,7 +117,7 @@ public class AgentCardValidatorTest {
                 .build();
 
         // Define available transports (empty)
-        Set<TransportProtocol> availableTransports = Collections.emptySet();
+        Set<String> availableTransports = Collections.emptySet();
 
         // Should throw exception because no transports are available
         IllegalStateException exception = assertThrows(IllegalStateException.class,

@@ -5,8 +5,8 @@ import io.a2a.spec.TransportProtocol;
 
 public class JSONRPCTestTransportMetadata implements TransportMetadata {
     @Override
-    public TransportProtocol getTransportProtocol() {
-        return TransportProtocol.JSONRPC;
+    public String getTransportProtocol() {
+        return TransportProtocol.JSONRPC.asString();
     }
 
 }

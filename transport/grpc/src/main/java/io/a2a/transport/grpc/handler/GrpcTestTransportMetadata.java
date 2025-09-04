@@ -5,8 +5,8 @@ import io.a2a.spec.TransportProtocol;
 
 public class GrpcTestTransportMetadata implements TransportMetadata {
     @Override
-    public TransportProtocol getTransportProtocol() {
-        return TransportProtocol.GRPC;
+    public String getTransportProtocol() {
+        return TransportProtocol.GRPC.asString();
     }
 
 }

@@ -1,15 +1,15 @@
 package io.a2a.server;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
-import io.a2a.spec.TransportProtocol;
 
 /**
  * Validates AgentCard transport configuration against available transport endpoints.
@@ -35,11 +35,11 @@ public class AgentCardValidator {
      * @param agentCard the agent card to validate
      * @param availableTransports the set of available transport protocols
      */
-    static void validateTransportConfiguration(AgentCard agentCard, Set<TransportProtocol> availableTransports) {
-        Set<TransportProtocol> agentCardTransports = getAgentCardTransports(agentCard);
+    static void validateTransportConfiguration(AgentCard agentCard, Set<String> availableTransports) {
+        Set<String> agentCardTransports = getAgentCardTransports(agentCard);
         
         // Check for missing transports (warn if AgentCard doesn't include all available transports)
-        Set<TransportProtocol> missingTransports = availableTransports.stream()
+        Set<String> missingTransports = availableTransports.stream()
                 .filter(transport -> !agentCardTransports.contains(transport))
                 .collect(Collectors.toSet());
         
@@ -54,7 +54,7 @@ public class AgentCardValidator {
         }
         
         // Check for unsupported transports (error if AgentCard specifies unavailable transports)
-        Set<TransportProtocol> unsupportedTransports = agentCardTransports.stream()
+        Set<String> unsupportedTransports = agentCardTransports.stream()
                 .filter(transport -> !availableTransports.contains(transport))
                 .collect(Collectors.toSet());
         
@@ -79,7 +79,7 @@ public class AgentCardValidator {
      * @param agentCard the agent card to analyze
      * @return set of transport protocols specified in the agent card
      */
-    private static Set<TransportProtocol> getAgentCardTransports(AgentCard agentCard) {
+    private static Set<String> getAgentCardTransports(AgentCard agentCard) {
         List<String> transportStrings = new ArrayList<>();
         
         // Add preferred transport
@@ -96,10 +96,7 @@ public class AgentCardValidator {
             }
         }
         
-        return transportStrings.stream()
-                .distinct()
-                .map(TransportProtocol::fromString)
-                .collect(Collectors.toSet());
+        return new HashSet<>(transportStrings);
     }
     
     /**
@@ -108,9 +105,8 @@ public class AgentCardValidator {
      * @param transports the transport protocols to format
      * @return formatted string representation
      */
-    private static String formatTransports(Set<TransportProtocol> transports) {
+    private static String formatTransports(Set<String> transports) {
         return transports.stream()
-                .map(TransportProtocol::asString)
                 .collect(Collectors.joining(", ", "[", "]"));
     }
     
@@ -120,7 +116,7 @@ public class AgentCardValidator {
      * 
      * @return set of available transport protocols
      */
-    private static Set<TransportProtocol> getAvailableTransports() {
+    private static Set<String> getAvailableTransports() {
         return ServiceLoader.load(TransportMetadata.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)

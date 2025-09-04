@@ -5,7 +5,7 @@ import io.a2a.spec.TransportProtocol;
 
 public class QuarkusGrpcTransportMetadata implements TransportMetadata {
     @Override
-    public TransportProtocol getTransportProtocol() {
-        return TransportProtocol.GRPC;
+    public String getTransportProtocol() {
+        return TransportProtocol.GRPC.asString();
     }
 }
