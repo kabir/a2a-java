@@ -55,7 +55,7 @@ jobs:
       - name: Build with Maven, skipping tests
         run: mvn -B install -DskipTests
       - name: Start SUT
-        run: SUT_GRPC_URL=http://localhost:9000 mvn -B quarkus:dev & #SUT_JSONRPC_URL already set
+        run: SUT_GRPC_URL=${{ env.SUT_JSONRPC_URL }} mvn -B quarkus:dev & #SUT_JSONRPC_URL already set
         working-directory: tck
       - name: Wait for SUT to start
         run: |
