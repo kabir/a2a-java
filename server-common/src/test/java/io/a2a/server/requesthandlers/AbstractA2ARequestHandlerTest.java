@@ -1,7 +1,5 @@
 package io.a2a.server.requesthandlers;
 
-import jakarta.enterprise.context.Dependent;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -14,6 +12,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import jakarta.enterprise.context.Dependent;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpResponse;

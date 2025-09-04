@@ -2,16 +2,12 @@ package io.a2a.server.grpc.quarkus;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import jakarta.annotation.PostConstruct;
 
-import io.a2a.transport.grpc.handler.CallContextFactory;
-import io.a2a.transport.grpc.handler.GrpcHandler;
-import io.a2a.server.AgentCardValidator;
 import io.a2a.server.PublicAgentCard;
 import io.a2a.server.requesthandlers.RequestHandler;
-import io.a2a.server.TransportMetadata;
 import io.a2a.spec.AgentCard;
-import io.a2a.spec.TransportProtocol;
+import io.a2a.transport.grpc.handler.CallContextFactory;
+import io.a2a.transport.grpc.handler.GrpcHandler;
 import io.quarkus.grpc.GrpcService;
 
 @GrpcService
