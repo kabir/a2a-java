@@ -38,6 +38,8 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import io.a2a.client.transport.spi.interceptors.ClientCallContext;
+import io.a2a.client.transport.spi.interceptors.HeaderInspectionInterceptor;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentCapabilities;
@@ -250,6 +252,7 @@ public abstract class AbstractA2AServerTest {
                 wasUnexpectedEvent.set(true);
             }
         };
+
 
         // testing the non-streaming send message
         getNonStreamingClient().sendMessage(message, List.of(consumer), null);
