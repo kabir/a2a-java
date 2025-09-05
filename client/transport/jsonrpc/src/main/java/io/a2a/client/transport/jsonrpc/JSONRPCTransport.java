@@ -141,6 +141,15 @@ public class JSONRPCTransport implements ClientTransport {
                     throwable -> sseEventListener.onError(throwable, ref.get()),
                     () -> {
                         // We don't need to do anything special on completion
+                    },
+                    headers -> {
+                        // Notify interceptors about streaming response headers
+                        if (interceptors != null) {
+                            for (ClientCallInterceptor interceptor : interceptors) {
+                                interceptor.onStreamingResponseHeaders(SendStreamingMessageRequest.METHOD,
+                                        headers, agentCard, context);
+                            }
+                        }
                     }));
         } catch (IOException e) {
             throw new A2AClientException("Failed to send streaming message request: " + e, e);
@@ -319,6 +328,15 @@ public class JSONRPCTransport implements ClientTransport {
                     throwable -> sseEventListener.onError(throwable, ref.get()),
                     () -> {
                         // We don't need to do anything special on completion
+                    },
+                    headers -> {
+                        // Notify interceptors about streaming response headers
+                        if (interceptors != null) {
+                            for (ClientCallInterceptor interceptor : interceptors) {
+                                interceptor.onStreamingResponseHeaders(TaskResubscriptionRequest.METHOD, 
+                                        headers, agentCard, context);
+                            }
+                        }
                     }));
         } catch (IOException e) {
             throw new A2AClientException("Failed to send task resubscription request: " + e, e);

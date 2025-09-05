@@ -9,6 +9,7 @@ import java.net.http.HttpResponse.BodyHandler;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
@@ -71,6 +72,16 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                 Consumer<Throwable> errorConsumer,
                 Runnable completeRunnable
         ) {
+            return asyncRequest(request, messageConsumer, errorConsumer, completeRunnable, null);
+        }
+
+        protected CompletableFuture<Void> asyncRequest(
+                HttpRequest request,
+                Consumer<String> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable,
+                Consumer<Map<String, List<String>>> headerConsumer
+        ) {
             Flow.Subscriber<String> subscriber = new Flow.Subscriber<String>() {
                 private Flow.Subscription subscription;
 
@@ -110,6 +121,11 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             // Send the response async, and let the subscriber handle the lines.
             return httpClient.sendAsync(request, bodyHandler)
                     .thenAccept(response -> {
+                        // Capture headers if a consumer is provided
+                        if (headerConsumer != null) {
+                            headerConsumer.accept(response.headers().map());
+                        }
+
                         if (!JdkHttpResponse.success(response)) {
                             subscriber.onError(new IOException("Request failed " + response.statusCode()));
                         }
@@ -144,6 +160,17 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             HttpRequest request = createRequestBuilder(true)
                     .build();
             return super.asyncRequest(request, messageConsumer, errorConsumer, completeRunnable);
+        }
+
+        @Override
+        public CompletableFuture<Void> getAsyncSSE(
+                Consumer<String> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable,
+                Consumer<Map<String, List<String>>> headerConsumer) throws IOException, InterruptedException {
+            HttpRequest request = createRequestBuilder(true)
+                    .build();
+            return super.asyncRequest(request, messageConsumer, errorConsumer, completeRunnable, headerConsumer);
         }
     }
 
@@ -184,6 +211,17 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                     .build();
             return super.asyncRequest(request, messageConsumer, errorConsumer, completeRunnable);
         }
+
+        @Override
+        public CompletableFuture<Void> postAsyncSSE(
+                Consumer<String> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable,
+                Consumer<Map<String, List<String>>> headerConsumer) throws IOException, InterruptedException {
+            HttpRequest request = createRequestBuilder(true)
+                    .build();
+            return super.asyncRequest(request, messageConsumer, errorConsumer, completeRunnable, headerConsumer);
+        }
     }
 
     private record JdkHttpResponse(HttpResponse<String> response) implements A2AHttpResponse {
@@ -205,6 +243,11 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         @Override
         public String body() {
             return response.body();
+        }
+
+        @Override
+        public Map<String, List<String>> headers() {
+            return response.headers().map();
         }
     }
 }

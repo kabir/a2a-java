@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -145,11 +147,21 @@ public class A2ACardResolverTest {
                     public String body() {
                         return body;
                     }
+                    
+                    @Override
+                    public Map<String, List<String>> headers() {
+                        return Map.of();
+                    }
                 };
             }
 
             @Override
             public CompletableFuture<Void> getAsyncSSE(Consumer<String> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable) throws IOException, InterruptedException {
+                return null;
+            }
+
+            @Override
+            public CompletableFuture<Void> getAsyncSSE(Consumer<String> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable, Consumer<Map<String, List<String>>> headerConsumer) throws IOException, InterruptedException {
                 return null;
             }
 

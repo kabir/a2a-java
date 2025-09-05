@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
@@ -59,6 +60,11 @@ public class TestHttpClient implements A2AHttpClient {
                     public String body() {
                         return "";
                     }
+                    
+                    @Override
+                    public Map<String, List<String>> headers() {
+                        return Map.of();
+                    }
                 };
             } finally {
                 latch.countDown();
@@ -67,6 +73,11 @@ public class TestHttpClient implements A2AHttpClient {
 
         @Override
         public CompletableFuture<Void> postAsyncSSE(Consumer<String> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable) throws IOException, InterruptedException {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Void> postAsyncSSE(Consumer<String> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable, Consumer<Map<String, List<String>>> headerConsumer) throws IOException, InterruptedException {
             return null;
         }
 

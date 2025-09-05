@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -188,6 +189,11 @@ public class AbstractA2ARequestHandlerTest {
                         public String body() {
                             return "";
                         }
+                        
+                        @Override
+                        public Map<String, List<String>> headers() {
+                            return Map.of();
+                        }
                     };
                 } finally {
                     latch.countDown();
@@ -196,6 +202,11 @@ public class AbstractA2ARequestHandlerTest {
 
             @Override
             public CompletableFuture<Void> postAsyncSSE(Consumer<String> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable) throws IOException, InterruptedException {
+                return null;
+            }
+
+            @Override
+            public CompletableFuture<Void> postAsyncSSE(Consumer<String> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable, Consumer<Map<String, List<String>>> headerConsumer) throws IOException, InterruptedException {
                 return null;
             }
 
