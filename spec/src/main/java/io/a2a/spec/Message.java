@@ -187,7 +187,8 @@ public final class Message implements EventKind, StreamingEventKind {
         }
 
         public Message build() {
-            return new Message(role, parts, messageId, contextId, taskId, referenceTaskIds, metadata);
+            return new Message(role, parts, messageId == null ? UUID.randomUUID().toString() : messageId,
+                    contextId, taskId, referenceTaskIds, metadata);
         }
     }
 }
