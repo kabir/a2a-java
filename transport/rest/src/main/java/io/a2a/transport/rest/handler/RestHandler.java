@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.a2a.grpc.utils.ProtoUtils;
+import io.a2a.server.AgentCardValidator;
 import io.a2a.server.ExtendedAgentCard;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -64,6 +65,9 @@ public class RestHandler {
         this.agentCard = agentCard;
         this.extendedAgentCard = extendedAgentCard;
         this.requestHandler = requestHandler;
+
+        // Validate transport configuration
+        AgentCardValidator.validateTransportConfiguration(agentCard);
     }
 
     public RestHandler(AgentCard agentCard, RequestHandler requestHandler) {

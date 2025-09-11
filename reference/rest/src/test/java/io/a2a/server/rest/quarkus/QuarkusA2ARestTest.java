@@ -1,6 +1,9 @@
 package io.a2a.server.rest.quarkus;
 
-import static io.a2a.server.apps.common.AbstractA2AServerTest.APPLICATION_JSON;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import io.a2a.client.ClientBuilder;
 import io.a2a.client.transport.rest.RestTransport;
@@ -8,10 +11,6 @@ import io.a2a.client.transport.rest.RestTransportConfigBuilder;
 import io.a2a.server.apps.common.AbstractA2AServerTest;
 import io.a2a.spec.TransportProtocol;
 import io.quarkus.test.junit.QuarkusTest;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
