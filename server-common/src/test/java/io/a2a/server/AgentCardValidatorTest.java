@@ -20,10 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class AgentCardValidatorTest {
 
-    @Test
-    void testValidationWithSimpleAgentCard() {
-        // Create a simple AgentCard (uses default JSONRPC transport)
-        AgentCard agentCard = new AgentCard.Builder()
+    private AgentCard.Builder createTestAgentCardBuilder() {
+        return new AgentCard.Builder()
                 .name("Test Agent")
                 .description("Test Description")
                 .url("http://localhost:9999")
@@ -31,7 +29,13 @@ public class AgentCardValidatorTest {
                 .capabilities(new AgentCapabilities.Builder().build())
                 .defaultInputModes(Collections.singletonList("text"))
                 .defaultOutputModes(Collections.singletonList("text"))
-                .skills(Collections.emptyList())
+                .skills(Collections.emptyList());
+    }
+
+    @Test
+    void testValidationWithSimpleAgentCard() {
+        // Create a simple AgentCard (uses default JSONRPC transport)
+        AgentCard agentCard = createTestAgentCardBuilder()
                 .build();
 
         // Define available transports
@@ -44,15 +48,7 @@ public class AgentCardValidatorTest {
     @Test
     void testValidationWithMultipleTransports() {
         // Create AgentCard that specifies multiple transports
-        AgentCard agentCard = new AgentCard.Builder()
-                .name("Test Agent")
-                .description("Test Description")
-                .url("http://localhost:9999")
-                .version("1.0.0")
-                .capabilities(new AgentCapabilities.Builder().build())
-                .defaultInputModes(Collections.singletonList("text"))
-                .defaultOutputModes(Collections.singletonList("text"))
-                .skills(Collections.emptyList())
+        AgentCard agentCard = createTestAgentCardBuilder()
                 .preferredTransport(TransportProtocol.JSONRPC.asString())
                 .additionalInterfaces(List.of(
                         new AgentInterface(TransportProtocol.JSONRPC.asString(), "http://localhost:9999"),
@@ -71,15 +67,7 @@ public class AgentCardValidatorTest {
     @Test
     void testLogWarningWhenExtraTransportsFound() {
         // Create an AgentCard with only JSONRPC
-        AgentCard agentCard = new AgentCard.Builder()
-                .name("Test Agent")
-                .description("Test Description")
-                .url("http://localhost:9999")
-                .version("1.0.0")
-                .capabilities(new AgentCapabilities.Builder().build())
-                .defaultInputModes(Collections.singletonList("text"))
-                .defaultOutputModes(Collections.singletonList("text"))
-                .skills(Collections.emptyList())
+        AgentCard agentCard = createTestAgentCardBuilder()
                 .preferredTransport(TransportProtocol.JSONRPC.asString())
                 .build();
 
@@ -106,15 +94,7 @@ public class AgentCardValidatorTest {
     @Test
     void testValidationWithUnavailableTransport() {
         // Create a simple AgentCard (uses default JSONRPC transport)
-        AgentCard agentCard = new AgentCard.Builder()
-                .name("Test Agent")
-                .description("Test Description")
-                .url("http://localhost:9999")
-                .version("1.0.0")
-                .capabilities(new AgentCapabilities.Builder().build())
-                .defaultInputModes(Collections.singletonList("text"))
-                .defaultOutputModes(Collections.singletonList("text"))
-                .skills(Collections.emptyList())
+        AgentCard agentCard = createTestAgentCardBuilder()
                 .build();
 
         // Define available transports (empty)
@@ -130,15 +110,7 @@ public class AgentCardValidatorTest {
     void testGlobalSkipProperty() {
         System.setProperty(AgentCardValidator.SKIP_PROPERTY, "true");
         try {
-            AgentCard agentCard = new AgentCard.Builder()
-                    .name("Test Agent")
-                    .description("Test Description")
-                    .url("http://localhost:9999")
-                    .version("1.0.0")
-                    .capabilities(new AgentCapabilities.Builder().build())
-                    .defaultInputModes(Collections.singletonList("text"))
-                    .defaultOutputModes(Collections.singletonList("text"))
-                    .skills(Collections.emptyList())
+            AgentCard agentCard = createTestAgentCardBuilder()
                     .build();
 
             Set<String> availableTransports = Collections.emptySet();
@@ -153,15 +125,7 @@ public class AgentCardValidatorTest {
     void testSkipJsonrpcProperty() {
         System.setProperty(AgentCardValidator.SKIP_JSONRPC_PROPERTY, "true");
         try {
-            AgentCard agentCard = new AgentCard.Builder()
-                    .name("Test Agent")
-                    .description("Test Description")
-                    .url("http://localhost:9999")
-                    .version("1.0.0")
-                    .capabilities(new AgentCapabilities.Builder().build())
-                    .defaultInputModes(Collections.singletonList("text"))
-                    .defaultOutputModes(Collections.singletonList("text"))
-                    .skills(Collections.emptyList())
+            AgentCard agentCard = createTestAgentCardBuilder()
                     .preferredTransport(TransportProtocol.JSONRPC.asString())
                     .build();
 
@@ -177,15 +141,7 @@ public class AgentCardValidatorTest {
     void testSkipGrpcProperty() {
         System.setProperty(AgentCardValidator.SKIP_GRPC_PROPERTY, "true");
         try {
-            AgentCard agentCard = new AgentCard.Builder()
-                    .name("Test Agent")
-                    .description("Test Description")
-                    .url("http://localhost:9999")
-                    .version("1.0.0")
-                    .capabilities(new AgentCapabilities.Builder().build())
-                    .defaultInputModes(Collections.singletonList("text"))
-                    .defaultOutputModes(Collections.singletonList("text"))
-                    .skills(Collections.emptyList())
+            AgentCard agentCard = createTestAgentCardBuilder()
                     .preferredTransport(TransportProtocol.GRPC.asString())
                     .build();
 
@@ -201,15 +157,7 @@ public class AgentCardValidatorTest {
     void testSkipRestProperty() {
         System.setProperty(AgentCardValidator.SKIP_REST_PROPERTY, "true");
         try {
-            AgentCard agentCard = new AgentCard.Builder()
-                    .name("Test Agent")
-                    .description("Test Description")
-                    .url("http://localhost:9999")
-                    .version("1.0.0")
-                    .capabilities(new AgentCapabilities.Builder().build())
-                    .defaultInputModes(Collections.singletonList("text"))
-                    .defaultOutputModes(Collections.singletonList("text"))
-                    .skills(Collections.emptyList())
+            AgentCard agentCard = createTestAgentCardBuilder()
                     .additionalInterfaces(List.of(
                             new AgentInterface(TransportProtocol.HTTP_JSON.asString(), "http://localhost:8080")
                     ))
@@ -227,15 +175,7 @@ public class AgentCardValidatorTest {
     void testMultipleTransportsWithMixedSkipProperties() {
         System.setProperty(AgentCardValidator.SKIP_GRPC_PROPERTY, "true");
         try {
-            AgentCard agentCard = new AgentCard.Builder()
-                    .name("Test Agent")
-                    .description("Test Description")
-                    .url("http://localhost:9999")
-                    .version("1.0.0")
-                    .capabilities(new AgentCapabilities.Builder().build())
-                    .defaultInputModes(Collections.singletonList("text"))
-                    .defaultOutputModes(Collections.singletonList("text"))
-                    .skills(Collections.emptyList())
+            AgentCard agentCard = createTestAgentCardBuilder()
                     .preferredTransport(TransportProtocol.JSONRPC.asString())
                     .additionalInterfaces(List.of(
                             new AgentInterface(TransportProtocol.GRPC.asString(), "http://localhost:9000"),
@@ -257,15 +197,7 @@ public class AgentCardValidatorTest {
     void testSkipPropertiesFilterWarnings() {
         System.setProperty(AgentCardValidator.SKIP_GRPC_PROPERTY, "true");
         try {
-            AgentCard agentCard = new AgentCard.Builder()
-                    .name("Test Agent")
-                    .description("Test Description")
-                    .url("http://localhost:9999")
-                    .version("1.0.0")
-                    .capabilities(new AgentCapabilities.Builder().build())
-                    .defaultInputModes(Collections.singletonList("text"))
-                    .defaultOutputModes(Collections.singletonList("text"))
-                    .skills(Collections.emptyList())
+            AgentCard agentCard = createTestAgentCardBuilder()
                     .preferredTransport(TransportProtocol.JSONRPC.asString())
                     .build();
 
