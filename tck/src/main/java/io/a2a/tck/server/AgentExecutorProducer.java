@@ -11,7 +11,6 @@ import io.a2a.server.tasks.TaskUpdater;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskNotCancelableError;
-import io.a2a.spec.TaskNotFoundError;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
@@ -25,6 +24,9 @@ public class AgentExecutorProducer {
     }
     
     private static class FireAndForgetAgentExecutor implements AgentExecutor {
+        private static final String HANDLED_SUFFIX = "-handled";
+        private static final String DONE_SUFFIX = "-done";
+
         @Override
         public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
             Task task = context.getTask();
@@ -39,14 +41,9 @@ public class AgentExecutorProducer {
                 eventQueue.enqueueEvent(task);
             }
 
-            if (context.getMessage().getMessageId().startsWith("test-resubscribe-message-id")) {
-                int timeoutMs = Integer.parseInt(System.getenv().getOrDefault("RESUBSCRIBE_TIMEOUT_MS", "3000"));
-                System.out.println("====> task id starts with test-resubscribe-message-id, sleeping for " + timeoutMs + " ms");
-                try {
-                    Thread.sleep(timeoutMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+            String messageId = context.getMessage().getMessageId();
+            if (messageId.startsWith("test-resubscribe-message-id")) {
+                waitForAsyncCaller(messageId);
             }
             TaskUpdater updater = new TaskUpdater(context, eventQueue);
 
@@ -92,5 +89,52 @@ public class AgentExecutorProducer {
         public void cleanup() {
             System.out.println("====> shutting down task executor");
          }
+
+        private void waitForAsyncCaller(String messageId) {
+            String asyncFileMarkerDir = System.getenv("ASYNC_FILE_MARKER_DIR");
+            
+            if (asyncFileMarkerDir == null) {
+                int timeoutMs = Integer.parseInt(System.getenv().getOrDefault("RESUBSCRIBE_TIMEOUT_MS", "3000"));
+                System.out.println("====> task id starts with test-resubscribe-message-id, sleeping for " + timeoutMs + " ms");
+                try {
+                    Thread.sleep(timeoutMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            } else {
+                handleAsyncWithFiles(messageId, asyncFileMarkerDir);
+            }
+        }
+        
+        private void handleAsyncWithFiles(String messageId, String asyncFileMarkerDir) {
+            try {
+                java.nio.file.Path markerDir = java.nio.file.Paths.get(asyncFileMarkerDir);
+                
+                java.nio.file.Files.createDirectories(markerDir);
+                
+                java.nio.file.Path handledFile = markerDir.resolve(messageId + HANDLED_SUFFIX);
+                java.nio.file.Files.createFile(handledFile);
+                System.out.println("====> created handled file: " + handledFile);
+                
+                java.nio.file.Path doneFile = markerDir.resolve(messageId + DONE_SUFFIX);
+                System.out.println("====> waiting for done file: " + doneFile);
+                
+                long startTime = System.currentTimeMillis();
+                long timeoutMs = 30000; // 30 seconds
+                
+                while (System.currentTimeMillis() - startTime < timeoutMs) {
+                    if (java.nio.file.Files.exists(doneFile)) {
+                        System.out.println("====> found done file, proceeding");
+                        return;
+                    }
+                    Thread.sleep(100);
+                }
+                
+                System.out.println("====> timeout waiting for done file");
+            } catch (Exception e) {
+                System.err.println("====> error handling async files: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 }
