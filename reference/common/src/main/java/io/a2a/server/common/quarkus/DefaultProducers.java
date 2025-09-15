@@ -1,8 +1,7 @@
 package io.a2a.server.common.quarkus;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Default;
-import jakarta.ws.rs.Produces;
+import jakarta.enterprise.inject.Produces;
 
 import io.a2a.server.PublicAgentCard;
 import io.a2a.server.agentexecution.AgentExecutor;
