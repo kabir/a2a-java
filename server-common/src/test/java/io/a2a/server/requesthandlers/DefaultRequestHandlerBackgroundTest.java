@@ -264,19 +264,9 @@ public class DefaultRequestHandlerBackgroundTest {
         allowSecondEvent.countDown();
 
         // Try resubscription - this should work because queue is still alive
-        try {
-            var resubResult = requestHandler.onResubscribeToTask(resubParams, serverCallContext);
-            // If we get here without exception, resubscription worked
-            assertTrue(true, "Resubscription succeeded");
-        } catch (Exception e) {
-            // Check if it's the expected "no queue" error or something else
-            if (e.getMessage() != null && e.getMessage().contains("queue")) {
-                // This might be expected if queue was cleaned up too early
-                System.out.println("Resubscription failed due to missing queue: " + e.getMessage());
-            } else {
-                throw e;
-            }
-        }
+        var resubResult = requestHandler.onResubscribeToTask(resubParams, serverCallContext);
+        // If we get here without exception, resubscription worked
+        assertTrue(true, "Resubscription succeeded");
 
         // Clean up
         allowFinish.countDown();
