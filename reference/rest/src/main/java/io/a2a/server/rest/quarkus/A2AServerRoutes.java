@@ -34,8 +34,12 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import io.a2a.server.extensions.A2AExtensions;
 
 @Singleton
 public class A2AServerRoutes {
@@ -308,7 +312,11 @@ public class A2AServerRoutes {
             headerNames.forEach(name -> headers.put(name, rc.request().getHeader(name)));
             state.put("headers", headers);
 
-            return new ServerCallContext(user, state);
+            // Extract requested extensions from X-A2A-Extensions header
+            List<String> extensionHeaderValues = rc.request().headers().getAll(A2AExtensions.HTTP_EXTENSION_HEADER);
+            Set<String> requestedExtensions = A2AExtensions.getRequestedExtensions(extensionHeaderValues);
+
+            return new ServerCallContext(user, state, requestedExtensions);
         } else {
             CallContextFactory builder = callContextFactory.get();
             return builder.build(rc);

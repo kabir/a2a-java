@@ -1,0 +1,52 @@
+package io.a2a.server.extensions;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import io.a2a.common.A2AHeaders;
+import io.a2a.spec.AgentCard;
+import io.a2a.spec.AgentExtension;
+
+public class A2AExtensions {
+    /**
+     * HTTP header name for A2A extensions.
+     * @deprecated Use {@link A2AHeaders#X_A2A_EXTENSIONS} instead
+     */
+    @Deprecated
+    public static final String HTTP_EXTENSION_HEADER = A2AHeaders.X_A2A_EXTENSIONS;
+
+    public static Set<String> getRequestedExtensions(List<String> values) {
+        Set<String> extensions = new HashSet<>();
+        if (values == null) {
+            return extensions;
+        }
+        
+        for (String value : values) {
+            if (value != null) {
+                // Split by comma and trim whitespace
+                String[] parts = value.split(",");
+                for (String part : parts) {
+                    String trimmed = part.trim();
+                    if (!trimmed.isEmpty()) {
+                        extensions.add(trimmed);
+                    }
+                }
+            }
+        }
+        
+        return extensions;
+    }
+
+    public static AgentExtension findExtensionByUri(AgentCard card, String uri) {
+        if (card.capabilities() == null || card.capabilities().extensions() == null) {
+            return null;
+        }
+        for (AgentExtension extension : card.capabilities().extensions()) {
+            if (extension.uri().equals(uri)) {
+                return extension;
+            }
+        }
+        return null;
+    }
+}

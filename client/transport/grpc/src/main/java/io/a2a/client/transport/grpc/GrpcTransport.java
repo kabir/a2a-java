@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import io.a2a.client.transport.spi.interceptors.ClientCallContext;
 import io.a2a.client.transport.spi.ClientTransport;
+import io.a2a.common.A2AHeaders;
 import io.a2a.grpc.A2AServiceGrpc;
 import io.a2a.grpc.CancelTaskRequest;
 import io.a2a.grpc.CreateTaskPushNotificationConfigRequest;
@@ -37,8 +38,9 @@ import io.a2a.spec.TaskIdParams;
 import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskQueryParams;
 import io.grpc.Channel;
-
+import io.grpc.Metadata;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 
 public class GrpcTransport implements ClientTransport {
@@ -59,9 +61,12 @@ public class GrpcTransport implements ClientTransport {
         checkNotNullParam("request", request);
 
         SendMessageRequest sendMessageRequest = createGrpcSendMessageRequest(request, context);
+        Metadata metadata = createGrpcMetadata(context);
 
         try {
-            SendMessageResponse response = blockingStub.sendMessage(sendMessageRequest);
+            // Create a stub with metadata attached
+            A2AServiceBlockingV2Stub stubWithMetadata = blockingStub.withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata));
+            SendMessageResponse response = stubWithMetadata.sendMessage(sendMessageRequest);
             if (response.hasMsg()) {
                 return FromProto.message(response.getMsg());
             } else if (response.hasTask()) {
@@ -80,10 +85,13 @@ public class GrpcTransport implements ClientTransport {
         checkNotNullParam("request", request);
         checkNotNullParam("eventConsumer", eventConsumer);
         SendMessageRequest grpcRequest = createGrpcSendMessageRequest(request, context);
+        Metadata metadata = createGrpcMetadata(context);
         StreamObserver<StreamResponse> streamObserver = new EventStreamObserver(eventConsumer, errorConsumer);
 
         try {
-            asyncStub.sendStreamingMessage(grpcRequest, streamObserver);
+            // Create a stub with metadata attached
+            A2AServiceStub stubWithMetadata = asyncStub.withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata));
+            stubWithMetadata.sendStreamingMessage(grpcRequest, streamObserver);
         } catch (StatusRuntimeException e) {
             throw GrpcErrorMapper.mapGrpcError(e, "Failed to send streaming message request: ");
         }
@@ -232,6 +240,28 @@ public class GrpcTransport implements ClientTransport {
             builder.setMetadata(ToProto.struct(messageSendParams.metadata()));
         }
         return builder.build();
+    }
+
+    /**
+     * Creates gRPC metadata from ClientCallContext headers.
+     * Extracts headers like X-A2A-Extensions and sets them as gRPC metadata.
+     */
+    private Metadata createGrpcMetadata(ClientCallContext context) {
+        Metadata metadata = new Metadata();
+        
+        if (context != null && context.getHeaders() != null) {
+            // Set X-A2A-Extensions header if present
+            String extensionsHeader = context.getHeaders().get(A2AHeaders.X_A2A_EXTENSIONS);
+            if (extensionsHeader != null) {
+                Metadata.Key<String> extensionsKey = Metadata.Key.of(A2AHeaders.X_A2A_EXTENSIONS, Metadata.ASCII_STRING_MARSHALLER);
+                metadata.put(extensionsKey, extensionsHeader);
+            }
+            
+            // Add other headers as needed in the future
+            // For now, we only handle X-A2A-Extensions
+        }
+        
+        return metadata;
     }
 
     private String getTaskPushNotificationConfigName(GetTaskPushNotificationConfigParams params) {

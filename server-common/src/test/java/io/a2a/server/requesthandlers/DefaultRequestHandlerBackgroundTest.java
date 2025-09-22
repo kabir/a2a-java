@@ -1,26 +1,17 @@
 package io.a2a.server.requesthandlers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
-import io.a2a.server.agentexecution.SimpleRequestContextBuilder;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.events.InMemoryQueueManager;
@@ -32,6 +23,9 @@ import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TextPart;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * Tests for DefaultRequestHandler background cleanup and task tracking functionality,
@@ -60,7 +54,7 @@ public class DefaultRequestHandlerBackgroundTest {
             Executors.newCachedThreadPool()
         );
 
-        serverCallContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, java.util.Map.of());
+        serverCallContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of());
     }
 
     /**
