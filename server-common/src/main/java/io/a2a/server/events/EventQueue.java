@@ -100,20 +100,31 @@ public abstract class EventQueue implements AutoCloseable {
 
     public abstract void close();
 
+    public abstract void close(boolean immediate);
+
+    public boolean isClosed() {
+        return closed;
+    }
+
     public void doClose() {
+        doClose(false);
+    }
+
+    public void doClose(boolean immediate) {
         synchronized (this) {
             if (closed) {
                 return;
             }
-            LOGGER.debug("Closing {}", this);
+            LOGGER.debug("Closing {} (immediate={})", this, immediate);
             closed = true;
         }
-        // Although the Python implementation drains the queue on closing,
-        // here it makes events go missing
-        // TODO do we actually need to drain it? If we do, we need some mechanism to determine that noone is
-        //  polling any longer and drain it asynchronously once it is all done. That could perhaps be done
-        //  via an EnhancedRunnable.DoneCallback.
-        //queue.drainTo(new ArrayList<>());
+
+        if (immediate) {
+            // Immediate close: clear pending events
+            queue.clear();
+            LOGGER.debug("Cleared queue for immediate close: {}", this);
+        }
+        // For graceful close, let the queue drain naturally through normal consumption
     }
 
     static class MainQueue extends EventQueue {
@@ -151,8 +162,13 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public void close() {
-            doClose();
-            children.forEach(EventQueue::doClose);
+            close(false);
+        }
+
+        @Override
+        public void close(boolean immediate) {
+            doClose(immediate);
+            children.forEach(child -> child.doClose(immediate));
         }
     }
 
@@ -190,6 +206,11 @@ public abstract class EventQueue implements AutoCloseable {
         @Override
         public void close() {
             parent.close();
+        }
+
+        @Override
+        public void close(boolean immediate) {
+            parent.close(immediate);
         }
     }
 }

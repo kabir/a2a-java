@@ -15,6 +15,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.agentexecution.AgentExecutor;
@@ -67,6 +69,7 @@ public class DefaultRequestHandler implements RequestHandler {
     private final Supplier<RequestContext.Builder> requestContextBuilder;
 
     private final ConcurrentMap<String, CompletableFuture<Void>> runningAgents = new ConcurrentHashMap<>();
+    private final Set<CompletableFuture<Void>> backgroundTasks = ConcurrentHashMap.newKeySet();
 
     private final Executor executor;
 
@@ -190,8 +193,8 @@ public class DefaultRequestHandler implements RequestHandler {
 
         } finally {
             if (interrupted) {
-                // TODO Make this async
-                cleanupProducer(taskId);
+                CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId), executor);
+                trackBackgroundTask(cleanupTask);
             } else {
                 cleanupProducer(taskId);
             }
@@ -212,9 +215,9 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null);
 
         EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId.get(), mss.requestContext, queue);
+        EventConsumer consumer = new EventConsumer(queue);
 
         try {
-            EventConsumer consumer = new EventConsumer(queue);
 
             // This callback must be added before we start consuming. Otherwise,
             // any errors thrown by the producerRunnable are not picked up by the consumer
@@ -258,7 +261,8 @@ public class DefaultRequestHandler implements RequestHandler {
 
             return convertingProcessor(eventPublisher, event -> (StreamingEventKind) event);
         } finally {
-            cleanupProducer(taskId.get());
+            CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId.get()), executor);
+            trackBackgroundTask(cleanupTask);
         }
     }
 
@@ -394,6 +398,24 @@ public class DefaultRequestHandler implements RequestHandler {
                 });
         runningAgents.put(taskId, cf);
         return runnable;
+    }
+
+    private void trackBackgroundTask(CompletableFuture<Void> task) {
+        backgroundTasks.add(task);
+
+        task.whenComplete((result, throwable) -> {
+            try {
+                if (throwable != null) {
+                    if (throwable instanceof java.util.concurrent.CancellationException) {
+                        LOGGER.debug("Background task cancelled: {}", task);
+                    } else {
+                        LOGGER.error("Background task failed", throwable);
+                    }
+                }
+            } finally {
+                backgroundTasks.remove(task);
+            }
+        });
     }
 
     private void cleanupProducer(String taskId) {
