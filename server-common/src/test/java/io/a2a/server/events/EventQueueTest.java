@@ -2,6 +2,7 @@ package io.a2a.server.events;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -112,5 +113,76 @@ public class EventQueueTest {
             Event dequeuedEvent = eventQueue.dequeueEvent(100);
             assertSame(event, dequeuedEvent);
         }
+    }
+
+    /**
+     * Test close behavior sets flag and handles graceful close.
+     * Backported from Python test: test_close_sets_flag_and_handles_internal_queue_old_python
+     */
+    @Test
+    public void testCloseGracefulSetsFlag() throws Exception {
+        Event event = Utils.unmarshalFrom(MINIMAL_TASK, Task.TYPE_REFERENCE);
+        eventQueue.enqueueEvent(event);
+
+        eventQueue.close(false); // Graceful close
+        assertTrue(eventQueue.isClosed());
+    }
+
+    /**
+     * Test immediate close behavior.
+     * Backported from Python test behavior
+     */
+    @Test
+    public void testCloseImmediateClearsQueue() throws Exception {
+        Event event = Utils.unmarshalFrom(MINIMAL_TASK, Task.TYPE_REFERENCE);
+        eventQueue.enqueueEvent(event);
+
+        eventQueue.close(true); // Immediate close
+        assertTrue(eventQueue.isClosed());
+
+        // After immediate close, queue should be cleared
+        // Attempting to dequeue should return null or throw exception
+        try {
+            Event dequeuedEvent = eventQueue.dequeueEvent(-1);
+            // If we get here, the event should be null (queue was cleared)
+            assertNull(dequeuedEvent);
+        } catch (EventQueueClosedException e) {
+            // This is also acceptable - queue is closed
+        }
+    }
+
+    /**
+     * Test that close is idempotent.
+     * Backported from Python test: test_close_idempotent
+     */
+    @Test
+    public void testCloseIdempotent() throws Exception {
+        eventQueue.close();
+        assertTrue(eventQueue.isClosed());
+
+        // Calling close again should not cause issues
+        eventQueue.close();
+        assertTrue(eventQueue.isClosed());
+
+        // Test with immediate close as well
+        EventQueue eventQueue2 = EventQueue.create();
+        eventQueue2.close(true);
+        assertTrue(eventQueue2.isClosed());
+
+        eventQueue2.close(true);
+        assertTrue(eventQueue2.isClosed());
+    }
+
+    /**
+     * Test that child queues are closed when parent closes.
+     */
+    @Test
+    public void testCloseChildQueues() throws Exception {
+        EventQueue childQueue = eventQueue.tap();
+        assertTrue(childQueue != null);
+
+        eventQueue.close();
+        assertTrue(eventQueue.isClosed());
+        assertTrue(childQueue.isClosed());
     }
 }
