@@ -6,11 +6,16 @@ import static io.a2a.grpc.utils.ProtoUtils.ToProto;
 import jakarta.enterprise.inject.Vetoed;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+
+import io.grpc.Context;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 import com.google.protobuf.Empty;
 import io.a2a.grpc.A2AServiceGrpc;
@@ -19,6 +24,8 @@ import io.a2a.server.AgentCardValidator;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
+import io.a2a.server.extensions.A2AExtensions;
+import io.a2a.transport.grpc.context.GrpcContextKeys;
 import io.a2a.server.requesthandlers.RequestHandler;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.ContentTypeNotSupportedError;
@@ -54,6 +61,8 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     private static volatile Runnable streamingSubscribedRunnable;
 
     private AtomicBoolean initialised = new AtomicBoolean(false);
+
+    private static final Logger LOGGER = Logger.getLogger(GrpcHandler.class.getName());
 
     public GrpcHandler() {
 
@@ -312,17 +321,48 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             User user = UnauthenticatedUser.INSTANCE;
             Map<String, Object> state = new HashMap<>();
             
-            // TODO: ARCHITECTURAL LIMITATION - StreamObserver is NOT equivalent to Python's grpc.aio.ServicerContext
-            // In Python: context parameter provides metadata, peer info, cancellation, etc.
-            // In Java: the proper equivalent would be ServerCall<ReqT,RespT> + Metadata from ServerInterceptor
-            // Current compromise: Store StreamObserver for basic functionality, but it lacks rich context
-            // 
-            // FUTURE ENHANCEMENT: Implement ServerInterceptor to capture ServerCall + Metadata,
-            // store in gRPC Context using Context.Key, then access via Context.current().get(key)
-            // This would provide proper equivalence to Python's ServicerContext
+            // Enhanced gRPC context access - equivalent to Python's grpc.aio.ServicerContext
+            // The A2AExtensionsInterceptor captures ServerCall + Metadata and stores them in gRPC Context
+            // This provides proper equivalence to Python's ServicerContext for metadata access
+            // Note: StreamObserver is still stored for response handling
             state.put("grpc_response_observer", responseObserver);
             
-            return new ServerCallContext(user, state);
+            // Add rich gRPC context information if available (set by interceptor)
+            // This provides equivalent functionality to Python's grpc.aio.ServicerContext
+            try {
+                Context currentContext = Context.current();
+                if (currentContext != null) {
+                    state.put("grpc_context", currentContext);
+                    
+                    // Add specific context information for easy access
+                    io.grpc.Metadata grpcMetadata = GrpcContextKeys.METADATA_KEY.get(currentContext);
+                    if (grpcMetadata != null) {
+                        state.put("grpc_metadata", grpcMetadata);
+                    }
+                    
+                    String methodName = GrpcContextKeys.METHOD_NAME_KEY.get(currentContext);
+                    if (methodName != null) {
+                        state.put("grpc_method_name", methodName);
+                    }
+                    
+                    String peerInfo = GrpcContextKeys.PEER_INFO_KEY.get(currentContext);
+                    if (peerInfo != null) {
+                        state.put("grpc_peer_info", peerInfo);
+                    }
+                }
+            } catch (Exception e) {
+                // Context not available - continue without it
+                LOGGER.fine(() -> "Error getting data from current context" + e);
+            }
+            
+            // Extract requested extensions from gRPC context (set by interceptor)
+            Set<String> requestedExtensions = new HashSet<>();
+            String extensionsHeader = getExtensionsFromContext();
+            if (extensionsHeader != null) {
+                requestedExtensions = A2AExtensions.getRequestedExtensions(List.of(extensionsHeader));
+            }
+            
+            return new ServerCallContext(user, state, requestedExtensions);
         } else {
             // TODO: CallContextFactory interface expects ServerCall + Metadata, but we only have StreamObserver
             // This is another manifestation of the architectural limitation mentioned above
@@ -418,4 +458,70 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     protected abstract AgentCard getAgentCard();
 
     protected abstract CallContextFactory getCallContextFactory();
+
+    /**
+     * Attempts to extract the X-A2A-Extensions header from the current gRPC context.
+     * This will only work if a server interceptor has been configured to capture
+     * the metadata and store it in the context.
+     * 
+     * @return the extensions header value, or null if not available
+     */
+    private String getExtensionsFromContext() {
+        try {
+            return GrpcContextKeys.EXTENSIONS_HEADER_KEY.get();
+        } catch (Exception e) {
+            // Context not available or key not set
+            return null;
+        }
+    }
+
+    /**
+     * Utility methods for accessing gRPC context information.
+     * These provide equivalent functionality to Python's grpc.aio.ServicerContext methods.
+     */
+    
+    /**
+     * Generic helper method to safely access gRPC context values.
+     * 
+     * @param key the context key to retrieve
+     * @return the context value, or null if not available
+     */
+    private static <T> T getFromContext(Context.Key<T> key) {
+        try {
+            return key.get();
+        } catch (Exception e) {
+            // Context not available or key not set
+            return null;
+        }
+    }
+    
+    /**
+     * Gets the complete gRPC metadata from the current context.
+     * Equivalent to Python's context.invocation_metadata.
+     * 
+     * @return the gRPC Metadata object, or null if not available
+     */
+    protected static io.grpc.Metadata getCurrentMetadata() {
+        return getFromContext(GrpcContextKeys.METADATA_KEY);
+    }
+    
+    /**
+     * Gets the current gRPC method name.
+     * Equivalent to Python's context.method().
+     * 
+     * @return the method name, or null if not available
+     */
+    protected static String getCurrentMethodName() {
+        return getFromContext(GrpcContextKeys.METHOD_NAME_KEY);
+    }
+    
+    /**
+     * Gets the peer information for the current gRPC call.
+     * Equivalent to Python's context.peer().
+     * 
+     * @return the peer information, or null if not available
+     */
+    protected static String getCurrentPeerInfo() {
+        return getFromContext(GrpcContextKeys.PEER_INFO_KEY);
+    }
 }

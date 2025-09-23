@@ -1,6 +1,7 @@
 package io.a2a.transport.rest.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import java.util.HashSet;
 import java.util.Map;
 
 import io.a2a.server.ServerCallContext;
@@ -18,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
 
-    private final ServerCallContext callContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"));
+    private final ServerCallContext callContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
 
     @Test
     public void testGetTaskSuccess() {

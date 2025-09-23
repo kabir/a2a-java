@@ -21,6 +21,10 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>a2a-java-sdk-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>a2a-java-sdk-transport-grpc</artifactId>
         </dependency>
         <dependency>
