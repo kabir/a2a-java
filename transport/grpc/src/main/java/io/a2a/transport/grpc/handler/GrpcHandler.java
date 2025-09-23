@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import io.grpc.Context;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 import com.google.protobuf.Empty;
 import io.a2a.grpc.A2AServiceGrpc;
@@ -60,6 +61,8 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     private static volatile Runnable streamingSubscribedRunnable;
 
     private AtomicBoolean initialised = new AtomicBoolean(false);
+
+    private static final Logger LOGGER = Logger.getLogger(GrpcHandler.class.getName());
 
     public GrpcHandler() {
 
@@ -349,19 +352,14 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
                 }
             } catch (Exception e) {
                 // Context not available - continue without it
+                LOGGER.fine(() -> "Error getting data from current context" + e);
             }
             
             // Extract requested extensions from gRPC context (set by interceptor)
             Set<String> requestedExtensions = new HashSet<>();
-            try {
-                // Try to get extensions from gRPC context (available when interceptor is used)
-                String extensionsHeader = getExtensionsFromContext();
-                if (extensionsHeader != null) {
-                    requestedExtensions = A2AExtensions.getRequestedExtensions(List.of(extensionsHeader));
-                }
-            } catch (Exception e) {
-                // If context access fails (e.g., no interceptor), continue with empty set
-                // This maintains backward compatibility
+            String extensionsHeader = getExtensionsFromContext();
+            if (extensionsHeader != null) {
+                requestedExtensions = A2AExtensions.getRequestedExtensions(List.of(extensionsHeader));
             }
             
             return new ServerCallContext(user, state, requestedExtensions);
@@ -483,17 +481,28 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
      */
     
     /**
+     * Generic helper method to safely access gRPC context values.
+     * 
+     * @param key the context key to retrieve
+     * @return the context value, or null if not available
+     */
+    private static <T> T getFromContext(Context.Key<T> key) {
+        try {
+            return key.get();
+        } catch (Exception e) {
+            // Context not available or key not set
+            return null;
+        }
+    }
+    
+    /**
      * Gets the complete gRPC metadata from the current context.
      * Equivalent to Python's context.invocation_metadata.
      * 
      * @return the gRPC Metadata object, or null if not available
      */
     protected static io.grpc.Metadata getCurrentMetadata() {
-        try {
-            return GrpcContextKeys.METADATA_KEY.get();
-        } catch (Exception e) {
-            return null;
-        }
+        return getFromContext(GrpcContextKeys.METADATA_KEY);
     }
     
     /**
@@ -503,11 +512,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
      * @return the method name, or null if not available
      */
     protected static String getCurrentMethodName() {
-        try {
-            return GrpcContextKeys.METHOD_NAME_KEY.get();
-        } catch (Exception e) {
-            return null;
-        }
+        return getFromContext(GrpcContextKeys.METHOD_NAME_KEY);
     }
     
     /**
@@ -517,10 +522,6 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
      * @return the peer information, or null if not available
      */
     protected static String getCurrentPeerInfo() {
-        try {
-            return GrpcContextKeys.PEER_INFO_KEY.get();
-        } catch (Exception e) {
-            return null;
-        }
+        return getFromContext(GrpcContextKeys.PEER_INFO_KEY);
     }
 }

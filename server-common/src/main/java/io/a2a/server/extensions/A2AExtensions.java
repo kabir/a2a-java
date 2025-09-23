@@ -9,12 +9,6 @@ import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentExtension;
 
 public class A2AExtensions {
-    /**
-     * HTTP header name for A2A extensions.
-     * @deprecated Use {@link A2AHeaders#X_A2A_EXTENSIONS} instead
-     */
-    @Deprecated
-    public static final String HTTP_EXTENSION_HEADER = A2AHeaders.X_A2A_EXTENSIONS;
 
     public static Set<String> getRequestedExtensions(List<String> values) {
         Set<String> extensions = new HashSet<>();

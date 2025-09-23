@@ -12,6 +12,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import io.a2a.common.A2AHeaders;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
@@ -313,7 +314,7 @@ public class A2AServerRoutes {
             state.put("headers", headers);
 
             // Extract requested extensions from X-A2A-Extensions header
-            List<String> extensionHeaderValues = rc.request().headers().getAll(A2AExtensions.HTTP_EXTENSION_HEADER);
+            List<String> extensionHeaderValues = rc.request().headers().getAll(A2AHeaders.X_A2A_EXTENSIONS);
             Set<String> requestedExtensions = A2AExtensions.getRequestedExtensions(extensionHeaderValues);
 
             return new ServerCallContext(user, state, requestedExtensions);

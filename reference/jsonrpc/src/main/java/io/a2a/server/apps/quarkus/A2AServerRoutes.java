@@ -4,7 +4,6 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,10 +20,11 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.a2a.common.A2AHeaders;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
-import io.a2a.server.extensions.A2AExtensions;
 import io.a2a.server.auth.User;
+import io.a2a.server.extensions.A2AExtensions;
 import io.a2a.server.util.async.Internal;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.CancelTaskRequest;
@@ -245,7 +245,7 @@ public class A2AServerRoutes {
             state.put("headers", headers);
 
             // Extract requested extensions from X-A2A-Extensions header
-            List<String> extensionHeaderValues = rc.request().headers().getAll(A2AExtensions.HTTP_EXTENSION_HEADER);
+            List<String> extensionHeaderValues = rc.request().headers().getAll(A2AHeaders.X_A2A_EXTENSIONS);
             Set<String> requestedExtensions = A2AExtensions.getRequestedExtensions(extensionHeaderValues);
 
             return new ServerCallContext(user, state, requestedExtensions);
