@@ -638,5 +638,6 @@ To contribute an integration, please see [CONTRIBUTING_INTEGRATIONS.md](CONTRIBU
 * [reference/grpc/README.md](reference/grpc/README.md) - gRPC Reference implementation, based on Quarkus.
 * https://github.com/wildfly-extras/a2a-java-sdk-server-jakarta - This integration is based on Jakarta EE, and should work in all runtimes supporting the [Jakarta EE Web Profile](https://jakarta.ee/specifications/webprofile/).
 
-
+# Extras
+See the [`extras`](./extras/README.md) folder for extra functionality not provided by the SDK itself!
 
