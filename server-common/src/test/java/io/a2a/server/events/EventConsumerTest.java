@@ -57,7 +57,7 @@ public class EventConsumerTest {
 
     @BeforeEach
     public void init() {
-        eventQueue = EventQueue.create();
+        eventQueue = EventQueue.builder().build();
         eventConsumer = new EventConsumer(eventQueue);
     }
 
@@ -343,7 +343,7 @@ public class EventConsumerTest {
 
     @Test
     public void testConsumeAllStopsOnQueueClosed() throws Exception {
-        EventQueue queue = EventQueue.create();
+        EventQueue queue = EventQueue.builder().build();
         EventConsumer consumer = new EventConsumer(queue);
 
         // Close the queue immediately
@@ -389,7 +389,7 @@ public class EventConsumerTest {
 
     @Test
     public void testConsumeAllHandlesQueueClosedException() throws Exception {
-        EventQueue queue = EventQueue.create();
+        EventQueue queue = EventQueue.builder().build();
         EventConsumer consumer = new EventConsumer(queue);
 
         // Add a message event (which will complete the stream)

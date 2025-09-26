@@ -51,35 +51,35 @@ public class EventQueueTest {
 
     @BeforeEach
     public void init() {
-        eventQueue = EventQueue.create();
+        eventQueue = EventQueue.builder().build();
 
     }
 
     @Test
     public void testConstructorDefaultQueueSize() {
-        EventQueue queue = EventQueue.create();
+        EventQueue queue = EventQueue.builder().build();
         assertEquals(EventQueue.DEFAULT_QUEUE_SIZE, queue.getQueueSize());
     }
 
     @Test
     public void testConstructorCustomQueueSize() {
         int customSize = 500;
-        EventQueue queue = EventQueue.create(customSize);
+        EventQueue queue = EventQueue.builder().queueSize(customSize).build();
         assertEquals(customSize, queue.getQueueSize());
     }
 
     @Test
     public void testConstructorInvalidQueueSize() {
         // Test zero queue size
-        assertThrows(IllegalArgumentException.class, () -> EventQueue.create(0));
+        assertThrows(IllegalArgumentException.class, () -> EventQueue.builder().queueSize(0).build());
 
         // Test negative queue size
-        assertThrows(IllegalArgumentException.class, () -> EventQueue.create(-10));
+        assertThrows(IllegalArgumentException.class, () -> EventQueue.builder().queueSize(-10).build());
     }
 
     @Test
     public void testTapCreatesChildQueue() {
-        EventQueue parentQueue = EventQueue.create();
+        EventQueue parentQueue = EventQueue.builder().build();
         EventQueue childQueue = parentQueue.tap();
 
         assertNotNull(childQueue);
@@ -89,7 +89,7 @@ public class EventQueueTest {
 
     @Test
     public void testTapOnChildQueueThrowsException() {
-        EventQueue parentQueue = EventQueue.create();
+        EventQueue parentQueue = EventQueue.builder().build();
         EventQueue childQueue = parentQueue.tap();
 
         assertThrows(IllegalStateException.class, () -> childQueue.tap());
@@ -97,7 +97,7 @@ public class EventQueueTest {
 
     @Test
     public void testEnqueueEventPropagagesToChildren() throws Exception {
-        EventQueue parentQueue = EventQueue.create();
+        EventQueue parentQueue = EventQueue.builder().build();
         EventQueue childQueue = parentQueue.tap();
 
         Event event = Utils.unmarshalFrom(MINIMAL_TASK, Task.TYPE_REFERENCE);
@@ -113,7 +113,7 @@ public class EventQueueTest {
 
     @Test
     public void testMultipleChildQueuesReceiveEvents() throws Exception {
-        EventQueue parentQueue = EventQueue.create();
+        EventQueue parentQueue = EventQueue.builder().build();
         EventQueue childQueue1 = parentQueue.tap();
         EventQueue childQueue2 = parentQueue.tap();
 
@@ -136,7 +136,7 @@ public class EventQueueTest {
 
     @Test
     public void testChildQueueDequeueIndependently() throws Exception {
-        EventQueue parentQueue = EventQueue.create();
+        EventQueue parentQueue = EventQueue.builder().build();
         EventQueue childQueue1 = parentQueue.tap();
         EventQueue childQueue2 = parentQueue.tap();
 
@@ -159,7 +159,7 @@ public class EventQueueTest {
 
     @Test
     public void testCloseImmediatePropagationToChildren() throws Exception {
-        EventQueue parentQueue = EventQueue.create();
+        EventQueue parentQueue = EventQueue.builder().build();
         EventQueue childQueue = parentQueue.tap();
 
         // Add events to both parent and child
@@ -189,7 +189,7 @@ public class EventQueueTest {
 
     @Test
     public void testEnqueueEventWhenClosed() throws Exception {
-        EventQueue queue = EventQueue.create();
+        EventQueue queue = EventQueue.builder().build();
         Event event = Utils.unmarshalFrom(MINIMAL_TASK, Task.TYPE_REFERENCE);
 
         queue.close(); // Close the queue first
@@ -205,7 +205,7 @@ public class EventQueueTest {
 
     @Test
     public void testDequeueEventWhenClosedAndEmpty() throws Exception {
-        EventQueue queue = EventQueue.create();
+        EventQueue queue = EventQueue.builder().build();
         queue.close();
         assertTrue(queue.isClosed());
 
@@ -215,7 +215,7 @@ public class EventQueueTest {
 
     @Test
     public void testDequeueEventWhenClosedButHasEvents() throws Exception {
-        EventQueue queue = EventQueue.create();
+        EventQueue queue = EventQueue.builder().build();
         Event event = Utils.unmarshalFrom(MINIMAL_TASK, Task.TYPE_REFERENCE);
         queue.enqueueEvent(event);
 
@@ -345,7 +345,7 @@ public class EventQueueTest {
         assertTrue(eventQueue.isClosed());
 
         // Test with immediate close as well
-        EventQueue eventQueue2 = EventQueue.create();
+        EventQueue eventQueue2 = EventQueue.builder().build();
         eventQueue2.close(true);
         assertTrue(eventQueue2.isClosed());
 

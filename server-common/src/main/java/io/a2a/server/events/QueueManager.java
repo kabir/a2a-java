@@ -12,4 +12,8 @@ public interface QueueManager {
     EventQueue createOrTap(String taskId);
 
     void awaitQueuePollerStart(EventQueue eventQueue) throws InterruptedException;
+
+    default EventQueue.EventQueueBuilder getEventQueueBuilder(String taskId) {
+        return EventQueue.builder();
+    }
 }

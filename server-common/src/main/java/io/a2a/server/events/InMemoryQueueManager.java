@@ -11,6 +11,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class InMemoryQueueManager implements QueueManager {
     private final ConcurrentMap<String, EventQueue> queues = new ConcurrentHashMap<>();
+    private final EventQueueFactory factory;
+
+    public InMemoryQueueManager() {
+        this.factory = new DefaultEventQueueFactory();
+    }
+
+    public InMemoryQueueManager(EventQueueFactory factory) {
+        this.factory = factory;
+    }
 
     @Override
     public void add(String taskId, EventQueue queue) {
@@ -45,7 +54,8 @@ public class InMemoryQueueManager implements QueueManager {
         EventQueue existing = queues.get(taskId);
         EventQueue newQueue = null;
         if (existing == null) {
-            newQueue = EventQueue.create();
+            // Use builder pattern for cleaner queue creation
+            newQueue = factory.builder().build();
             // Make sure an existing queue has not been added in the meantime
             existing = queues.putIfAbsent(taskId, newQueue);
         }
@@ -55,5 +65,12 @@ public class InMemoryQueueManager implements QueueManager {
     @Override
     public void awaitQueuePollerStart(EventQueue eventQueue) throws InterruptedException {
         eventQueue.awaitQueuePollerStart();
+    }
+
+    private static class DefaultEventQueueFactory implements EventQueueFactory {
+        @Override
+        public EventQueue.EventQueueBuilder builder() {
+            return EventQueue.builder();
+        }
     }
 }
