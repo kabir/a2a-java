@@ -78,7 +78,6 @@ public abstract class EventQueue implements AutoCloseable {
     abstract void signalQueuePollerStarted();
 
     public void enqueueEvent(Event event) {
-        System.out.println("====> Queueing " + event);
         if (closed) {
             LOGGER.warn("Queue is closed. Event will not be enqueued. {} {}", this, event);
             return;

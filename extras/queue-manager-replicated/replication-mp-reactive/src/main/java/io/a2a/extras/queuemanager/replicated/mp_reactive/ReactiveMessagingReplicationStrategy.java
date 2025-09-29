@@ -1,0 +1,72 @@
+package io.a2a.extras.queuemanager.replicated.mp_reactive;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import io.a2a.extras.queuemanager.replicated.core.ReplicatedEvent;
+import io.a2a.extras.queuemanager.replicated.core.ReplicationStrategy;
+import io.a2a.util.Utils;
+
+@ApplicationScoped
+public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReactiveMessagingReplicationStrategy.class);
+    private static final TypeReference<ReplicatedEvent> REPLICATED_EVENT_TYPE_REF = new TypeReference<ReplicatedEvent>() {};
+
+    @Inject
+    @Channel("replicated-events-out")
+    private Emitter<String> emitter;
+
+    @Inject
+    private Event<ReplicatedEvent> cdiEvent;
+
+    @Override
+    public void send(String taskId, io.a2a.spec.Event event) {
+        LOGGER.debug("Sending replicated event for task: {}, event: {}", taskId, event);
+
+        try {
+            ReplicatedEvent replicatedEvent = new ReplicatedEvent(taskId, event);
+            String json = Utils.OBJECT_MAPPER.writeValueAsString(replicatedEvent);
+            emitter.send(json);
+            LOGGER.debug("Successfully sent replicated event for task: {}", taskId);
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Failed to serialize replicated event for task: {}, event: {}", taskId, event, e);
+            throw new RuntimeException("Failed to serialize replicated event", e);
+        } catch (Error | RuntimeException e) {
+            LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, e);
+            throw new RuntimeException("Failed to send replicated event", e);
+        }
+    }
+
+    @Incoming("replicated-events-in")
+    public void onReplicatedEvent(String jsonMessage) {
+        LOGGER.debug("Received replicated event JSON: {}", jsonMessage);
+
+        try {
+            ReplicatedEvent replicatedEvent = Utils.unmarshalFrom(jsonMessage, REPLICATED_EVENT_TYPE_REF);
+            LOGGER.debug("Deserialized replicated event for task: {}, event: {}",
+                    replicatedEvent.getTaskId(), replicatedEvent.getEvent());
+
+            // Fire the CDI event directly
+            cdiEvent.fire(replicatedEvent);
+            LOGGER.debug("Successfully fired CDI event for task: {}", replicatedEvent.getTaskId());
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Failed to deserialize replicated event from JSON: {}", jsonMessage, e);
+        } catch (Exception e) {
+            LOGGER.error("Failed to fire CDI event for replicated event JSON: {}", jsonMessage, e);
+        }
+    }
+}
