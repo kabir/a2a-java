@@ -51,7 +51,6 @@ public class ReplicatedQueueManager implements QueueManager {
 
     @Override
     public void close(String taskId) {
-        EventQueue queue = delegate.get(taskId);
         delegate.close(taskId);
     }
 

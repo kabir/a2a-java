@@ -4,18 +4,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.a2a.extras.queuemanager.replicated.core.ReplicatedEvent;
+import io.a2a.extras.queuemanager.replicated.core.ReplicationStrategy;
+import io.a2a.util.Utils;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-
-import io.a2a.extras.queuemanager.replicated.core.ReplicatedEvent;
-import io.a2a.extras.queuemanager.replicated.core.ReplicationStrategy;
-import io.a2a.util.Utils;
 
 @ApplicationScoped
 public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy {
@@ -39,9 +36,9 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
             String json = Utils.OBJECT_MAPPER.writeValueAsString(replicatedEvent);
             emitter.send(json);
             LOGGER.debug("Successfully sent replicated event for task: {}", taskId);
-        } catch (Throwable t) {
-            LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, t);
-            throw new RuntimeException("Failed to send replicated event", t);
+        } catch (Exception e) {
+            LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, e);
+            throw new RuntimeException("Failed to send replicated event", e);
         }
     }
 
@@ -57,8 +54,8 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
             // Fire the CDI event directly
             cdiEvent.fire(replicatedEvent);
             LOGGER.debug("Successfully fired CDI event for task: {}", replicatedEvent.getTaskId());
-        } catch (Throwable t) {
-            LOGGER.error("Failed to deserialize replicated event from JSON: {}", jsonMessage, t);
+        } catch (Exception e) {
+            LOGGER.error("Failed to deserialize replicated event from JSON: {}", jsonMessage, e);
             // Don't throw - just log the error and continue processing other messages
             // This prevents one bad message from stopping the entire message processing
         }
