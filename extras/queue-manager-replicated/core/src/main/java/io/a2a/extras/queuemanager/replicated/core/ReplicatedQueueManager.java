@@ -1,8 +1,5 @@
 package io.a2a.extras.queuemanager.replicated.core;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -23,7 +20,6 @@ public class ReplicatedQueueManager implements QueueManager {
 
     private final InMemoryQueueManager delegate;
     private final ThreadLocal<Boolean> isHandlingReplicatedEvent = new ThreadLocal<>();
-    private final ConcurrentMap<EventQueue, String> queueToTaskId = new ConcurrentHashMap<>();
 
     @Inject
     private ReplicationStrategy replicationStrategy;
@@ -40,7 +36,6 @@ public class ReplicatedQueueManager implements QueueManager {
 
     @Override
     public void add(String taskId, EventQueue queue) {
-        queueToTaskId.put(queue, taskId);
         delegate.add(taskId, queue);
     }
 
@@ -57,16 +52,12 @@ public class ReplicatedQueueManager implements QueueManager {
     @Override
     public void close(String taskId) {
         EventQueue queue = delegate.get(taskId);
-        if (queue != null) {
-            queueToTaskId.remove(queue);
-        }
         delegate.close(taskId);
     }
 
     @Override
     public EventQueue createOrTap(String taskId) {
         EventQueue queue = delegate.createOrTap(taskId);
-        queueToTaskId.put(queue, taskId);
         return queue;
     }
 
