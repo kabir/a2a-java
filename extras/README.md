@@ -6,4 +6,4 @@ Please see the README's of each child directory for more details.
 
 [`task-store-database-jpa`](./task-store-database-jpa/README.md) - Replaces the default `InMemoryTaskStore` with a `TaskStore` backed by a RDBMS. It uses JPA to interact with the RDBMS.
 [`push-notification-config-store-database-jpa`](./push-notification-config-store-database-jpa/README.md) - Replaces the default `InMemoryPushNotificationConfigStore` with a `PushNotificationConfigStore` backed by a RDBMS. It uses JPA to interact with the RDBMS.
-[`queue_manager_replicated`](./queue_manager_replicated/README.md) - Replaces the default `InMemoryQueueManager` with a `QueueManager` supporting replication to other A2A servers implementing the same agent. You can write your own `ReplicationStrategy`, or use the provided `MicroProfile Reactive Messaging implementation`.
+[`queue-manager-replicated`](./queue-manager-replicated/README.md) - Replaces the default `InMemoryQueueManager` with a `QueueManager` supporting replication to other A2A servers implementing the same agent. You can write your own `ReplicationStrategy`, or use the provided `MicroProfile Reactive Messaging implementation`.

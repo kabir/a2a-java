@@ -36,6 +36,7 @@ public class TestKafkaEventConsumer {
         } catch (Exception e) {
             // Log error but don't fail the message processing
             System.err.println("Failed to process test Kafka message: " + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 

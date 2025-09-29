@@ -70,7 +70,7 @@ class ReactiveMessagingReplicationStrategyTest {
     @Test
     public void testSendPropagatesEmitterExceptions() {
         String taskId = "test-task-456";
-        RuntimeException emitterException = new RuntimeException("Emitter failed");
+        RuntimeException emitterException = new RuntimeException("Failed to send replicated event");
 
         doThrow(emitterException).when(emitter).send(any(String.class));
 
@@ -78,7 +78,9 @@ class ReactiveMessagingReplicationStrategyTest {
                 strategy.send(taskId, testEvent)
         );
 
-        assertEquals(emitterException, exception);
+        // The implementation wraps the original exception, so check the cause
+        assertEquals(emitterException, exception.getCause());
+        assertEquals("Failed to send replicated event", exception.getMessage());
     }
 
     @Test

@@ -205,7 +205,7 @@ public class ReplicationMonitor {
 
     public void onReplicatedEvent(@Observes ReplicatedEvent event) {
         // Monitor replicated events for metrics, logging, etc.
-        System.out.println("Received replicated event for task: " + event.getTaskId());
+        LOGGER.info("Received replicated event for task: " + event.getTaskId());
     }
 }
 ```

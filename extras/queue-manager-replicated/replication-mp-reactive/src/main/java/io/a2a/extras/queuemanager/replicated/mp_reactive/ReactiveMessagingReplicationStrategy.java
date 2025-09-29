@@ -59,7 +59,8 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
             LOGGER.debug("Successfully fired CDI event for task: {}", replicatedEvent.getTaskId());
         } catch (Throwable t) {
             LOGGER.error("Failed to deserialize replicated event from JSON: {}", jsonMessage, t);
-            throw new RuntimeException(t);
+            // Don't throw - just log the error and continue processing other messages
+            // This prevents one bad message from stopping the entire message processing
         }
     }
 }
