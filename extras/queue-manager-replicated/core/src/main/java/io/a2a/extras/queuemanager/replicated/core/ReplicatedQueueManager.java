@@ -23,7 +23,6 @@ public class ReplicatedQueueManager implements QueueManager {
 
     private final InMemoryQueueManager delegate;
     private final ThreadLocal<Boolean> isHandlingReplicatedEvent = new ThreadLocal<>();
-    private final ThreadLocal<String> currentTaskId = new ThreadLocal<>();
     private final ConcurrentMap<EventQueue, String> queueToTaskId = new ConcurrentHashMap<>();
 
     @Inject
@@ -66,15 +65,9 @@ public class ReplicatedQueueManager implements QueueManager {
 
     @Override
     public EventQueue createOrTap(String taskId) {
-        // We need to store the taskId for the factory to use
-        currentTaskId.set(taskId);
-        try {
-            EventQueue queue = delegate.createOrTap(taskId);
-            queueToTaskId.put(queue, taskId);
-            return queue;
-        } finally {
-            currentTaskId.remove();
-        }
+        EventQueue queue = delegate.createOrTap(taskId);
+        queueToTaskId.put(queue, taskId);
+        return queue;
     }
 
     @Override
@@ -113,8 +106,8 @@ public class ReplicatedQueueManager implements QueueManager {
 
     private class ReplicatingEventQueueFactory implements EventQueueFactory {
         @Override
-        public EventQueue.EventQueueBuilder builder() {
-            String taskId = currentTaskId.get();
+        public EventQueue.EventQueueBuilder builder(String taskId) {
+            // Use the taskId parameter directly instead of ThreadLocal
             return delegate.getEventQueueBuilder(taskId).hook(new ReplicationHook(taskId));
         }
     }

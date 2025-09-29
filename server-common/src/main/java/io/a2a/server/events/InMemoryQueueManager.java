@@ -1,8 +1,5 @@
 package io.a2a.server.events;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -55,7 +52,8 @@ public class InMemoryQueueManager implements QueueManager {
         EventQueue newQueue = null;
         if (existing == null) {
             // Use builder pattern for cleaner queue creation
-            newQueue = factory.builder().build();
+            // Use the new taskId-aware builder method if available
+            newQueue = factory.builder(taskId).build();
             // Make sure an existing queue has not been added in the meantime
             existing = queues.putIfAbsent(taskId, newQueue);
         }
@@ -69,7 +67,8 @@ public class InMemoryQueueManager implements QueueManager {
 
     private static class DefaultEventQueueFactory implements EventQueueFactory {
         @Override
-        public EventQueue.EventQueueBuilder builder() {
+        public EventQueue.EventQueueBuilder builder(String taskId) {
+            // Default implementation doesn't need task-specific configuration
             return EventQueue.builder();
         }
     }
