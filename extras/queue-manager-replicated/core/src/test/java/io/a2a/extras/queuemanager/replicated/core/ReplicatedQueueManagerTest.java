@@ -111,12 +111,30 @@ class ReplicatedQueueManagerTest {
     }
 
     @Test
-    void testReplicatedEventIgnoredForNonExistentQueue() {
+    void testReplicatedEventCreatesQueueIfNeeded() throws InterruptedException {
         String taskId = "non-existent-task";
+
+        // Verify no queue exists initially
+        assertNull(queueManager.get(taskId));
 
         ReplicatedEvent replicatedEvent = new ReplicatedEvent(taskId, testEvent);
 
+        // Process the replicated event
         assertDoesNotThrow(() -> queueManager.onReplicatedEvent(replicatedEvent));
+
+        // Verify that a queue was created and the event was enqueued
+        EventQueue queue = queueManager.get(taskId);
+        assertNotNull(queue, "Queue should be created when processing replicated event for non-existent task");
+
+        // Verify the event was enqueued by dequeuing it
+        Event dequeuedEvent;
+        try {
+            dequeuedEvent = queue.dequeueEvent(100);
+        } catch (EventQueueClosedException e) {
+            fail("Queue should not be closed");
+            return;
+        }
+        assertEquals(testEvent, dequeuedEvent, "The replicated event should be enqueued in the newly created queue");
     }
 
     @Test
