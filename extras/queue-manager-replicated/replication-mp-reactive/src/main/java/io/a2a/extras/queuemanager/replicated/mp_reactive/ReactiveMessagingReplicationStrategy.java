@@ -39,15 +39,9 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
             String json = Utils.OBJECT_MAPPER.writeValueAsString(replicatedEvent);
             emitter.send(json);
             LOGGER.debug("Successfully sent replicated event for task: {}", taskId);
-        } catch (JsonProcessingException e) {
-            LOGGER.error("Failed to serialize replicated event for task: {}, event: {}", taskId, event, e);
-            throw new RuntimeException("Failed to serialize replicated event", e);
-        } catch (Error | RuntimeException e) {
-            LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, e);
-            throw e;
-        } catch (Exception e) {
-            LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, e);
-            throw new RuntimeException("Failed to send replicated event", e);
+        } catch (Throwable t) {
+            LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, t);
+            throw new RuntimeException("Failed to send replicated event", t);
         }
     }
 
@@ -63,10 +57,9 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
             // Fire the CDI event directly
             cdiEvent.fire(replicatedEvent);
             LOGGER.debug("Successfully fired CDI event for task: {}", replicatedEvent.getTaskId());
-        } catch (JsonProcessingException e) {
-            LOGGER.error("Failed to deserialize replicated event from JSON: {}", jsonMessage, e);
-        } catch (Exception e) {
-            LOGGER.error("Failed to fire CDI event for replicated event JSON: {}", jsonMessage, e);
+        } catch (Throwable t) {
+            LOGGER.error("Failed to deserialize replicated event from JSON: {}", jsonMessage, t);
+            throw new RuntimeException(t);
         }
     }
 }
