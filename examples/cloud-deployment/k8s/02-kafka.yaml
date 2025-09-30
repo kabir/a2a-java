@@ -3,6 +3,8 @@ kind: Kafka
 metadata:
   name: a2a-kafka
   namespace: a2a-demo
+  annotations:
+    strimzi.io/kraft: "enabled"
 spec:
   kafka:
     version: 3.7.0
@@ -18,7 +20,6 @@ spec:
       transaction.state.log.min.isr: 1
       default.replication.factor: 1
       min.insync.replicas: 1
-      inter.broker.protocol.version: "3.7"
     storage:
       type: ephemeral
     resources:
@@ -27,17 +28,6 @@ spec:
         cpu: "250m"
       limits:
         memory: "1Gi"
-        cpu: "500m"
-  zookeeper:
-    replicas: 1
-    storage:
-      type: ephemeral
-    resources:
-      requests:
-        memory: "256Mi"
-        cpu: "250m"
-      limits:
-        memory: "512Mi"
         cpu: "500m"
   entityOperator:
     topicOperator:

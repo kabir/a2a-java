@@ -125,9 +125,26 @@ echo -e "${GREEN}✓ PostgreSQL deployed${NC}"
 echo ""
 echo "Deploying Kafka..."
 kubectl apply -f ../k8s/02-kafka.yaml
-echo "Waiting for Kafka to be ready (this may take a few minutes)..."
-kubectl wait --for=condition=Ready kafka/a2a-kafka -n a2a-demo --timeout=300s
-echo -e "${GREEN}✓ Kafka deployed${NC}"
+echo "Waiting for Kafka to be ready (using KRaft mode, typically 2-3 minutes)..."
+
+# Monitor progress while waiting
+for i in {1..60}; do
+    echo "Checking Kafka status (attempt $i/60)..."
+    kubectl get kafka -n a2a-demo -o wide 2>/dev/null || true
+    kubectl get pods -n a2a-demo -l strimzi.io/cluster=a2a-kafka 2>/dev/null || true
+
+    if kubectl wait --for=condition=Ready kafka/a2a-kafka -n a2a-demo --timeout=10s 2>/dev/null; then
+        echo -e "${GREEN}✓ Kafka deployed${NC}"
+        break
+    fi
+
+    if [ $i -eq 60 ]; then
+        echo -e "${RED}ERROR: Timeout waiting for Kafka${NC}"
+        kubectl describe kafka/a2a-kafka -n a2a-demo
+        kubectl get events -n a2a-demo --sort-by='.lastTimestamp'
+        exit 1
+    fi
+done
 
 # Deploy Agent ConfigMap
 echo ""

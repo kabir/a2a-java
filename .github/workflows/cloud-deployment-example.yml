@@ -37,90 +37,15 @@ jobs:
           kubectl get nodes
           kubectl version --client
 
-      - name: Install Strimzi Operator
-        run: |
-          kubectl create namespace kafka
-          kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
-
-          echo "Waiting for Strimzi operator deployment to be created..."
-          for i in {1..30}; do
-            if kubectl get deployment strimzi-cluster-operator -n kafka > /dev/null 2>&1; then
-              echo "Deployment found"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "ERROR: Deployment not found after 30 seconds"
-              exit 1
-            fi
-            sleep 1
-          done
-
-          echo "Waiting for Strimzi operator pod to be ready..."
-          kubectl wait --for=condition=Available deployment/strimzi-cluster-operator -n kafka --timeout=300s
-          kubectl wait --for=condition=Ready pod -l name=strimzi-cluster-operator -n kafka --timeout=300s
-          echo "Strimzi operator ready"
-
       - name: Build Project
         run: |
           mvn clean install -DskipTests -B -V
           echo "Project built successfully"
 
-      - name: Build Docker Image
-        run: |
-          eval $(minikube docker-env)
-          cd examples/cloud-deployment/server
-          mvn clean package -DskipTests -B
-          docker build -t a2a-cloud-deployment:latest .
-          echo "Docker image built"
-
-          # Verify image exists
-          docker images | grep a2a-cloud-deployment
-
-      - name: Create Namespace
-        run: |
-          kubectl apply -f examples/cloud-deployment/k8s/00-namespace.yaml
-          kubectl get namespace a2a-demo
-
-      - name: Deploy PostgreSQL
-        run: |
-          kubectl apply -f examples/cloud-deployment/k8s/01-postgres.yaml
-          echo "Waiting for PostgreSQL to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=postgres -n a2a-demo --timeout=180s
-          kubectl get pods -n a2a-demo -l app=postgres
-
-      - name: Deploy Kafka
-        run: |
-          kubectl apply -f examples/cloud-deployment/k8s/02-kafka.yaml
-          echo "Waiting for Kafka to be ready (this may take several minutes)..."
-          kubectl wait --for=condition=Ready kafka/a2a-kafka -n a2a-demo --timeout=600s
-          kubectl get kafka -n a2a-demo
-
-      - name: Deploy Agent ConfigMap
-        run: |
-          kubectl apply -f examples/cloud-deployment/k8s/03-agent-configmap.yaml
-          kubectl get configmap -n a2a-demo
-
-      - name: Deploy A2A Agent
-        run: |
-          kubectl apply -f examples/cloud-deployment/k8s/04-agent-deployment.yaml
-          echo "Waiting for Agent pods to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=a2a-agent -n a2a-demo --timeout=180s
-
-          echo "Verifying both pods are running..."
-          READY_PODS=$(kubectl get pods -n a2a-demo -l app=a2a-agent -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}' | grep -c "True")
-          if [ "$READY_PODS" -lt 2 ]; then
-            echo "ERROR: Expected 2 ready pods, got $READY_PODS"
-            kubectl get pods -n a2a-demo -l app=a2a-agent
-            kubectl describe pods -n a2a-demo -l app=a2a-agent
-            exit 1
-          fi
-
-          kubectl get pods -n a2a-demo -l app=a2a-agent -o wide
-
-      - name: Verify Deployment
+      - name: Deploy Stack
         run: |
           cd examples/cloud-deployment/scripts
-          ./verify.sh
+          ./deploy.sh --container-tool docker
 
       - name: Setup Port Forward
         run: |
