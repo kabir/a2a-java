@@ -86,15 +86,19 @@ minikube start --cpus=4 --memory=8192
 
 ### 1. Start Minikube
 
+This example uses a local container registry on the host machine. Minikube must be configured to allow pulling from this insecure (HTTP) registry.
+
 **With Docker:**
 ```bash
-minikube start --cpus=4 --memory=8192
+minikube start --cpus=4 --memory=8192 --insecure-registry=192.168.49.1:5001
 ```
 
 **With Podman:**
 ```bash
-minikube start --cpus=4 --memory=8192 --driver=podman
+minikube start --cpus=4 --memory=8192 --driver=podman --insecure-registry=192.168.49.1:5001
 ```
+
+**Note**: The IP address `192.168.49.1` is the default host IP from Minikube's perspective. If your Minikube uses a different network range, adjust accordingly.
 
 ### 2. Deploy the Stack
 

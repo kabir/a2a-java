@@ -1,14 +1,40 @@
+---
+# KafkaNodePool for KRaft mode
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: broker
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: a2a-kafka
+spec:
+  replicas: 1
+  roles:
+    - broker
+    - controller
+  storage:
+    type: ephemeral
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+---
+# Kafka cluster
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
   name: a2a-kafka
-  namespace: a2a-demo
+  namespace: kafka
   annotations:
-    strimzi.io/kraft: "enabled"
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
 spec:
   kafka:
-    version: 3.7.0
-    replicas: 1
+    version: 4.0.0
+    metadataVersion: 4.0-IV0
     listeners:
       - name: plain
         port: 9092
@@ -20,15 +46,6 @@ spec:
       transaction.state.log.min.isr: 1
       default.replication.factor: 1
       min.insync.replicas: 1
-    storage:
-      type: ephemeral
-    resources:
-      requests:
-        memory: "512Mi"
-        cpu: "250m"
-      limits:
-        memory: "1Gi"
-        cpu: "500m"
   entityOperator:
     topicOperator:
       resources:

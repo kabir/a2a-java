@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: a2a-agent
-          image: a2a-cloud-deployment:latest
-          imagePullPolicy: Never  # For Minikube local images
+          image: 192.168.49.1:5001/a2a-cloud-deployment:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http

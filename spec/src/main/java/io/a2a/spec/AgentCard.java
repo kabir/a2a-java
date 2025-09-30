@@ -63,6 +63,29 @@ public record AgentCard(String name, String description, String url, AgentProvid
         private String protocolVersion;
         private List<AgentCardSignature> signatures;
 
+        public Builder() {
+        }
+
+        public Builder(AgentCard agentCard) {
+            this.name = agentCard.name;
+            this.description = agentCard.description;
+            this.url = agentCard.url;
+            this.provider = agentCard.provider;
+            this.version = agentCard.version;
+            this.documentationUrl = agentCard.documentationUrl;
+            this.capabilities = agentCard.capabilities;
+            this.defaultInputModes = agentCard.defaultInputModes;
+            this.defaultOutputModes = agentCard.defaultOutputModes;
+            this.skills = agentCard.skills;
+            this.supportsAuthenticatedExtendedCard = agentCard.supportsAuthenticatedExtendedCard;
+            this.securitySchemes = agentCard.securitySchemes;
+            this.security = agentCard.security;
+            this.iconUrl = agentCard.iconUrl;
+            this.additionalInterfaces = agentCard.additionalInterfaces;
+            this.preferredTransport = agentCard.preferredTransport;
+            this.protocolVersion = agentCard.protocolVersion;
+            this.signatures = agentCard.signatures;
+        }
 
         public Builder name(String name) {
             this.name = name;

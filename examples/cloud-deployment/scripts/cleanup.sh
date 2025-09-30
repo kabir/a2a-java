@@ -41,6 +41,17 @@ echo "Deleting namespace..."
 kubectl delete -f ../k8s/00-namespace.yaml --ignore-not-found=true
 
 echo ""
+echo "Cleaning up local registry container..."
+# Determine container tool
+CONTAINER_TOOL="docker"
+if command -v podman &> /dev/null; then
+    CONTAINER_TOOL="podman"
+fi
+
+# Remove registry container if it exists
+$CONTAINER_TOOL rm -f kind-registry > /dev/null 2>&1 || true
+
+echo ""
 echo -e "${GREEN}Cleanup completed${NC}"
 echo ""
 echo -e "${YELLOW}Note: Strimzi operator was not removed${NC}"

@@ -58,9 +58,14 @@ public class A2ACloudExampleClient {
 
         // Fetch agent card
         System.out.println("Fetching agent card...");
-        AgentCard agentCard = A2A.getAgentCard(AGENT_URL);
-        System.out.println("✓ Agent: " + agentCard.name());
-        System.out.println("✓ Description: " + agentCard.description());
+        AgentCard fetchedCard = A2A.getAgentCard(AGENT_URL);
+        System.out.println("✓ Agent: " + fetchedCard.name());
+        System.out.println("✓ Description: " + fetchedCard.description());
+
+        // Override agent card URL to use the port-forwarded URL instead of internal K8s service URL
+        AgentCard agentCard = new AgentCard.Builder(fetchedCard)
+                .url(AGENT_URL)  // Use localhost URL for port-forwarded connection
+                .build();
         System.out.println();
 
         // Generate unique task ID for this test run
