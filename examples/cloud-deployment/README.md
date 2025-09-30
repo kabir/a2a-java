@@ -472,17 +472,17 @@ From `pom.xml`:
 <!-- Replicated event queue manager -->
 <dependency>
     <groupId>io.github.a2asdk</groupId>
-    <artifactId>a2a-java-extras-queue-manager-replicated-core</artifactId>
+    <artifactId>a2a-java-queue-manager-replicated-core</artifactId>
 </dependency>
 <dependency>
     <groupId>io.github.a2asdk</groupId>
-    <artifactId>a2a-java-extras-queue-manager-replicated-replication-mp-reactive</artifactId>
+    <artifactId>a2a-java-queue-manager-replication-mp-reactive</artifactId>
 </dependency>
 
 <!-- Kafka connector -->
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+    <artifactId>quarkus-messaging-kafka</artifactId>
 </dependency>
 ```
 

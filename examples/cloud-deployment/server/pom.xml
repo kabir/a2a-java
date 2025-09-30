@@ -21,36 +21,41 @@
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-sdk-reference-jsonrpc</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Database-backed task store -->
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-extras-task-store-database-jpa</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Database-backed push notification config store -->
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-extras-push-notification-config-store-database-jpa</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Replicated queue manager core -->
         <dependency>
             <groupId>io.github.a2asdk</groupId>
-            <artifactId>a2a-java-extras-queue-manager-replicated-core</artifactId>
+            <artifactId>a2a-java-queue-manager-replicated-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Replicated queue manager with Kafka via MicroProfile Reactive Messaging -->
         <dependency>
             <groupId>io.github.a2asdk</groupId>
-            <artifactId>a2a-java-extras-queue-manager-replicated-replication-mp-reactive</artifactId>
+            <artifactId>a2a-java-queue-manager-replication-mp-reactive</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Quarkus Kafka connector for MicroProfile Reactive Messaging -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
         </dependency>
 
         <!-- PostgreSQL JDBC driver -->
@@ -59,10 +64,10 @@
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
 
-        <!-- Quarkus Hibernate ORM with Panache -->
+        <!-- Quarkus Hibernate ORM -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-panache</artifactId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
         </dependency>
 
         <!-- Quarkus REST/JAX-RS -->
@@ -88,6 +93,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.github.a2asdk</groupId>
+            <artifactId>a2a-java-sdk-client</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

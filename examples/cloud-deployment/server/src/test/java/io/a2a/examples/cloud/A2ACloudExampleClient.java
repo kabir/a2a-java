@@ -1,6 +1,6 @@
 package io.a2a.examples.cloud;
 
-import io.a2a.client.A2A;
+import io.a2a.A2A;
 import io.a2a.client.Client;
 import io.a2a.client.ClientEvent;
 import io.a2a.client.MessageEvent;
@@ -230,8 +230,8 @@ public class A2ACloudExampleClient {
 
     private static String extractTextFromArtifact(TaskArtifactUpdateEvent event) {
         StringBuilder text = new StringBuilder();
-        if (event.getArtifacts() != null) {
-            for (Part<?> part : event.getArtifacts().parts()) {
+        if (event.getArtifact() != null) {
+            for (Part<?> part : event.getArtifact().parts()) {
                 if (part instanceof TextPart textPart) {
                     text.append(textPart.getText());
                 }
