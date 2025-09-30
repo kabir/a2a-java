@@ -118,10 +118,9 @@
                         <configuration>
                             <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                             <excludes>
-                                <!-- Excluded on Java 24+ due to Vert.x ServiceLoader incompatibility -->
-                                <!-- Requires Vert.x 4.6.0+ for Java 24 support, but Quarkus 3.25.x uses Vert.x 4.5.21 -->
-                                <!-- Also the currently latest Quarkus 2.28.1 uses an uncompatible Vert.x version -->
-                                <!-- This test uses SSE streaming which triggers the JsonFactory ServiceLoader issue -->
+                                <!-- TODO: Remove this profile when Quarkus is updated to a version using Vert.x 4.6.0+.
+                                     This test is excluded on Java 24+ due to a Vert.x ServiceLoader incompatibility with SSE streaming.
+                                     Current Quarkus versions (e.g., 3.25.x, 2.28.1) use Vert.x 4.5.x, which is not compatible with Java 24. -->
                                 <exclude>**/JpaDatabasePushNotificationConfigStoreIntegrationTest.java</exclude>
                             </excludes>
                         </configuration>
