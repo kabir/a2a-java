@@ -321,11 +321,9 @@ public class DefaultRequestHandler implements RequestHandler {
 
         TaskManager taskManager = new TaskManager(task.getId(), task.getContextId(), taskStore, null);
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null);
-        EventQueue queue = queueManager.tap(task.getId());
 
-        if (queue == null) {
-            throw new TaskNotFoundError();
-        }
+        // Create a queue if it doesn't exist
+        EventQueue queue = queueManager.createOrTap(task.getId());
 
         EventConsumer consumer = new EventConsumer(queue);
         Flow.Publisher<Event> results = resultAggregator.consumeAndEmit(consumer);

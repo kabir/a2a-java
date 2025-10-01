@@ -218,6 +218,15 @@ public abstract class EventQueue implements AutoCloseable {
             pollingStarted.set(true);
           }
 
+        void childClosing(ChildQueue child, boolean immediate) {
+            children.remove(child);  // Remove the closing child
+
+            // Only close MainQueue if immediate OR no children left
+            if (immediate || children.isEmpty()) {
+                this.doClose(immediate);
+            }
+        }
+
         @Override
         public void close() {
             close(false);
@@ -226,7 +235,11 @@ public abstract class EventQueue implements AutoCloseable {
         @Override
         public void close(boolean immediate) {
             doClose(immediate);
-            children.forEach(child -> child.doClose(immediate));
+            if (immediate) {
+                // Force-close all remaining children
+                children.forEach(child -> child.doClose(immediate));
+            }
+            children.clear();
         }
     }
 
@@ -263,12 +276,13 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public void close() {
-            parent.close();
+            close(false);
         }
 
         @Override
         public void close(boolean immediate) {
-            parent.close(immediate);
+            this.doClose(immediate);           // Close self first
+            parent.childClosing(this, immediate);  // Notify parent
         }
     }
 }
