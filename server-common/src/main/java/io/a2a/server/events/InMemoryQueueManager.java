@@ -47,8 +47,14 @@ public class InMemoryQueueManager implements QueueManager {
 
     @Override
     public EventQueue createOrTap(String taskId) {
-
         EventQueue existing = queues.get(taskId);
+
+        // Lazy cleanup: remove closed queues from map
+        if (existing != null && existing.isClosed()) {
+            queues.remove(taskId);
+            existing = null;
+        }
+
         EventQueue newQueue = null;
         if (existing == null) {
             // Use builder pattern for cleaner queue creation
@@ -57,7 +63,9 @@ public class InMemoryQueueManager implements QueueManager {
             // Make sure an existing queue has not been added in the meantime
             existing = queues.putIfAbsent(taskId, newQueue);
         }
-        return existing == null ? newQueue : existing.tap();
+
+        EventQueue main = existing == null ? newQueue : existing;
+        return main.tap();  // Always return ChildQueue
     }
 
     @Override
