@@ -1,6 +1,7 @@
 package io.a2a.spec;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -74,17 +75,17 @@ public record AgentCard(String name, String description, String url, AgentProvid
             this.version = agentCard.version;
             this.documentationUrl = agentCard.documentationUrl;
             this.capabilities = agentCard.capabilities;
-            this.defaultInputModes = agentCard.defaultInputModes;
-            this.defaultOutputModes = agentCard.defaultOutputModes;
-            this.skills = agentCard.skills;
+            this.defaultInputModes = agentCard.defaultInputModes != null ? new ArrayList<>(agentCard.defaultInputModes) : null;
+            this.defaultOutputModes = agentCard.defaultOutputModes != null ? new ArrayList<>(agentCard.defaultOutputModes) : null;
+            this.skills = agentCard.skills != null ? new ArrayList<>(agentCard.skills) : null;
             this.supportsAuthenticatedExtendedCard = agentCard.supportsAuthenticatedExtendedCard;
-            this.securitySchemes = agentCard.securitySchemes;
-            this.security = agentCard.security;
+            this.securitySchemes = agentCard.securitySchemes != null ? new HashMap<>(agentCard.securitySchemes) : null;
+            this.security = agentCard.security != null ? new ArrayList<>(agentCard.security) : null;
             this.iconUrl = agentCard.iconUrl;
-            this.additionalInterfaces = agentCard.additionalInterfaces;
+            this.additionalInterfaces = agentCard.additionalInterfaces != null ? new ArrayList<>(agentCard.additionalInterfaces) : null;
             this.preferredTransport = agentCard.preferredTransport;
             this.protocolVersion = agentCard.protocolVersion;
-            this.signatures = agentCard.signatures;
+            this.signatures = agentCard.signatures != null ? new ArrayList<>(agentCard.signatures) : null;
         }
 
         public Builder name(String name) {

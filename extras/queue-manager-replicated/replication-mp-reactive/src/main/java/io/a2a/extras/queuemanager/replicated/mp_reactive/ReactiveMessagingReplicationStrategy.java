@@ -29,13 +29,13 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
 
     @Override
     public void send(String taskId, io.a2a.spec.Event event) {
-        LOGGER.debug("Sending replicated event for task: {}, event: {}", taskId, event);
+        LOGGER.info("REPLICATION: Sending replicated event for task: {}, event: {}", taskId, event);
 
         try {
             ReplicatedEvent replicatedEvent = new ReplicatedEvent(taskId, event);
             String json = Utils.OBJECT_MAPPER.writeValueAsString(replicatedEvent);
             emitter.send(json);
-            LOGGER.debug("Successfully sent replicated event for task: {}", taskId);
+            LOGGER.info("REPLICATION: Successfully sent replicated event for task: {}", taskId);
         } catch (Exception e) {
             LOGGER.error("Failed to send replicated event for task: {}, event: {}", taskId, event, e);
             throw new RuntimeException("Failed to send replicated event", e);
