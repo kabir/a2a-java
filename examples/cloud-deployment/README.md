@@ -62,24 +62,24 @@ This example works with Docker, Podman, or any OCI-compatible container runtime.
 **If using Docker:**
 ```bash
 # Standard Minikube setup
-minikube start --cpus=4 --memory=8192
+minikube start --cpus=4 --memory=8192 --insecure-registry=192.168.49.1:5001 
 ```
 
 **If using Podman:**
 ```bash
 # Configure Minikube to use Podman
-minikube start --cpus=4 --memory=8192 --driver=podman
+minikube start --cpus=4 --memory=8192 --driver=podman --insecure-registry=192.168.49.1:5001 
 
 # Or set Podman as default driver
 minikube config set driver podman
-minikube start --cpus=4 --memory=8192
+minikube start --cpus=4 --memory=8192 --insecure-registry=192.168.49.1:5001 
 ```
 
 **If using Docker Desktop alternatives (Colima, Rancher Desktop, etc.):**
 ```bash
 # Ensure your container runtime is running
 # Then start Minikube normally
-minikube start --cpus=4 --memory=8192
+minikube start --cpus=4 --memory=8192 --insecure-registry=192.168.49.1:5001 
 ```
 
 ## Quick Start

@@ -133,35 +133,60 @@ public class A2ACloudExampleClient {
         }
 
         // Subscribe to task updates AFTER initial task is created (pattern from KafkaReplicationIntegrationTest)
+        // In multi-pod setup, may need retry if we hit a pod that hasn't received Kafka events yet
         System.out.println();
         System.out.println("Subscribing to task for future updates...");
-        try {
-            streamingClient.resubscribe(
-                    new TaskIdParams(serverTaskId[0]),
-                    List.of((ClientEvent event, AgentCard card) -> {
-                        if (event instanceof TaskUpdateEvent tue) {
-                            if (tue.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifactEvent) {
-                                artifactCount.incrementAndGet();
-                                String artifactText = extractTextFromArtifact(artifactEvent);
-                                System.out.println("  Artifact #" + artifactCount.get() + ": " + artifactText);
 
-                                // Extract pod name from artifact text
-                                String podName = extractPodName(artifactText);
-                                if (podName != null && !podName.equals("unknown-pod")) {
-                                    observedPods.add(podName);
-                                    System.out.println("    → Pod: " + podName + " (Total unique pods: " + observedPods.size() + ")");
+        AtomicBoolean subscribed = new AtomicBoolean(false);
+        int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                if (attempt > 1) {
+                    System.out.println("Retry attempt " + attempt + "/" + maxRetries + "...");
+                    Thread.sleep(1000);  // Wait for Kafka events to propagate
+                }
+
+                streamingClient.resubscribe(
+                        new TaskIdParams(serverTaskId[0]),
+                        List.of((ClientEvent event, AgentCard card) -> {
+                            if (event instanceof TaskUpdateEvent tue) {
+                                if (tue.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifactEvent) {
+                                    int count = artifactCount.incrementAndGet();
+                                    String artifactText = extractTextFromArtifact(artifactEvent);
+                                    System.out.println("  Artifact #" + count + ": " + artifactText);
+
+                                    // Extract pod name from artifact text
+                                    String podName = extractPodName(artifactText);
+                                    if (podName != null && !podName.equals("unknown-pod")) {
+                                        observedPods.add(podName);
+                                        System.out.println("    → Pod: " + podName + " (Total unique pods: " + observedPods.size() + ")");
+                                    }
+
+                                    // Count down for each message received
+                                    messageLatch.countDown();
                                 }
                             }
+                        }),
+                        error -> {
+                            System.err.println("✗ Subscription error: " + error.getMessage());
+                            testFailed.set(true);
                         }
-                    }),
-                    error -> {
-                        System.err.println("✗ Subscription error: " + error.getMessage());
-                        testFailed.set(true);
-                    }
-            );
-            System.out.println("✓ Subscribed to task updates");
-        } catch (Exception e) {
-            System.err.println("✗ Failed to subscribe: " + e.getMessage());
+                );
+                System.out.println("✓ Subscribed to task updates");
+                subscribed.set(true);
+                break;
+            } catch (Exception e) {
+                if (attempt < maxRetries) {
+                    System.out.println("⚠ Failed to subscribe (attempt " + attempt + "/" + maxRetries + "): " + e.getMessage());
+                } else {
+                    System.err.println("✗ Failed to subscribe after " + maxRetries + " attempts: " + e.getMessage());
+                    System.exit(1);
+                }
+            }
+        }
+
+        if (!subscribed.get()) {
+            System.err.println("✗ Failed to establish subscription");
             System.exit(1);
         }
 
@@ -172,7 +197,12 @@ public class A2ACloudExampleClient {
 
         for (int i = 1; i <= MESSAGE_COUNT; i++) {
             final int messageNum = i;
-            Message message = A2A.toUserMessage("Test message " + i, serverTaskId[0]);
+            // Build message with explicit taskId to add to existing task
+            Message message = new Message.Builder()
+                    .role(Message.Role.USER)
+                    .parts(new TextPart("Test message " + i))
+                    .taskId(serverTaskId[0])
+                    .build();
 
             try {
                 nonStreamingClient.sendMessage(message, List.of((ClientEvent event, AgentCard card) -> {

@@ -48,8 +48,8 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
 
         try {
             ReplicatedEvent replicatedEvent = Utils.unmarshalFrom(jsonMessage, REPLICATED_EVENT_TYPE_REF);
-            LOGGER.debug("Deserialized replicated event for task: {}, event: {}",
-                    replicatedEvent.getTaskId(), replicatedEvent.getEvent());
+            LOGGER.info("REPLICATION: Received event for task: {}, event type: {}",
+                    replicatedEvent.getTaskId(), replicatedEvent.getEvent().getClass().getSimpleName());
 
             // Fire the CDI event directly
             cdiEvent.fire(replicatedEvent);
