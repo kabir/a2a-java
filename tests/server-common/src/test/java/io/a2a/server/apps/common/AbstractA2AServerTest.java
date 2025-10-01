@@ -540,6 +540,103 @@ public abstract class AbstractA2AServerTest {
     }
 
     @Test
+    @Timeout(value = 3, unit = TimeUnit.MINUTES)
+    public void testNonStreamingMessagesWithActiveStreamingResubscription() throws Exception {
+        String taskId = "resubscribe-nonstreaming-test-" + System.currentTimeMillis();
+        String contextId = "session-xyz";
+
+        // Step 1: Create task with first non-streaming message
+        Message message1 = new Message.Builder(MESSAGE)
+                .taskId(taskId)
+                .contextId(contextId)
+                .build();
+
+        CountDownLatch firstMessageLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+        getNonStreamingClient().sendMessage(message1, List.of((event, agentCard) -> {
+            firstMessageLatch.countDown();
+        }), null);
+
+        assertTrue(firstMessageLatch.await(10, TimeUnit.SECONDS));
+
+        // Step 2: Resubscribe to the task for streaming updates
+        CountDownLatch artifactLatch = new CountDownLatch(6); // Expecting 6 more artifacts (2 messages × 3 artifacts)
+        List<String> receivedArtifacts = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        BiConsumer<ClientEvent, AgentCard> streamingConsumer = (event, agentCard) -> {
+            if (event instanceof TaskUpdateEvent taskUpdateEvent) {
+                if (taskUpdateEvent.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifactEvent) {
+                    // Extract artifact text
+                    if (artifactEvent.getArtifact() != null && !artifactEvent.getArtifact().parts().isEmpty()) {
+                        Part<?> part = artifactEvent.getArtifact().parts().get(0);
+                        if (part instanceof TextPart textPart) {
+                            receivedArtifacts.add(textPart.getText());
+                            artifactLatch.countDown();
+                        }
+                    }
+                }
+            }
+        };
+
+        Consumer<Throwable> errorHandler = error -> {
+            if (!isStreamClosedError(error)) {
+                errorRef.set(error);
+                // Count down remaining to unblock test
+                while (artifactLatch.getCount() > 0) {
+                    artifactLatch.countDown();
+                }
+            }
+        };
+
+        // Wait for subscription to be established
+        CountDownLatch subscriptionLatch = new CountDownLatch(1);
+        awaitStreamingSubscription()
+                .whenComplete((unused, throwable) -> subscriptionLatch.countDown());
+
+        getClient().resubscribe(new TaskIdParams(taskId), List.of(streamingConsumer), errorHandler);
+
+        assertTrue(subscriptionLatch.await(15, TimeUnit.SECONDS));
+
+        // Step 3: Send 2 more non-streaming messages while subscription is active
+        Message message2 = new Message.Builder(MESSAGE)
+                .taskId(taskId)
+                .contextId(contextId)
+                .build();
+
+        Message message3 = new Message.Builder(MESSAGE)
+                .taskId(taskId)
+                .contextId(contextId)
+                .build();
+
+        CountDownLatch secondMessageLatch = new CountDownLatch(1);
+        getNonStreamingClient().sendMessage(message2, List.of((event, agentCard) -> {
+            secondMessageLatch.countDown();
+        }), null);
+        assertTrue(secondMessageLatch.await(10, TimeUnit.SECONDS));
+
+        CountDownLatch thirdMessageLatch = new CountDownLatch(1);
+        getNonStreamingClient().sendMessage(message3, List.of((event, agentCard) -> {
+            thirdMessageLatch.countDown();
+        }), null);
+        assertTrue(thirdMessageLatch.await(10, TimeUnit.SECONDS));
+
+        // Step 4: Verify all 6 artifacts received by streaming subscriber
+        assertTrue(artifactLatch.await(30, TimeUnit.SECONDS));
+        assertNull(errorRef.get());
+
+        // Verify we got exactly 6 artifacts
+        assertEquals(6, receivedArtifacts.size());
+
+        // Verify artifact content (artifacts from message 2 and 3)
+        List<String> expectedArtifacts = List.of(
+                "artifact-1", "artifact-2", "artifact-3",  // From message 2
+                "artifact-1", "artifact-2", "artifact-3"   // From message 3
+        );
+        assertEquals(expectedArtifacts, receivedArtifacts);
+    }
+
+    @Test
     public void testListPushNotificationConfigWithConfigId() throws Exception {
         saveTaskInTaskStore(MINIMAL_TASK);
         PushNotificationConfig notificationConfig1 =
