@@ -69,15 +69,16 @@ public class A2ACloudExampleClient {
         System.out.println();
 
         // Generate unique task ID for this test run
-        String taskId = "cloud-test-" + System.currentTimeMillis();
-        System.out.println("Task ID: " + taskId);
+        String clientTaskId = "cloud-test-" + System.currentTimeMillis();
+        System.out.println("Client task ID: " + clientTaskId);
         System.out.println();
 
-        // Track observed pod names
+        // Track observed pod names and actual server task ID
         Set<String> observedPods = Collections.synchronizedSet(new HashSet<>());
         AtomicInteger artifactCount = new AtomicInteger(0);
         AtomicBoolean testFailed = new AtomicBoolean(false);
         CountDownLatch messageLatch = new CountDownLatch(MESSAGE_COUNT);
+        final String[] serverTaskId = new String[1];  // Will be set by server response
 
         // Create streaming client for subscribing
         System.out.println("Creating streaming client for subscription...");
@@ -104,13 +105,14 @@ public class A2ACloudExampleClient {
         System.out.println("✓ Clients created");
         System.out.println();
 
-        // Create initial task by sending first message
+        // Create initial task by sending first message (using non-streaming client)
         System.out.println("Creating initial task...");
-        Message initialMessage = A2A.toUserMessage("Initialize", taskId);
+        Message initialMessage = A2A.toUserMessage("Initialize", clientTaskId);
         try {
             nonStreamingClient.sendMessage(initialMessage, List.of((ClientEvent event, AgentCard card) -> {
                 if (event instanceof TaskEvent te) {
-                    System.out.println("✓ Initial task created: " + te.getTask().getId());
+                    serverTaskId[0] = te.getTask().getId();  // Capture server-generated task ID
+                    System.out.println("✓ Initial task created: " + serverTaskId[0]);
                     System.out.println("  State: " + te.getTask().getStatus().state());
                 }
             }), error -> {
@@ -118,19 +120,24 @@ public class A2ACloudExampleClient {
                 testFailed.set(true);
             });
 
-            // Wait a bit for task to be created
+            // Wait for task to be fully processed before resubscription (pattern from KafkaReplicationIntegrationTest)
             Thread.sleep(1000);
+
+            if (serverTaskId[0] == null) {
+                System.err.println("✗ Failed to get server task ID");
+                System.exit(1);
+            }
         } catch (Exception e) {
             System.err.println("✗ Failed to create initial task: " + e.getMessage());
             System.exit(1);
         }
 
-        // Subscribe to task updates
+        // Subscribe to task updates AFTER initial task is created (pattern from KafkaReplicationIntegrationTest)
         System.out.println();
-        System.out.println("Subscribing to task updates...");
+        System.out.println("Subscribing to task for future updates...");
         try {
             streamingClient.resubscribe(
-                    new TaskIdParams(taskId),
+                    new TaskIdParams(serverTaskId[0]),
                     List.of((ClientEvent event, AgentCard card) -> {
                         if (event instanceof TaskUpdateEvent tue) {
                             if (tue.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifactEvent) {
@@ -165,7 +172,7 @@ public class A2ACloudExampleClient {
 
         for (int i = 1; i <= MESSAGE_COUNT; i++) {
             final int messageNum = i;
-            Message message = A2A.toUserMessage("Test message " + i, taskId);
+            Message message = A2A.toUserMessage("Test message " + i, serverTaskId[0]);
 
             try {
                 nonStreamingClient.sendMessage(message, List.of((ClientEvent event, AgentCard card) -> {
@@ -199,7 +206,7 @@ public class A2ACloudExampleClient {
         System.out.println();
         System.out.println("Cancelling task...");
         try {
-            Task cancelledTask = nonStreamingClient.cancelTask(new TaskIdParams(taskId));
+            Task cancelledTask = nonStreamingClient.cancelTask(new TaskIdParams(serverTaskId[0]));
             System.out.println("✓ Task cancelled: " + cancelledTask.getStatus().state());
         } catch (A2AClientException e) {
             System.err.println("✗ Failed to cancel task: " + e.getMessage());

@@ -203,6 +203,14 @@ for i in {1..60}; do
     fi
 done
 
+# Create Kafka Topic for event replication
+echo ""
+echo "Creating Kafka topic for event replication..."
+kubectl apply -f ../k8s/02a-kafka-topic.yaml
+echo "Waiting for Kafka topic to be ready..."
+kubectl wait --for=condition=Ready kafkatopic/a2a-replicated-events -n kafka --timeout=60s
+echo -e "${GREEN}✓ Kafka topic created${NC}"
+
 # Deploy Agent ConfigMap
 echo ""
 echo "Deploying Agent ConfigMap..."

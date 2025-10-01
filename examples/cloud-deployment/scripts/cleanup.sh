@@ -29,6 +29,10 @@ echo "Deleting ConfigMap..."
 kubectl delete -f ../k8s/03-agent-configmap.yaml --ignore-not-found=true
 
 echo ""
+echo "Deleting Kafka topic..."
+kubectl delete -f ../k8s/02a-kafka-topic.yaml --ignore-not-found=true
+
+echo ""
 echo "Deleting Kafka..."
 kubectl delete -f ../k8s/02-kafka.yaml --ignore-not-found=true
 
