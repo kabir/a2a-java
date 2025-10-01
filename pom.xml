@@ -392,6 +392,7 @@
         <module>examples/helloworld</module>
         <module>extras/task-store-database-jpa</module>
         <module>extras/push-notification-config-store-database-jpa</module>
+        <module>extras/queue-manager-replicated</module>
         <module>http-client</module>
         <module>reference/common</module>
         <module>reference/grpc</module>

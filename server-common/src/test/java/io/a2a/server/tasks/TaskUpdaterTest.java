@@ -14,6 +14,7 @@ import java.util.Map;
 
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
+import io.a2a.server.events.EventQueueUtil;
 import io.a2a.spec.Event;
 import io.a2a.spec.Message;
 import io.a2a.spec.Part;
@@ -44,7 +45,7 @@ public class TaskUpdaterTest {
 
     @BeforeEach
     public void init() {
-        eventQueue = EventQueue.create();
+        eventQueue = EventQueueUtil.getEventQueueBuilder().build();
         RequestContext context = new RequestContext.Builder()
                 .setTaskId(TEST_TASK_ID)
                 .setContextId(TEST_TASK_CONTEXT_ID)

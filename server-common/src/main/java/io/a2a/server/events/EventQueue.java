@@ -24,8 +24,6 @@ public abstract class EventQueue implements AutoCloseable {
     private final Semaphore semaphore;
     private volatile boolean closed = false;
 
-
-
     protected EventQueue() {
         this(DEFAULT_QUEUE_SIZE);
     }
@@ -44,12 +42,31 @@ public abstract class EventQueue implements AutoCloseable {
         LOGGER.trace("Creating {}, parent: {}", this, parent);
     }
 
-    public static EventQueue create() {
-        return new MainQueue();
+    static EventQueueBuilder builder() {
+        return new EventQueueBuilder();
     }
 
-    public static EventQueue create(int queueSize) {
-        return new MainQueue(queueSize);
+    public static class EventQueueBuilder {
+        private int queueSize = DEFAULT_QUEUE_SIZE;
+        private EventEnqueueHook hook;
+
+        public EventQueueBuilder queueSize(int queueSize) {
+            this.queueSize = queueSize;
+            return this;
+        }
+
+        public EventQueueBuilder hook(EventEnqueueHook hook) {
+            this.hook = hook;
+            return this;
+        }
+
+        public EventQueue build() {
+            if (hook != null) {
+                return new MainQueue(queueSize, hook);
+            } else {
+                return new MainQueue(queueSize);
+            }
+        }
     }
 
     public int getQueueSize() {
@@ -148,13 +165,26 @@ public abstract class EventQueue implements AutoCloseable {
         private final List<ChildQueue> children = new CopyOnWriteArrayList<>();
         private final CountDownLatch pollingStartedLatch = new CountDownLatch(1);
         private final AtomicBoolean pollingStarted = new AtomicBoolean(false);
+        private final EventEnqueueHook enqueueHook;
 
         MainQueue() {
             super();
+            this.enqueueHook = null;
         }
 
         MainQueue(int queueSize) {
             super(queueSize);
+            this.enqueueHook = null;
+        }
+
+        MainQueue(EventEnqueueHook hook) {
+            super();
+            this.enqueueHook = hook;
+        }
+
+        MainQueue(int queueSize, EventEnqueueHook hook) {
+            super(queueSize);
+            this.enqueueHook = hook;
         }
 
         EventQueue tap() {
@@ -166,6 +196,9 @@ public abstract class EventQueue implements AutoCloseable {
         public void enqueueEvent(Event event) {
             super.enqueueEvent(event);
             children.forEach(eq -> eq.internalEnqueueEvent(event));
+            if (enqueueHook != null) {
+                enqueueHook.onEnqueue(event);
+            }
         }
 
         @Override

@@ -132,7 +132,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
         EventQueue queue = queueManager.tap(task.getId());
         if (queue == null) {
-            queue = EventQueue.create();
+            queue = queueManager.getEventQueueBuilder(task.getId()).build();
         }
         agentExecutor.cancel(
                 requestContextBuilder.get()
