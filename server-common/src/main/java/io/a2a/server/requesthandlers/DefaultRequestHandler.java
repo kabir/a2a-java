@@ -192,10 +192,10 @@ public class DefaultRequestHandler implements RequestHandler {
 
         } finally {
             if (interrupted) {
-                CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId), executor);
+                CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId, queue), executor);
                 trackBackgroundTask(cleanupTask);
             } else {
-                cleanupProducer(taskId);
+                cleanupProducer(taskId, queue);
             }
         }
 
@@ -260,7 +260,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
             return convertingProcessor(eventPublisher, event -> (StreamingEventKind) event);
         } finally {
-            CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId.get()), executor);
+            CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId.get(), queue), executor);
             trackBackgroundTask(cleanupTask);
         }
     }
@@ -390,7 +390,7 @@ public class DefaultRequestHandler implements RequestHandler {
                     if (err != null) {
                         runnable.setError(err);
                     }
-                    queue.close();
+                    // queue.close() removed - now handled in cleanupProducer()
                     runnable.invokeDoneCallbacks();
                 });
         runningAgents.put(taskId, cf);
@@ -415,12 +415,13 @@ public class DefaultRequestHandler implements RequestHandler {
         });
     }
 
-    private void cleanupProducer(String taskId) {
+    private void cleanupProducer(String taskId, EventQueue queue) {
         // TODO the Python implementation waits for the producerRunnable
         runningAgents.get(taskId)
                 .whenComplete((v, t) -> {
-                    queueManager.close(taskId);
+                    queue.close();  // Close the ChildQueue
                     runningAgents.remove(taskId);
+                    // queueManager.close(taskId) removed - queues auto-cleanup via reference counting
                 });
     }
 
