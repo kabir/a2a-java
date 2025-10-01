@@ -324,7 +324,7 @@ public class DefaultRequestHandler implements RequestHandler {
         // Use createOrTap instead of tap - if the original queue was closed, create a new one
         // This allows resubscription to work even after the initial request completed
         EventQueue queue = queueManager.createOrTap(task.getId());
-        
+
         EventConsumer consumer = new EventConsumer(queue);
         Flow.Publisher<Event> results = resultAggregator.consumeAndEmit(consumer);
         return convertingProcessor(results, e -> (StreamingEventKind) e);
