@@ -177,7 +177,7 @@ public class DefaultRequestHandler implements RequestHandler {
             // any errors thrown by the producerRunnable are not picked up by the consumer
             producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
             etai = resultAggregator.consumeAndBreakOnInterrupt(consumer);
-            
+
             if (etai == null) {
                 LOGGER.debug("No result, throwing InternalError");
                 throw new InternalError("No result");

@@ -44,7 +44,17 @@ public class AgentExecutorProducer {
                     }
                     updater.complete();
                 } else {
-                    eventQueue.enqueueEvent(context.getMessage() != null ? context.getMessage() : context.getTask());
+                    // Default: enqueue the message if present, otherwise use TaskUpdater to ensure proper final event
+                    if (context.getMessage() != null) {
+                        eventQueue.enqueueEvent(context.getMessage());
+                    } else {
+                        // Use TaskUpdater to ensure final events are properly enqueued
+                        TaskUpdater updater = new TaskUpdater(context, eventQueue);
+                        if (context.getTask() == null) {
+                            updater.submit();
+                        }
+                        updater.complete();
+                    }
                 }
             }
 

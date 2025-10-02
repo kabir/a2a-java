@@ -1148,7 +1148,12 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         taskStore.save(MINIMAL_TASK);
 
         agentExecutorExecute = ((context, eventQueue) -> {
+            // Enqueue non-final task with wrong ID, then enqueue final completed task
             eventQueue.enqueueEvent(MINIMAL_TASK);
+            Task completedTask = new Task.Builder(MINIMAL_TASK)
+                    .status(new TaskStatus(TaskState.COMPLETED))
+                    .build();
+            eventQueue.enqueueEvent(completedTask);
         });
         SendMessageRequest request = new SendMessageRequest("1",
                 new MessageSendParams(MESSAGE, null, null));
@@ -1163,7 +1168,12 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         taskStore.save(MINIMAL_TASK);
 
         agentExecutorExecute = ((context, eventQueue) -> {
+            // Enqueue non-final task with wrong ID, then enqueue final completed task
             eventQueue.enqueueEvent(MINIMAL_TASK);
+            Task completedTask = new Task.Builder(MINIMAL_TASK)
+                    .status(new TaskStatus(TaskState.COMPLETED))
+                    .build();
+            eventQueue.enqueueEvent(completedTask);
         });
 
         SendStreamingMessageRequest request = new SendStreamingMessageRequest("1", new MessageSendParams(MESSAGE, null, null));
