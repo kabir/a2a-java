@@ -1,0 +1,824 @@
+[INFO] Scanning for projects...
+[INFO] Inspecting build with total of 29 modules
+[INFO] Installing Central Publishing features
+[INFO] ------------------------------------------------------------------------
+[INFO] Detecting the operating system and CPU architecture
+[INFO] ------------------------------------------------------------------------
+[INFO] os.detected.name: osx
+[INFO] os.detected.arch: aarch_64
+[INFO] os.detected.bitness: 64
+[INFO] os.detected.version: 26.0
+[INFO] os.detected.version.major: 26
+[INFO] os.detected.version.minor: 0
+[INFO] os.detected.classifier: osx-aarch_64
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] Java SDK A2A Parent                                                [pom]
+[INFO] Java SDK A2A Common                                                [jar]
+[INFO] Java SDK A2A Spec                                                  [jar]
+[INFO] Java SDK A2A HTTP Client                                           [jar]
+[INFO] Java SDK A2A Client Transport: SPI                                 [jar]
+[INFO] Java SDK A2A Client Transport: JSONRPC                             [jar]
+[INFO] Java SDK A2A Spec: gRPC                                            [jar]
+[INFO] Java SDK A2A Client Transport: gRPC                                [jar]
+[INFO] Java SDK A2A Client Transport: JSON+HTTP/REST                      [jar]
+[INFO] Java SDK A2A Client                                                [jar]
+[INFO] Java SDK A2A Examples                                              [pom]
+[INFO] Java SDK A2A Examples                                              [jar]
+[INFO] Java SDK A2A Core                                                  [jar]
+[INFO] Java A2A SDK Server Tests Common                                   [jar]
+[INFO] Java A2A Reference Server: Common                                  [jar]
+[INFO] Java SDK A2A Transport: JSONRPC                                    [jar]
+[INFO] Java A2A Reference Server: JSONRPC                                 [jar]
+[INFO] Java SDK A2A Examples                                              [jar]
+[INFO] Java A2A Extras: JPA Database TaskStore                            [jar]
+[INFO] Java A2A Extras: JPA Database PushNotificationConfigStore          [jar]
+[INFO] Java A2A Extras: Replicated Queue Manager Parent                   [pom]
+[INFO] Java A2A Extras: Replicated Queue Manager Core                     [jar]
+[INFO] Java A2A Extras: Replicated Queue Manager MicroProfile Reactive Messaging [jar]
+[INFO] Java A2A Extras: Replicated Queue Manager Tests                    [jar]
+[INFO] Java SDK A2A Transport: gRPC                                       [jar]
+[INFO] Java A2A Reference Server: gRPC                                    [jar]
+[INFO] Java SDK A2A Transport: JSON+HTTP/REST                             [jar]
+[INFO] Java A2A Reference Server: JSON+HTTP/REST                          [jar]
+[INFO] Java SDK A2A TCK Server                                            [jar]
+[INFO] 
+[INFO] Using the MultiThreadedBuilder implementation with a thread count of 10
+[INFO] 
+[INFO] ----------------< io.github.a2asdk:a2a-java-sdk-parent >----------------
+[INFO] Building Java SDK A2A Parent 0.3.0.Beta2-SNAPSHOT                 [1/29]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-parent ---
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-parent ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-parent/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-parent-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] 
+[INFO] 
+[INFO] ----------------< io.github.a2asdk:a2a-java-sdk-common >----------------
+[INFO] -----------< io.github.a2asdk:a2a-java-sdk-examples-parent >------------
+[INFO] Building Java SDK A2A Common 0.3.0.Beta2-SNAPSHOT                 [2/29]
+[INFO] Building Java SDK A2A Examples 0.3.0.Beta2-SNAPSHOT               [3/29]
+[INFO]   from common/pom.xml
+[INFO] 
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]   from examples/helloworld/pom.xml
+[INFO] -----< io.github.a2asdk:a2a-java-queue-manager-replicated-parent >------
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] Building Java A2A Extras: Replicated Queue Manager Parent 0.3.0.Beta2-SNAPSHOT [4/29]
+[INFO]   from extras/queue-manager-replicated/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-queue-manager-replicated-parent ---
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-queue-manager-replicated-parent ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/extras/queue-manager-replicated/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-queue-manager-replicated-parent/0.3.0.Beta2-SNAPSHOT/a2a-java-queue-manager-replicated-parent-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-examples-parent ---
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-common ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/common/target
+[INFO] 
+[INFO] --- quarkus:3.28.1:generate-code (default) @ a2a-java-sdk-examples-parent ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-common ---
+[INFO] Type of the artifact is POM, skipping build goal
+[INFO] 
+[INFO] --- quarkus:3.28.1:generate-code-tests (default) @ a2a-java-sdk-examples-parent ---
+[INFO] Type of the artifact is POM, skipping build goal
+[INFO] 
+[INFO] --- quarkus:3.28.1:build (default) @ a2a-java-sdk-examples-parent ---
+[INFO] Type of the artifact is POM, skipping build goal
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-examples-parent ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/examples/helloworld/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-examples-parent/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-examples-parent-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/common/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-common ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 3 source files with javac [debug target 17] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-common ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/common/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-common ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-common ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-common ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/common/target/a2a-java-sdk-common-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-common ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/common/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-common/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-common-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/common/target/a2a-java-sdk-common-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-common/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-common-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] -----------------< io.github.a2asdk:a2a-java-sdk-spec >-----------------
+[INFO] Building Java SDK A2A Spec 0.3.0.Beta2-SNAPSHOT                   [5/29]
+[INFO]   from spec/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-spec ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-spec ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-spec ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 110 source files with javac [debug target 17] to target/classes
+[INFO] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec/src/main/java/io/a2a/util/Utils.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec/src/main/java/io/a2a/util/Utils.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-spec ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-spec ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 4 source files with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-spec ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.a2a.spec.TaskStatusTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.151 s -- in io.a2a.spec.TaskStatusTest
+[INFO] Running io.a2a.spec.TaskDeserializationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in io.a2a.spec.TaskDeserializationTest
+[INFO] Running io.a2a.spec.SubTypeSerializationTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.047 s -- in io.a2a.spec.SubTypeSerializationTest
+[INFO] Running io.a2a.spec.JSONRPCErrorSerializationTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in io.a2a.spec.JSONRPCErrorSerializationTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 22, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-spec ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec/target/a2a-java-sdk-spec-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-spec ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-spec/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-spec-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec/target/a2a-java-sdk-spec-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-spec/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-spec-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] -------------< io.github.a2asdk:a2a-java-sdk-http-client >--------------
+[INFO] Building Java SDK A2A HTTP Client 0.3.0.Beta2-SNAPSHOT            [6/29]
+[INFO]   from http-client/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] ---------< io.github.a2asdk:a2a-java-sdk-client-transport-spi >---------
+[INFO] Building Java SDK A2A Client Transport: SPI 0.3.0.Beta2-SNAPSHOT  [7/29]
+[INFO]   from client/transport/spi/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --------------< io.github.a2asdk:a2a-java-sdk-spec-grpc >---------------
+[INFO] Building Java SDK A2A Spec: gRPC 0.3.0.Beta2-SNAPSHOT             [8/29]
+[INFO]   from spec-grpc/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-client-transport-spi ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-spi ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-client-transport-spi ---
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-spec-grpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 10 source files with javac [debug target 17] to target/classes
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-spec-grpc ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-spec-grpc ---
+[INFO] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/src/main/java/io/a2a/client/transport/spi/ClientTransportConfigBuilder.java: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/src/main/java/io/a2a/client/transport/spi/ClientTransportConfigBuilder.java uses unchecked or unsafe operations.
+[INFO] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/src/main/java/io/a2a/client/transport/spi/ClientTransportConfigBuilder.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-spi ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-spi ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 1 source file with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-http-client ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/http-client/target
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-http-client ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/http-client/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-http-client ---
+[INFO] Compiling 95 source files with javac [debug target 17] to target/classes
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 4 source files with javac [debug target 17] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-http-client ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/http-client/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-http-client ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-spi ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-http-client ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.a2a.client.transport.spi.interceptors.auth.AuthInterceptorTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.033 s -- in io.a2a.client.transport.spi.interceptors.auth.AuthInterceptorTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client-transport-spi ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/target/a2a-java-sdk-client-transport-spi-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-client-transport-spi ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-client-transport-spi/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-client-transport-spi-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/spi/target/a2a-java-sdk-client-transport-spi-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-client-transport-spi/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-client-transport-spi-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] Running io.a2a.client.http.A2ACardResolverTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.169 s -- in io.a2a.client.http.A2ACardResolverTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-http-client ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/http-client/target/a2a-java-sdk-http-client-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-http-client ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/http-client/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-http-client/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-http-client-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/http-client/target/a2a-java-sdk-http-client-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-http-client/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-http-client-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] -------< io.github.a2asdk:a2a-java-sdk-client-transport-jsonrpc >-------
+[INFO] Building Java SDK A2A Client Transport: JSONRPC 0.3.0.Beta2-SNAPSHOT [9/29]
+[INFO]   from client/transport/jsonrpc/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/jsonrpc/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 5 source files with javac [debug target 17] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/jsonrpc/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 5 source files with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.a2a.client.transport.jsonrpc.sse.SSEEventListenerTest
+[INFO] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/src/main/java/io/a2a/grpc/utils/ProtoUtils.java: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/src/main/java/io/a2a/grpc/utils/ProtoUtils.java uses unchecked or unsafe operations.
+[INFO] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/src/main/java/io/a2a/grpc/utils/ProtoUtils.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-spec-grpc ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-spec-grpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 1 source file with javac [debug target 17] to target/test-classes
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.170 s -- in io.a2a.client.transport.jsonrpc.sse.SSEEventListenerTest
+[INFO] Running io.a2a.client.transport.jsonrpc.JSONRPCTransportTest
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-spec-grpc ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.a2a.grpc.utils.ToProtoTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.137 s -- in io.a2a.grpc.utils.ToProtoTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-spec-grpc ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/target/a2a-java-sdk-spec-grpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-spec-grpc ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-spec-grpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-spec-grpc-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/spec-grpc/target/a2a-java-sdk-spec-grpc-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-spec-grpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-spec-grpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] 
+[INFO] --------< io.github.a2asdk:a2a-java-sdk-client-transport-rest >---------
+[INFO] --------< io.github.a2asdk:a2a-java-sdk-client-transport-grpc >---------
+[INFO] Building Java SDK A2A Client Transport: JSON+HTTP/REST 0.3.0.Beta2-SNAPSHOT [10/29]
+[INFO] Building Java SDK A2A Client Transport: gRPC 0.3.0.Beta2-SNAPSHOT [11/29]
+[INFO]   from client/transport/rest/pom.xml
+[INFO]   from client/transport/grpc/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/grpc/target
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-client-transport-rest ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/rest/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-rest ---
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-client-transport-rest ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 6 source files with javac [debug target 17] to target/classes
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 6 source files with javac [debug target 17] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/grpc/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-rest ---
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/rest/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-rest ---
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target/test-classes
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/grpc/target/a2a-java-sdk-client-transport-grpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-client-transport-grpc ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/grpc/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-client-transport-grpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-client-transport-grpc-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/grpc/target/a2a-java-sdk-client-transport-grpc-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-client-transport-grpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-client-transport-grpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-rest ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.a2a.client.transport.rest.RestTransportTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.173 s -- in io.a2a.client.transport.jsonrpc.JSONRPCTransportTest
+[INFO] Running io.a2a.client.transport.jsonrpc.JSONRPCTransportStreamingTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.375 s -- in io.a2a.client.transport.jsonrpc.JSONRPCTransportStreamingTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/jsonrpc/target/a2a-java-sdk-client-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-client-transport-jsonrpc ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/jsonrpc/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-client-transport-jsonrpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-client-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/jsonrpc/target/a2a-java-sdk-client-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-client-transport-jsonrpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-client-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] ------------< io.github.a2asdk:a2a-java-sdk-server-common >-------------
+[INFO] Building Java SDK A2A Core 0.3.0.Beta2-SNAPSHOT                  [12/29]
+[INFO]   from server-common/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-server-common ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/server-common/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-server-common ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-server-common ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 36 source files with javac [debug target 17] to target/classes
+[WARNING] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/server-common/src/main/java/io/a2a/server/events/InMemoryQueueManager.java:[41,17] close(java.lang.String) in io.a2a.server.events.QueueManager has been deprecated and marked for removal
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-server-common ---
+[INFO] Copying 1 resource from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-server-common ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 17 source files with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-server-common ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.a2a.server.requesthandlers.DefaultRequestHandlerBackgroundTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.633 s -- in io.a2a.server.requesthandlers.DefaultRequestHandlerBackgroundTest
+[INFO] Running io.a2a.server.tasks.TaskManagerTest
+[INFO] Tests run: 27, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.157 s -- in io.a2a.server.tasks.TaskManagerTest
+[INFO] Running io.a2a.server.tasks.TaskUpdaterTest
+[INFO] Tests run: 33, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.024 s -- in io.a2a.server.tasks.TaskUpdaterTest
+[INFO] Running io.a2a.server.tasks.ResultAggregatorTest
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.415 s -- in io.a2a.server.tasks.ResultAggregatorTest
+[INFO] Running io.a2a.server.tasks.PushNotificationSenderTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in io.a2a.server.tasks.PushNotificationSenderTest
+[INFO] Running io.a2a.server.tasks.InMemoryTaskStoreTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in io.a2a.server.tasks.InMemoryTaskStoreTest
+[INFO] Running io.a2a.server.tasks.InMemoryPushNotificationConfigStoreTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.102 s -- in io.a2a.server.tasks.InMemoryPushNotificationConfigStoreTest
+[INFO] Running io.a2a.server.util.async.AsyncUtilsTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.557 s -- in io.a2a.server.util.async.AsyncUtilsTest
+[INFO] Running io.a2a.server.agentexecution.RequestContextTest
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.055 s -- in io.a2a.server.agentexecution.RequestContextTest
+[INFO] Running io.a2a.server.extensions.A2AExtensionsTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in io.a2a.server.extensions.A2AExtensionsTest
+[INFO] Running io.a2a.server.AgentCardValidatorTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in io.a2a.server.AgentCardValidatorTest
+[INFO] Running io.a2a.server.events.EventQueueTest
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in io.a2a.server.events.EventQueueTest
+[INFO] Running io.a2a.server.events.InMemoryQueueManagerTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in io.a2a.server.events.InMemoryQueueManagerTest
+[INFO] Running io.a2a.server.events.EventConsumerTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in io.a2a.server.events.EventConsumerTest
+[INFO] Running io.a2a.server.ServerCallContextTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in io.a2a.server.ServerCallContextTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 203, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-server-common ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/server-common/target/a2a-java-sdk-server-common-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- jar:3.4.2:test-jar (default) @ a2a-java-sdk-server-common ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/server-common/target/a2a-java-sdk-server-common-0.3.0.Beta2-SNAPSHOT-tests.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-server-common ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/server-common/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-server-common/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-server-common-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/server-common/target/a2a-java-sdk-server-common-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-server-common/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-server-common-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/server-common/target/a2a-java-sdk-server-common-0.3.0.Beta2-SNAPSHOT-tests.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-server-common/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-server-common-0.3.0.Beta2-SNAPSHOT-tests.jar
+[INFO] 
+[INFO] 
+[INFO] 
+[INFO] ------------< io.github.a2asdk:a2a-java-sdk-transport-grpc >------------
+[INFO] ------------< io.github.a2asdk:a2a-java-sdk-transport-rest >------------
+[INFO] 
+[INFO] Building Java SDK A2A Transport: JSON+HTTP/REST 0.3.0.Beta2-SNAPSHOT [14/29]
+[INFO] Building Java SDK A2A Transport: gRPC 0.3.0.Beta2-SNAPSHOT       [13/29]
+[INFO] ----------< io.github.a2asdk:a2a-java-sdk-transport-jsonrpc >-----------
+[INFO] Building Java SDK A2A Transport: JSONRPC 0.3.0.Beta2-SNAPSHOT    [15/29]
+[INFO]   from transport/rest/pom.xml
+[INFO] ------< io.github.a2asdk:a2a-java-queue-manager-replicated-core >-------
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]   from transport/jsonrpc/pom.xml
+[INFO]   from transport/grpc/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Building Java A2A Extras: Replicated Queue Manager Core 0.3.0.Beta2-SNAPSHOT [16/29]
+[INFO]   from extras/queue-manager-replicated/core/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/jsonrpc/target
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-queue-manager-replicated-core ---
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-transport-rest ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/extras/queue-manager-replicated/core/target
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/rest/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ a2a-java-sdk-transport-grpc ---
+[INFO] Deleting /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/grpc/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replicated-core ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-transport-rest ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-queue-manager-replicated-core ---
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-transport-rest ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 1 source file with javac [debug target 17] to target/classes
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 3 source files with javac [debug target 17] to target/classes
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 1 source file with javac [debug target 17] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-transport-grpc ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ a2a-java-sdk-transport-grpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 3 source files with javac [debug target 17] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] Copying 2 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target/test-classes
+[WARNING] /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/extras/queue-manager-replicated/core/src/main/java/io/a2a/extras/queuemanager/replicated/core/ReplicatedQueueManager.java:[53,17] close(java.lang.String) in io.a2a.server.events.QueueManager has been deprecated and marked for removal
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replicated-core ---
+[INFO] skip non existing resourceDirectory /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/extras/queue-manager-replicated/core/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-queue-manager-replicated-core ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-transport-rest ---
+[INFO] Copying 1 resource from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-transport-rest ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-transport-grpc ---
+[INFO] Copying 1 resource from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ a2a-java-sdk-transport-grpc ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 2 source files with javac [debug target 17] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-transport-rest ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replicated-core ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-transport-grpc ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.a2a.transport.rest.handler.RestHandlerTest
+[INFO] Running io.a2a.extras.queuemanager.replicated.core.EventSerializationTest
+[INFO] Running io.a2a.transport.jsonrpc.handler.JSONRPCHandlerTest
+[INFO] Running io.a2a.transport.grpc.handler.GrpcHandlerTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.227 s -- in io.a2a.extras.queuemanager.replicated.core.EventSerializationTest
+[INFO] Running io.a2a.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest
+[ERROR] Tests run: 9, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.079 s <<< FAILURE! -- in io.a2a.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest
+[ERROR] io.a2a.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest.testBasicQueueManagerFunctionality -- Time elapsed: 0.006 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <io.a2a.server.events.EventQueue$ChildQueue@68b6f0d6> but was: <io.a2a.server.events.EventQueue$MainQueue@665df3c6>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+	at io.a2a.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest.testBasicQueueManagerFunctionality(ReplicatedQueueManagerTest.java:151)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   ReplicatedQueueManagerTest.testBasicQueueManagerFunctionality:151 expected: <io.a2a.server.events.EventQueue$ChildQueue@68b6f0d6> but was: <io.a2a.server.events.EventQueue$MainQueue@665df3c6>
+[INFO] 
+[ERROR] Tests run: 17, Failures: 1, Errors: 0, Skipped: 0
+[INFO] 
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.541 s -- in io.a2a.transport.rest.handler.RestHandlerTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-transport-rest ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/rest/target/a2a-java-sdk-transport-rest-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-transport-rest ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/rest/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-transport-rest/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-transport-rest-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/rest/target/a2a-java-sdk-transport-rest-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-transport-rest/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-transport-rest-0.3.0.Beta2-SNAPSHOT.jar
+[ERROR] Tests run: 9, Failures: 1, Errors: 2, Skipped: 0, Time elapsed: 11.92 s <<< FAILURE! -- in io.a2a.client.transport.rest.RestTransportTest
+[ERROR] io.a2a.client.transport.rest.RestTransportTest.testSetTaskPushNotificationConfiguration -- Time elapsed: 0.522 s <<< ERROR!
+java.lang.RuntimeException: Exception while binding MockServer to port 4001
+	at org.mockserver.lifecycle.LifeCycle.bindPorts(LifeCycle.java:231)
+	at org.mockserver.lifecycle.LifeCycle.bindServerPorts(LifeCycle.java:195)
+	at org.mockserver.netty.MockServer.createServerBootstrap(MockServer.java:195)
+	at org.mockserver.netty.MockServer.<init>(MockServer.java:78)
+	at org.mockserver.netty.MockServer.<init>(MockServer.java:57)
+	at org.mockserver.integration.ClientAndServer.<init>(ClientAndServer.java:58)
+	at org.mockserver.integration.ClientAndServer.<init>(ClientAndServer.java:52)
+	at io.a2a.client.transport.rest.RestTransportTest.setUp(RestTransportTest.java:70)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	Suppressed: java.lang.NullPointerException: Cannot invoke "org.mockserver.integration.ClientAndServer.stop()" because "this.server" is null
+		at io.a2a.client.transport.rest.RestTransportTest.tearDown(RestTransportTest.java:75)
+		... 3 more
+Caused by: java.net.BindException: Address already in use
+	at java.base/sun.nio.ch.Net.bind0(Native Method)
+	at java.base/sun.nio.ch.Net.bind(Net.java:555)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.netBind(ServerSocketChannelImpl.java:337)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:294)
+	at io.netty.channel.socket.nio.NioServerSocketChannel.doBind(NioServerSocketChannel.java:141)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:561)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.bind(DefaultChannelPipeline.java:1281)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeBind(AbstractChannelHandlerContext.java:600)
+	at io.netty.channel.AbstractChannelHandlerContext.bind(AbstractChannelHandlerContext.java:579)
+	at io.netty.channel.DefaultChannelPipeline.bind(DefaultChannelPipeline.java:922)
+	at io.netty.channel.AbstractChannel.bind(AbstractChannel.java:259)
+	at io.netty.bootstrap.AbstractBootstrap$2.run(AbstractBootstrap.java:380)
+	at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:569)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+[ERROR] io.a2a.client.transport.rest.RestTransportTest.testDeleteTaskPushNotificationConfigurations -- Time elapsed: 0.330 s <<< ERROR!
+io.a2a.spec.A2AClientException: Failed to delete push notification config: java.net.ConnectException
+	at io.a2a.client.transport.rest.RestTransport.deleteTaskPushNotificationConfigurations(RestTransport.java:278)
+	at io.a2a.client.transport.rest.RestTransportTest.testDeleteTaskPushNotificationConfigurations(RestTransportTest.java:373)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+Caused by: java.net.ConnectException
+	at java.net.http/jdk.internal.net.http.HttpClientImpl.send(HttpClientImpl.java:574)
+	at java.net.http/jdk.internal.net.http.HttpClientFacade.send(HttpClientFacade.java:123)
+	at io.a2a.client.http.JdkA2AHttpClient$JdkDeleteBuilder.delete(JdkA2AHttpClient.java:172)
+	at io.a2a.client.transport.rest.RestTransport.deleteTaskPushNotificationConfigurations(RestTransport.java:271)
+	... 4 more
+Caused by: java.net.ConnectException
+	at java.net.http/jdk.internal.net.http.common.Utils.toConnectException(Utils.java:1107)
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.connectAsync(PlainHttpConnection.java:198)
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.checkRetryConnect(PlainHttpConnection.java:230)
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.lambda$connectAsync$1(PlainHttpConnection.java:206)
+	at java.base/java.util.concurrent.CompletableFuture.uniHandle(CompletableFuture.java:934)
+	at java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(CompletableFuture.java:911)
+	at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:510)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1773)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.nio.channels.ClosedChannelException
+	at java.base/sun.nio.ch.SocketChannelImpl.ensureOpen(SocketChannelImpl.java:195)
+	at java.base/sun.nio.ch.SocketChannelImpl.beginConnect(SocketChannelImpl.java:760)
+	at java.base/sun.nio.ch.SocketChannelImpl.connect(SocketChannelImpl.java:848)
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.lambda$connectAsync$0(PlainHttpConnection.java:183)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:569)
+	at java.net.http/jdk.internal.net.http.PlainHttpConnection.connectAsync(PlainHttpConnection.java:185)
+	... 9 more
+
+[ERROR] io.a2a.client.transport.rest.RestTransportTest.testResubscribe -- Time elapsed: 10.12 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)
+	at io.a2a.client.transport.rest.RestTransportTest.testResubscribe(RestTransportTest.java:408)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[WARNING] Tests run: 41, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.975 s -- in io.a2a.transport.jsonrpc.handler.JSONRPCHandlerTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[WARNING] Tests run: 41, Failures: 0, Errors: 0, Skipped: 1
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/jsonrpc/target/a2a-java-sdk-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-transport-jsonrpc ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/jsonrpc/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-transport-jsonrpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/jsonrpc/target/a2a-java-sdk-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-transport-jsonrpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-transport-jsonrpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   RestTransportTest.testResubscribe:408 expected: <true> but was: <false>
+[ERROR] Errors: 
+[ERROR]   RestTransportTest.testDeleteTaskPushNotificationConfigurations:373 » A2AClient Failed to delete push notification config: java.net.ConnectException
+[ERROR]   RestTransportTest.setUp:70 » Runtime Exception while binding MockServer to port 4001
+[INFO] 
+[ERROR] Tests run: 9, Failures: 1, Errors: 2, Skipped: 0
+[INFO] 
+[INFO] Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.001 s -- in io.a2a.transport.grpc.handler.GrpcHandlerTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 31, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-transport-grpc ---
+[INFO] Building jar: /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/grpc/target/a2a-java-sdk-transport-grpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] 
+[INFO] --- install:3.1.2:install (default-install) @ a2a-java-sdk-transport-grpc ---
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/grpc/pom.xml to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-transport-grpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-transport-grpc-0.3.0.Beta2-SNAPSHOT.pom
+[INFO] Installing /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/transport/grpc/target/a2a-java-sdk-transport-grpc-0.3.0.Beta2-SNAPSHOT.jar to /Users/kabir/.m2/repository/io/github/a2asdk/a2a-java-sdk-transport-grpc/0.3.0.Beta2-SNAPSHOT/a2a-java-sdk-transport-grpc-0.3.0.Beta2-SNAPSHOT.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Java SDK A2A Parent 0.3.0.Beta2-SNAPSHOT:
+[INFO] 
+[INFO] Java SDK A2A Parent ................................ SUCCESS [  0.066 s]
+[INFO] Java SDK A2A Common ................................ SUCCESS [  0.486 s]
+[INFO] Java SDK A2A Spec .................................. SUCCESS [  1.185 s]
+[INFO] Java SDK A2A HTTP Client ........................... SUCCESS [  0.838 s]
+[INFO] Java SDK A2A Client Transport: SPI ................. SUCCESS [  0.520 s]
+[INFO] Java SDK A2A Client Transport: JSONRPC ............. SUCCESS [  3.709 s]
+[INFO] Java SDK A2A Spec: gRPC ............................ SUCCESS [  2.174 s]
+[INFO] Java SDK A2A Client Transport: gRPC ................ SUCCESS [  0.121 s]
+[INFO] Java SDK A2A Client Transport: JSON+HTTP/REST ...... FAILURE [ 12.839 s]
+[INFO] Java SDK A2A Client ................................ SKIPPED
+[INFO] Java SDK A2A Examples .............................. SUCCESS [  0.039 s]
+[INFO] Java SDK A2A Examples .............................. SKIPPED
+[INFO] Java SDK A2A Core .................................. SUCCESS [  8.846 s]
+[INFO] Java A2A SDK Server Tests Common ................... SKIPPED
+[INFO] Java A2A Reference Server: Common .................. SKIPPED
+[INFO] Java SDK A2A Transport: JSONRPC .................... SUCCESS [  1.603 s]
+[INFO] Java A2A Reference Server: JSONRPC ................. SKIPPED
+[INFO] Java SDK A2A Examples .............................. SKIPPED
+[INFO] Java A2A Extras: JPA Database TaskStore ............ SKIPPED
+[INFO] Java A2A Extras: JPA Database PushNotificationConfigStore SKIPPED
+[INFO] Java A2A Extras: Replicated Queue Manager Parent ... SUCCESS [  0.005 s]
+[INFO] Java A2A Extras: Replicated Queue Manager Core ..... FAILURE [  0.890 s]
+[INFO] Java A2A Extras: Replicated Queue Manager MicroProfile Reactive Messaging SKIPPED
+[INFO] Java A2A Extras: Replicated Queue Manager Tests .... SKIPPED
+[INFO] Java SDK A2A Transport: gRPC ....................... SUCCESS [  1.702 s]
+[INFO] Java A2A Reference Server: gRPC .................... SKIPPED
+[INFO] Java SDK A2A Transport: JSON+HTTP/REST ............. SUCCESS [  1.099 s]
+[INFO] Java A2A Reference Server: JSON+HTTP/REST .......... SKIPPED
+[INFO] Java SDK A2A TCK Server ............................ SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  17.494 s (Wall Clock)
+[INFO] Finished at: 2025-10-02T15:24:27+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.1.2:test (default-test) on project a2a-java-queue-manager-replicated-core: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/extras/queue-manager-replicated/core/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.1.2:test (default-test) on project a2a-java-sdk-client-transport-rest: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/kabir/sourcecontrol/AI/a2aproject/a2a-java/client/transport/rest/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :a2a-java-queue-manager-replicated-core

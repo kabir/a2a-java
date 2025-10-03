@@ -190,6 +190,7 @@ public abstract class EventQueue implements AutoCloseable {
         EventQueue tap() {
             ChildQueue child = new ChildQueue(this);
             children.add(child);
+            System.err.println("[MainQueue] Added child " + child + " to " + this + " (total children: " + children.size() + ")");
             return child;
         }
 
@@ -220,8 +221,9 @@ public abstract class EventQueue implements AutoCloseable {
 
         void childClosing(ChildQueue child, boolean immediate) {
             children.remove(child);  // Remove the closing child
+            System.err.println("[MainQueue] Removed child " + child + " from " + this + " (remaining children: " + children.size() + ", immediate=" + immediate + ")");
 
-            // Only close MainQueue if immediate OR no children left
+            // Close MainQueue when last child closes or on immediate close
             if (immediate || children.isEmpty()) {
                 this.doClose(immediate);
             }
@@ -281,8 +283,12 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public void close(boolean immediate) {
+            // Only notify parent if this is the first close (not already closed)
+            boolean wasNotClosed = !this.isClosed();
             this.doClose(immediate);           // Close self first
-            parent.childClosing(this, immediate);  // Notify parent
+            if (wasNotClosed) {
+                parent.childClosing(this, immediate);  // Notify parent only once
+            }
         }
     }
 }

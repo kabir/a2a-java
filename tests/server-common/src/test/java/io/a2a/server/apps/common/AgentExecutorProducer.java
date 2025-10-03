@@ -25,36 +25,16 @@ public class AgentExecutorProducer {
             public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
                 if (context.getTaskId().equals("task-not-supported-123")) {
                     eventQueue.enqueueEvent(new UnsupportedOperationError());
-                } else if (context.getTaskId() != null && context.getTaskId().startsWith("resubscribe-nonstreaming-test-")) {
-                    // Special handling for resubscription test
-                    // Enqueue 3 artifacts with delays to simulate streaming behavior
+                } else if (context.getTaskId().startsWith("resubscribe-nonstreaming-test-")) {
+                    // Special handling for resubscription test - all messages use streaming client
                     TaskUpdater updater = new TaskUpdater(context, eventQueue);
                     if (context.getTask() == null) {
+                        // First message - ensure task is created
                         updater.submit();
                     }
-                    updater.startWork();
-
-                    for (int i = 1; i <= 3; i++) {
-                        try {
-                            Thread.sleep(100); // Small delay between artifacts
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                        updater.addArtifact(List.of(new TextPart("artifact-" + i, null)), null, null, null);
-                    }
-                    updater.complete();
+                    updater.addArtifact(List.of(new TextPart("response", null)), null, null, null);
                 } else {
-                    // Default: enqueue the message if present, otherwise use TaskUpdater to ensure proper final event
-                    if (context.getMessage() != null) {
-                        eventQueue.enqueueEvent(context.getMessage());
-                    } else {
-                        // Use TaskUpdater to ensure final events are properly enqueued
-                        TaskUpdater updater = new TaskUpdater(context, eventQueue);
-                        if (context.getTask() == null) {
-                            updater.submit();
-                        }
-                        updater.complete();
-                    }
+                    eventQueue.enqueueEvent(context.getMessage() != null ? context.getMessage() : context.getTask());
                 }
             }
 

@@ -51,6 +51,7 @@ public class InMemoryQueueManager implements QueueManager {
 
         // Lazy cleanup: remove closed queues from map
         if (existing != null && existing.isClosed()) {
+            System.err.println("[QueueManager] Lazy cleanup: removing closed queue for task " + taskId + " - " + existing);
             queues.remove(taskId);
             existing = null;
         }
@@ -62,10 +63,15 @@ public class InMemoryQueueManager implements QueueManager {
             newQueue = factory.builder(taskId).build();
             // Make sure an existing queue has not been added in the meantime
             existing = queues.putIfAbsent(taskId, newQueue);
+            System.err.println("[QueueManager] Created new MainQueue for task " + taskId + " - " + (existing == null ? newQueue : existing));
+        } else {
+            System.err.println("[QueueManager] Reusing existing MainQueue for task " + taskId + " - " + existing);
         }
 
         EventQueue main = existing == null ? newQueue : existing;
-        return main.tap();  // Always return ChildQueue
+        EventQueue child = main.tap();
+        System.err.println("[QueueManager] Returning ChildQueue " + child + " for task " + taskId + " (MainQueue: " + main + ")");
+        return child;
     }
 
     @Override

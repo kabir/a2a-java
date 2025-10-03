@@ -1,5 +1,7 @@
 package io.a2a.extras.queuemanager.replicated.core;
 
+import static io.a2a.server.events.EventQueueTestUtils.isChildQueue;
+import static io.a2a.server.events.EventQueueTestUtils.isMainQueue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -146,12 +148,18 @@ class ReplicatedQueueManagerTest {
 
         EventQueue queue = queueManager.createOrTap(taskId);
         assertNotNull(queue);
+        // createOrTap() now returns ChildQueue
+        assertTrue(isChildQueue(queue));
 
         EventQueue retrievedQueue = queueManager.get(taskId);
-        assertEquals(queue, retrievedQueue);
+        assertNotNull(retrievedQueue);
+        // get() returns the MainQueue
+        assertTrue(isMainQueue(retrievedQueue));
 
         EventQueue tappedQueue = queueManager.tap(taskId);
         assertNotNull(tappedQueue);
+        // tap() returns a different ChildQueue
+        assertTrue(isChildQueue(tappedQueue));
         assertNotEquals(queue, tappedQueue);
 
         queueManager.close(taskId);

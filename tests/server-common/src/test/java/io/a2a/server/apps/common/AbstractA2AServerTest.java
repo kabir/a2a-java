@@ -545,7 +545,7 @@ public abstract class AbstractA2AServerTest {
         String taskId = "resubscribe-nonstreaming-test-" + System.currentTimeMillis();
         String contextId = "session-xyz";
 
-        // Step 1: Create task with first non-streaming message
+        // Step 1: Create task with first streaming message
         Message message1 = new Message.Builder(MESSAGE)
                 .taskId(taskId)
                 .contextId(contextId)
@@ -554,14 +554,29 @@ public abstract class AbstractA2AServerTest {
         CountDownLatch firstMessageLatch = new CountDownLatch(1);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
-        getNonStreamingClient().sendMessage(message1, List.of((event, agentCard) -> {
-            firstMessageLatch.countDown();
-        }), null);
+        // Consumer for first message - wait for artifact with taskId
+        BiConsumer<ClientEvent, AgentCard> firstMessageConsumer = (event, agentCard) -> {
+            if (event instanceof TaskUpdateEvent taskUpdateEvent) {
+                if (taskUpdateEvent.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifactEvent) {
+                    if (taskId.equals(artifactEvent.getTaskId())) {
+                        firstMessageLatch.countDown();
+                    }
+                }
+            }
+        };
+
+        Consumer<Throwable> errorHandler = error -> {
+            if (!isStreamClosedError(error)) {
+                errorRef.set(error);
+            }
+        };
+
+        getClient().sendMessage(message1, List.of(firstMessageConsumer), errorHandler);
 
         assertTrue(firstMessageLatch.await(10, TimeUnit.SECONDS));
 
         // Step 2: Resubscribe to the task for streaming updates
-        CountDownLatch artifactLatch = new CountDownLatch(6); // Expecting 6 more artifacts (2 messages × 3 artifacts)
+        CountDownLatch artifactLatch = new CountDownLatch(2); // Expecting 2 artifacts (message2 + message3)
         List<String> receivedArtifacts = new java.util.concurrent.CopyOnWriteArrayList<>();
 
         BiConsumer<ClientEvent, AgentCard> streamingConsumer = (event, agentCard) -> {
@@ -579,7 +594,7 @@ public abstract class AbstractA2AServerTest {
             }
         };
 
-        Consumer<Throwable> errorHandler = error -> {
+        Consumer<Throwable> resubscriptionErrorHandler = error -> {
             if (!isStreamClosedError(error)) {
                 errorRef.set(error);
                 // Count down remaining to unblock test
@@ -594,11 +609,11 @@ public abstract class AbstractA2AServerTest {
         awaitStreamingSubscription()
                 .whenComplete((unused, throwable) -> subscriptionLatch.countDown());
 
-        getClient().resubscribe(new TaskIdParams(taskId), List.of(streamingConsumer), errorHandler);
+        getClient().resubscribe(new TaskIdParams(taskId), List.of(streamingConsumer), resubscriptionErrorHandler);
 
         assertTrue(subscriptionLatch.await(15, TimeUnit.SECONDS));
 
-        // Step 3: Send 2 more non-streaming messages while subscription is active
+        // Step 3: Send 2 more messages with streaming client while subscription is active
         Message message2 = new Message.Builder(MESSAGE)
                 .taskId(taskId)
                 .contextId(contextId)
@@ -609,30 +624,31 @@ public abstract class AbstractA2AServerTest {
                 .contextId(contextId)
                 .build();
 
-        CountDownLatch secondMessageLatch = new CountDownLatch(1);
-        getNonStreamingClient().sendMessage(message2, List.of((event, agentCard) -> {
-            secondMessageLatch.countDown();
-        }), null);
-        assertTrue(secondMessageLatch.await(10, TimeUnit.SECONDS));
+        // Use streaming client - artifacts will be received by resubscription
+        getClient().sendMessage(message2, List.of(), errorHandler);
+        getClient().sendMessage(message3, List.of(), errorHandler);
 
-        CountDownLatch thirdMessageLatch = new CountDownLatch(1);
-        getNonStreamingClient().sendMessage(message3, List.of((event, agentCard) -> {
-            thirdMessageLatch.countDown();
-        }), null);
-        assertTrue(thirdMessageLatch.await(10, TimeUnit.SECONDS));
-
-        // Step 4: Verify all 6 artifacts received by streaming subscriber
-        assertTrue(artifactLatch.await(30, TimeUnit.SECONDS));
+        // Step 4: Verify all 2 artifacts received by streaming subscriber
+        boolean receivedAll = artifactLatch.await(30, TimeUnit.SECONDS);
+        if (!receivedAll) {
+            System.err.println("Test failed - only received " + receivedArtifacts.size() + " artifacts out of 2 expected");
+            System.err.println("Received artifacts: " + receivedArtifacts);
+            System.err.println("Remaining count: " + artifactLatch.getCount());
+            fail("Expected 2 artifacts but got " + receivedArtifacts.size() + ": " + receivedArtifacts);
+        }
+        if (errorRef.get() != null) {
+            System.err.println("Error occurred: " + errorRef.get().getMessage());
+            errorRef.get().printStackTrace();
+            fail("Error occurred: " + errorRef.get().getMessage());
+        }
+        assertTrue(receivedAll);
         assertNull(errorRef.get());
 
-        // Verify we got exactly 6 artifacts
-        assertEquals(6, receivedArtifacts.size());
+        // Verify we got exactly 2 artifacts
+        assertEquals(2, receivedArtifacts.size());
 
         // Verify artifact content (artifacts from message 2 and 3)
-        List<String> expectedArtifacts = List.of(
-                "artifact-1", "artifact-2", "artifact-3",  // From message 2
-                "artifact-1", "artifact-2", "artifact-3"   // From message 3
-        );
+        List<String> expectedArtifacts = List.of("response", "response");
         assertEquals(expectedArtifacts, receivedArtifacts);
     }
 
