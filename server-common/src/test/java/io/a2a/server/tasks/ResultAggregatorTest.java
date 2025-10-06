@@ -11,6 +11,9 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
+import io.a2a.server.events.EventConsumer;
+import io.a2a.server.events.EventQueue;
+import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
@@ -194,15 +197,15 @@ public class ResultAggregatorTest {
         when(mockTaskManager.getTask()).thenReturn(firstEvent);
 
         // Create an event queue using QueueManager (which has access to builder)
-        io.a2a.server.events.InMemoryQueueManager queueManager =
-            new io.a2a.server.events.InMemoryQueueManager();
+        InMemoryQueueManager queueManager =
+            new InMemoryQueueManager();
 
-        io.a2a.server.events.EventQueue queue = queueManager.getEventQueueBuilder("test-task").build();
+        EventQueue queue = queueManager.getEventQueueBuilder("test-task").build();
         queue.enqueueEvent(firstEvent);
 
         // Create real EventConsumer with the queue
-        io.a2a.server.events.EventConsumer eventConsumer =
-            new io.a2a.server.events.EventConsumer(queue);
+        EventConsumer eventConsumer =
+            new EventConsumer(queue);
 
         // Close queue after first event to simulate stream ending after processing
         queue.close();

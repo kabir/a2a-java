@@ -193,14 +193,7 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator.EventTypeAndInterrupt etai = null;
         try {
             // Create callback for push notifications during background event processing
-            Runnable pushNotificationCallback = () -> {
-                if (pushSender != null && taskId != null) {
-                    EventKind latest = resultAggregator.getCurrentResult();
-                    if (latest instanceof Task latestTask) {
-                        pushSender.sendNotification(latestTask);
-                    }
-                }
-            };
+            Runnable pushNotificationCallback = () -> sendPushNotification(taskId, resultAggregator);
 
             EventConsumer consumer = new EventConsumer(queue);
 
@@ -222,13 +215,7 @@ public class DefaultRequestHandler implements RequestHandler {
             }
 
             // Send push notification after initial return (for both blocking and non-blocking)
-            if (pushSender != null && taskId != null) {
-                EventKind latest = resultAggregator.getCurrentResult();
-                if (latest instanceof Task latestTask) {
-                    pushSender.sendNotification(latestTask);
-                }
-            }
-
+            pushNotificationCallback.run();
         } finally {
             if (interruptedOrNonBlocking) {
                 CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId), executor);
@@ -547,6 +534,15 @@ public class DefaultRequestHandler implements RequestHandler {
                 .setServerCallContext(context)
                 .build();
         return new MessageSendSetup(taskManager, task, requestContext);
+    }
+
+    private void sendPushNotification(String taskId, ResultAggregator resultAggregator) {
+        if (pushSender != null && taskId != null) {
+            EventKind latest = resultAggregator.getCurrentResult();
+            if (latest instanceof Task latestTask) {
+                pushSender.sendNotification(latestTask);
+            }
+        }
     }
 
     private record MessageSendSetup(TaskManager taskManager, Task task, RequestContext requestContext) {}
