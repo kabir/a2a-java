@@ -183,7 +183,7 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null);
 
         boolean blocking = true; // Default to blocking behavior
-        if (params.configuration() != null && !params.configuration().blocking()) {
+        if (params.configuration() != null && Boolean.FALSE.equals(params.configuration().blocking())) {
             blocking = false;
         }
 
