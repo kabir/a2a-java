@@ -31,4 +31,8 @@ public class TaskNotCancelableError extends JSONRPCError {
                 data);
     }
 
+    public TaskNotCancelableError(@JsonProperty("message") String message) {
+        this(null, message, null);
+    }
+
 }

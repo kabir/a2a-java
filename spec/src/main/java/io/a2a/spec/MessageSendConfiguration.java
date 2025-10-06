@@ -23,7 +23,7 @@ public record MessageSendConfiguration(List<String> acceptedOutputModes, Integer
         List<String> acceptedOutputModes;
         Integer historyLength;
         PushNotificationConfig pushNotificationConfig;
-        boolean blocking;
+        boolean blocking = true;
 
         public Builder acceptedOutputModes(List<String> acceptedOutputModes) {
             this.acceptedOutputModes = acceptedOutputModes;
