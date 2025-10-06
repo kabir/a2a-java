@@ -45,7 +45,7 @@ public class ResultAggregator {
         }));
     }
 
-    public EventKind consumeAll(EventConsumer consumer) {
+    public EventKind consumeAll(EventConsumer consumer) throws JSONRPCError {
         AtomicReference<EventKind> returnedEvent = new AtomicReference<>();
         Flow.Publisher<Event> all = consumer.consumeAll();
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -64,6 +64,11 @@ public class ResultAggregator {
                     return true;
                 },
                 error::set);
+
+        Throwable err = error.get();
+        if (err != null) {
+            Utils.rethrow(err);
+        }
 
         if (returnedEvent.get() != null) {
             return returnedEvent.get();
