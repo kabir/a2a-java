@@ -45,7 +45,7 @@ public class ResultAggregator {
         }));
     }
 
-    public EventKind consumeAll(EventConsumer consumer) {
+    public EventKind consumeAll(EventConsumer consumer) throws JSONRPCError {
         AtomicReference<EventKind> returnedEvent = new AtomicReference<>();
         Flow.Publisher<Event> all = consumer.consumeAll();
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -65,13 +65,22 @@ public class ResultAggregator {
                 },
                 error::set);
 
+        Throwable err = error.get();
+        if (err != null) {
+            Utils.rethrow(err);
+        }
+
         if (returnedEvent.get() != null) {
             return returnedEvent.get();
         }
         return taskManager.getTask();
     }
 
-    public EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer) throws JSONRPCError {
+    public EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer, boolean blocking) throws JSONRPCError {
+        return consumeAndBreakOnInterrupt(consumer, blocking, null);
+    }
+
+    public EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer, boolean blocking, Runnable eventCallback) throws JSONRPCError {
         Flow.Publisher<Event> all = consumer.consumeAll();
         AtomicReference<Message> message = new AtomicReference<>();
         AtomicBoolean interrupted = new AtomicBoolean(false);
@@ -92,16 +101,28 @@ public class ResultAggregator {
 
                     callTaskManagerProcess(event);
 
-                    if ((event instanceof Task task && task.getStatus().state() == TaskState.AUTH_REQUIRED)
-                            || (event instanceof TaskStatusUpdateEvent tsue && tsue.getStatus().state() == TaskState.AUTH_REQUIRED)) {
+                    boolean shouldInterrupt = false;
+                    boolean isAuthRequired = (event instanceof Task task && task.getStatus().state() == TaskState.AUTH_REQUIRED)
+                            || (event instanceof TaskStatusUpdateEvent tsue && tsue.getStatus().state() == TaskState.AUTH_REQUIRED);
+
+                    // Always interrupt on auth_required, as it needs external action.
+                    if (isAuthRequired) {
                         // auth-required is a special state: the message should be
                         // escalated back to the caller, but the agent is expected to
                         // continue producing events once the authorization is received
                         // out-of-band. This is in contrast to input-required, where a
                         // new request is expected in order for the agent to make progress,
                         // so the agent should exit.
+                        shouldInterrupt = true;
+                    }
+                    // For non-blocking calls, interrupt as soon as a task is available.
+                    else if (!blocking) {
+                        shouldInterrupt = true;
+                    }
 
-                        CompletableFuture.runAsync(() -> continueConsuming(all));
+                    if (shouldInterrupt) {
+                        // Continue consuming the rest of the events in the background.
+                        CompletableFuture.runAsync(() -> continueConsuming(all, eventCallback));
                         interrupted.set(true);
                         return false;
                     }
@@ -118,11 +139,14 @@ public class ResultAggregator {
                 message.get() != null ? message.get() : taskManager.getTask(), interrupted.get());
     }
 
-    private void continueConsuming(Flow.Publisher<Event> all) {
+    private void continueConsuming(Flow.Publisher<Event> all, Runnable eventCallback) {
         consumer(createTubeConfig(),
                 all,
                 event -> {
                     callTaskManagerProcess(event);
+                    if (eventCallback != null) {
+                        eventCallback.run();
+                    }
                     return true;
                 },
                 t -> {});

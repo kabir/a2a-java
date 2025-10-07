@@ -1131,10 +1131,14 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
 
         try (MockedConstruction<ResultAggregator> mocked = Mockito.mockConstruction(
                 ResultAggregator.class,
-                (mock, context) ->
+                (mock, context) -> {
                         Mockito.doThrow(
                                 new UnsupportedOperationError())
-                                .when(mock).consumeAndBreakOnInterrupt(Mockito.any(EventConsumer.class)))){
+                                .when(mock).consumeAndBreakOnInterrupt(
+                                        Mockito.any(EventConsumer.class),
+                                        Mockito.anyBoolean(),
+                                        Mockito.any());
+                })){
             response = handler.onMessageSend(request, callContext);
         }
 
@@ -1470,5 +1474,4 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         Assertions.assertTrue(eventReceived.get(), "Should have received streaming event");
         Assertions.assertFalse(mainThreadBlocked.get(), "Main thread should not have been blocked");
     }
-
 }

@@ -2,6 +2,7 @@ package io.a2a.server.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -10,6 +11,9 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
+import io.a2a.server.events.EventConsumer;
+import io.a2a.server.events.EventQueue;
+import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
@@ -182,5 +186,36 @@ public class ResultAggregatorTest {
         assertEquals(message, result);
         // Task manager should not be called when message is present
         verifyNoInteractions(mockTaskManager);
+    }
+
+    @Test
+    void testConsumeAndBreakNonBlocking() throws Exception {
+        // Test that with blocking=false, the method returns after the first event
+        Task firstEvent = createSampleTask("non_blocking_task", TaskState.WORKING, "ctx1");
+
+        // After processing firstEvent, the current result will be that task
+        when(mockTaskManager.getTask()).thenReturn(firstEvent);
+
+        // Create an event queue using QueueManager (which has access to builder)
+        InMemoryQueueManager queueManager =
+            new InMemoryQueueManager();
+
+        EventQueue queue = queueManager.getEventQueueBuilder("test-task").build();
+        queue.enqueueEvent(firstEvent);
+
+        // Create real EventConsumer with the queue
+        EventConsumer eventConsumer =
+            new EventConsumer(queue);
+
+        // Close queue after first event to simulate stream ending after processing
+        queue.close();
+
+        ResultAggregator.EventTypeAndInterrupt result =
+            aggregator.consumeAndBreakOnInterrupt(eventConsumer, false);
+
+        assertEquals(firstEvent, result.eventType());
+        assertTrue(result.interrupted());
+        verify(mockTaskManager).process(firstEvent);
+        verify(mockTaskManager).getTask();
     }
 }

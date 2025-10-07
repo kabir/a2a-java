@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MessageSendConfiguration(List<String> acceptedOutputModes, Integer historyLength,
-                                       PushNotificationConfig pushNotificationConfig, boolean blocking) {
+                                       PushNotificationConfig pushNotificationConfig, Boolean blocking) {
 
     public MessageSendConfiguration {
         if (historyLength != null && historyLength < 0) {
@@ -23,7 +23,7 @@ public record MessageSendConfiguration(List<String> acceptedOutputModes, Integer
         List<String> acceptedOutputModes;
         Integer historyLength;
         PushNotificationConfig pushNotificationConfig;
-        boolean blocking;
+        Boolean blocking = true;
 
         public Builder acceptedOutputModes(List<String> acceptedOutputModes) {
             this.acceptedOutputModes = acceptedOutputModes;
@@ -40,7 +40,7 @@ public record MessageSendConfiguration(List<String> acceptedOutputModes, Integer
             return this;
         }
 
-        public Builder blocking(boolean blocking) {
+        public Builder blocking(Boolean blocking) {
             this.blocking = blocking;
             return this;
         }

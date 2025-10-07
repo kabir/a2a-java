@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -48,6 +49,8 @@ import io.a2a.spec.PushNotificationConfig;
 import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskIdParams;
+import io.a2a.spec.TaskNotCancelableError;
+import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskNotFoundError;
 import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskQueryParams;
@@ -122,6 +125,13 @@ public class DefaultRequestHandler implements RequestHandler {
         if (task == null) {
             throw new TaskNotFoundError();
         }
+
+        // Check if task is in a non-cancelable state (completed, canceled, failed, rejected)
+        if (task.getStatus().state().isFinal()) {
+            throw new TaskNotCancelableError(
+                    "Task cannot be canceled - current state: " + task.getStatus().state().asString());
+        }
+
         TaskManager taskManager = new TaskManager(
                 task.getId(),
                 task.getContextId(),
@@ -148,11 +158,17 @@ public class DefaultRequestHandler implements RequestHandler {
 
         EventConsumer consumer = new EventConsumer(queue);
         EventKind type = resultAggregator.consumeAll(consumer);
-        if (type instanceof Task tempTask) {
-            return tempTask;
+        if (!(type instanceof Task tempTask)) {
+            throw new InternalError("Agent did not return valid response for cancel");
         }
 
-        throw new InternalError("Agent did not return a valid response");
+        // Verify task was actually canceled (not completed concurrently)
+        if (tempTask.getStatus().state() != TaskState.CANCELED) {
+            throw new TaskNotCancelableError(
+                    "Task cannot be canceled - current state: " + tempTask.getStatus().state().asString());
+        }
+
+        return tempTask;
     }
 
     @Override
@@ -166,32 +182,42 @@ public class DefaultRequestHandler implements RequestHandler {
         EventQueue queue = queueManager.createOrTap(taskId);
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null);
 
-        boolean interrupted = false;
+        boolean blocking = true; // Default to blocking behavior
+        if (params.configuration() != null && Boolean.FALSE.equals(params.configuration().blocking())) {
+            blocking = false;
+        }
+
+        boolean interruptedOrNonBlocking = false;
 
         EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId, mss.requestContext, queue);
         ResultAggregator.EventTypeAndInterrupt etai = null;
         try {
+            // Create callback for push notifications during background event processing
+            Runnable pushNotificationCallback = () -> sendPushNotification(taskId, resultAggregator);
+
             EventConsumer consumer = new EventConsumer(queue);
 
             // This callback must be added before we start consuming. Otherwise,
             // any errors thrown by the producerRunnable are not picked up by the consumer
             producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
-            etai = resultAggregator.consumeAndBreakOnInterrupt(consumer);
+            etai = resultAggregator.consumeAndBreakOnInterrupt(consumer, blocking, pushNotificationCallback);
             
             if (etai == null) {
                 LOGGER.debug("No result, throwing InternalError");
                 throw new InternalError("No result");
             }
-            interrupted = etai.interrupted();
-            LOGGER.debug("Was interrupted: {}", interrupted);
+            interruptedOrNonBlocking = etai.interrupted();
+            LOGGER.debug("Was interrupted or non-blocking: {}", interruptedOrNonBlocking);
 
             EventKind kind = etai.eventType();
             if (kind instanceof Task taskResult && !taskId.equals(taskResult.getId())) {
                 throw new InternalError("Task ID mismatch in agent response");
             }
 
+            // Send push notification after initial return (for both blocking and non-blocking)
+            pushNotificationCallback.run();
         } finally {
-            if (interrupted) {
+            if (interruptedOrNonBlocking) {
                 CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId), executor);
                 trackBackgroundTask(cleanupTask);
             } else {
@@ -214,13 +240,15 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null);
 
         EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(taskId.get(), mss.requestContext, queue);
+
+        // Move consumer creation and callback registration outside try block
+        // so consumer is available for background consumption on client disconnect
         EventConsumer consumer = new EventConsumer(queue);
+        producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
+
+        AtomicBoolean backgroundConsumeStarted = new AtomicBoolean(false);
 
         try {
-
-            // This callback must be added before we start consuming. Otherwise,
-            // any errors thrown by the producerRunnable are not picked up by the consumer
-            producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
             Flow.Publisher<Event> results = resultAggregator.consumeAndEmit(consumer);
 
             Flow.Publisher<Event> eventPublisher =
@@ -258,7 +286,61 @@ public class DefaultRequestHandler implements RequestHandler {
                 return true;
             }));
 
-            return convertingProcessor(eventPublisher, event -> (StreamingEventKind) event);
+            Flow.Publisher<StreamingEventKind> finalPublisher = convertingProcessor(eventPublisher, event -> (StreamingEventKind) event);
+
+            // Wrap publisher to detect client disconnect and continue background consumption
+            return subscriber -> finalPublisher.subscribe(new Flow.Subscriber<StreamingEventKind>() {
+                private Flow.Subscription subscription;
+
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    this.subscription = subscription;
+                    // Wrap subscription to detect cancellation
+                    subscriber.onSubscribe(new Flow.Subscription() {
+                        @Override
+                        public void request(long n) {
+                            subscription.request(n);
+                        }
+
+                        @Override
+                        public void cancel() {
+                            LOGGER.debug("Client cancelled subscription for task {}, starting background consumption", taskId.get());
+                            startBackgroundConsumption();
+                            subscription.cancel();
+                        }
+                    });
+                }
+
+                @Override
+                public void onNext(StreamingEventKind item) {
+                    subscriber.onNext(item);
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                    subscriber.onError(throwable);
+                }
+
+                @Override
+                public void onComplete() {
+                    subscriber.onComplete();
+                }
+
+                private void startBackgroundConsumption() {
+                    if (backgroundConsumeStarted.compareAndSet(false, true)) {
+                        // Client disconnected: continue consuming and persisting events in background
+                        CompletableFuture<Void> bgTask = CompletableFuture.runAsync(() -> {
+                            try {
+                                resultAggregator.consumeAll(consumer);
+                                LOGGER.debug("Background consumption completed for task {}", taskId.get());
+                            } catch (Exception e) {
+                                LOGGER.error("Error during background consumption for task {}", taskId.get(), e);
+                            }
+                        }, executor);
+                        trackBackgroundTask(bgTask);
+                    }
+                }
+            });
         } finally {
             CompletableFuture<Void> cleanupTask = CompletableFuture.runAsync(() -> cleanupProducer(taskId.get()), executor);
             trackBackgroundTask(cleanupTask);
@@ -452,6 +534,15 @@ public class DefaultRequestHandler implements RequestHandler {
                 .setServerCallContext(context)
                 .build();
         return new MessageSendSetup(taskManager, task, requestContext);
+    }
+
+    private void sendPushNotification(String taskId, ResultAggregator resultAggregator) {
+        if (pushSender != null && taskId != null) {
+            EventKind latest = resultAggregator.getCurrentResult();
+            if (latest instanceof Task latestTask) {
+                pushSender.sendNotification(latestTask);
+            }
+        }
     }
 
     private record MessageSendSetup(TaskManager taskManager, Task task, RequestContext requestContext) {}

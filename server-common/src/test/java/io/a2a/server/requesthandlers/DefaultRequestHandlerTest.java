@@ -28,10 +28,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Tests for DefaultRequestHandler background cleanup and task tracking functionality,
- * backported from Python PR #440 and #472.
+ * Comprehensive tests for DefaultRequestHandler, backported from Python's
+ * test_default_request_handler.py. These tests cover core functionality that
+ * is transport-agnostic and should work across JSON-RPC, gRPC, and REST.
+ *
+ * Background cleanup and task tracking tests are from Python PR #440 and #472.
  */
-public class DefaultRequestHandlerBackgroundTest {
+public class DefaultRequestHandlerTest {
 
     private DefaultRequestHandler requestHandler;
     private InMemoryTaskStore taskStore;
