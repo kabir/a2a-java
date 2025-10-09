@@ -1,18 +1,30 @@
 package io.a2a.client.http;
 
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_MULT_CHOICE;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandler;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.net.http.HttpResponse.BodySubscribers;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
+
+import io.a2a.common.A2AErrorMessages;
+import io.a2a.spec.A2AClientException;
 
 public class JdkA2AHttpClient implements A2AHttpClient {
 
@@ -88,6 +100,7 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         ) {
             Flow.Subscriber<String> subscriber = new Flow.Subscriber<String>() {
                 private Flow.Subscription subscription;
+                private volatile boolean errorRaised = false;
 
                 @Override
                 public void onSubscribe(Flow.Subscription subscription) {
@@ -109,24 +122,72 @@ public class JdkA2AHttpClient implements A2AHttpClient {
 
                 @Override
                 public void onError(Throwable throwable) {
-                    errorConsumer.accept(throwable);
-                    subscription.cancel();
+                    if (!errorRaised) {
+                        errorRaised = true;
+                        errorConsumer.accept(throwable);
+                    }
+                    if (subscription != null) {
+                        subscription.cancel();
+                    }
                 }
 
                 @Override
                 public void onComplete() {
-                    completeRunnable.run();
-                    subscription.cancel();
+                    if (!errorRaised) {
+                        completeRunnable.run();
+                    }
+                    if (subscription != null) {
+                        subscription.cancel();
+                    }
                 }
             };
 
-            BodyHandler<Void> bodyHandler = BodyHandlers.fromLineSubscriber(subscriber);
+            // Create a custom body handler that checks status before processing body
+            BodyHandler<Void> bodyHandler = responseInfo -> {
+                // Check for authentication/authorization errors only
+                if (responseInfo.statusCode() == HTTP_UNAUTHORIZED || responseInfo.statusCode() == HTTP_FORBIDDEN) {
+                    final String errorMessage;
+                    if (responseInfo.statusCode() == HTTP_UNAUTHORIZED) {
+                        errorMessage = A2AErrorMessages.AUTHENTICATION_FAILED;
+                    } else {
+                        errorMessage = A2AErrorMessages.AUTHORIZATION_FAILED;
+                    }
+                    // Return a body subscriber that immediately signals error
+                    return BodySubscribers.fromSubscriber(new Flow.Subscriber<List<ByteBuffer>>() {
+                        @Override
+                        public void onSubscribe(Flow.Subscription subscription) {
+                            subscriber.onError(new IOException(errorMessage));
+                        }
+                        
+                        @Override
+                        public void onNext(List<ByteBuffer> item) {
+                            // Should not be called
+                        }
+                        
+                        @Override
+                        public void onError(Throwable throwable) {
+                            // Should not be called
+                        }
+                        
+                        @Override
+                        public void onComplete() {
+                            // Should not be called
+                        }
+                    });
+                } else {
+                    // For all other status codes (including other errors), proceed with normal line subscriber
+                    return BodyHandlers.fromLineSubscriber(subscriber).apply(responseInfo);
+                }
+            };
 
             // Send the response async, and let the subscriber handle the lines.
             return httpClient.sendAsync(request, bodyHandler)
                     .thenAccept(response -> {
-                        if (!JdkHttpResponse.success(response)) {
-                            subscriber.onError(new IOException("Request failed " + response.statusCode()));
+                        // Handle non-authentication/non-authorization errors here
+                        if (!isSuccessStatus(response.statusCode()) && 
+                            response.statusCode() != HTTP_UNAUTHORIZED && 
+                            response.statusCode() != HTTP_FORBIDDEN) {
+                            subscriber.onError(new IOException("Request failed with status " + response.statusCode() + ":" + response.body()));
                         }
                     });
         }
@@ -200,6 +261,13 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                     .build();
             HttpResponse<String> response =
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            if (response.statusCode() == HTTP_UNAUTHORIZED) {
+                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+            } else if (response.statusCode() == HTTP_FORBIDDEN) {
+                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+            }
+
             return new JdkHttpResponse(response);
         }
 
@@ -227,12 +295,16 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         }
 
         static boolean success(HttpResponse<?> response) {
-            return response.statusCode() >= 200 && response.statusCode() < 300;
+            return response.statusCode() >= HTTP_OK && response.statusCode() < HTTP_MULT_CHOICE;
         }
 
         @Override
         public String body() {
             return response.body();
         }
+    }
+
+    private static boolean isSuccessStatus(int statusCode) {
+        return statusCode >= HTTP_OK && statusCode <  HTTP_MULT_CHOICE;
     }
 }
