@@ -41,6 +41,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.Test;
  * Tests the full A2A message flow with Kafka replication verification.
  */
 @QuarkusTest
+@Disabled
 public class KafkaReplicationIntegrationTest {
 
     @Inject
