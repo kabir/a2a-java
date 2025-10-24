@@ -12,6 +12,25 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Parse command line arguments
+CONTAINER_TOOL="${CONTAINER_TOOL:-docker}"  # Use env var or default to docker
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --container-tool)
+            CONTAINER_TOOL="$2"
+            shift 2
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            echo "Usage: $0 [--container-tool docker|podman]"
+            exit 1
+            ;;
+    esac
+done
+
+echo "Container tool: $CONTAINER_TOOL"
+echo ""
+
 # Check if Minikube is installed
 if ! command -v minikube &> /dev/null; then
     echo -e "${RED}Error: Minikube is not installed${NC}"
@@ -28,8 +47,19 @@ fi
 
 # Start Minikube
 echo "Starting Minikube..."
+
+# Configure Minikube driver based on container tool
+if [ "$CONTAINER_TOOL" = "podman" ]; then
+    export MINIKUBE_DRIVER=podman
+    echo "Configured Minikube to use Podman driver"
+fi
+
 if ! minikube status &>/dev/null; then
-    minikube start --cpus=4 --memory=8192
+    if [ "$CONTAINER_TOOL" = "podman" ]; then
+        minikube start --cpus=4 --memory=8192 --driver=podman
+    else
+        minikube start --cpus=4 --memory=8192
+    fi
     echo -e "${GREEN}✓ Minikube started${NC}"
 else
     echo -e "${GREEN}✓ Minikube is already running${NC}"
@@ -40,8 +70,15 @@ echo "Enabling registry addon..."
 minikube addons enable registry
 echo -e "${GREEN}✓ Registry addon enabled${NC}"
 
-# Use Minikube's Docker daemon
-eval $(minikube -p minikube docker-env)
+# Use Minikube's container daemon
+if [ "$CONTAINER_TOOL" = "podman" ]; then
+    # For Podman, Minikube with podman driver uses Podman directly
+    echo "Using Podman with Minikube..."
+else
+    # For Docker, use Minikube's Docker daemon
+    eval $(minikube -p minikube docker-env)
+    echo "Using Docker daemon from Minikube..."
+fi
 
 # Build the project
 echo ""
@@ -53,7 +90,7 @@ echo -e "${GREEN}✓ Project built successfully${NC}"
 # Build and push container image to local registry
 echo ""
 echo "Building container image..."
-docker build -t localhost:5000/a2a-cloud-deployment:latest .
+$CONTAINER_TOOL build -t localhost:5000/a2a-cloud-deployment:latest .
 echo -e "${GREEN}✓ Container image built${NC}"
 
 # Push to registry inside minikube

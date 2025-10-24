@@ -91,5 +91,6 @@ spec:
     - protocol: TCP
       port: 8080        # Service port inside cluster
       targetPort: 8080  # Pod port
-  type: LoadBalancer
+      nodePort: 30080   # Fixed NodePort for consistent access
+  type: NodePort
   sessionAffinity: None  # Ensures round-robin load balancing
