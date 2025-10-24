@@ -82,6 +82,20 @@ fi
 # Detect registry port (Podman driver uses random port, Docker driver uses 5000)
 echo "Detecting registry port..."
 if [ "$CONTAINER_TOOL" = "podman" ]; then
+    # Wait for registry service to be created
+    echo "Waiting for registry service to be created..."
+    for i in {1..30}; do
+        if kubectl get svc registry -n kube-system > /dev/null 2>&1; then
+            echo "Registry service found"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo -e "${RED}ERROR: Registry service not found after 30 seconds${NC}"
+            exit 1
+        fi
+        sleep 1
+    done
+
     # For Podman, extract the port from the registry service
     REGISTRY_PORT=$(kubectl get svc registry -n kube-system -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
     if [ -z "$REGISTRY_PORT" ]; then
