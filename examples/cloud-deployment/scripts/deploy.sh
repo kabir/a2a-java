@@ -79,34 +79,19 @@ else
     echo -e "${GREEN}✓ Registry addon already enabled${NC}"
 fi
 
-# Detect registry port (Podman driver uses random port, Docker driver uses 5000)
-echo "Detecting registry port..."
-if [ "$CONTAINER_TOOL" = "podman" ]; then
-    # Wait for registry service to be created
-    echo "Waiting for registry service to be created..."
-    for i in {1..30}; do
-        if kubectl get svc registry -n kube-system > /dev/null 2>&1; then
-            echo "Registry service found"
-            break
-        fi
-        if [ $i -eq 30 ]; then
-            echo -e "${RED}ERROR: Registry service not found after 30 seconds${NC}"
-            exit 1
-        fi
-        sleep 1
-    done
-
-    # For Podman, extract the port from the registry service
-    REGISTRY_PORT=$(kubectl get svc registry -n kube-system -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
-    if [ -z "$REGISTRY_PORT" ]; then
-        echo -e "${YELLOW}⚠ Could not detect registry NodePort, checking minikube service...${NC}"
-        # Try to get port from minikube service list
-        REGISTRY_PORT=$(minikube service registry -n kube-system --url 2>/dev/null | grep -o ':[0-9]*' | tr -d ':' || echo "5000")
+# Wait for registry service to be created
+echo "Waiting for registry service to be created..."
+for i in {1..30}; do
+    if kubectl get svc registry -n kube-system > /dev/null 2>&1; then
+        echo "Registry service found"
+        break
     fi
-    echo "Detected registry port: $REGISTRY_PORT"
-else
-    REGISTRY_PORT=5000
-fi
+    if [ $i -eq 30 ]; then
+        echo -e "${RED}ERROR: Registry service not found after 30 seconds${NC}"
+        exit 1
+    fi
+    sleep 1
+done
 
 # Set up port forwarding to registry
 # This makes the registry accessible at localhost:5000
@@ -123,13 +108,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     $CONTAINER_TOOL rm socat-registry 2>/dev/null || true
 
     # Start socat container for port forwarding
-    # Forward localhost:5000 to minikube-ip:REGISTRY_PORT
-    echo "Setting up socat: localhost:5000 -> $(minikube ip):${REGISTRY_PORT}"
+    # Forward localhost:5000 to minikube-ip:5000 (registry internal port)
+    echo "Setting up socat: localhost:5000 -> $(minikube ip):5000"
     $CONTAINER_TOOL run -d --name socat-registry --rm --network=host alpine \
-        ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):${REGISTRY_PORT}" \
+        ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000" \
         > /dev/null 2>&1
 
-    echo -e "${GREEN}✓ Port forward started (socat container: localhost:5000 -> $(minikube ip):${REGISTRY_PORT})${NC}"
+    echo -e "${GREEN}✓ Port forward started (socat container: localhost:5000 -> $(minikube ip):5000)${NC}"
 else
     # Linux (including CI) - use kubectl port-forward
     echo "Linux/CI detected, using kubectl port-forward..."
