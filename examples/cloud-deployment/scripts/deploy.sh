@@ -70,12 +70,28 @@ echo ""
 echo "Checking Minikube registry addon..."
 if ! minikube addons list | grep -q "registry.*enabled"; then
     echo "Enabling Minikube registry addon..."
-    minikube addons enable registry
+    REGISTRY_ENABLE_OUTPUT=$(minikube addons enable registry 2>&1)
+    echo "$REGISTRY_ENABLE_OUTPUT"
     # Wait a bit for registry to start
     sleep 5
     echo -e "${GREEN}✓ Registry addon enabled${NC}"
 else
     echo -e "${GREEN}✓ Registry addon already enabled${NC}"
+fi
+
+# Detect registry port (Podman driver uses random port, Docker driver uses 5000)
+echo "Detecting registry port..."
+if [ "$CONTAINER_TOOL" = "podman" ]; then
+    # For Podman, extract the port from the registry service
+    REGISTRY_PORT=$(kubectl get svc registry -n kube-system -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+    if [ -z "$REGISTRY_PORT" ]; then
+        echo -e "${YELLOW}⚠ Could not detect registry NodePort, checking minikube service...${NC}"
+        # Try to get port from minikube service list
+        REGISTRY_PORT=$(minikube service registry -n kube-system --url 2>/dev/null | grep -o ':[0-9]*' | tr -d ':' || echo "5000")
+    fi
+    echo "Detected registry port: $REGISTRY_PORT"
+else
+    REGISTRY_PORT=5000
 fi
 
 # Set up port forwarding to registry
@@ -93,11 +109,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     $CONTAINER_TOOL rm socat-registry 2>/dev/null || true
 
     # Start socat container for port forwarding
+    # Forward localhost:5000 to minikube-ip:REGISTRY_PORT
+    echo "Setting up socat: localhost:5000 -> $(minikube ip):${REGISTRY_PORT}"
     $CONTAINER_TOOL run -d --name socat-registry --rm --network=host alpine \
-        ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000" \
+        ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):${REGISTRY_PORT}" \
         > /dev/null 2>&1
 
-    echo -e "${GREEN}✓ Port forward started (socat container)${NC}"
+    echo -e "${GREEN}✓ Port forward started (socat container: localhost:5000 -> $(minikube ip):${REGISTRY_PORT})${NC}"
 else
     # Linux (including CI) - use kubectl port-forward
     echo "Linux/CI detected, using kubectl port-forward..."
