@@ -70,35 +70,28 @@ Note that the aim of this example is just to demonstrate how to set up a2a-java 
 
 ### 1. Install Prerequisites
 
-**Install Kind:**
-See https://kind.sigs.k8s.io/docs/user/quick-start/ for installation instructions.
+**Install Minikube:**
+See https://minikube.sigs.k8s.io/docs/start/ for installation instructions.
 
 **Install kubectl:**
 See https://kubernetes.io/docs/tasks/tools/ for installation instructions.
 
 ### 2. Deploy the Stack
 
-The deployment script will automatically create the Kind cluster and deploy all components:
+The deployment script will automatically create the Minikube cluster and deploy all components:
 
 ```bash
 cd scripts
 ./deploy.sh
 ```
 
-**If using Podman instead of Docker:**
-```bash
-./deploy.sh --container-tool podman
-```
-
 The script will:
-- Create Kind cluster with local registry support (if not already exists)
-- Set up local container registry (localhost:5001)
+- Start Minikube cluster (if not already running)
+- Enable the registry addon
 - Install Strimzi Kafka operator
 - Deploy PostgreSQL
 - Deploy Kafka cluster (using KRaft mode)
 - Build and deploy the A2A agent (2 pods)
-
-**Note:** You don't need to manually create the Kind cluster - the script handles everything.
 
 ### 3. Verify Deployment
 
@@ -470,9 +463,9 @@ To also remove Strimzi operator:
 kubectl delete namespace kafka
 ```
 
-To delete the Kind cluster:
+To stop the Minikube cluster:
 ```bash
-kind delete cluster
+minikube stop
 ```
 
 ### Complete Clean Slate

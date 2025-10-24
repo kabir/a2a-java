@@ -2,46 +2,20 @@
 set -e
 
 echo "========================================="
-echo "A2A Cloud Deployment - Deployment Script"
+echo "A2A Cloud Deployment - Deployment Script for Minikube"
 echo "========================================="
 echo ""
 
 # Color codes for output
-RED='\033[0.31m'
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Parse command line arguments
-CONTAINER_TOOL="docker"
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --container-tool)
-            CONTAINER_TOOL="$2"
-            shift 2
-            ;;
-        *)
-            echo -e "${RED}Unknown option: $1${NC}"
-            echo "Usage: $0 [--container-tool docker|podman]"
-            exit 1
-            ;;
-    esac
-done
-
-echo "Container tool: $CONTAINER_TOOL"
-echo ""
-
-# Configure Kind to use podman if specified
-if [ "$CONTAINER_TOOL" = "podman" ]; then
-    export KIND_EXPERIMENTAL_PROVIDER=podman
-    echo "Configured Kind to use podman provider"
-    echo ""
-fi
-
-# Check if Kind is installed
-if ! command -v kind &> /dev/null; then
-    echo -e "${RED}Error: Kind is not installed${NC}"
-    echo "Please install Kind first: https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
+# Check if Minikube is installed
+if ! command -v minikube &> /dev/null; then
+    echo -e "${RED}Error: Minikube is not installed${NC}"
+    echo "Please install Minikube first: https://minikube.sigs.k8s.io/docs/start/"
     exit 1
 fi
 
@@ -52,94 +26,22 @@ if ! command -v kubectl &> /dev/null; then
     exit 1
 fi
 
-# Setup local registry
-echo "Setting up local registry..."
-REG_NAME='kind-registry'
-REG_PORT='5001'
-
-# Create registry container if it doesn't exist
-if [ "$($CONTAINER_TOOL inspect -f '{{.State.Running}}' "${REG_NAME}" 2>/dev/null || true)" != 'true' ]; then
-    echo "Creating registry container..."
-    $CONTAINER_TOOL run \
-        -d --restart=always -p "127.0.0.1:${REG_PORT}:5000" --network bridge --name "${REG_NAME}" \
-        mirror.gcr.io/library/registry:2
-    echo -e "${GREEN}✓ Registry container created${NC}"
+# Start Minikube
+echo "Starting Minikube..."
+if ! minikube status &>/dev/null; then
+    minikube start --cpus=4 --memory=8192
+    echo -e "${GREEN}✓ Minikube started${NC}"
 else
-    echo -e "${GREEN}✓ Registry container already running${NC}"
+    echo -e "${GREEN}✓ Minikube is already running${NC}"
 fi
 
-# Create Kind cluster if it doesn't exist
-echo ""
-if ! kind get clusters 2>/dev/null | grep -q '^kind$'; then
-    echo "Creating Kind cluster..."
-    kind create cluster --config=../kind-config.yaml
-    echo -e "${GREEN}✓ Kind cluster created${NC}"
-else
-    # Check if cluster is healthy by trying to get nodes
-    if ! kubectl get nodes &>/dev/null; then
-        echo -e "${RED}Error: Existing Kind cluster is not healthy${NC}"
-        echo ""
-        echo "The cluster exists but is not responding. This usually means:"
-        echo "  - The cluster containers are stopped"
-        echo "  - The cluster is in a corrupted state"
-        echo ""
-        echo "To fix this, delete the cluster and re-run this script:"
-        echo "  kind delete cluster"
-        echo "  ./deploy.sh"
-        echo ""
-        exit 1
-    else
-        echo -e "${GREEN}✓ Kind cluster already exists and is healthy${NC}"
-    fi
-fi
+# Enable the registry addon
+echo "Enabling registry addon..."
+minikube addons enable registry
+echo -e "${GREEN}✓ Registry addon enabled${NC}"
 
-# Configure registry on cluster nodes
-echo ""
-echo "Configuring registry on cluster nodes..."
-REGISTRY_DIR="/etc/containerd/certs.d/localhost:${REG_PORT}"
-for node in $(kind get nodes); do
-    $CONTAINER_TOOL exec "${node}" mkdir -p "${REGISTRY_DIR}"
-    cat <<EOF | $CONTAINER_TOOL exec -i "${node}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"
-[host."http://${REG_NAME}:5000"]
-EOF
-done
-echo -e "${GREEN}✓ Registry configured on nodes${NC}"
-
-# Connect registry to cluster network
-echo ""
-echo "Connecting registry to cluster network..."
-if [ "$($CONTAINER_TOOL inspect -f='{{json .NetworkSettings.Networks.kind}}' "${REG_NAME}")" = 'null' ]; then
-    $CONTAINER_TOOL network connect "kind" "${REG_NAME}"
-    echo -e "${GREEN}✓ Registry connected to cluster network${NC}"
-else
-    echo -e "${GREEN}✓ Registry already connected${NC}"
-fi
-
-# Create ConfigMap to document local registry
-echo ""
-echo "Creating registry ConfigMap..."
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: local-registry-hosting
-  namespace: kube-public
-data:
-  localRegistryHosting.v1: |
-    host: "localhost:${REG_PORT}"
-    help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
-EOF
-echo -e "${GREEN}✓ Registry ConfigMap created${NC}"
-
-# Verify registry is accessible
-echo ""
-echo "Verifying registry is accessible..."
-if curl -s http://localhost:${REG_PORT}/v2/ > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Registry accessible at localhost:${REG_PORT}${NC}"
-else
-    echo -e "${RED}ERROR: Registry not accessible${NC}"
-    exit 1
-fi
+# Use Minikube's Docker daemon
+eval $(minikube -p minikube docker-env)
 
 # Build the project
 echo ""
@@ -149,19 +51,13 @@ mvn clean package -DskipTests
 echo -e "${GREEN}✓ Project built successfully${NC}"
 
 # Build and push container image to local registry
-REGISTRY="localhost:${REG_PORT}"
 echo ""
 echo "Building container image..."
-$CONTAINER_TOOL build -t ${REGISTRY}/a2a-cloud-deployment:latest .
+docker build -t localhost:5000/a2a-cloud-deployment:latest .
 echo -e "${GREEN}✓ Container image built${NC}"
 
-echo "Pushing image to local registry..."
-if [ "$CONTAINER_TOOL" = "podman" ]; then
-    $CONTAINER_TOOL push --tls-verify=false ${REGISTRY}/a2a-cloud-deployment:latest
-else
-    $CONTAINER_TOOL push ${REGISTRY}/a2a-cloud-deployment:latest
-fi
-echo -e "${GREEN}✓ Image pushed to registry${NC}"
+# Push to registry inside minikube
+minikube cache add localhost:5000/a2a-cloud-deployment:latest
 
 # Go back to scripts directory
 cd ../scripts
@@ -270,19 +166,19 @@ else
     echo "    kubectl apply -f ../k8s/05-agent-deployment.yaml"
 fi
 
+
+echo "Exposing service via minikube service command..."
+minikube service a2a-agent-service -n a2a-demo --url
+
 echo ""
 echo -e "${GREEN}=========================================${NC}"
-echo -e "${GREEN}Deployment completed successfully!${NC}"
+echo -e "${GREEN}Deployment to Minikube completed successfully!${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo ""
-echo "To verify the deployment, run:"
-echo "  ./verify.sh"
-echo ""
-echo "To access the agent (via NodePort):"
-echo "  curl http://localhost:8080/.well-known/agent-card.json"
-echo ""
+echo "The agent is now accessible at the URL printed above."
+
 echo "To run the test client (demonstrating load balancing):"
 echo "  cd ../server"
-echo "  mvn test-compile exec:java -Dexec.classpathScope=test \\"
-echo "    -Dexec.mainClass=\"io.a2a.examples.cloud.A2ACloudExampleClient\" \\"
-echo "    -Dagent.url=\"http://localhost:8080\""
+echo "  mvn test-compile exec:java -Dexec.classpathScope=test \"
+    -Dexec.mainClass=\"io.a2a.examples.cloud.A2ACloudExampleClient\" \"
+    -Dagent.url=<SERVICE_URL>"
