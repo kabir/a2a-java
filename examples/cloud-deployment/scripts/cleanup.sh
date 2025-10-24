@@ -73,6 +73,14 @@ echo "Deleting namespace..."
 kubectl delete -f ../k8s/00-namespace.yaml --ignore-not-found=true
 
 echo ""
+echo "Stopping registry port-forward..."
+# Stop socat container (macOS)
+$CONTAINER_TOOL stop socat-registry 2>/dev/null || true
+$CONTAINER_TOOL rm socat-registry 2>/dev/null || true
+# Kill kubectl port-forward (Linux)
+pkill -f "kubectl.*port-forward.*registry" 2>/dev/null || true
+
+echo ""
 echo "Stopping Minikube..."
 minikube stop
 
