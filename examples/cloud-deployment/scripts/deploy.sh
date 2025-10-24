@@ -7,7 +7,7 @@ echo "========================================="
 echo ""
 
 # Color codes for output
-RED='\033[0.31m'
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
@@ -53,9 +53,7 @@ REG_PORT='5001'
 # Create registry container if it doesn't exist
 if [ "$($CONTAINER_TOOL inspect -f '{{.State.Running}}' "${REG_NAME}" 2>/dev/null || true)" != 'true' ]; then
     echo "Creating registry container..."
-    $CONTAINER_TOOL run \
-        -d --restart=always -p "127.0.0.1:${REG_PORT}:5000" --network bridge --name "${REG_NAME}" \
-        registry:2
+    $CONTAINER_TOOL run -d --restart=always -p "127.0.0.1:${REG_PORT}:5000" --network bridge --name "${REG_NAME}" mirror.gcr.io/registry:2        
     echo -e "${GREEN}✓ Registry container created${NC}"
 else
     echo -e "${GREEN}✓ Registry container already running${NC}"
