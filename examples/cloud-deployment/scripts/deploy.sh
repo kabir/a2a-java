@@ -56,7 +56,13 @@ fi
 
 if ! minikube status &>/dev/null; then
     if [ "$CONTAINER_TOOL" = "podman" ]; then
-        minikube start --cpus=4 --memory=8192 --driver=podman
+        # For Podman on Linux, use containerd runtime for better rootless support
+        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            minikube start --cpus=4 --memory=8192 --driver=podman --container-runtime=containerd
+        else
+            # macOS with Podman (runs in VM, doesn't need containerd flag)
+            minikube start --cpus=4 --memory=8192 --driver=podman
+        fi
     else
         minikube start --cpus=4 --memory=8192
     fi
@@ -65,82 +71,88 @@ else
     echo -e "${GREEN}✓ Minikube is already running${NC}"
 fi
 
-# Enable Minikube registry addon if not already enabled
-echo ""
-echo "Checking Minikube registry addon..."
-if ! minikube addons list | grep -q "registry.*enabled"; then
-    echo "Enabling Minikube registry addon..."
-    REGISTRY_ENABLE_OUTPUT=$(minikube addons enable registry 2>&1)
-    echo "$REGISTRY_ENABLE_OUTPUT"
-    # Wait a bit for registry to start
-    sleep 5
-    echo -e "${GREEN}✓ Registry addon enabled${NC}"
+# Set up registry for Docker, skip for Podman (we'll use minikube image load)
+if [ "$CONTAINER_TOOL" = "docker" ]; then
+    # Enable Minikube registry addon if not already enabled
+    echo ""
+    echo "Checking Minikube registry addon..."
+    if ! minikube addons list | grep -q "registry.*enabled"; then
+        echo "Enabling Minikube registry addon..."
+        REGISTRY_ENABLE_OUTPUT=$(minikube addons enable registry 2>&1)
+        echo "$REGISTRY_ENABLE_OUTPUT"
+        # Wait a bit for registry to start
+        sleep 5
+        echo -e "${GREEN}✓ Registry addon enabled${NC}"
+    else
+        echo -e "${GREEN}✓ Registry addon already enabled${NC}"
+    fi
+
+    # Wait for registry service to be created
+    echo "Waiting for registry service to be created..."
+    for i in {1..30}; do
+        if kubectl get svc registry -n kube-system > /dev/null 2>&1; then
+            echo "Registry service found"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo -e "${RED}ERROR: Registry service not found after 30 seconds${NC}"
+            exit 1
+        fi
+        sleep 1
+    done
+
+    # Set up port forwarding to registry
+    # This makes the registry accessible at localhost:5000
+    echo ""
+    echo "Setting up registry port forwarding..."
+
+    # Detect OS
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS - use socat in container for port forwarding
+        echo "macOS detected, using socat for port forwarding..."
+
+        # Stop any existing port forwarder
+        $CONTAINER_TOOL stop socat-registry 2>/dev/null || true
+        $CONTAINER_TOOL rm socat-registry 2>/dev/null || true
+
+        # Start socat container for port forwarding
+        # Forward localhost:5000 to minikube-ip:5000 (registry internal port)
+        echo "Setting up socat: localhost:5000 -> $(minikube ip):5000"
+        $CONTAINER_TOOL run -d --name socat-registry --rm --network=host alpine \
+            ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000" \
+            > /dev/null 2>&1
+
+        echo -e "${GREEN}✓ Port forward started (socat container: localhost:5000 -> $(minikube ip):5000)${NC}"
+    else
+        # Linux (including CI) - use kubectl port-forward
+        echo "Linux/CI detected, using kubectl port-forward..."
+
+        # Kill any existing port-forward processes
+        pkill -f "kubectl.*port-forward.*registry" 2>/dev/null || true
+
+        # Start port forward in background
+        kubectl port-forward --namespace kube-system service/registry 5000:80 > /dev/null 2>&1 &
+
+        echo -e "${GREEN}✓ Port forward started (kubectl)${NC}"
+    fi
+
+    # Wait for registry to be accessible
+    echo "Waiting for registry to be accessible at localhost:5000..."
+    for i in {1..30}; do
+        if curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
+            echo -e "${GREEN}✓ Registry accessible at localhost:5000${NC}"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo -e "${RED}ERROR: Registry not accessible after 30 attempts${NC}"
+            exit 1
+        fi
+        sleep 1
+    done
 else
-    echo -e "${GREEN}✓ Registry addon already enabled${NC}"
+    echo ""
+    echo "Podman detected - skipping registry setup (will use 'minikube image load' instead)"
 fi
-
-# Wait for registry service to be created
-echo "Waiting for registry service to be created..."
-for i in {1..30}; do
-    if kubectl get svc registry -n kube-system > /dev/null 2>&1; then
-        echo "Registry service found"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        echo -e "${RED}ERROR: Registry service not found after 30 seconds${NC}"
-        exit 1
-    fi
-    sleep 1
-done
-
-# Set up port forwarding to registry
-# This makes the registry accessible at localhost:5000
-echo ""
-echo "Setting up registry port forwarding..."
-
-# Detect OS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS - use socat in container for port forwarding
-    echo "macOS detected, using socat for port forwarding..."
-
-    # Stop any existing port forwarder
-    $CONTAINER_TOOL stop socat-registry 2>/dev/null || true
-    $CONTAINER_TOOL rm socat-registry 2>/dev/null || true
-
-    # Start socat container for port forwarding
-    # Forward localhost:5000 to minikube-ip:5000 (registry internal port)
-    echo "Setting up socat: localhost:5000 -> $(minikube ip):5000"
-    $CONTAINER_TOOL run -d --name socat-registry --rm --network=host alpine \
-        ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000" \
-        > /dev/null 2>&1
-
-    echo -e "${GREEN}✓ Port forward started (socat container: localhost:5000 -> $(minikube ip):5000)${NC}"
-else
-    # Linux (including CI) - use kubectl port-forward
-    echo "Linux/CI detected, using kubectl port-forward..."
-
-    # Kill any existing port-forward processes
-    pkill -f "kubectl.*port-forward.*registry" 2>/dev/null || true
-
-    # Start port forward in background
-    kubectl port-forward --namespace kube-system service/registry 5000:80 > /dev/null 2>&1 &
-
-    echo -e "${GREEN}✓ Port forward started (kubectl)${NC}"
-fi
-
-# Wait for registry to be accessible
-echo "Waiting for registry to be accessible at localhost:5000..."
-for i in {1..30}; do
-    if curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
-        echo -e "${GREEN}✓ Registry accessible at localhost:5000${NC}"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        echo -e "${RED}ERROR: Registry not accessible after 30 attempts${NC}"
-        exit 1
-    fi
-    sleep 1
-done
 
 # Build the project
 echo ""
@@ -149,31 +161,43 @@ cd ../server
 mvn clean package -DskipTests
 echo -e "${GREEN}✓ Project built successfully${NC}"
 
-# Build and push container image to Minikube registry
-REGISTRY="localhost:5000"
+# Build and deploy container image
 echo ""
-echo "Building container image..."
-$CONTAINER_TOOL build -t ${REGISTRY}/a2a-cloud-deployment:latest .
-echo -e "${GREEN}✓ Container image built${NC}"
+if [ "$CONTAINER_TOOL" = "podman" ]; then
+    # Podman: Build locally and load into Minikube (no registry needed)
+    echo "Building container image for Podman..."
+    $CONTAINER_TOOL build -t a2a-cloud-deployment:latest .
+    echo -e "${GREEN}✓ Container image built${NC}"
 
-echo "Pushing image to Minikube registry..."
-# Retry push a few times as port-forward can be flaky
-MAX_RETRIES=3
-for attempt in $(seq 1 $MAX_RETRIES); do
-    echo "Push attempt $attempt/$MAX_RETRIES..."
-    if $CONTAINER_TOOL push ${REGISTRY}/a2a-cloud-deployment:latest 2>&1 | tee /tmp/push.log; then
-        echo -e "${GREEN}✓ Image pushed to registry${NC}"
-        break
-    else
-        if [ $attempt -eq $MAX_RETRIES ]; then
-            echo -e "${RED}ERROR: Failed to push image after $MAX_RETRIES attempts${NC}"
-            cat /tmp/push.log
-            exit 1
+    echo "Loading image into Minikube..."
+    minikube image load a2a-cloud-deployment:latest
+    echo -e "${GREEN}✓ Image loaded into Minikube${NC}"
+else
+    # Docker: Build and push to registry
+    REGISTRY="localhost:5000"
+    echo "Building container image for Docker..."
+    $CONTAINER_TOOL build -t ${REGISTRY}/a2a-cloud-deployment:latest .
+    echo -e "${GREEN}✓ Container image built${NC}"
+
+    echo "Pushing image to Minikube registry..."
+    # Retry push a few times as port-forward can be flaky
+    MAX_RETRIES=3
+    for attempt in $(seq 1 $MAX_RETRIES); do
+        echo "Push attempt $attempt/$MAX_RETRIES..."
+        if $CONTAINER_TOOL push ${REGISTRY}/a2a-cloud-deployment:latest 2>&1 | tee /tmp/push.log; then
+            echo -e "${GREEN}✓ Image pushed to registry${NC}"
+            break
+        else
+            if [ $attempt -eq $MAX_RETRIES ]; then
+                echo -e "${RED}ERROR: Failed to push image after $MAX_RETRIES attempts${NC}"
+                cat /tmp/push.log
+                exit 1
+            fi
+            echo -e "${YELLOW}Push failed, retrying in 2 seconds...${NC}"
+            sleep 2
         fi
-        echo -e "${YELLOW}Push failed, retrying in 2 seconds...${NC}"
-        sleep 2
-    fi
-done
+    done
+fi
 
 # Go back to scripts directory
 cd ../scripts
@@ -270,11 +294,23 @@ echo -e "${GREEN}✓ ConfigMap deployed${NC}"
 if [ "${SKIP_AGENT_DEPLOY}" != "true" ]; then
     echo ""
     echo "Deploying A2A Agent..."
+
+    # Set image reference based on container tool
+    if [ "$CONTAINER_TOOL" = "podman" ]; then
+        # Podman: Use local image (no registry prefix)
+        IMAGE_REF="a2a-cloud-deployment:latest"
+    else
+        # Docker: Use registry image
+        IMAGE_REF="localhost:5000/a2a-cloud-deployment:latest"
+    fi
+
+    # Apply deployment and patch image reference
     kubectl apply -f ../k8s/05-agent-deployment.yaml
+    kubectl set image deployment/a2a-agent a2a-agent=${IMAGE_REF} -n a2a-demo
 
     echo "Waiting for Agent pods to be ready..."
     kubectl wait --for=condition=Ready pod -l app=a2a-agent -n a2a-demo --timeout=120s
-    echo -e "${GREEN}✓ Agent deployed${NC}"
+    echo -e "${GREEN}✓ Agent deployed with image: ${IMAGE_REF}${NC}"
 else
     echo ""
     echo -e "${YELLOW}⚠ Skipping agent deployment (SKIP_AGENT_DEPLOY=true)${NC}"
