@@ -271,24 +271,53 @@ echo "Deploying Kafka..."
 kubectl apply -f ../k8s/02-kafka.yaml
 echo "Waiting for Kafka to be ready (using KRaft mode, typically 2-3 minutes)..."
 
-# Monitor progress while waiting
-for i in {1..60}; do
-    echo "Checking Kafka status (attempt $i/60)..."
-    kubectl get kafka -n kafka -o wide 2>/dev/null || true
-    kubectl get pods -n kafka -l strimzi.io/cluster=a2a-kafka 2>/dev/null || true
+# On Linux + Podman, the entity-operator has compatibility issues with containerd
+# so we check the broker directly instead of the full Kafka resource
+if [[ "$OSTYPE" == "linux-gnu"* ]] && [ "$CONTAINER_TOOL" = "podman" ]; then
+    echo "Using Linux + Podman - checking broker pod directly (entity-operator may not be ready, this is expected)"
 
-    if kubectl wait --for=condition=Ready kafka/a2a-kafka -n kafka --timeout=10s 2>/dev/null; then
-        echo -e "${GREEN}✓ Kafka deployed${NC}"
-        break
-    fi
+    # Wait for broker pod to be ready
+    for i in {1..60}; do
+        echo "Checking Kafka broker status (attempt $i/60)..."
+        kubectl get pods -n kafka -l strimzi.io/cluster=a2a-kafka 2>/dev/null || true
 
-    if [ $i -eq 60 ]; then
-        echo -e "${RED}ERROR: Timeout waiting for Kafka${NC}"
-        kubectl describe kafka/a2a-kafka -n kafka
-        kubectl get events -n kafka --sort-by='.lastTimestamp'
-        exit 1
-    fi
-done
+        if kubectl wait --for=condition=Ready pod -l strimzi.io/name=a2a-kafka-broker -n kafka --timeout=10s 2>/dev/null; then
+            echo -e "${GREEN}✓ Kafka broker pod is ready${NC}"
+            echo -e "${YELLOW}⚠ Note: Entity operator may not be ready due to Podman+containerd compatibility issues${NC}"
+            echo "  This is expected on Linux + Podman and does not affect the demo functionality."
+            break
+        fi
+
+        if [ $i -eq 60 ]; then
+            echo -e "${RED}ERROR: Timeout waiting for Kafka broker${NC}"
+            kubectl get pods -n kafka -l strimzi.io/cluster=a2a-kafka
+            kubectl describe pod -l strimzi.io/name=a2a-kafka-broker -n kafka
+            exit 1
+        fi
+
+        # Sleep before next attempt
+        sleep 5
+    done
+else
+    # Mac + Podman or any Docker: Wait for full Kafka resource to be ready
+    for i in {1..60}; do
+        echo "Checking Kafka status (attempt $i/60)..."
+        kubectl get kafka -n kafka -o wide 2>/dev/null || true
+        kubectl get pods -n kafka -l strimzi.io/cluster=a2a-kafka 2>/dev/null || true
+
+        if kubectl wait --for=condition=Ready kafka/a2a-kafka -n kafka --timeout=10s 2>/dev/null; then
+            echo -e "${GREEN}✓ Kafka deployed${NC}"
+            break
+        fi
+
+        if [ $i -eq 60 ]; then
+            echo -e "${RED}ERROR: Timeout waiting for Kafka${NC}"
+            kubectl describe kafka/a2a-kafka -n kafka
+            kubectl get events -n kafka --sort-by='.lastTimestamp'
+            exit 1
+        fi
+    done
+fi
 
 # Create Kafka Topic for event replication
 echo ""
