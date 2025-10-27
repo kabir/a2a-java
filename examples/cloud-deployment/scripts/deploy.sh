@@ -328,8 +328,8 @@ if [ "${SKIP_AGENT_DEPLOY}" != "true" ]; then
         kubectl patch deployment a2a-agent -n a2a-demo -p '{"spec":{"template":{"spec":{"containers":[{"name":"a2a-agent","imagePullPolicy":"Never"}]}}}}'
     fi
 
-    echo "Waiting for Agent pods to be ready..."
-    kubectl wait --for=condition=Ready pod -l app=a2a-agent -n a2a-demo --timeout=120s
+    echo "Waiting for Agent deployment rollout to complete..."
+    kubectl rollout status deployment/a2a-agent -n a2a-demo --timeout=120s
     echo -e "${GREEN}✓ Agent deployed with image: ${IMAGE_REF}${NC}"
 else
     echo ""
@@ -339,18 +339,53 @@ else
 fi
 
 
-echo "Exposing service via minikube service command..."
-minikube service a2a-agent-service -n a2a-demo --url
+echo ""
+echo "Getting service URL..."
+
+# Get service URL - on macOS this starts a tunnel in the background
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS: Start tunnel in background and capture URL
+    echo "Starting service tunnel in background (required for macOS)..."
+
+    # Start tunnel and capture output to temp file
+    TUNNEL_LOG="/tmp/minikube-tunnel-$$.log"
+    minikube service a2a-agent-service -n a2a-demo --url > "$TUNNEL_LOG" 2>&1 &
+    TUNNEL_PID=$!
+
+    # Wait for URL to appear in log
+    echo "Waiting for tunnel to start..."
+    for i in {1..30}; do
+        if grep -q "http://" "$TUNNEL_LOG" 2>/dev/null; then
+            SERVICE_URL=$(grep -o 'http://[^[:space:]]*' "$TUNNEL_LOG" | head -1)
+            break
+        fi
+        sleep 1
+    done
+
+    if [ -z "$SERVICE_URL" ]; then
+        echo -e "${YELLOW}⚠ Could not detect service URL automatically${NC}"
+        echo "Tunnel is running in background (PID: $TUNNEL_PID)"
+        echo "Check the URL with: cat $TUNNEL_LOG"
+        SERVICE_URL="<check-tunnel-log>"
+    else
+        echo -e "${GREEN}✓ Tunnel started (PID: $TUNNEL_PID)${NC}"
+        echo "  To stop tunnel: kill $TUNNEL_PID"
+    fi
+else
+    # Linux: Direct service URL access
+    SERVICE_URL=$(minikube service a2a-agent-service -n a2a-demo --url)
+fi
 
 echo ""
 echo -e "${GREEN}=========================================${NC}"
 echo -e "${GREEN}Deployment to Minikube completed successfully!${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo ""
-echo "The agent is now accessible at the URL printed above."
+echo -e "${GREEN}Agent is accessible at: ${SERVICE_URL}${NC}"
+echo ""
 
 echo "To run the test client (demonstrating load balancing):"
 echo "  cd ../server"
-echo "  mvn test-compile exec:java -Dexec.classpathScope=test \"
-    -Dexec.mainClass=\"io.a2a.examples.cloud.A2ACloudExampleClient\" \"
-    -Dagent.url=<SERVICE_URL>"
+echo "  mvn test-compile exec:java -Dexec.classpathScope=test \\"
+echo "    -Dexec.mainClass=\"io.a2a.examples.cloud.A2ACloudExampleClient\" \\"
+echo "    -Dagent.url=\"${SERVICE_URL}\""
