@@ -330,6 +330,21 @@ if [[ "$OSTYPE" == "linux-gnu"* ]] && [ "$CONTAINER_TOOL" = "podman" ]; then
     echo -e "${GREEN}✓ Kafka topic applied${NC}"
     echo -e "${YELLOW}⚠ Topic operator may not be ready - topic will be created when operator starts${NC}"
     echo "  This is expected on Linux + Podman and does not affect the demo functionality."
+
+    # Wait for topic to actually exist in Kafka broker (not just CRD)
+    echo "Waiting for topic to be created in Kafka broker. This can take minutes on Linux and Podman, please be patient..."
+    for i in {1..30}; do
+        if kubectl exec a2a-kafka-broker-0 -n kafka -- \
+            /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092 2>/dev/null | \
+            grep -q "a2a-replicated-events"; then
+            echo -e "${GREEN}✓ Topic exists in Kafka broker${NC}"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo -e "${YELLOW}⚠ Topic not found in broker after 30 attempts, continuing anyway${NC}"
+        fi
+        sleep 2
+    done
 else
     echo "Waiting for Kafka topic to be ready..."
     kubectl wait --for=condition=Ready kafkatopic/a2a-replicated-events -n kafka --timeout=60s
