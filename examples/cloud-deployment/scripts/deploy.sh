@@ -410,8 +410,38 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "  To stop tunnel: kill $TUNNEL_PID"
     fi
 else
-    # Linux: Direct service URL access
-    SERVICE_URL=$(minikube service a2a-agent-service -n a2a-demo --url)
+    # Linux: Also needs tunnel for Podman, direct for Docker
+    if [ "$CONTAINER_TOOL" = "podman" ]; then
+        echo "Starting service tunnel in background (required for Podman)..."
+
+        # Start tunnel and capture output to temp file
+        TUNNEL_LOG="/tmp/minikube-tunnel-$$.log"
+        minikube service a2a-agent-service -n a2a-demo --url > "$TUNNEL_LOG" 2>&1 &
+        TUNNEL_PID=$!
+
+        # Wait for URL to appear in log
+        echo "Waiting for tunnel to start..."
+        for i in {1..30}; do
+            if grep -q "http://" "$TUNNEL_LOG" 2>/dev/null; then
+                SERVICE_URL=$(grep -o 'http://[^[:space:]]*' "$TUNNEL_LOG" | head -1)
+                break
+            fi
+            sleep 1
+        done
+
+        if [ -z "$SERVICE_URL" ]; then
+            echo -e "${YELLOW}⚠ Could not detect service URL automatically${NC}"
+            echo "Tunnel is running in background (PID: $TUNNEL_PID)"
+            echo "Check the URL with: cat $TUNNEL_LOG"
+            SERVICE_URL="<check-tunnel-log>"
+        else
+            echo -e "${GREEN}✓ Tunnel started (PID: $TUNNEL_PID)${NC}"
+            echo "  To stop tunnel: kill $TUNNEL_PID"
+        fi
+    else
+        # Linux with Docker: Direct service URL (should work without blocking)
+        SERVICE_URL=$(minikube service a2a-agent-service -n a2a-demo --url)
+    fi
 fi
 
 echo ""
