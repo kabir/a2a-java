@@ -53,9 +53,12 @@ if [ "$CONTAINER_TOOL" = "podman" ]; then
     export MINIKUBE_DRIVER=podman
     echo "Configured Minikube to use Podman driver"
 
-    # Enable rootless mode for Podman (avoids sudo requirement)
-    echo "Enabling rootless mode for Podman..."
-    minikube config set rootless true
+    # Enable rootless mode for Podman on Linux only (avoids sudo requirement)
+    # macOS Podman runs in VM and doesn't support rootless mode
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "Enabling rootless mode for Podman (Linux)..."
+        minikube config set rootless true
+    fi
 fi
 
 if ! minikube status &>/dev/null; then
@@ -308,8 +311,8 @@ if [ "${SKIP_AGENT_DEPLOY}" != "true" ]; then
 
     # Set image reference based on container tool
     if [ "$CONTAINER_TOOL" = "podman" ]; then
-        # Podman: Use local image (no registry prefix)
-        IMAGE_REF="a2a-cloud-deployment:latest"
+        # Podman: Use local image with localhost prefix (Podman adds this automatically)
+        IMAGE_REF="localhost/a2a-cloud-deployment:latest"
     else
         # Docker: Use registry image
         IMAGE_REF="localhost:5000/a2a-cloud-deployment:latest"
@@ -318,6 +321,12 @@ if [ "${SKIP_AGENT_DEPLOY}" != "true" ]; then
     # Apply deployment and patch image reference
     kubectl apply -f ../k8s/05-agent-deployment.yaml
     kubectl set image deployment/a2a-agent a2a-agent=${IMAGE_REF} -n a2a-demo
+
+    # For Podman, set imagePullPolicy to Never (image is loaded locally, not in registry)
+    if [ "$CONTAINER_TOOL" = "podman" ]; then
+        echo "Setting imagePullPolicy to Never for local Podman image..."
+        kubectl patch deployment a2a-agent -n a2a-demo -p '{"spec":{"template":{"spec":{"containers":[{"name":"a2a-agent","imagePullPolicy":"Never"}]}}}}'
+    fi
 
     echo "Waiting for Agent pods to be ready..."
     kubectl wait --for=condition=Ready pod -l app=a2a-agent -n a2a-demo --timeout=120s
