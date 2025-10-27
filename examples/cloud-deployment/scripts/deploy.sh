@@ -52,6 +52,10 @@ echo "Starting Minikube..."
 if [ "$CONTAINER_TOOL" = "podman" ]; then
     export MINIKUBE_DRIVER=podman
     echo "Configured Minikube to use Podman driver"
+
+    # Enable rootless mode for Podman (avoids sudo requirement)
+    echo "Enabling rootless mode for Podman..."
+    minikube config set rootless true
 fi
 
 if ! minikube status &>/dev/null; then
@@ -169,9 +173,16 @@ if [ "$CONTAINER_TOOL" = "podman" ]; then
     $CONTAINER_TOOL build -t a2a-cloud-deployment:latest .
     echo -e "${GREEN}✓ Container image built${NC}"
 
-    echo "Loading image into Minikube..."
-    minikube image load a2a-cloud-deployment:latest
+    echo "Saving image to tarball..."
+    $CONTAINER_TOOL save a2a-cloud-deployment:latest -o /tmp/a2a-cloud-deployment.tar
+    echo -e "${GREEN}✓ Image saved to /tmp/a2a-cloud-deployment.tar${NC}"
+
+    echo "Loading image into Minikube from tarball..."
+    minikube image load /tmp/a2a-cloud-deployment.tar
     echo -e "${GREEN}✓ Image loaded into Minikube${NC}"
+
+    # Clean up tarball
+    rm -f /tmp/a2a-cloud-deployment.tar
 else
     # Docker: Build and push to registry
     REGISTRY="localhost:5000"
