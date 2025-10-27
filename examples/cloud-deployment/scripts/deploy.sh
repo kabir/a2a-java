@@ -281,7 +281,8 @@ if [[ "$OSTYPE" == "linux-gnu"* ]] && [ "$CONTAINER_TOOL" = "podman" ]; then
         echo "Checking Kafka broker status (attempt $i/60)..."
         kubectl get pods -n kafka -l strimzi.io/cluster=a2a-kafka 2>/dev/null || true
 
-        if kubectl wait --for=condition=Ready pod -l strimzi.io/name=a2a-kafka-broker -n kafka --timeout=10s 2>/dev/null; then
+        # Check specifically for the broker pod (not entity-operator)
+        if kubectl wait --for=condition=Ready pod/a2a-kafka-broker-0 -n kafka --timeout=5s 2>/dev/null; then
             echo -e "${GREEN}✓ Kafka broker pod is ready${NC}"
             echo -e "${YELLOW}⚠ Note: Entity operator may not be ready due to Podman+containerd compatibility issues${NC}"
             echo "  This is expected on Linux + Podman and does not affect the demo functionality."
@@ -291,7 +292,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]] && [ "$CONTAINER_TOOL" = "podman" ]; then
         if [ $i -eq 60 ]; then
             echo -e "${RED}ERROR: Timeout waiting for Kafka broker${NC}"
             kubectl get pods -n kafka -l strimzi.io/cluster=a2a-kafka
-            kubectl describe pod -l strimzi.io/name=a2a-kafka-broker -n kafka
+            kubectl describe pod a2a-kafka-broker-0 -n kafka 2>/dev/null || true
             exit 1
         fi
 
