@@ -324,9 +324,17 @@ fi
 echo ""
 echo "Creating Kafka topic for event replication..."
 kubectl apply -f ../k8s/03-kafka-topic.yaml
-echo "Waiting for Kafka topic to be ready..."
-kubectl wait --for=condition=Ready kafkatopic/a2a-replicated-events -n kafka --timeout=60s
-echo -e "${GREEN}✓ Kafka topic created${NC}"
+
+# For Linux + Podman, skip topic readiness check (topic-operator may not be ready)
+if [[ "$OSTYPE" == "linux-gnu"* ]] && [ "$CONTAINER_TOOL" = "podman" ]; then
+    echo -e "${GREEN}✓ Kafka topic applied${NC}"
+    echo -e "${YELLOW}⚠ Topic operator may not be ready - topic will be created when operator starts${NC}"
+    echo "  This is expected on Linux + Podman and does not affect the demo functionality."
+else
+    echo "Waiting for Kafka topic to be ready..."
+    kubectl wait --for=condition=Ready kafkatopic/a2a-replicated-events -n kafka --timeout=60s
+    echo -e "${GREEN}✓ Kafka topic created${NC}"
+fi
 
 # Deploy Agent ConfigMap
 echo ""
