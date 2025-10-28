@@ -1,0 +1,1484 @@
+build (17)	UNKNOWN STEP	﻿2025-10-27T20:59:26.1432439Z Current runner version: '2.328.0'
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1454629Z ##[group]Runner Image Provisioner
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1455594Z Hosted Compute Agent
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1456243Z Version: 20250912.392
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1456825Z Commit: d921fda672a98b64f4f82364647e2f10b2267d0b
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1457575Z Build Date: 2025-09-12T15:23:14Z
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1458161Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1458678Z ##[group]Operating System
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1459287Z Ubuntu
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1459757Z 24.04.3
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1460178Z LTS
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1460671Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1461301Z ##[group]Runner Image
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1461855Z Image: ubuntu-24.04
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1462358Z Version: 20250929.60.1
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1463395Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250929.60/images/ubuntu/Ubuntu2404-Readme.md
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1464896Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250929.60
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1465919Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1466962Z ##[group]GITHUB_TOKEN Permissions
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1468802Z Contents: read
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1469342Z Metadata: read
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1469785Z Packages: read
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1470380Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1472520Z Secret source: Actions
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1473147Z Prepare workflow directory
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1783253Z Prepare all required actions
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.1819622Z Getting action download info
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.6110241Z Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:26.7651401Z Download action repository 'actions/setup-java@v4' (SHA:c5195efecf7bdfc987ee8bae7a71cb8b11521c00)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.4746701Z Complete job name: build (17)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5356435Z ##[group]Run actions/checkout@v4
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5357303Z with:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5357728Z   repository: a2aproject/a2a-java
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5358404Z   token: ***
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5358823Z   ssh-strict: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5359240Z   ssh-user: git
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5359663Z   persist-credentials: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5360124Z   clean: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5360662Z   sparse-checkout-cone-mode: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5361377Z   fetch-depth: 1
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5361792Z   fetch-tags: false
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5362209Z   show-progress: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5362630Z   lfs: false
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5363028Z   submodules: false
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5363460Z   set-safe-directory: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.5364198Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6405018Z Syncing repository: a2aproject/a2a-java
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6406972Z ##[group]Getting Git version info
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6407691Z Working directory is '/home/runner/work/a2a-java/a2a-java'
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6408770Z [command]/usr/bin/git version
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6471232Z git version 2.51.0
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6497058Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6512958Z Temporarily overriding HOME='/home/runner/work/_temp/a435b681-9ea9-49d5-9e2b-c2dd87285a67' before making global git config changes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6515740Z Adding repository directory to the temporary git global config as a safe directory
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6526578Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/a2a-java/a2a-java
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6562496Z Deleting the contents of '/home/runner/work/a2a-java/a2a-java'
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6566482Z ##[group]Initializing the repository
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6571346Z [command]/usr/bin/git init /home/runner/work/a2a-java/a2a-java
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6673491Z hint: Using 'master' as the name for the initial branch. This default branch name
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6674888Z hint: is subject to change. To configure the initial branch name to use in all
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6675851Z hint: of your new repositories, which will suppress this warning, call:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6677219Z hint:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6677805Z hint: 	git config --global init.defaultBranch <name>
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6678935Z hint:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6680482Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6682592Z hint: 'development'. The just-created branch can be renamed via this command:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6684088Z hint:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6684929Z hint: 	git branch -m <name>
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6685770Z hint:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6686922Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6688944Z Initialized empty Git repository in /home/runner/work/a2a-java/a2a-java/.git/
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6692446Z [command]/usr/bin/git remote add origin https://github.com/a2aproject/a2a-java
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6727026Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6728375Z ##[group]Disabling automatic garbage collection
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6731789Z [command]/usr/bin/git config --local gc.auto 0
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6759795Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6761423Z ##[group]Setting up auth
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6767529Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.6798288Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.7104057Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.7134743Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.7353067Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.7394527Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.7395348Z ##[group]Fetching the repository
+build (17)	UNKNOWN STEP	2025-10-27T20:59:27.7403730Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +15fa4567ff5a4a2b1f5e6cb8c2d247e05bc6bef6:refs/remotes/origin/main
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2895380Z From https://github.com/a2aproject/a2a-java
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2896733Z  * [new ref]         15fa4567ff5a4a2b1f5e6cb8c2d247e05bc6bef6 -> origin/main
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2925374Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2926756Z ##[group]Determining the checkout info
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2928191Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2932072Z [command]/usr/bin/git sparse-checkout disable
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2969234Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.2998411Z ##[group]Checking out the ref
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3002365Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3503215Z Switched to a new branch 'main'
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3506422Z branch 'main' set up to track 'origin/main'.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3514357Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3548403Z [command]/usr/bin/git log -1 --format=%H
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3569999Z 15fa4567ff5a4a2b1f5e6cb8c2d247e05bc6bef6
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3910270Z ##[group]Run actions/setup-java@v4
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3911544Z with:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3912353Z   java-version: 17
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3913251Z   distribution: temurin
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3914189Z   cache: maven
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3915049Z   java-package: jdk
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3915948Z   check-latest: false
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3916874Z   server-id: github
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3917797Z   server-username: GITHUB_ACTOR
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3918910Z   server-password: GITHUB_TOKEN
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3920008Z   overwrite-settings: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3921186Z   job-status: success
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3922383Z   token: ***
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.3923207Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.5856940Z ##[group]Installed distributions
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.5918199Z Resolved Java 17.0.16+8 from tool-cache
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.5919812Z Setting Java 17.0.16+8 as the default
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.5931711Z Creating toolchains.xml for JDK version 17 from temurin
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6006790Z Writing to /home/runner/.m2/toolchains.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6008346Z 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6008925Z Java configuration:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6010575Z   Distribution: temurin
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6012348Z   Version: 17.0.16+8
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6014122Z   Path: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.16-8/x64
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6015747Z 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6017167Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6032503Z Creating settings.xml with server-id: github
+build (17)	UNKNOWN STEP	2025-10-27T20:59:28.6033808Z Writing to /home/runner/.m2/settings.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:29.0988936Z Cache hit for: setup-java-Linux-x64-maven-0179809688258814981fd7df6d66cb2c875a79106d11507549700e90fa808764
+build (17)	UNKNOWN STEP	2025-10-27T20:59:30.3917179Z Received 4194304 of 294571539 (1.4%), 4.0 MBs/sec
+build (17)	UNKNOWN STEP	2025-10-27T20:59:31.3952847Z Received 130023424 of 294571539 (44.1%), 62.0 MBs/sec
+build (17)	UNKNOWN STEP	2025-10-27T20:59:32.3920341Z Received 239075328 of 294571539 (81.2%), 76.0 MBs/sec
+build (17)	UNKNOWN STEP	2025-10-27T20:59:32.8853630Z Received 294571539 of 294571539 (100.0%), 80.4 MBs/sec
+build (17)	UNKNOWN STEP	2025-10-27T20:59:32.8854725Z Cache Size: ~281 MB (294571539 B)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:32.8989048Z [command]/usr/bin/tar -xf /home/runner/work/_temp/a700e97a-668e-4dd3-9bad-a83076f597f9/cache.tzst -P -C /home/runner/work/a2a-java/a2a-java --use-compress-program unzstd
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.6912894Z Cache restored successfully
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7477743Z Cache restored from key: setup-java-Linux-x64-maven-0179809688258814981fd7df6d66cb2c875a79106d11507549700e90fa808764
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7636677Z ##[group]Run mvn -B package --file pom.xml -fae
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7637087Z [36;1mmvn -B package --file pom.xml -fae[0m
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7675648Z shell: /usr/bin/bash -e {0}
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7675900Z env:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7676199Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.16-8/x64
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7676683Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.16-8/x64
+build (17)	UNKNOWN STEP	2025-10-27T20:59:33.7677063Z ##[endgroup]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:35.3715997Z [INFO] Scanning for projects...
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6641513Z [INFO] Inspecting build with total of 36 modules
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6749750Z [INFO] Installing Central Publishing features
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6776104Z [INFO] ------------------------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6841618Z [INFO] Detecting the operating system and CPU architecture
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6842305Z [INFO] ------------------------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6842942Z [INFO] os.detected.name: linux
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6843337Z [INFO] os.detected.arch: x86_64
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6843739Z [INFO] os.detected.bitness: 64
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6844166Z [INFO] os.detected.version: 6.11
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6844576Z [INFO] os.detected.version.major: 6
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6845012Z [INFO] os.detected.version.minor: 11
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6845444Z [INFO] os.detected.release: ubuntu
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6845878Z [INFO] os.detected.release.version: 24.04
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6846396Z [INFO] os.detected.release.like.ubuntu: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6846969Z [INFO] os.detected.release.like.debian: true
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.6847451Z [INFO] os.detected.classifier: linux-x86_64
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7138072Z [INFO] ------------------------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7142147Z [INFO] Reactor Build Order:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7144174Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7149404Z [INFO] Java SDK A2A Parent                                                [pom]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7152218Z [INFO] Java SDK A2A Common                                                [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7179891Z [INFO] Java SDK A2A Spec                                                  [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7184645Z [INFO] Java SDK A2A HTTP Client                                           [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7189219Z [INFO] Java SDK A2A Client Transport: SPI                                 [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7223460Z [INFO] Java SDK A2A Client Transport: JSONRPC                             [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7225149Z [INFO] Java SDK A2A Spec: gRPC                                            [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7229989Z [INFO] Java SDK A2A Client Transport: gRPC                                [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7234667Z [INFO] Java SDK A2A Client Transport: JSON+HTTP/REST                      [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7245463Z [INFO] Java SDK A2A Client                                                [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7246931Z [INFO] Java SDK A2A Examples: Hello World                                 [pom]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7247733Z [INFO] Java SDK A2A Examples                                              [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7248444Z [INFO] Java SDK A2A Core                                                  [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7249178Z [INFO] Java A2A SDK Server Tests Common                                   [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7249995Z [INFO] Java A2A Reference Server: Common                                  [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7252045Z [INFO] Java SDK A2A Transport: JSONRPC                                    [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7252868Z [INFO] Java A2A Reference Server: JSONRPC                                 [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7253662Z [INFO] Java SDK A2A Examples                                              [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7254470Z [INFO] A2A Java SDK :: Extras :: Common                                   [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7255597Z [INFO] Java A2A Extras: JPA Database TaskStore                            [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7256491Z [INFO] Java A2A Extras: JPA Database PushNotificationConfigStore          [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7257357Z [INFO] Java A2A Extras: Replicated Queue Manager Parent                   [pom]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7258192Z [INFO] Java A2A Extras: Replicated Queue Manager Core                     [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7259081Z [INFO] Java A2A Extras: Replicated Queue Manager MicroProfile Reactive Messaging [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7259997Z [INFO] A2A Java SDK - Cloud Deployment Example Server                     [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7261167Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Single Instance  [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7262069Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Parent [pom]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7262973Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Common [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7263892Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance App 1 [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7264789Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance App 2 [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7265737Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Tests [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7266585Z [INFO] Java SDK A2A Transport: gRPC                                       [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7267344Z [INFO] Java A2A Reference Server: gRPC                                    [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7268109Z [INFO] Java SDK A2A Transport: JSON+HTTP/REST                             [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7456260Z [INFO] Java A2A Reference Server: JSON+HTTP/REST                          [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7457035Z [INFO] Java SDK A2A TCK Server                                            [jar]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7457588Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7462561Z [INFO] ----------------< io.github.a2asdk:a2a-java-sdk-parent >----------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7463679Z [INFO] Building Java SDK A2A Parent 0.3.0.Beta3-SNAPSHOT                 [1/36]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7465579Z [INFO]   from pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7466262Z [INFO] --------------------------------[ pom ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7467952Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7469260Z [INFO] ----------------< io.github.a2asdk:a2a-java-sdk-common >----------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7470034Z [INFO] Building Java SDK A2A Common 0.3.0.Beta3-SNAPSHOT                 [2/36]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7470650Z [INFO]   from common/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7471351Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7935428Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.7938073Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-common ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.8628399Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/common/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.8635511Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:36.8636033Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-common ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:37.0338670Z [INFO] Recompiling the module because of changed source code.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:37.0465002Z [INFO] Compiling 4 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6421659Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6422563Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-common ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6454697Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/common/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6556201Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6582065Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-common ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6585679Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6586057Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.6586521Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-common ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.7991881Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.8028983Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:38.8030112Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-common ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.0441805Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/common/target/a2a-java-sdk-common-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.0962172Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.0962943Z [INFO] -----------------< io.github.a2asdk:a2a-java-sdk-spec >-----------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.0964513Z [INFO] Building Java SDK A2A Spec 0.3.0.Beta3-SNAPSHOT                   [3/36]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.0965525Z [INFO]   from spec/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.0966126Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.1249253Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.1254550Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-spec ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.1294349Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.1320053Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.1321879Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-spec ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.1472933Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:39.1479430Z [INFO] Compiling 110 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:41.4858292Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:41.4869376Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-spec ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:41.4876492Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/spec/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:41.4894754Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:41.4895550Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-spec ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:41.4991098Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:41.4994495Z [INFO] Compiling 4 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:42.8244887Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:42.8245611Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-spec ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:42.8324757Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T20:59:43.4941714Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.1.2/surefire-junit-platform-3.1.2.pom
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.3787468Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.1.2/surefire-junit-platform-3.1.2.pom (4.7 kB at 5.3 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.3826651Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.1.2/surefire-providers-3.1.2.pom
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.4313360Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.1.2/surefire-providers-3.1.2.pom (2.6 kB at 53 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.4359538Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.pom
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.4771968Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.pom (2.8 kB at 69 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.4805337Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.9.2/junit-platform-launcher-1.9.2.pom
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.5228268Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.9.2/junit-platform-launcher-1.9.2.pom (3.0 kB at 72 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.5249025Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.9.2/junit-platform-engine-1.9.2.pom
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.5688030Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.9.2/junit-platform-engine-1.9.2.pom (3.2 kB at 73 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.5706294Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.pom
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.6246132Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.pom (1.7 kB at 32 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.6253226Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.9.2/junit-platform-commons-1.9.2.pom
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.6581705Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.9.2/junit-platform-commons-1.9.2.pom (2.8 kB at 88 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.6614270Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.1.2/surefire-junit-platform-3.1.2.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.7177210Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.1.2/surefire-junit-platform-3.1.2.jar (27 kB at 522 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.7179154Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.7181104Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.9.2/junit-platform-launcher-1.9.2.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.7182928Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.9.2/junit-platform-engine-1.9.2.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.7185105Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.7205368Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.9.2/junit-platform-commons-1.9.2.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.7784517Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.9.2/junit-platform-launcher-1.9.2.jar (169 kB at 2.6 MB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8026043Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar (7.7 kB at 90 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8029116Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.1.2/common-java5-3.1.2.jar (18 kB at 197 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8130204Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.9.2/junit-platform-commons-1.9.2.jar (103 kB at 1.1 MB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8272123Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.9.2/junit-platform-engine-1.9.2.jar (189 kB at 1.7 MB/s)
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8546104Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8546749Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8548207Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T20:59:44.8548640Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:45.5305579Z [INFO] Running io.a2a.spec.JSONRPCErrorSerializationTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:45.7899427Z [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.229 s -- in io.a2a.spec.JSONRPCErrorSerializationTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:45.7900401Z [INFO] Running io.a2a.spec.TaskStatusTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:45.8712322Z [INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.098 s -- in io.a2a.spec.TaskStatusTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:45.8713233Z [INFO] Running io.a2a.spec.TaskDeserializationTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:45.9352417Z [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.069 s -- in io.a2a.spec.TaskDeserializationTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:45.9355242Z [INFO] Running io.a2a.spec.SubTypeSerializationTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0489582Z [INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.113 s -- in io.a2a.spec.SubTypeSerializationTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0706566Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0706913Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0707220Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0707960Z [INFO] Tests run: 22, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0710010Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0728455Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.0728884Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-spec ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.1045462Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/spec/target/a2a-java-sdk-spec-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.1331807Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.1332639Z [INFO] -------------< io.github.a2asdk:a2a-java-sdk-http-client >--------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.1333621Z [INFO] Building Java SDK A2A HTTP Client 0.3.0.Beta3-SNAPSHOT            [4/36]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.1335183Z [INFO]   from http-client/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.1335707Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.2966632Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.2967260Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-http-client ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.2992133Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/http-client/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.2993031Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.2993547Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-http-client ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.3075789Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:46.3081587Z [INFO] Compiling 5 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:47.9563438Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:47.9564126Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-http-client ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:47.9575640Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/http-client/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:47.9576931Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:47.9577822Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-http-client ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:47.9673286Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:47.9677734Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.3459563Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.3460137Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-http-client ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.3501226Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.3599152Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.3599580Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.3600075Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.3600475Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:49.9354688Z [INFO] Running io.a2a.client.http.A2ACardResolverTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2485783Z [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.302 s -- in io.a2a.client.http.A2ACardResolverTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2680066Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2680610Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2681099Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2681515Z [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2681994Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2688093Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2688552Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-http-client ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2736752Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/http-client/target/a2a-java-sdk-http-client-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2791976Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2792852Z [INFO] ---------< io.github.a2asdk:a2a-java-sdk-client-transport-spi >---------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2794605Z [INFO] Building Java SDK A2A Client Transport: SPI 0.3.0.Beta3-SNAPSHOT  [5/36]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2796113Z [INFO]   from client/transport/spi/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2796667Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2867973Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2875206Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-spi ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2881341Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/client/transport/spi/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2906381Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2907233Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-client-transport-spi ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2971710Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:50.2976060Z [INFO] Compiling 13 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:51.8877142Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:51.8877923Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-spi ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:51.8887801Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/client/transport/spi/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:51.8888453Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:51.8888869Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-spi ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:51.8990089Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:51.8994059Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.1243168Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.1243748Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-spi ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.1276784Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.1363311Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.1364073Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.1364582Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.1364963Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.5532902Z [INFO] Running io.a2a.client.transport.spi.interceptors.auth.AuthInterceptorTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6232885Z [INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.067 s -- in io.a2a.client.transport.spi.interceptors.auth.AuthInterceptorTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6336440Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6338788Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6339860Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6340418Z [INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6342688Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6344786Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6345516Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client-transport-spi ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6405762Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/client/transport/spi/target/a2a-java-sdk-client-transport-spi-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6544373Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6545158Z [INFO] -------< io.github.a2asdk:a2a-java-sdk-client-transport-jsonrpc >-------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6545693Z [INFO] Building Java SDK A2A Client Transport: JSONRPC 0.3.0.Beta3-SNAPSHOT [6/36]
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6546097Z [INFO]   from client/transport/jsonrpc/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6546433Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6789684Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6790410Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6824395Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6825177Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6826019Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-client-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6888467Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:53.6892093Z [INFO] Compiling 5 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:55.2561124Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:55.2561892Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:55.2570251Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/client/transport/jsonrpc/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T20:59:55.2571390Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:55.2572319Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:55.2629631Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T20:59:55.2633103Z [INFO] Compiling 5 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.0673219Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.0673880Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.0712524Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.0784697Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.0790365Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.0791071Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.0791473Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T20:59:57.6387836Z [INFO] Running io.a2a.client.transport.jsonrpc.JSONRPCTransportStreamingTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:59.6018125Z [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.956 s -- in io.a2a.client.transport.jsonrpc.JSONRPCTransportStreamingTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:59.6019409Z [INFO] Running io.a2a.client.transport.jsonrpc.sse.SSEEventListenerTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:59.6290080Z [INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s -- in io.a2a.client.transport.jsonrpc.sse.SSEEventListenerTest
+build (17)	UNKNOWN STEP	2025-10-27T20:59:59.6294311Z [INFO] Running io.a2a.client.transport.jsonrpc.JSONRPCTransportTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.2922031Z [INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.665 s -- in io.a2a.client.transport.jsonrpc.JSONRPCTransportTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6238341Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6239500Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6240554Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6241266Z [INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6241778Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6246114Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6246644Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6292437Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/client/transport/jsonrpc/target/a2a-java-sdk-client-transport-jsonrpc-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6382228Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6383151Z [INFO] --------------< io.github.a2asdk:a2a-java-sdk-spec-grpc >---------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6385412Z [INFO] Building Java SDK A2A Spec: gRPC 0.3.0.Beta3-SNAPSHOT             [7/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6386305Z [INFO]   from spec-grpc/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6388821Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6562340Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6571476Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-spec-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6849499Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6871984Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.6882078Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-spec-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.7366421Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:01.7411717Z [INFO] Compiling 96 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:07.6186755Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:07.6187525Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-spec-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:07.6206949Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/spec-grpc/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:07.6207761Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:07.6208311Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-spec-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:07.6286218Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:07.6289270Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.0225634Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.0226203Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-spec-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.0764723Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.0954497Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.0958220Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.0961101Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.0963671Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.6255163Z [INFO] Running io.a2a.grpc.utils.ToProtoTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8682684Z [INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.239 s -- in io.a2a.grpc.utils.ToProtoTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8785163Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8785512Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8785803Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8786187Z [INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8791601Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8804762Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:09.8805208Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-spec-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.0482815Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/spec-grpc/target/a2a-java-sdk-spec-grpc-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1176175Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1176757Z [INFO] --------< io.github.a2asdk:a2a-java-sdk-client-transport-grpc >---------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1177590Z [INFO] Building Java SDK A2A Client Transport: gRPC 0.3.0.Beta3-SNAPSHOT [8/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1178378Z [INFO]   from client/transport/grpc/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1180288Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1427013Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1428039Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1445542Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1449704Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1453274Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-client-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1537515Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:10.1541134Z [INFO] Compiling 7 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0450766Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0452512Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0455651Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/client/transport/grpc/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0456520Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0457164Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0479340Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0479772Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0480341Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0500477Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0504584Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0505293Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0545357Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/client/transport/grpc/target/a2a-java-sdk-client-transport-grpc-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0631497Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0632226Z [INFO] --------< io.github.a2asdk:a2a-java-sdk-client-transport-rest >---------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0633147Z [INFO] Building Java SDK A2A Client Transport: JSON+HTTP/REST 0.3.0.Beta3-SNAPSHOT [9/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0633895Z [INFO]   from client/transport/rest/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0634432Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0937436Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0940292Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0959017Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0963755Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.0968239Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-client-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.1052755Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:12.1059365Z [INFO] Compiling 8 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:14.0411007Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:14.0411737Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:14.0422718Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/client/transport/rest/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:14.0423567Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:14.0424130Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-client-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:14.0496433Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:14.0500211Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:15.6172183Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:15.6172776Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:15.6200558Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:00:15.6277063Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:15.6278314Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:15.6279003Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:00:15.6279559Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:16.1708728Z [INFO] Running io.a2a.client.transport.rest.RestTransportTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:18.8714889Z [INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.696 s -- in io.a2a.client.transport.rest.RestTransportTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2010164Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2010476Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2010756Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2011323Z [INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2011790Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2018950Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2019384Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2064836Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/client/transport/rest/target/a2a-java-sdk-client-transport-rest-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2144071Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2144568Z [INFO] ----------------< io.github.a2asdk:a2a-java-sdk-client >----------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2145310Z [INFO] Building Java SDK A2A Client 0.3.0.Beta3-SNAPSHOT                [10/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2145935Z [INFO]   from client/base/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2146438Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2508503Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2509149Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2525957Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2528947Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2529750Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2613019Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:19.2620200Z [INFO] Compiling 12 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:21.1047203Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:21.1047823Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:21.1067324Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/client/base/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:21.1068548Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:21.1069380Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:21.1145138Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:21.1171862Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7069293Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7069827Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7096292Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7152466Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/vintage/junit-vintage-engine/5.13.4/junit-vintage-engine-5.13.4.pom
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7563363Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/vintage/junit-vintage-engine/5.13.4/junit-vintage-engine-5.13.4.pom (3.2 kB at 78 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7584702Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/vintage/junit-vintage-engine/5.13.4/junit-vintage-engine-5.13.4.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7961626Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/vintage/junit-vintage-engine/5.13.4/junit-vintage-engine-5.13.4.jar (76 kB at 2.1 MB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7983630Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7984343Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7985019Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:00:22.7985887Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:23.3762034Z [INFO] Running io.a2a.client.AuthenticationAuthorizationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.4228463Z [INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.044 s -- in io.a2a.client.AuthenticationAuthorizationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.4241731Z [INFO] Running io.a2a.client.ClientBuilderTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.4303940Z [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in io.a2a.client.ClientBuilderTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.4309612Z [INFO] Running io.a2a.A2ATest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.4446861Z [INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in io.a2a.A2ATest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7775133Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7775655Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7775967Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7776362Z [INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7776855Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7782585Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7783219Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7821883Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/client/base/target/a2a-java-sdk-client-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7918500Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7919709Z [INFO] -----------< io.github.a2asdk:a2a-java-sdk-examples-parent >------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7921103Z [INFO] Building Java SDK A2A Examples: Hello World 0.3.0.Beta3-SNAPSHOT [11/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7922046Z [INFO]   from examples/helloworld/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.7923183Z [INFO] --------------------------------[ pom ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8081111Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8081738Z [INFO] --- quarkus:3.28.2:generate-code (default) @ a2a-java-sdk-examples-parent ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8113160Z [INFO] Type of the artifact is POM, skipping build goal
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8114835Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8115438Z [INFO] --- quarkus:3.28.2:generate-code-tests (default) @ a2a-java-sdk-examples-parent ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8122524Z [INFO] Type of the artifact is POM, skipping build goal
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8123406Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8124151Z [INFO] --- quarkus:3.28.2:build (default) @ a2a-java-sdk-examples-parent ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8134697Z [INFO] Type of the artifact is POM, skipping build goal
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8135498Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8136161Z [INFO] -----------< io.github.a2asdk:a2a-java-sdk-examples-client >------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8137167Z [INFO] Building Java SDK A2A Examples 0.3.0.Beta3-SNAPSHOT              [12/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8140307Z [INFO]   from examples/helloworld/client/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8141954Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8206075Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8206730Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8487793Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/examples/helloworld/client/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8491526Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:26.8492351Z [INFO] --- quarkus:3.28.2:generate-code (default) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:27.0797728Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:27.0800271Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:27.1308787Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:27.1368226Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:28.5775986Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:28.5776611Z [INFO] --- quarkus:3.28.2:generate-code-tests (default) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1463049Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1464059Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1482821Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/examples/helloworld/client/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1484045Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1502126Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1529118Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1529989Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.1530765Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.2048548Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.2094214Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.2106377Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.3432592Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/examples/helloworld/client/target/a2a-java-sdk-examples-client-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.3713715Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:29.3717623Z [INFO] --- quarkus:3.28.2:build (default) @ a2a-java-sdk-examples-client ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.1633150Z [INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 783ms
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.1662899Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.1663653Z [INFO] ------------< io.github.a2asdk:a2a-java-sdk-server-common >-------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.1671779Z [INFO] Building Java SDK A2A Core 0.3.0.Beta3-SNAPSHOT                  [13/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.1672799Z [INFO]   from server-common/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.1674049Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.2010733Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.2012049Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.2019687Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.2022693Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.2023470Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.2116891Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:30.2121479Z [INFO] Compiling 41 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:32.2769930Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:32.2770558Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:32.2782239Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:32.2784595Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:32.2785318Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:32.2846088Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:32.2849167Z [INFO] Compiling 19 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:34.7153955Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:34.7154559Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:34.7195253Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:00:34.7259812Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:34.7261695Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:34.7263309Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:00:34.7264996Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:35.4079052Z [INFO] Running io.a2a.server.requesthandlers.DefaultRequestHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:44.7726433Z [INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.354 s -- in io.a2a.server.requesthandlers.DefaultRequestHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:44.7727908Z [INFO] Running io.a2a.server.events.EventQueueTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.0416722Z [INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.270 s -- in io.a2a.server.events.EventQueueTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.0426377Z [INFO] Running io.a2a.server.events.InMemoryQueueManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.0629725Z [INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in io.a2a.server.events.InMemoryQueueManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.0632671Z [INFO] Running io.a2a.server.events.EventConsumerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.0872135Z [INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in io.a2a.server.events.EventConsumerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.0873677Z [INFO] Running io.a2a.server.extensions.A2AExtensionsTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.1052823Z [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s -- in io.a2a.server.extensions.A2AExtensionsTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.1085029Z [INFO] Running io.a2a.server.tasks.TaskManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.1685020Z [INFO] Tests run: 27, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.060 s -- in io.a2a.server.tasks.TaskManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.1686098Z [INFO] Running io.a2a.server.tasks.PushNotificationSenderTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.2075793Z [INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.040 s -- in io.a2a.server.tasks.PushNotificationSenderTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.2077347Z [INFO] Running io.a2a.server.tasks.TaskUpdaterTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.2688057Z [INFO] Tests run: 33, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.053 s -- in io.a2a.server.tasks.TaskUpdaterTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.2694169Z [INFO] Running io.a2a.server.tasks.ResultAggregatorTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:45.5692507Z OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.0730298Z [INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.801 s -- in io.a2a.server.tasks.ResultAggregatorTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.0732627Z [INFO] Running io.a2a.server.tasks.InMemoryTaskStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.0897790Z [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in io.a2a.server.tasks.InMemoryTaskStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.0905504Z [INFO] Running io.a2a.server.tasks.InMemoryPushNotificationConfigStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3364696Z [INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.241 s -- in io.a2a.server.tasks.InMemoryPushNotificationConfigStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3373787Z [INFO] Running io.a2a.server.AgentCardValidatorTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3708285Z [INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in io.a2a.server.AgentCardValidatorTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3709174Z [INFO] Running io.a2a.server.ServerCallContextTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3757665Z [INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in io.a2a.server.ServerCallContextTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3758579Z [INFO] Running io.a2a.server.util.ArtifactUtilsTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3933291Z [INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in io.a2a.server.util.ArtifactUtilsTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:46.3960213Z [INFO] Running io.a2a.server.util.async.AsyncUtilsTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:48.9267585Z [INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.532 s -- in io.a2a.server.util.async.AsyncUtilsTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:48.9274075Z [INFO] Running io.a2a.server.agentexecution.RequestContextTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0159505Z [INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.090 s -- in io.a2a.server.agentexecution.RequestContextTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0421705Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0423192Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0423963Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0424388Z [INFO] Tests run: 218, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0424885Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0441605Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0442564Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0532610Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/server-common/target/a2a-java-sdk-server-common-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0657713Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0658273Z [INFO] --- jar:3.4.2:test-jar (default) @ a2a-java-sdk-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0734498Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/server-common/target/a2a-java-sdk-server-common-0.3.0.Beta3-SNAPSHOT-tests.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0908473Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0909099Z [INFO] ---------< io.github.a2asdk:a2a-java-sdk-tests-server-common >----------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0909926Z [INFO] Building Java A2A SDK Server Tests Common 0.3.0.Beta3-SNAPSHOT   [14/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0910576Z [INFO]   from tests/server-common/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.0911342Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1141893Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1142811Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-tests-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1145312Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/tests/server-common/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1146113Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1146669Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-tests-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1173493Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1186979Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1189882Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-tests-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1191033Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1191643Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1192265Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-tests-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1264914Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:49.1267773Z [INFO] Compiling 5 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0397686Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0398385Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-tests-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0417423Z [INFO] Tests are skipped.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0417832Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0418688Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-tests-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0426439Z [WARNING] JAR will be empty - no content was marked for inclusion!
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0435724Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/tests/server-common/target/a2a-java-sdk-tests-server-common-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0497313Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0498974Z [INFO] --- jar:3.4.2:test-jar (default) @ a2a-java-sdk-tests-server-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0537721Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/tests/server-common/target/a2a-java-sdk-tests-server-common-0.3.0.Beta3-SNAPSHOT-tests.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0619070Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0619885Z [INFO] -----------< io.github.a2asdk:a2a-java-sdk-reference-common >-----------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0620713Z [INFO] Building Java A2A Reference Server: Common 0.3.0.Beta3-SNAPSHOT  [15/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0621588Z [INFO]   from reference/common/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.0622109Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.2628782Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.2630249Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-reference-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.2649951Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.2652945Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.2653700Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-reference-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.2731542Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:51.2743170Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5200430Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5201589Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-reference-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5213851Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/reference/common/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5242103Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5242935Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-reference-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5249206Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5249739Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5250295Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-reference-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5274511Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5281311Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5281804Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-reference-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5310351Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/reference/common/target/a2a-java-sdk-reference-common-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5340575Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5341539Z [INFO] ----------< io.github.a2asdk:a2a-java-sdk-transport-jsonrpc >-----------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5342350Z [INFO] Building Java SDK A2A Transport: JSONRPC 0.3.0.Beta3-SNAPSHOT    [16/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5342972Z [INFO]   from transport/jsonrpc/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5343506Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5437512Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5438927Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5452896Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5458780Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5459674Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5537549Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:52.5539403Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:53.9498801Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:53.9499436Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:53.9511247Z [INFO] Copying 2 resources from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:53.9516075Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:53.9516678Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:53.9581118Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:53.9591764Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:55.6749560Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:55.6750124Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:55.6771816Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:00:55.6835203Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:55.6835776Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:55.6836303Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:00:55.6836832Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:56.1849072Z [INFO] Running io.a2a.transport.jsonrpc.handler.JSONRPCHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:56.8940667Z OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8668405Z [WARNING] Tests run: 42, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 1.679 s -- in io.a2a.transport.jsonrpc.handler.JSONRPCHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8800045Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8800323Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8800509Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8800963Z [WARNING] Tests run: 42, Failures: 0, Errors: 0, Skipped: 1
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8801450Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8807004Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8807490Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-transport-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8835131Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/transport/jsonrpc/target/a2a-java-sdk-transport-jsonrpc-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8907740Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8908279Z [INFO] ----------< io.github.a2asdk:a2a-java-sdk-reference-jsonrpc >-----------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8909066Z [INFO] Building Java A2A Reference Server: JSONRPC 0.3.0.Beta3-SNAPSHOT [17/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8909662Z [INFO]   from reference/jsonrpc/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.8910205Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.9378059Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.9393133Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-reference-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.9398980Z [INFO] Copying 2 resources from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.9403400Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.9404195Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-reference-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.9481574Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:57.9486024Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:59.5425802Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:59.5426522Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-reference-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:59.5436107Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:00:59.5437736Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:00:59.5439511Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-reference-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:00:59.5497571Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:00:59.5501054Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:01.2394532Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:01.2396584Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-reference-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:01.2430974Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:01:01.2504591Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:01.2505612Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:01.2506079Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:01:01.2506452Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:07.4820635Z [INFO] Running io.a2a.server.apps.quarkus.QuarkusA2AJSONRPCTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:16.8908973Z [INFO] Tests run: 37, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.396 s -- in io.a2a.server.apps.quarkus.QuarkusA2AJSONRPCTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:16.8917507Z [INFO] Running io.a2a.server.apps.quarkus.A2AServerRoutesTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:17.1546795Z OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+build (17)	UNKNOWN STEP	2025-10-27T21:01:19.7171149Z [INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.807 s -- in io.a2a.server.apps.quarkus.A2AServerRoutesTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1697849Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1698202Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1698491Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1698856Z [INFO] Tests run: 47, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1699283Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1705966Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1706427Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-reference-jsonrpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1751611Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/reference/jsonrpc/target/a2a-java-sdk-reference-jsonrpc-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1825458Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1826025Z [INFO] -----------< io.github.a2asdk:a2a-java-sdk-examples-server >------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1826807Z [INFO] Building Java SDK A2A Examples 0.3.0.Beta3-SNAPSHOT              [18/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1827484Z [INFO]   from examples/helloworld/server/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.1828083Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.2455854Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.2456509Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.2472589Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.2493314Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.2494471Z [INFO] --- quarkus:3.28.2:generate-code (default) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.5105537Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.5110226Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.5182553Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:30.5185609Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:31.9347590Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:31.9348768Z [INFO] --- quarkus:3.28.2:generate-code-tests (default) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5303861Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5304594Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5314023Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/examples/helloworld/server/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5317804Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5322266Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5381637Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5386059Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5406251Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5413185Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5417657Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5427983Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5452484Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/examples/helloworld/server/target/a2a-java-sdk-examples-server-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5496240Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:32.5505762Z [INFO] --- quarkus:3.28.2:build (default) @ a2a-java-sdk-examples-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.2939036Z [INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 1738ms
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3008794Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3043932Z [INFO] --------------< io.github.a2asdk:a2a-java-extras-common >---------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3047159Z [INFO] Building A2A Java SDK :: Extras :: Common 0.3.0.Beta3-SNAPSHOT   [19/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3065759Z [INFO]   from extras/common/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3066354Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3066878Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3067400Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-extras-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3086347Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/common/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3091349Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3095590Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-extras-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3192613Z [INFO] Recompiling the module because of changed source code.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:34.3194816Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3621479Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3622225Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-extras-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3630300Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/common/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3633109Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3635172Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-extras-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3652800Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3654650Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3656209Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-extras-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3667011Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3668844Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3669449Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-extras-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3693091Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/common/target/a2a-java-extras-common-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3811860Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3812630Z [INFO] ------< io.github.a2asdk:a2a-java-extras-task-store-database-jpa >------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3813547Z [INFO] Building Java A2A Extras: JPA Database TaskStore 0.3.0.Beta3-SNAPSHOT [20/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3814325Z [INFO]   from extras/task-store-database-jpa/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.3815006Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.5214619Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.5215334Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-extras-task-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.5241612Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.5244830Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.5273149Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-extras-task-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.5342872Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:35.5343647Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:36.9056554Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:36.9057338Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-extras-task-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:36.9067600Z [INFO] Copying 2 resources from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:36.9070711Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:36.9071917Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-extras-task-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:36.9122795Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:36.9125984Z [INFO] Compiling 4 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:38.5552332Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:38.5552948Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-extras-task-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:38.5578837Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:01:38.5632648Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:38.5633371Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:38.5635246Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:01:38.5635894Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:45.5551184Z [INFO] Running io.a2a.extras.taskstore.database.jpa.JpaDatabaseTaskStoreIntegrationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.0699824Z [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.502 s -- in io.a2a.extras.taskstore.database.jpa.JpaDatabaseTaskStoreIntegrationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.0703801Z [INFO] Running io.a2a.extras.taskstore.database.jpa.JpaDatabaseTaskStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.5269399Z [INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.456 s -- in io.a2a.extras.taskstore.database.jpa.JpaDatabaseTaskStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9022684Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9023060Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9023366Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9023753Z [INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9024152Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9028684Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9029184Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-extras-task-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9058906Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/task-store-database-jpa/target/a2a-java-extras-task-store-database-jpa-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9087549Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9088501Z [INFO] --< io.github.a2asdk:a2a-java-extras-push-notification-config-store-database-jpa >--
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9089890Z [INFO] Building Java A2A Extras: JPA Database PushNotificationConfigStore 0.3.0.Beta3-SNAPSHOT [21/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9091043Z [INFO]   from extras/push-notification-config-store-database-jpa/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9091793Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9565800Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9568731Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-extras-push-notification-config-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9581061Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9592285Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9594449Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-extras-push-notification-config-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9652832Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:48.9656783Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:50.2889827Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:50.2890426Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-extras-push-notification-config-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:50.2904682Z [INFO] Copying 2 resources from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:50.2908556Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:50.2909432Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-extras-push-notification-config-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:50.2961316Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:01:50.2968439Z [INFO] Compiling 5 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:01:52.0269377Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:52.0270149Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-extras-push-notification-config-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:01:52.0352086Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:01:52.0400311Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:01:52.0401399Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:52.0402147Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:01:52.0404056Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:01:58.2160067Z [INFO] Running io.a2a.extras.pushnotificationconfigstore.database.jpa.JpaDatabasePushNotificationConfigStoreIntegrationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:01.4884992Z [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.255 s -- in io.a2a.extras.pushnotificationconfigstore.database.jpa.JpaDatabasePushNotificationConfigStoreIntegrationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:01.4886873Z [INFO] Running io.a2a.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfigStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:01.7230658Z OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.4473069Z [WARNING] Tests run: 15, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.928 s -- in io.a2a.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfigStoreTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8394271Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8394606Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8394906Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8395308Z [WARNING] Tests run: 18, Failures: 0, Errors: 0, Skipped: 1
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8395778Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8402325Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8404367Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-extras-push-notification-config-store-database-jpa ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8430777Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/push-notification-config-store-database-jpa/target/a2a-java-extras-push-notification-config-store-database-jpa-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8519462Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8520322Z [INFO] -----< io.github.a2asdk:a2a-java-queue-manager-replicated-parent >------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8521217Z [INFO] Building Java A2A Extras: Replicated Queue Manager Parent 0.3.0.Beta3-SNAPSHOT [22/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8521696Z [INFO]   from extras/queue-manager-replicated/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8522059Z [INFO] --------------------------------[ pom ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8523876Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8524366Z [INFO] ------< io.github.a2asdk:a2a-java-queue-manager-replicated-core >-------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8525263Z [INFO] Building Java A2A Extras: Replicated Queue Manager Core 0.3.0.Beta3-SNAPSHOT [23/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8526052Z [INFO]   from extras/queue-manager-replicated/core/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8526680Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8602500Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8603468Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replicated-core ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8616519Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8619035Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8620009Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-queue-manager-replicated-core ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8732636Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:02.8736743Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:04.1252757Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:04.1253590Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replicated-core ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:04.1266517Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/core/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:04.1267865Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:04.1268788Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-queue-manager-replicated-core ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:04.1319744Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:04.1323025Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:05.6519364Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:05.6519943Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replicated-core ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:05.6554146Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:02:05.6627990Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:05.6628944Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:05.6630021Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:02:05.6630674Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.1615833Z [INFO] Running io.a2a.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.6461870Z [INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.482 s -- in io.a2a.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.6467940Z [INFO] Running io.a2a.extras.queuemanager.replicated.core.EventSerializationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.6927311Z [INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.046 s -- in io.a2a.extras.queuemanager.replicated.core.EventSerializationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7038637Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7038963Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7039265Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7039640Z [INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7040103Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7047254Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7047691Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-queue-manager-replicated-core ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7081735Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/core/target/a2a-java-queue-manager-replicated-core-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7110208Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7111286Z [INFO] --< io.github.a2asdk:a2a-java-queue-manager-replication-mp-reactive >---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7112402Z [INFO] Building Java A2A Extras: Replicated Queue Manager MicroProfile Reactive Messaging 0.3.0.Beta3-SNAPSHOT [24/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7113477Z [INFO]   from extras/queue-manager-replicated/replication-mp-reactive/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7114230Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7418183Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7419345Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replication-mp-reactive ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7428390Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7431889Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7432794Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-queue-manager-replication-mp-reactive ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7476913Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:06.7480299Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:08.0154439Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:08.0155257Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replication-mp-reactive ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:08.0162973Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/replication-mp-reactive/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:08.0164060Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:08.0164765Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-queue-manager-replication-mp-reactive ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:08.0213331Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:08.0216002Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.2308176Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.2308774Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replication-mp-reactive ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.2327713Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.2373086Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.2373475Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.2373947Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.2374328Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:09.7644724Z [INFO] Running io.a2a.extras.queuemanager.replicated.mp_reactive.ReactiveMessagingReplicationStrategyTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:10.0393564Z OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.0953916Z [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.323 s -- in io.a2a.extras.queuemanager.replicated.mp_reactive.ReactiveMessagingReplicationStrategyTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1205932Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1206271Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1206583Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1206988Z [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1207473Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1212436Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1212962Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-queue-manager-replication-mp-reactive ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1241909Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/replication-mp-reactive/target/a2a-java-queue-manager-replication-mp-reactive-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1285529Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1286077Z [INFO] ---< io.github.a2asdk:a2a-java-sdk-examples-cloud-deployment-server >---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1286965Z [INFO] Building A2A Java SDK - Cloud Deployment Example Server 0.3.0.Beta3-SNAPSHOT [25/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1287738Z [INFO]   from examples/cloud-deployment/server/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1288322Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1719686Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1721049Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1930385Z [INFO] Copying 2 resources from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1948421Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.1949480Z [INFO] --- quarkus:3.28.2:generate-code (default) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.6021618Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.6025775Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.6451989Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:11.6462750Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:13.2324300Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:13.2325084Z [INFO] --- quarkus:3.28.2:generate-code-tests (default) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:14.0073206Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:14.0074054Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:14.0091579Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/examples/cloud-deployment/server/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:14.0093075Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:14.0094363Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:14.0175372Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:14.0178237Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:15.5198785Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:15.5199284Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:15.5624563Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:15.5627177Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:15.6577855Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/examples/cloud-deployment/server/target/a2a-java-sdk-examples-cloud-deployment-server-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:02:15.6787554Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:15.6790092Z [INFO] --- quarkus:3.28.2:build (default) @ a2a-java-sdk-examples-cloud-deployment-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.8674123Z [INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 3182ms
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.8779300Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.8783987Z [INFO] --< io.github.a2asdk:a2a-java-queue-manager-replicated-tests-single-instance >--
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.8788822Z [INFO] Building Java A2A Extras: Replicated Queue Manager Tests - Single Instance 0.3.0.Beta3-SNAPSHOT [26/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.8800490Z [INFO]   from extras/queue-manager-replicated/tests-single-instance/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.8801616Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9260975Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9262195Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replicated-tests-single-instance ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9279610Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-single-instance/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9280702Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9281607Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-queue-manager-replicated-tests-single-instance ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9315402Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9317598Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9318672Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replicated-tests-single-instance ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9326128Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9326707Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9327497Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-queue-manager-replicated-tests-single-instance ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9396334Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:18.9398854Z [INFO] Compiling 5 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:20.8418072Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:20.8418785Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replicated-tests-single-instance ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:20.8516872Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:02:20.8745965Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:20.8746822Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:20.8747719Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:02:20.8750645Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:28.3128441Z [INFO] Running io.a2a.extras.queuemanager.replicated.tests.KafkaReplicationIntegrationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4176355Z [ERROR] Tests run: 4, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 17.08 s <<< FAILURE! -- in io.a2a.extras.queuemanager.replicated.tests.KafkaReplicationIntegrationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4178569Z [ERROR] io.a2a.extras.queuemanager.replicated.tests.KafkaReplicationIntegrationTest.testKafkaEventReceivedByA2AServer -- Time elapsed: 1.811 s <<< FAILURE!
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4180675Z org.opentest4j.AssertionFailedError: Should not receive errors during resubscription ==> expected: <null> but was: <java.io.IOException: Stream 1 cancelled>
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4182490Z 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4183743Z 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4184836Z 	at org.junit.jupiter.api.AssertNull.failNotNull(AssertNull.java:50)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4185649Z 	at org.junit.jupiter.api.AssertNull.assertNull(AssertNull.java:35)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4186434Z 	at org.junit.jupiter.api.Assertions.assertNull(Assertions.java:287)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4188033Z 	at io.a2a.extras.queuemanager.replicated.tests.KafkaReplicationIntegrationTest.testKafkaEventReceivedByA2AServer(KafkaReplicationIntegrationTest.java:268)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4189604Z 	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4190580Z 	at io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:998)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4191996Z 	at io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:846)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4192931Z 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4193577Z 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4193978Z 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4194730Z [INFO] Running io.a2a.extras.queuemanager.replicated.tests.ReplicatedQueueManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:45.4262870Z [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in io.a2a.extras.queuemanager.replicated.tests.ReplicatedQueueManagerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7864101Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7864409Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7864713Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7864973Z [ERROR] Failures: 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7866378Z [ERROR]   KafkaReplicationIntegrationTest.testKafkaEventReceivedByA2AServer:268 Should not receive errors during resubscription ==> expected: <null> but was: <java.io.IOException: Stream 1 cancelled>
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7867359Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7867600Z [ERROR] Tests run: 5, Failures: 1, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7867874Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7887163Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7887817Z [INFO] --< io.github.a2asdk:a2a-java-queue-manager-replicated-tests-multi-instance-parent >--
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7888729Z [INFO] Building Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Parent 0.3.0.Beta3-SNAPSHOT [27/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7889698Z [INFO]   from extras/queue-manager-replicated/tests-multi-instance/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7890394Z [INFO] --------------------------------[ pom ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7891114Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7892073Z [INFO] --< io.github.a2asdk:a2a-java-queue-manager-replicated-tests-multi-instance-common >--
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7893243Z [INFO] Building Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Common 0.3.0.Beta3-SNAPSHOT [28/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7894313Z [INFO]   from extras/queue-manager-replicated/tests-multi-instance/quarkus-common/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7895112Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7946379Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7947348Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replicated-tests-multi-instance-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7957217Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/quarkus-common/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7958843Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.7959627Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-queue-manager-replicated-tests-multi-instance-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.8025633Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:47.8028405Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0118499Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0123319Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replicated-tests-multi-instance-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0129867Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/quarkus-common/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0141567Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0142472Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-queue-manager-replicated-tests-multi-instance-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0155844Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0156253Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0156940Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replicated-tests-multi-instance-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0169455Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0171751Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0172636Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-queue-manager-replicated-tests-multi-instance-common ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0199820Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/quarkus-common/target/a2a-java-queue-manager-replicated-tests-multi-instance-common-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0230460Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0232548Z [INFO] --< io.github.a2asdk:a2a-java-queue-manager-replicated-tests-multi-instance-app-1 >--
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0250265Z [INFO] Building Java A2A Extras: Replicated Queue Manager Tests - Multi Instance App 1 0.3.0.Beta3-SNAPSHOT [29/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0251586Z [INFO]   from extras/queue-manager-replicated/tests-multi-instance/quarkus-app-1/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0252407Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0422848Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0423876Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-1 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0434512Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0448877Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0449692Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-1 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0496655Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:49.0499981Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3434557Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3435175Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-1 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3444694Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/quarkus-app-1/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3446112Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3446986Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-1 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3471391Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3471785Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3472497Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-1 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3483665Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3487020Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3487871Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-1 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3519648Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/quarkus-app-1/target/a2a-java-queue-manager-replicated-tests-multi-instance-app-1-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3555623Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:50.3556364Z [INFO] --- quarkus:3.28.2:build (default) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-1 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:51.2530320Z [WARNING] [io.quarkus.config] Unrecognized configuration key "quarkus.messaging.kafka.health.timeout" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo
+build (17)	UNKNOWN STEP	2025-10-27T21:02:52.8853633Z [INFO] [io.quarkus.arc.processor.Beans] Computed priority [2147483647] overrides the priority [50] declared via @Priority
+build (17)	UNKNOWN STEP	2025-10-27T21:02:52.8883553Z [INFO] [io.quarkus.arc.processor.Beans] Computed priority [2147483647] overrides the priority [50] declared via @Priority
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0334986Z [INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 3482ms
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0428018Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0433695Z [INFO] --< io.github.a2asdk:a2a-java-queue-manager-replicated-tests-multi-instance-app-2 >--
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0442487Z [INFO] Building Java A2A Extras: Replicated Queue Manager Tests - Multi Instance App 2 0.3.0.Beta3-SNAPSHOT [30/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0447640Z [INFO]   from extras/queue-manager-replicated/tests-multi-instance/quarkus-app-2/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0452393Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0699616Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0704276Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-2 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0744984Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0745574Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0746718Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-2 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0801856Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:54.0805037Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4649417Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4650770Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-2 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4658342Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/quarkus-app-2/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4659697Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4660611Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-2 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4681968Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4685025Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4685711Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-2 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4695803Z [INFO] No tests to run.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4698805Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4699505Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-2 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4743799Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/quarkus-app-2/target/a2a-java-queue-manager-replicated-tests-multi-instance-app-2-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4779144Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:55.4779893Z [INFO] --- quarkus:3.28.2:build (default) @ a2a-java-queue-manager-replicated-tests-multi-instance-app-2 ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:56.5997036Z [WARNING] [io.quarkus.config] Unrecognized configuration key "quarkus.messaging.kafka.health.timeout" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo
+build (17)	UNKNOWN STEP	2025-10-27T21:02:58.0915561Z [INFO] [io.quarkus.arc.processor.Beans] Computed priority [2147483647] overrides the priority [50] declared via @Priority
+build (17)	UNKNOWN STEP	2025-10-27T21:02:58.1006451Z [INFO] [io.quarkus.arc.processor.Beans] Computed priority [2147483647] overrides the priority [50] declared via @Priority
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1503687Z [INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 3421ms
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1602290Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1602963Z [INFO] --< io.github.a2asdk:a2a-java-queue-manager-replicated-tests-multi-instance-tests >--
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1604050Z [INFO] Building Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Tests 0.3.0.Beta3-SNAPSHOT [31/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1605071Z [INFO]   from extras/queue-manager-replicated/tests-multi-instance/tests/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1605810Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1805215Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1810628Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-queue-manager-replicated-tests-multi-instance-tests ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1812490Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/tests/src/main/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1813605Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1816612Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-queue-manager-replicated-tests-multi-instance-tests ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1828541Z [INFO] No sources to compile
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1831006Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1832419Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-queue-manager-replicated-tests-multi-instance-tests ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1835560Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/tests/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1836668Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1842424Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-queue-manager-replicated-tests-multi-instance-tests ---
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1885850Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:02:59.1889648Z [INFO] Compiling 1 source file with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:03:00.8952523Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:03:00.8953705Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-queue-manager-replicated-tests-multi-instance-tests ---
+build (17)	UNKNOWN STEP	2025-10-27T21:03:00.8983141Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:03:00.9045223Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:03:00.9046074Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:03:00.9047572Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:03:00.9048216Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:03:01.7673952Z [INFO] Running io.a2a.extras.queuemanager.replicated.tests.multiinstance.MultiInstanceReplicationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.5771176Z [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 72.81 s -- in io.a2a.extras.queuemanager.replicated.tests.multiinstance.MultiInstanceReplicationTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9038115Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9039334Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9039901Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9043608Z [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9045039Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9045363Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9045987Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-queue-manager-replicated-tests-multi-instance-tests ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9056169Z [WARNING] JAR will be empty - no content was marked for inclusion!
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9065524Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-multi-instance/tests/target/a2a-java-queue-manager-replicated-tests-multi-instance-tests-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9228935Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9229542Z [INFO] ------------< io.github.a2asdk:a2a-java-sdk-transport-grpc >------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9242058Z [INFO] Building Java SDK A2A Transport: gRPC 0.3.0.Beta3-SNAPSHOT       [32/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9242702Z [INFO]   from transport/grpc/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9243190Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9280143Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9280990Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9299105Z [INFO] Copying 2 resources from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9304694Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9305333Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9370680Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:14.9381176Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:16.4996589Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:16.4997281Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:16.5005752Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:16.5009005Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:16.5009954Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:16.5077075Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:16.5080312Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.1169115Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.1169518Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.1192508Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.1276603Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.1277019Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.1277820Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.1278204Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:18.6523525Z [INFO] Running io.a2a.transport.grpc.handler.GrpcHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:19.7070301Z OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.2730705Z [INFO] Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.617 s -- in io.a2a.transport.grpc.handler.GrpcHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3021601Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3021914Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3022201Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3022566Z [INFO] Tests run: 31, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3023050Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3028532Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3029685Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-transport-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3058830Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/transport/grpc/target/a2a-java-sdk-transport-grpc-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3091908Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3092736Z [INFO] ------------< io.github.a2asdk:a2a-java-sdk-reference-grpc >------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3093875Z [INFO] Building Java A2A Reference Server: gRPC 0.3.0.Beta3-SNAPSHOT    [33/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3099052Z [INFO]   from reference/grpc/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3099893Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3743521Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3751797Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-reference-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3762110Z [INFO] Copying 2 resources from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3767754Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3769625Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-reference-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3834560Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:20.3838186Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:21.7914870Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:21.7915350Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-reference-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:21.7923889Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:21.7925794Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:21.7926335Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-reference-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:21.7988556Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:21.7991801Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:23.2954381Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:23.2954970Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-reference-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:23.2975761Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:04:23.3022764Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:23.3023203Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:23.3024727Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:04:23.3025214Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:29.1659685Z [INFO] Running io.a2a.server.grpc.quarkus.QuarkusA2AGrpcTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:36.6689330Z [WARNING] Tests run: 37, Failures: 0, Errors: 0, Skipped: 9, Time elapsed: 7.461 s -- in io.a2a.server.grpc.quarkus.QuarkusA2AGrpcTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0379330Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0379652Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0379876Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0380281Z [WARNING] Tests run: 37, Failures: 0, Errors: 0, Skipped: 9
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0383440Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0385696Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0386127Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-reference-grpc ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0415276Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/reference/grpc/target/a2a-java-sdk-reference-grpc-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0438469Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0439064Z [INFO] ------------< io.github.a2asdk:a2a-java-sdk-transport-rest >------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0440535Z [INFO] Building Java SDK A2A Transport: JSON+HTTP/REST 0.3.0.Beta3-SNAPSHOT [34/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0441360Z [INFO]   from transport/rest/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0441866Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0489134Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0490147Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0497898Z [INFO] Copying 2 resources from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0501590Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0502364Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0543774Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:47.0546516Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:48.8038725Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:48.8039438Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:48.8049370Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:48.8052733Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:48.8053651Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:48.8097957Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:48.8100693Z [INFO] Compiling 2 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.0804537Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.0805090Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-java-sdk-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.0825222Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.0872854Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.0873352Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.0873881Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.0874257Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:50.5489164Z [INFO] Running io.a2a.transport.rest.handler.RestHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3683116Z [INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.816 s -- in io.a2a.transport.rest.handler.RestHandlerTest
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3939191Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3939746Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3940172Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3941891Z [INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3942389Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3945527Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3946057Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-transport-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.3977021Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/transport/rest/target/a2a-java-sdk-transport-rest-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4006777Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4007338Z [INFO] ------------< io.github.a2asdk:a2a-java-sdk-reference-rest >------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4008171Z [INFO] Building Java A2A Reference Server: JSON+HTTP/REST 0.3.0.Beta3-SNAPSHOT [35/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4008849Z [INFO]   from reference/rest/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4009362Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4312970Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4327656Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-java-sdk-reference-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4328985Z [INFO] Copying 2 resources from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4329758Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4330485Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-java-sdk-reference-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4378072Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:51.4382744Z [INFO] Compiling 4 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:53.3272012Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:53.3272600Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-java-sdk-reference-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:53.3281482Z [INFO] Copying 1 resource from src/test/resources to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:53.3283250Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:53.3283926Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-java-sdk-reference-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:53.3350058Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:04:53.3353307Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/test-classes
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.0175942Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.0176503Z [INFO] --- surefire:3.5.3:test (default-test) @ a2a-java-sdk-reference-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.0916131Z [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.1020284Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.5.3/surefire-junit-platform-3.5.3.pom
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.1796443Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.5.3/surefire-junit-platform-3.5.3.pom (5.2 kB at 68 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.1798965Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.5.3/surefire-providers-3.5.3.pom
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.2203274Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-providers/3.5.3/surefire-providers-3.5.3.pom (2.5 kB at 65 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.2224437Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.5.3/common-java5-3.5.3.pom
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.2709694Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.5.3/common-java5-3.5.3.pom (3.1 kB at 64 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.2729588Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.12.1/junit-platform-engine-1.12.1.pom
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.3044275Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.12.1/junit-platform-engine-1.12.1.pom (3.2 kB at 100 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.3058949Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.12.1/junit-platform-commons-1.12.1.pom
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.3396598Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.12.1/junit-platform-commons-1.12.1.pom (2.8 kB at 83 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.3408014Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.12.1/junit-platform-launcher-1.12.1.pom
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.3842786Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.12.1/junit-platform-launcher-1.12.1.pom (3.0 kB at 69 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.3874589Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.5.3/surefire-junit-platform-3.5.3.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.4219782Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/surefire-junit-platform/3.5.3/surefire-junit-platform-3.5.3.jar (27 kB at 779 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.4223276Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.5.3/common-java5-3.5.3.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.4225571Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.12.1/junit-platform-engine-1.12.1.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.4232455Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.12.1/junit-platform-commons-1.12.1.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.4241140Z [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.12.1/junit-platform-launcher-1.12.1.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.4593446Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/surefire/common-java5/3.5.3/common-java5-3.5.3.jar (18 kB at 463 kB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.4877260Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.12.1/junit-platform-launcher-1.12.1.jar (208 kB at 3.2 MB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.5217207Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.12.1/junit-platform-commons-1.12.1.jar (152 kB at 1.5 MB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.5227075Z [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.12.1/junit-platform-engine-1.12.1.jar (256 kB at 2.6 MB/s)
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.5320069Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.5321200Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.5321804Z [INFO]  T E S T S
+build (17)	UNKNOWN STEP	2025-10-27T21:04:55.5322339Z [INFO] -------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:05:00.9212105Z [INFO] Running io.a2a.server.rest.quarkus.QuarkusA2ARestTest
+build (17)	UNKNOWN STEP	2025-10-27T21:05:09.5980709Z [WARNING] Tests run: 38, Failures: 0, Errors: 0, Skipped: 9, Time elapsed: 8.656 s -- in io.a2a.server.rest.quarkus.QuarkusA2ARestTest
+build (17)	UNKNOWN STEP	2025-10-27T21:05:09.5982001Z [INFO] Running io.a2a.server.rest.quarkus.A2AServerRoutesTest
+build (17)	UNKNOWN STEP	2025-10-27T21:05:09.8560425Z OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+build (17)	UNKNOWN STEP	2025-10-27T21:05:11.5216059Z [INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.915 s -- in io.a2a.server.rest.quarkus.A2AServerRoutesTest
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9415470Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9415813Z [INFO] Results:
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9416114Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9416526Z [WARNING] Tests run: 47, Failures: 0, Errors: 0, Skipped: 9
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9417018Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9442445Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9442924Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-java-sdk-reference-rest ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9476945Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/reference/rest/target/a2a-java-sdk-reference-rest-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9512635Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9514922Z [INFO] ------------------< io.github.a2asdk:a2a-tck-server >-------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9516341Z [INFO] Building Java SDK A2A TCK Server 0.3.0.Beta3-SNAPSHOT            [36/36]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9516944Z [INFO]   from tck/pom.xml
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9517404Z [INFO] --------------------------------[ jar ]---------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9765838Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9766376Z [INFO] --- resources:3.3.1:resources (default-resources) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9778026Z [INFO] Copying 1 resource from src/main/resources to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9780767Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:21.9781703Z [INFO] --- quarkus:3.28.2:generate-code (default) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:22.4159707Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:22.4171790Z [INFO] --- compiler:3.14.1:compile (default-compile) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:22.4233925Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:22.4237903Z [INFO] Compiling 3 source files with javac [forked debug release 17] to target/classes
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.0381033Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.0381459Z [INFO] --- quarkus:3.28.2:generate-code-tests (default) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8382762Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8385927Z [INFO] --- resources:3.3.1:testResources (default-testResources) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8392348Z [INFO] skip non existing resourceDirectory /home/runner/work/a2a-java/a2a-java/tck/src/test/resources
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8394653Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8401765Z [INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8443522Z [INFO] Recompiling the module because of changed dependency.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8448222Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8450393Z [INFO] --- surefire:3.1.2:test (default-test) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8464576Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8466157Z [INFO] --- jar:3.4.2:jar (default-jar) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8488695Z [INFO] Building jar: /home/runner/work/a2a-java/a2a-java/tck/target/a2a-tck-server-0.3.0.Beta3-SNAPSHOT.jar
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8522844Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:24.8524718Z [INFO] --- quarkus:3.28.2:build (default) @ a2a-tck-server ---
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3777696Z [INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 1521ms
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3860203Z [INFO] ------------------------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3863774Z [INFO] Reactor Summary for Java SDK A2A Parent 0.3.0.Beta3-SNAPSHOT:
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3866639Z [INFO] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3875432Z [INFO] Java SDK A2A Parent ................................ SUCCESS [  0.004 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3883717Z [INFO] Java SDK A2A Common ................................ SUCCESS [  2.350 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3884449Z [INFO] Java SDK A2A Spec .................................. SUCCESS [  7.039 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3885141Z [INFO] Java SDK A2A HTTP Client ........................... SUCCESS [  4.146 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3886203Z [INFO] Java SDK A2A Client Transport: SPI ................. SUCCESS [  3.375 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3886978Z [INFO] Java SDK A2A Client Transport: JSONRPC ............. SUCCESS [  7.984 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3887723Z [INFO] Java SDK A2A Spec: gRPC ............................ SUCCESS [  8.479 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3931602Z [INFO] Java SDK A2A Client Transport: gRPC ................ SUCCESS [  1.945 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3932714Z [INFO] Java SDK A2A Client Transport: JSON+HTTP/REST ...... SUCCESS [  7.152 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3934182Z [INFO] Java SDK A2A Client ................................ SUCCESS [  7.577 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3937794Z [INFO] Java SDK A2A Examples: Hello World ................. SUCCESS [  0.022 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3938763Z [INFO] Java SDK A2A Examples .............................. SUCCESS [  3.353 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3939653Z [INFO] Java SDK A2A Core .................................. SUCCESS [ 18.924 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3940516Z [INFO] Java A2A SDK Server Tests Common ................... SUCCESS [  1.971 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3941597Z [INFO] Java A2A Reference Server: Common .................. SUCCESS [  1.472 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3942500Z [INFO] Java SDK A2A Transport: JSONRPC .................... SUCCESS [  5.357 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3945124Z [INFO] Java A2A Reference Server: JSONRPC ................. SUCCESS [ 32.292 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3945865Z [INFO] Java SDK A2A Examples .............................. SUCCESS [  4.118 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3946634Z [INFO] A2A Java SDK :: Extras :: Common ................... SUCCESS [  1.079 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3947365Z [INFO] Java A2A Extras: JPA Database TaskStore ............ SUCCESS [ 13.529 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3948178Z [INFO] Java A2A Extras: JPA Database PushNotificationConfigStore SUCCESS [ 13.943 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3949005Z [INFO] Java A2A Extras: Replicated Queue Manager Parent ... SUCCESS [  0.001 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3949780Z [INFO] Java A2A Extras: Replicated Queue Manager Core ..... SUCCESS [  3.858 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3950688Z [INFO] Java A2A Extras: Replicated Queue Manager MicroProfile Reactive Messaging SUCCESS [  4.418 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3951748Z [INFO] A2A Java SDK - Cloud Deployment Example Server ..... SUCCESS [  7.749 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3952602Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Single Instance FAILURE [ 28.911 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3953584Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Parent SUCCESS [  0.000 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3954585Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Common SUCCESS [  1.234 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3955858Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance App 1 SUCCESS [  5.020 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3956841Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance App 2 SUCCESS [  5.117 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3957841Z [INFO] Java A2A Extras: Replicated Queue Manager Tests - Multi Instance Tests SUCCESS [01:15 min]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3958720Z [INFO] Java SDK A2A Transport: gRPC ....................... SUCCESS [  5.391 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3959464Z [INFO] Java A2A Reference Server: gRPC .................... SUCCESS [ 26.734 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3960219Z [INFO] Java SDK A2A Transport: JSON+HTTP/REST ............. SUCCESS [  4.357 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3961131Z [INFO] Java A2A Reference Server: JSON+HTTP/REST .......... SUCCESS [ 30.550 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3961871Z [INFO] Java SDK A2A TCK Server ............................ SUCCESS [  4.435 s]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3962537Z [INFO] ------------------------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3963043Z [INFO] BUILD FAILURE
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3963471Z [INFO] ------------------------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3963981Z [INFO] Total time:  05:51 min
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3964374Z [INFO] Finished at: 2025-10-27T21:05:26Z
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.3965071Z [INFO] ------------------------------------------------------------------------
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4002461Z [ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.1.2:test (default-test) on project a2a-java-queue-manager-replicated-tests-single-instance: There are test failures.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4004079Z [ERROR] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4005388Z [ERROR] Please refer to /home/runner/work/a2a-java/a2a-java/extras/queue-manager-replicated/tests-single-instance/target/surefire-reports for the individual test results.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4007305Z [ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4008363Z [ERROR] -> [Help 1]
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4008920Z [ERROR] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4009674Z [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4010952Z [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4011947Z [ERROR] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4115476Z [ERROR] For more information about the errors and possible solutions, please read the following articles:
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4166784Z [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4167761Z [ERROR] 
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4168554Z [ERROR] After correcting the problems, you can resume the build with the command
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4169592Z [ERROR]   mvn <args> -rf :a2a-java-queue-manager-replicated-tests-single-instance
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4708354Z ##[error]Process completed with exit code 1.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.4809011Z Post job cleanup.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.6517394Z Post job cleanup.
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7435236Z [command]/usr/bin/git version
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7472344Z git version 2.51.0
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7517565Z Temporarily overriding HOME='/home/runner/work/_temp/fe470f75-ceae-4bef-9e27-fa61cd069903' before making global git config changes
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7518848Z Adding repository directory to the temporary git global config as a safe directory
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7529781Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/a2a-java/a2a-java
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7567647Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7601560Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7848473Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7872761Z http.https://github.com/.extraheader
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7886581Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.7919857Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build (17)	UNKNOWN STEP	2025-10-27T21:05:26.8273278Z Cleaning up orphan processes

@@ -430,7 +430,7 @@
             </plugin>
         </plugins>
     </build>
-
+    <!-- TRIGGER CI -->
     <modules>
         <module>client/base</module>
         <module>client/transport/grpc</module>
