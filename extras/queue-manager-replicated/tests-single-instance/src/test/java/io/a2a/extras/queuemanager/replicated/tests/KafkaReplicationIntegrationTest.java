@@ -7,7 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -236,9 +239,13 @@ public class KafkaReplicationIntegrationTest {
             }
         };
 
-        // Create error handler
+        // Create error handler - filter out benign stream closed errors.
+        // HTTP/2 streams are cancelled during normal cleanup when subscriptions end,
+        // which is expected behavior and not an actual error condition.
         Consumer<Throwable> errorHandler = error -> {
-            errorRef.set(error);
+            if (!isStreamClosedError(error)) {
+                errorRef.set(error);
+            }
             resubscribeLatch.countDown();
         };
 
@@ -421,6 +428,53 @@ public class KafkaReplicationIntegrationTest {
         QueueClosedEvent closedEvent =
                 (QueueClosedEvent) poisonPill.getEvent();
         assertEquals(taskId, closedEvent.getTaskId(), "QueueClosedEvent task ID should match");
+    }
+
+    /**
+     * Checks if an error is a benign stream closed/cancelled error that should be ignored.
+     * HTTP/2 streams can be cancelled during normal cleanup, which is not an actual error.
+     *
+     * @param error the throwable to check (may be null)
+     * @return true if this is a benign stream closure error that should be ignored
+     */
+    private boolean isStreamClosedError(Throwable error) {
+        return isStreamClosedError(error, new HashSet<>());
+    }
+
+    /**
+     * Internal recursive implementation with cycle detection to prevent infinite recursion.
+     *
+     * @param error the throwable to check
+     * @param visited set of already-visited throwables to detect cycles
+     * @return true if this is a benign stream closure error
+     */
+    private boolean isStreamClosedError(Throwable error, Set<Throwable> visited) {
+        if (error == null || !visited.add(error)) {
+            // Null or already visited (cycle detected)
+            return false;
+        }
+
+        // Check for IOException which includes stream cancellation
+        if (error instanceof IOException) {
+            String message = error.getMessage();
+            if (message != null) {
+                // Filter out normal stream closure/cancellation errors
+                if (message.contains("Stream closed") ||
+                    message.contains("Stream") && message.contains("cancelled") ||
+                    message.contains("EOF reached") ||
+                    message.contains("CANCEL")) {
+                    return true;
+                }
+            }
+        }
+
+        // Check cause recursively with cycle detection
+        Throwable cause = error.getCause();
+        if (cause != null) {
+            return isStreamClosedError(cause, visited);
+        }
+
+        return false;
     }
 
 }
