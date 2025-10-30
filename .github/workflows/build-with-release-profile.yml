@@ -6,7 +6,7 @@ name: Build with '-Prelease'
 on:
   # Handle all branches for now
   push:
-  pull_request:
+  pull_request_target:
   workflow_dispatch:
 
 # Only run the latest job
