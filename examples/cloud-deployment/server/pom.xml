@@ -17,7 +17,7 @@
     <description>Example demonstrating A2A agent deployment in Kubernetes with database persistence and event replication</description>
 
     <dependencies>
-        <!-- Core A2A SDK with JSON-RPC transport -->
+        <!-- Core A2A SDK with JSON-RPC transport. This pulls in the rest of the needed a2a-java dependencies -->
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-sdk-reference-jsonrpc</artifactId>
@@ -45,14 +45,17 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Replicated queue manager with Kafka via MicroProfile Reactive Messaging -->
+        <!-- Provides the MicroProfile Reactive Messaging ReplicationStrategy for the replicated queue manager-->
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-queue-manager-replication-mp-reactive</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Quarkus Kafka connector for MicroProfile Reactive Messaging -->
+        <!--
+            MicroProfile Reactive Messaging support including the Kafka connector, used by the MP RM
+            ReplicationStrategy
+        -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-messaging-kafka</artifactId>
@@ -70,31 +73,11 @@
             <artifactId>quarkus-hibernate-orm</artifactId>
         </dependency>
 
-        <!-- Quarkus REST/JAX-RS -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId>
-        </dependency>
-
         <!-- Quarkus Health checks -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
-
-        <!-- CDI API (provided by Quarkus) -->
-        <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
 
         <dependency>
             <groupId>io.github.a2asdk</groupId>
