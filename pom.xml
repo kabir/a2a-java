@@ -7,7 +7,7 @@
     <groupId>io.github.a2asdk</groupId>
     <artifactId>a2a-java-sdk-parent</artifactId>
     <version>0.3.2.Beta1-SNAPSHOT</version>
-
+    <!-- Just to trigger CI -->
     <packaging>pom</packaging>
 
     <name>Java SDK A2A Parent</name>
