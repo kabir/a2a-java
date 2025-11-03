@@ -1,24 +1,5 @@
 package io.a2a.examples.cloud;
 
-import io.a2a.A2A;
-import io.a2a.client.Client;
-import io.a2a.client.ClientEvent;
-import io.a2a.client.MessageEvent;
-import io.a2a.client.TaskEvent;
-import io.a2a.client.TaskUpdateEvent;
-import io.a2a.client.config.ClientConfig;
-import io.a2a.client.transport.jsonrpc.JSONRPCTransport;
-import io.a2a.client.transport.jsonrpc.JSONRPCTransportConfigBuilder;
-import io.a2a.spec.A2AClientError;
-import io.a2a.spec.A2AClientException;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.Message;
-import io.a2a.spec.Part;
-import io.a2a.spec.Task;
-import io.a2a.spec.TaskArtifactUpdateEvent;
-import io.a2a.spec.TaskIdParams;
-import io.a2a.spec.TextPart;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +9,22 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.a2a.A2A;
+import io.a2a.client.Client;
+import io.a2a.client.ClientEvent;
+import io.a2a.client.MessageEvent;
+import io.a2a.client.TaskEvent;
+import io.a2a.client.TaskUpdateEvent;
+import io.a2a.client.config.ClientConfig;
+import io.a2a.client.transport.jsonrpc.JSONRPCTransport;
+import io.a2a.client.transport.jsonrpc.JSONRPCTransportConfigBuilder;
+import io.a2a.spec.AgentCard;
+import io.a2a.spec.Message;
+import io.a2a.spec.Part;
+import io.a2a.spec.TaskArtifactUpdateEvent;
+import io.a2a.spec.TaskIdParams;
+import io.a2a.spec.TextPart;
 
 /**
  * Test client demonstrating multi-pod A2A agent deployment with modernized message protocol.
@@ -54,6 +51,7 @@ public class A2ACloudExampleClient {
     private static final int MESSAGE_INTERVAL_MS = Integer.parseInt(System.getProperty("message.interval.ms", "1500"));
     private static final boolean CI_MODE = Boolean.parseBoolean(System.getProperty("ci.mode", "false"));  // Early exit when 2 pods observed
     private static final int MAX_MESSAGES_UNTIL_TWO_PODS = Integer.parseInt(System.getProperty("max.messages.until.two.pods", "20"));  // Max messages before giving up
+    private static final int MIN_PODS_TO_OBSERVE = 2;
 
     // Test state
     private final Map<String, Integer> observedPods = Collections.synchronizedMap(new HashMap<>());
@@ -362,8 +360,8 @@ public class A2ACloudExampleClient {
         if (testFailed.get()) {
             System.out.println("✗ TEST FAILED - Errors occurred during execution");
             System.exit(1);
-        } else if (observedPods.size() < 2) {
-            System.out.println("✗ TEST FAILED - Expected at least 2 different pods, but only saw: " + observedPods.size());
+        } else if (observedPods.size() < MIN_PODS_TO_OBSERVE) {
+            System.out.printf("✗ TEST FAILED - Expected at least %d different pods, but only saw: %d\n", MIN_PODS_TO_OBSERVE, observedPods.size());
             System.out.println("  This suggests load balancing is not working correctly.");
             System.exit(1);
         } else {
