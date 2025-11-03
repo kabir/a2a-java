@@ -50,8 +50,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class A2ACloudExampleClient {
 
     private static final String AGENT_URL = System.getProperty("agent.url", "http://localhost:8080");
-    private static final int PROCESS_MESSAGE_COUNT = 8;  // Number of "process" messages to send
-    private static final int MESSAGE_INTERVAL_MS = 1500;
+    private static final int PROCESS_MESSAGE_COUNT = Integer.parseInt(System.getProperty("process.message.count", "8"));  // Number of "process" messages to send
+    private static final int MESSAGE_INTERVAL_MS = Integer.parseInt(System.getProperty("message.interval.ms", "1500"));
+    private static final boolean CI_MODE = Boolean.parseBoolean(System.getProperty("ci.mode", "false"));  // Early exit when 2 pods observed
+    private static final int MAX_MESSAGES_UNTIL_TWO_PODS = Integer.parseInt(System.getProperty("max.messages.until.two.pods", "20"));  // Max messages before giving up
 
     // Test state
     private final Map<String, Integer> observedPods = Collections.synchronizedMap(new HashMap<>());
@@ -253,11 +255,19 @@ public class A2ACloudExampleClient {
 
     private void sendProcessMessages() throws InterruptedException {
         System.out.println();
-        System.out.println("Step 3: Sending " + PROCESS_MESSAGE_COUNT + " 'process' messages (interval: " + MESSAGE_INTERVAL_MS + "ms)...");
+        if (CI_MODE) {
+            System.out.println("Step 3: Sending 'process' messages until 2 pods observed (CI mode, max: " + MAX_MESSAGES_UNTIL_TWO_PODS + ", interval: " + MESSAGE_INTERVAL_MS + "ms)...");
+        } else {
+            System.out.println("Step 3: Sending " + PROCESS_MESSAGE_COUNT + " 'process' messages (interval: " + MESSAGE_INTERVAL_MS + "ms)...");
+        }
         System.out.println("--------------------------------------------");
 
-        for (int i = 1; i <= PROCESS_MESSAGE_COUNT; i++) {
-            final int messageNum = i;
+        int messageCount = 0;
+        int maxMessages = CI_MODE ? MAX_MESSAGES_UNTIL_TWO_PODS : PROCESS_MESSAGE_COUNT;
+        
+        while (messageCount < maxMessages) {
+            messageCount++;
+            final int messageNum = messageCount;
 
             // Create a new client for each request to force new HTTP connection
             Client freshClient = Client.builder(streamingClient.getAgentCard())
@@ -282,8 +292,15 @@ public class A2ACloudExampleClient {
                 });
 
                 Thread.sleep(MESSAGE_INTERVAL_MS);
+                
+                // In CI mode, check if we've observed 2 pods and can exit early
+                if (CI_MODE && observedPods.size() >= 2) {
+                    System.out.println();
+                    System.out.println("✓ CI mode: Successfully observed 2 pods after " + messageNum + " messages. Stopping early.");
+                    break;
+                }
             } catch (Exception e) {
-                System.err.println("✗ Failed to send process message " + i + ": " + e.getMessage());
+                System.err.println("✗ Failed to send process message " + messageNum + ": " + e.getMessage());
                 testFailed.set(true);
             }
         }
