@@ -6,6 +6,8 @@ import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentSkill;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Collections;
@@ -17,6 +19,7 @@ import java.util.List;
 @ApplicationScoped
 public class CloudAgentCardProducer {
 
+    @Inject
     @ConfigProperty(name = "agent.url", defaultValue = "http://localhost:8080")
     String agentUrl;
 
