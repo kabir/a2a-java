@@ -34,6 +34,7 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
     @Inject
     Event<TaskFinalizedEvent> taskFinalizedEvent;
 
+    @Inject
     @ConfigProperty(name = "a2a.replication.grace-period-seconds", defaultValue = "15")
     long gracePeriodSeconds;
 
