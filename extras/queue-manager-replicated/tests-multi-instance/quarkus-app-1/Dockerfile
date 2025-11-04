@@ -1,4 +1,4 @@
-FROM openjdk:17-slim
+FROM mirror.gcr.io/eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
