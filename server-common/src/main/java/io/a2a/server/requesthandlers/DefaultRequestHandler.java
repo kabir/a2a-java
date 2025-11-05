@@ -307,18 +307,18 @@ public class DefaultRequestHandler implements RequestHandler {
 
                 // Step 4: Fetch the final task state from TaskStore (all events have been processed)
                 Task updatedTask = taskStore.get(taskId);
-                if (updatedTask != null) {
-                    if (failed && !updatedTask.getStatus().state().isFinal()) {
-                        // If we had exceptions above, update the Task to reflect that
-                        Message msg = new Message.Builder()
-                                .role(Message.Role.AGENT)
+                Message errorMessage = failed ?
+                        new Message.Builder()
+                                .role(Message.Role.AGENT) // System seems more accurate for this
                                 .parts(Collections.singletonList(new TextPart(error)))
                                 .contextId(mss.requestContext.getContextId())
                                 .taskId(taskId)
-                                .build();
-
+                                .build() : null;
+                if (updatedTask != null) {
+                    if (failed && !updatedTask.getStatus().state().isFinal()) {
+                        // If we had exceptions above, update the Task to reflect that
                         updatedTask = new Task.Builder(updatedTask)
-                                .status(new TaskStatus(TaskState.FAILED, msg, null))
+                                .status(new TaskStatus(TaskState.FAILED, errorMessage, null))
                                 .build();
                         taskStore.save(updatedTask);
                     }
@@ -328,6 +328,11 @@ public class DefaultRequestHandler implements RequestHandler {
                             taskId, updatedTask.getStatus().state(),
                             updatedTask.getArtifacts().size());
                     }
+
+                } else if (failed) {
+                    // No Task but return an error to the user
+                    LOGGER.warn("Task {} not found in store, but a failure occurred: {}", taskId, error);
+                    kind = errorMessage; // Return the error message as the EventKind
                 }
             }
             if (kind instanceof Task taskResult && !taskId.equals(taskResult.getId())) {
