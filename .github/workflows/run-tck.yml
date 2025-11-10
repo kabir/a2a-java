@@ -13,9 +13,9 @@ on:
   workflow_dispatch:
 
 env:
-  # TODO once we have the TCK for 0.4.0 we will need to look at the branch to decide which TCK version to run.
+  # TODO this is currently running the TCK off the main branch which included changes needed for 0.4.0
   # Tag of the TCK
-  TCK_VERSION: 0.3.0.beta3
+  TCK_VERSION: main
   # Tells uv to not need a venv, and instead use system
   UV_SYSTEM_PYTHON: 1
   # SUT_JSONRPC_URL to use for the TCK and the server agent
