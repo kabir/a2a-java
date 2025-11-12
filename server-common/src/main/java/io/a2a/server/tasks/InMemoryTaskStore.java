@@ -49,12 +49,18 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
                 task.getStatus() != null && params.status().equals(task.getStatus().state())
             );
         }
-        // Note: lastUpdatedAfter filtering not implemented in InMemoryTaskStore
-        // as Task doesn't have a lastUpdated timestamp field
+        if (params.lastUpdatedAfter() != null) {
+            taskStream = taskStream.filter(task ->
+                task.getStatus() != null &&
+                task.getStatus().timestamp() != null &&
+                task.getStatus().timestamp().toInstant().isAfter(params.lastUpdatedAfter())
+            );
+        }
 
-        // Sort by task ID for consistent pagination
+        // Sort by status timestamp descending (most recent first), then by ID ascending for stable ordering
         List<Task> allFilteredTasks = taskStream
-                .sorted(Comparator.comparing(Task::getId))
+                .sorted(Comparator.comparing((Task t) -> t.getStatus().timestamp(), Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Task::getId))
                 .toList();
 
         int totalSize = allFilteredTasks.size();
@@ -63,21 +69,17 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
         int pageSize = params.getEffectivePageSize();
         int startIndex = 0;
 
-        // Handle page token (simple cursor: last task ID from previous page)
+        // Handle page token (cursor: task ID from previous page)
+        // Since we're sorted by timestamp DESC then ID ASC, we can't use binary search
+        // Instead, find the task with the matching ID using linear search
         if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-            // Use binary search since list is sorted by task ID (O(log N) vs O(N))
-            int index = Collections.binarySearch(allFilteredTasks, null,
-                (t1, t2) -> {
-                    // Handle null key comparisons (binarySearch passes null as one argument)
-                    if (t1 == null && t2 == null) return 0;
-                    if (t1 == null) return params.pageToken().compareTo(t2.getId());
-                    if (t2 == null) return t1.getId().compareTo(params.pageToken());
-                    return t1.getId().compareTo(t2.getId());
-                });
-            if (index >= 0) {
-                startIndex = index + 1;
+            for (int i = 0; i < allFilteredTasks.size(); i++) {
+                if (allFilteredTasks.get(i).getId().equals(params.pageToken())) {
+                    startIndex = i + 1;
+                    break;
+                }
             }
-            // If not found (index < 0), startIndex remains 0 (start from beginning)
+            // If not found, startIndex remains 0 (start from beginning)
         }
 
         // Get the page of tasks

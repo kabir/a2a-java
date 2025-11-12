@@ -418,12 +418,14 @@ public class JpaDatabaseTaskStoreTest {
     @Test
     @Transactional
     public void testListTasksPagination() {
-        // Create 5 tasks
+        // Create 5 tasks with same timestamp to ensure ID-based pagination works
+        // (With timestamp DESC sorting, same timestamps allow ID ASC tie-breaking)
+        java.time.OffsetDateTime sameTimestamp = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
         for (int i = 1; i <= 5; i++) {
             Task task = new Task.Builder()
                     .id("task-page-" + i)
                     .contextId("context-pagination")
-                    .status(new TaskStatus(TaskState.SUBMITTED))
+                    .status(new TaskStatus(TaskState.SUBMITTED, null, sameTimestamp))
                     .build();
             taskStore.save(task);
         }
@@ -576,23 +578,26 @@ public class JpaDatabaseTaskStoreTest {
     @Test
     @Transactional
     public void testListTasksOrderingById() {
-        // Create tasks with IDs that will sort in specific order
+        // Create tasks with same timestamp to test ID-based tie-breaking
+        // (spec requires sorting by timestamp DESC, then ID ASC)
+        java.time.OffsetDateTime sameTimestamp = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
+
         Task task1 = new Task.Builder()
                 .id("task-order-a")
                 .contextId("context-order")
-                .status(new TaskStatus(TaskState.SUBMITTED))
+                .status(new TaskStatus(TaskState.SUBMITTED, null, sameTimestamp))
                 .build();
 
         Task task2 = new Task.Builder()
                 .id("task-order-b")
                 .contextId("context-order")
-                .status(new TaskStatus(TaskState.SUBMITTED))
+                .status(new TaskStatus(TaskState.SUBMITTED, null, sameTimestamp))
                 .build();
 
         Task task3 = new Task.Builder()
                 .id("task-order-c")
                 .contextId("context-order")
-                .status(new TaskStatus(TaskState.SUBMITTED))
+                .status(new TaskStatus(TaskState.SUBMITTED, null, sameTimestamp))
                 .build();
 
         // Save in reverse order
@@ -600,7 +605,7 @@ public class JpaDatabaseTaskStoreTest {
         taskStore.save(task1);
         taskStore.save(task2);
 
-        // List should return in ID order
+        // List should return sorted by timestamp DESC (all same), then by ID ASC
         ListTasksParams params = new ListTasksParams.Builder()
                 .contextId("context-order")
                 .build();

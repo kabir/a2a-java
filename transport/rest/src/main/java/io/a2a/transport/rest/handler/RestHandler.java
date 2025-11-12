@@ -182,7 +182,8 @@ public class RestHandler {
 
     public HTTPRestResponse listTasks(@Nullable String contextId, @Nullable String status,
                                        @Nullable Integer pageSize, @Nullable String pageToken,
-                                       @Nullable Integer historyLength, @Nullable Boolean includeArtifacts,
+                                       @Nullable Integer historyLength, @Nullable String lastUpdatedAfter,
+                                       @Nullable Boolean includeArtifacts,
                                        ServerCallContext context) {
         try {
             // Build params
@@ -201,6 +202,16 @@ public class RestHandler {
             }
             if (historyLength != null) {
                 paramsBuilder.historyLength(historyLength);
+            }
+            if (lastUpdatedAfter != null) {
+                try {
+                    paramsBuilder.lastUpdatedAfter(java.time.Instant.parse(lastUpdatedAfter));
+                } catch (java.time.format.DateTimeParseException e) {
+                    java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+                    errorData.put("parameter", "lastUpdatedAfter");
+                    errorData.put("reason", "Must be valid ISO-8601 timestamp");
+                    throw new InvalidParamsError(null, "Invalid params", errorData);
+                }
             }
             if (includeArtifacts != null) {
                 paramsBuilder.includeArtifacts(includeArtifacts);

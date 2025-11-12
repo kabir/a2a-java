@@ -227,13 +227,19 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
             countQueryBuilder.append(" AND t.state = :state");
         }
 
+        // Apply lastUpdatedAfter filter using denormalized timestamp column
+        if (params.lastUpdatedAfter() != null) {
+            queryBuilder.append(" AND t.statusTimestamp > :lastUpdatedAfter");
+            countQueryBuilder.append(" AND t.statusTimestamp > :lastUpdatedAfter");
+        }
+
         // Apply pagination cursor (tasks after pageToken)
         if (params.pageToken() != null && !params.pageToken().isEmpty()) {
             queryBuilder.append(" AND t.id > :pageToken");
         }
 
-        // Sort by task ID for consistent pagination
-        queryBuilder.append(" ORDER BY t.id");
+        // Sort by status timestamp descending (most recent first), then by ID for stable ordering
+        queryBuilder.append(" ORDER BY t.statusTimestamp DESC, t.id ASC");
 
         // Create and configure the main query
         TypedQuery<JpaTask> query = em.createQuery(queryBuilder.toString(), JpaTask.class);
@@ -244,6 +250,9 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
         }
         if (params.status() != null) {
             query.setParameter("state", params.status().asString());
+        }
+        if (params.lastUpdatedAfter() != null) {
+            query.setParameter("lastUpdatedAfter", params.lastUpdatedAfter());
         }
         if (params.pageToken() != null && !params.pageToken().isEmpty()) {
             query.setParameter("pageToken", params.pageToken());
@@ -269,6 +278,9 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
         }
         if (params.status() != null) {
             countQuery.setParameter("state", params.status().asString());
+        }
+        if (params.lastUpdatedAfter() != null) {
+            countQuery.setParameter("lastUpdatedAfter", params.lastUpdatedAfter());
         }
         int totalSize = countQuery.getSingleResult().intValue();
 

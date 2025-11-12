@@ -43,6 +43,7 @@ import io.a2a.spec.Event;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InternalError;
+import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTasksParams;
@@ -165,8 +166,21 @@ public class DefaultRequestHandler implements RequestHandler {
 
     @Override
     public ListTasksResult onListTasks(ListTasksParams params, ServerCallContext context) throws JSONRPCError {
-        LOGGER.debug("onListTasks with contextId={}, status={}, pageSize={}, pageToken={}",
-                params.contextId(), params.status(), params.pageSize(), params.pageToken());
+        LOGGER.debug("onListTasks with contextId={}, status={}, pageSize={}, pageToken={}, lastUpdatedAfter={}",
+                params.contextId(), params.status(), params.pageSize(), params.pageToken(), params.lastUpdatedAfter());
+
+        // Validate lastUpdatedAfter timestamp if provided
+        if (params.lastUpdatedAfter() != null) {
+            // Check if timestamp is in the future (optional validation per spec)
+            java.time.Instant now = java.time.Instant.now();
+            if (params.lastUpdatedAfter().isAfter(now)) {
+                java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+                errorData.put("parameter", "lastUpdatedAfter");
+                errorData.put("reason", "Timestamp cannot be in the future");
+                throw new InvalidParamsError(null, "Invalid params", errorData);
+            }
+        }
+
         ListTasksResult result = taskStore.list(params);
         LOGGER.debug("Found {} tasks (total: {})", result.pageSize(), result.totalSize());
         return result;
