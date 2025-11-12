@@ -11,7 +11,11 @@ import io.a2a.server.ExtendedAgentCard;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Flow;
 
 import io.a2a.server.PublicAgentCard;
@@ -205,9 +209,9 @@ public class RestHandler {
             }
             if (lastUpdatedAfter != null) {
                 try {
-                    paramsBuilder.lastUpdatedAfter(java.time.Instant.parse(lastUpdatedAfter));
-                } catch (java.time.format.DateTimeParseException e) {
-                    java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+                    paramsBuilder.lastUpdatedAfter(Instant.parse(lastUpdatedAfter));
+                } catch (DateTimeParseException e) {
+                    Map<String, Object> errorData = new HashMap<>();
                     errorData.put("parameter", "lastUpdatedAfter");
                     errorData.put("reason", "Must be valid ISO-8601 timestamp");
                     throw new InvalidParamsError(null, "Invalid params", errorData);

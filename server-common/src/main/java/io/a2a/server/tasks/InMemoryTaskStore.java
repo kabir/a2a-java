@@ -38,28 +38,17 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
 
     @Override
     public ListTasksResult list(ListTasksParams params) {
-        Stream<Task> taskStream = tasks.values().stream();
-
-        // Apply filters
-        if (params.contextId() != null) {
-            taskStream = taskStream.filter(task -> params.contextId().equals(task.getContextId()));
-        }
-        if (params.status() != null) {
-            taskStream = taskStream.filter(task ->
-                task.getStatus() != null && params.status().equals(task.getStatus().state())
-            );
-        }
-        if (params.lastUpdatedAfter() != null) {
-            taskStream = taskStream.filter(task ->
-                task.getStatus() != null &&
-                task.getStatus().timestamp() != null &&
-                task.getStatus().timestamp().toInstant().isAfter(params.lastUpdatedAfter())
-            );
-        }
-
-        // Sort by status timestamp descending (most recent first), then by ID ascending for stable ordering
-        List<Task> allFilteredTasks = taskStream
-                .sorted(Comparator.comparing((Task t) -> t.getStatus().timestamp(), Comparator.nullsLast(Comparator.reverseOrder()))
+        // Filter and sort tasks in a single stream pipeline
+        List<Task> allFilteredTasks = tasks.values().stream()
+                .filter(task -> params.contextId() == null || params.contextId().equals(task.getContextId()))
+                .filter(task -> params.status() == null ||
+                        (task.getStatus() != null && params.status().equals(task.getStatus().state())))
+                .filter(task -> params.lastUpdatedAfter() == null ||
+                        (task.getStatus() != null &&
+                         task.getStatus().timestamp() != null &&
+                         task.getStatus().timestamp().toInstant().isAfter(params.lastUpdatedAfter())))
+                .sorted(Comparator.comparing((Task t) -> t.getStatus().timestamp(),
+                        Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(Task::getId))
                 .toList();
 

@@ -5,8 +5,11 @@ import static io.a2a.server.util.async.AsyncUtils.createTubeConfig;
 import static io.a2a.server.util.async.AsyncUtils.processor;
 import static java.util.concurrent.TimeUnit.*;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -172,9 +175,9 @@ public class DefaultRequestHandler implements RequestHandler {
         // Validate lastUpdatedAfter timestamp if provided
         if (params.lastUpdatedAfter() != null) {
             // Check if timestamp is in the future (optional validation per spec)
-            java.time.Instant now = java.time.Instant.now();
+            Instant now = Instant.now();
             if (params.lastUpdatedAfter().isAfter(now)) {
-                java.util.Map<String, Object> errorData = new java.util.HashMap<>();
+                Map<String, Object> errorData = new HashMap<>();
                 errorData.put("parameter", "lastUpdatedAfter");
                 errorData.put("reason", "Timestamp cannot be in the future");
                 throw new InvalidParamsError(null, "Invalid params", errorData);

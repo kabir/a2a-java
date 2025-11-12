@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -420,7 +421,7 @@ public class JpaDatabaseTaskStoreTest {
     public void testListTasksPagination() {
         // Create 5 tasks with same timestamp to ensure ID-based pagination works
         // (With timestamp DESC sorting, same timestamps allow ID ASC tie-breaking)
-        java.time.OffsetDateTime sameTimestamp = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
+        OffsetDateTime sameTimestamp = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         for (int i = 1; i <= 5; i++) {
             Task task = new Task.Builder()
                     .id("task-page-" + i)
@@ -580,7 +581,7 @@ public class JpaDatabaseTaskStoreTest {
     public void testListTasksOrderingById() {
         // Create tasks with same timestamp to test ID-based tie-breaking
         // (spec requires sorting by timestamp DESC, then ID ASC)
-        java.time.OffsetDateTime sameTimestamp = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
+        OffsetDateTime sameTimestamp = OffsetDateTime.now(java.time.ZoneOffset.UTC);
 
         Task task1 = new Task.Builder()
                 .id("task-order-a")
