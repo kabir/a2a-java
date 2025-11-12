@@ -8,7 +8,7 @@
    <h2 align="center">
    <img src="https://raw.githubusercontent.com/google-a2a/A2A/refs/heads/main/docs/assets/a2a-logo-black.svg" width="256" alt="A2A Logo"/>
    </h2>
-   <h3 align="center">A Java library that helps run agentic applications as A2AServers following the <a href="https://google-a2a.github.io/A2A">Agent2Agent (A2A) Protocol</a>.</h3>
+   <h3 align="center">A Java library that helps run agentic applications as A2AServers following the <a href="https://a2a-protocol.org/">Agent2Agent (A2A) Protocol</a>.</h3>
 </html>
 
 ## Installation
@@ -34,7 +34,7 @@ More examples will be added soon.
 
 ## A2A Server
 
-The A2A Java SDK provides a Java server implementation of the [Agent2Agent (A2A) Protocol](https://google-a2a.github.io/A2A). To run your agentic Java application as an A2A server, simply follow the steps below.
+The A2A Java SDK provides a Java server implementation of the [Agent2Agent (A2A) Protocol](https://a2a-protocol.org/). To run your agentic Java application as an A2A server, simply follow the steps below.
 
 - [Add an A2A Java SDK Server Maven dependency to your project](#1-add-an-a2a-java-sdk-server-maven-dependency-to-your-project)
 - [Add a class that creates an A2A Agent Card](#2-add-a-class-that-creates-an-a2a-agent-card)
@@ -266,7 +266,7 @@ a2a.executor.keep-alive-seconds=60
 
 ## A2A Client
 
-The A2A Java SDK provides a Java client implementation of the [Agent2Agent (A2A) Protocol](https://google-a2a.github.io/A2A), allowing communication with A2A servers. The Java client implementation supports the following transports:
+The A2A Java SDK provides a Java client implementation of the [Agent2Agent (A2A) Protocol](https://a2a-protocol.org/), allowing communication with A2A servers. The Java client implementation supports the following transports:
 
 * JSON-RPC 2.0
 * gRPC
