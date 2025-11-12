@@ -239,10 +239,12 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
             String[] tokenParts = params.pageToken().split(":", 2);
             if (tokenParts.length == 2) {
                 // Keyset pagination: get tasks where timestamp < tokenTimestamp OR (timestamp = tokenTimestamp AND id > tokenId)
+                // All tasks have timestamps (TaskStatus canonical constructor ensures this)
                 queryBuilder.append(" AND (t.statusTimestamp < :tokenTimestamp OR (t.statusTimestamp = :tokenTimestamp AND t.id > :tokenId))");
             } else {
-                // Fallback for legacy pageToken format (ID only) - for backward compatibility during transition
-                queryBuilder.append(" AND t.id > :pageToken");
+                // Legacy ID-only pageToken format is not supported with timestamp-based sorting
+                // Throw error to prevent incorrect pagination results
+                throw new io.a2a.spec.InvalidParamsError(null, "Invalid pageToken format: expected 'timestamp:id'", null);
             }
         }
 
@@ -268,18 +270,19 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
                 // Parse keyset pagination parameters
                 try {
                     long timestampMillis = Long.parseLong(tokenParts[0]);
-                    Instant tokenTimestamp = Instant.ofEpochMilli(timestampMillis);
                     String tokenId = tokenParts[1];
+
+                    // All tasks have timestamps (TaskStatus canonical constructor ensures this)
+                    Instant tokenTimestamp = Instant.ofEpochMilli(timestampMillis);
                     query.setParameter("tokenTimestamp", tokenTimestamp);
                     query.setParameter("tokenId", tokenId);
                 } catch (NumberFormatException e) {
-                    // Invalid timestamp format, fall back to ID-only
-                    query.setParameter("pageToken", params.pageToken());
+                    // Malformed timestamp in pageToken
+                    throw new io.a2a.spec.InvalidParamsError(null,
+                        "Invalid pageToken format: timestamp must be numeric milliseconds", null);
                 }
-            } else {
-                // Legacy format (ID only)
-                query.setParameter("pageToken", params.pageToken());
             }
+            // Note: Legacy ID-only format already rejected in query building phase
         }
 
         // Apply page size limit (+1 to check for next page)
@@ -324,13 +327,9 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
         String nextPageToken = null;
         if (hasMore && !tasks.isEmpty()) {
             Task lastTask = tasks.get(tasks.size() - 1);
-            if (lastTask.getStatus() != null && lastTask.getStatus().timestamp() != null) {
-                long timestampMillis = lastTask.getStatus().timestamp().toInstant().toEpochMilli();
-                nextPageToken = timestampMillis + ":" + lastTask.getId();
-            } else {
-                // Fallback to ID-only if timestamp is missing (shouldn't happen with proper data)
-                nextPageToken = lastTask.getId();
-            }
+            // All tasks have timestamps (TaskStatus canonical constructor ensures this)
+            long timestampMillis = lastTask.getStatus().timestamp().toInstant().toEpochMilli();
+            nextPageToken = timestampMillis + ":" + lastTask.getId();
         }
 
         // Apply post-processing transformations (history limiting, artifact removal)

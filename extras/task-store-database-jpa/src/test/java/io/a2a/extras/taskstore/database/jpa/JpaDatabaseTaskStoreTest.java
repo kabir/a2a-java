@@ -694,6 +694,49 @@ public class JpaDatabaseTaskStoreTest {
 
     @Test
     @Transactional
+    public void testListTasksInvalidPageTokenFormat() {
+        // Create a task
+        Task task = new Task.Builder()
+                .id("task-invalid-token")
+                .contextId("context-invalid-token")
+                .status(new TaskStatus(TaskState.WORKING))
+                .build();
+        taskStore.save(task);
+
+        // Test 1: Legacy ID-only pageToken should throw InvalidParamsError
+        ListTasksParams params1 = new ListTasksParams.Builder()
+                .contextId("context-invalid-token")
+                .pageToken("task-invalid-token")  // ID-only format (legacy)
+                .build();
+
+        try {
+            taskStore.list(params1);
+            throw new AssertionError("Expected InvalidParamsError for legacy ID-only pageToken");
+        } catch (io.a2a.spec.InvalidParamsError e) {
+            // Expected - legacy format not supported
+            assertTrue(e.getMessage().contains("Invalid pageToken format"),
+                    "Error message should mention invalid format");
+        }
+
+        // Test 2: Malformed timestamp in pageToken should throw InvalidParamsError
+        ListTasksParams params2 = new ListTasksParams.Builder()
+                .contextId("context-invalid-token")
+                .pageToken("not-a-number:task-id")  // Invalid timestamp
+                .build();
+
+        try {
+            taskStore.list(params2);
+            throw new AssertionError("Expected InvalidParamsError for malformed timestamp");
+        } catch (io.a2a.spec.InvalidParamsError e) {
+            // Expected - malformed timestamp
+            assertTrue(e.getMessage().contains("timestamp must be numeric"),
+                    "Error message should mention numeric timestamp requirement");
+        }
+    }
+
+
+    @Test
+    @Transactional
     public void testListTasksOrderingById() {
         // Create tasks with same timestamp to test ID-based tie-breaking
         // (spec requires sorting by timestamp DESC, then ID ASC)

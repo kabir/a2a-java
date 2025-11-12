@@ -47,7 +47,11 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
                         (task.getStatus() != null &&
                          task.getStatus().timestamp() != null &&
                          task.getStatus().timestamp().toInstant().isAfter(params.lastUpdatedAfter())))
-                .sorted(Comparator.comparing((Task t) -> t.getStatus().timestamp(),
+                .sorted(Comparator.comparing(
+                        (Task t) -> (t.getStatus() != null && t.getStatus().timestamp() != null)
+                                // Truncate to milliseconds for consistency with pageToken precision
+                                ? t.getStatus().timestamp().toInstant().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
+                                : null,
                         Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(Task::getId))
                 .toList();
@@ -59,7 +63,7 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
         int startIndex = 0;
 
         // Handle page token using keyset pagination (format: "timestamp_millis:taskId")
-        // Find the first task that comes after the pageToken position in sorted order
+        // Use binary search to efficiently find the first task after the pageToken position (O(log N))
         if (params.pageToken() != null && !params.pageToken().isEmpty()) {
             String[] tokenParts = params.pageToken().split(":", 2);
             if (tokenParts.length == 2) {
@@ -68,31 +72,39 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
                     java.time.Instant tokenTimestamp = java.time.Instant.ofEpochMilli(tokenTimestampMillis);
                     String tokenId = tokenParts[1];
 
-                    // Find first task where: timestamp < tokenTimestamp OR (timestamp == tokenTimestamp AND id > tokenId)
-                    for (int i = 0; i < allFilteredTasks.size(); i++) {
-                        Task task = allFilteredTasks.get(i);
-                        if (task.getStatus() != null && task.getStatus().timestamp() != null) {
-                            java.time.Instant taskTimestamp = task.getStatus().timestamp().toInstant();
-                            int timestampCompare = taskTimestamp.compareTo(tokenTimestamp);
+                    // Binary search for first task where: timestamp < tokenTimestamp OR (timestamp == tokenTimestamp AND id > tokenId)
+                    // Since list is sorted (timestamp DESC, id ASC), we search for the insertion point
+                    int left = 0;
+                    int right = allFilteredTasks.size();
 
-                            if (timestampCompare < 0 || (timestampCompare == 0 && task.getId().compareTo(tokenId) > 0)) {
-                                startIndex = i;
-                                break;
-                            }
+                    while (left < right) {
+                        int mid = left + (right - left) / 2;
+                        Task task = allFilteredTasks.get(mid);
+
+                        // All tasks have timestamps (TaskStatus canonical constructor ensures this)
+                        // Truncate to milliseconds for consistency with pageToken precision
+                        java.time.Instant taskTimestamp = task.getStatus().timestamp().toInstant()
+                                .truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+                        int timestampCompare = taskTimestamp.compareTo(tokenTimestamp);
+
+                        if (timestampCompare < 0 || (timestampCompare == 0 && task.getId().compareTo(tokenId) > 0)) {
+                            // This task is after the token, search left half
+                            right = mid;
+                        } else {
+                            // This task is before or equal to token, search right half
+                            left = mid + 1;
                         }
                     }
+                    startIndex = left;
                 } catch (NumberFormatException e) {
-                    // Invalid pageToken format, start from beginning
-                    startIndex = 0;
+                    // Malformed timestamp in pageToken
+                    throw new io.a2a.spec.InvalidParamsError(null,
+                        "Invalid pageToken format: timestamp must be numeric milliseconds", null);
                 }
             } else {
-                // Legacy format (ID only) - fallback for backward compatibility
-                for (int i = 0; i < allFilteredTasks.size(); i++) {
-                    if (allFilteredTasks.get(i).getId().equals(params.pageToken())) {
-                        startIndex = i + 1;
-                        break;
-                    }
-                }
+                // Legacy ID-only pageToken format is not supported with timestamp-based sorting
+                // Throw error to prevent incorrect pagination results
+                throw new io.a2a.spec.InvalidParamsError(null, "Invalid pageToken format: expected 'timestamp:id'", null);
             }
         }
 
@@ -104,13 +116,9 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
         String nextPageToken = null;
         if (endIndex < allFilteredTasks.size()) {
             Task lastTask = allFilteredTasks.get(endIndex - 1);
-            if (lastTask.getStatus() != null && lastTask.getStatus().timestamp() != null) {
-                long timestampMillis = lastTask.getStatus().timestamp().toInstant().toEpochMilli();
-                nextPageToken = timestampMillis + ":" + lastTask.getId();
-            } else {
-                // Fallback to ID-only if timestamp is missing
-                nextPageToken = lastTask.getId();
-            }
+            // All tasks have timestamps (TaskStatus canonical constructor ensures this)
+            long timestampMillis = lastTask.getStatus().timestamp().toInstant().toEpochMilli();
+            nextPageToken = timestampMillis + ":" + lastTask.getId();
         }
 
         // Transform tasks: limit history and optionally remove artifacts
