@@ -144,7 +144,7 @@ public class A2AServerRoutes {
 
             Boolean includeArtifacts = null;
             if (includeArtifactsStr != null && !includeArtifactsStr.isEmpty()) {
-                includeArtifacts = Boolean.parseBoolean(includeArtifactsStr);
+                includeArtifacts = Boolean.valueOf(includeArtifactsStr);
             }
 
             response = jsonRestHandler.listTasks(contextId, statusStr, pageSize, pageToken,

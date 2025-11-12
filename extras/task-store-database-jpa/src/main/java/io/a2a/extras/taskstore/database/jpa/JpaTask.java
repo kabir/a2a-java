@@ -145,8 +145,9 @@ public class JpaTask {
             io.a2a.spec.TaskState taskState = task.getStatus().state();
             this.state = (taskState != null) ? taskState.asString() : null;
             // Extract status timestamp for efficient querying and sorting
+            // Truncate to milliseconds for keyset pagination consistency (pageToken uses millis)
             this.statusTimestamp = (task.getStatus().timestamp() != null)
-                    ? task.getStatus().timestamp().toInstant()
+                    ? task.getStatus().timestamp().toInstant().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
                     : null;
         } else {
             this.state = null;

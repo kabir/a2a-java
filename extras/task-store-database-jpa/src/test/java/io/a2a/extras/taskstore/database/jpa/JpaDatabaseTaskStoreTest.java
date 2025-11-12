@@ -470,6 +470,122 @@ public class JpaDatabaseTaskStoreTest {
 
     @Test
     @Transactional
+    public void testListTasksPaginationWithDifferentTimestamps() {
+        // Create tasks with different timestamps to verify keyset pagination
+        // with composite sort (timestamp DESC, id ASC)
+        OffsetDateTime now = OffsetDateTime.now(java.time.ZoneOffset.UTC);
+
+        // Task 1: 10 minutes ago, ID="task-diff-a"
+        Task task1 = new Task.Builder()
+                .id("task-diff-a")
+                .contextId("context-diff-timestamps")
+                .status(new TaskStatus(TaskState.WORKING, null, now.minusMinutes(10)))
+                .build();
+        taskStore.save(task1);
+
+        // Task 2: 5 minutes ago, ID="task-diff-b"
+        Task task2 = new Task.Builder()
+                .id("task-diff-b")
+                .contextId("context-diff-timestamps")
+                .status(new TaskStatus(TaskState.WORKING, null, now.minusMinutes(5)))
+                .build();
+        taskStore.save(task2);
+
+        // Task 3: 5 minutes ago, ID="task-diff-c" (same timestamp as task2, tests ID tie-breaker)
+        Task task3 = new Task.Builder()
+                .id("task-diff-c")
+                .contextId("context-diff-timestamps")
+                .status(new TaskStatus(TaskState.WORKING, null, now.minusMinutes(5)))
+                .build();
+        taskStore.save(task3);
+
+        // Task 4: Now, ID="task-diff-d"
+        Task task4 = new Task.Builder()
+                .id("task-diff-d")
+                .contextId("context-diff-timestamps")
+                .status(new TaskStatus(TaskState.WORKING, null, now))
+                .build();
+        taskStore.save(task4);
+
+        // Task 5: 1 minute ago, ID="task-diff-e"
+        Task task5 = new Task.Builder()
+                .id("task-diff-e")
+                .contextId("context-diff-timestamps")
+                .status(new TaskStatus(TaskState.WORKING, null, now.minusMinutes(1)))
+                .build();
+        taskStore.save(task5);
+
+        // Expected order (timestamp DESC, id ASC):
+        // 1. task-diff-d (now)
+        // 2. task-diff-e (1 min ago)
+        // 3. task-diff-b (5 min ago, ID 'b')
+        // 4. task-diff-c (5 min ago, ID 'c')
+        // 5. task-diff-a (10 min ago)
+
+        // Page 1: Get first 2 tasks
+        ListTasksParams params1 = new ListTasksParams.Builder()
+                .contextId("context-diff-timestamps")
+                .pageSize(2)
+                .build();
+        ListTasksResult result1 = taskStore.list(params1);
+
+        assertEquals(5, result1.totalSize());
+        assertEquals(2, result1.pageSize());
+        assertNotNull(result1.nextPageToken(), "Should have next page token");
+
+        // Verify first page order
+        assertEquals("task-diff-d", result1.tasks().get(0).getId(), "First task should be most recent");
+        assertEquals("task-diff-e", result1.tasks().get(1).getId(), "Second task should be 1 min ago");
+
+        // Verify pageToken format: "timestamp_millis:taskId"
+        assertTrue(result1.nextPageToken().contains(":"), "PageToken should have format timestamp:id");
+        String[] tokenParts = result1.nextPageToken().split(":", 2);
+        assertEquals(2, tokenParts.length, "PageToken should have exactly 2 parts");
+        assertEquals("task-diff-e", tokenParts[1], "PageToken should contain last task ID");
+
+        // Page 2: Get next 2 tasks
+        ListTasksParams params2 = new ListTasksParams.Builder()
+                .contextId("context-diff-timestamps")
+                .pageSize(2)
+                .pageToken(result1.nextPageToken())
+                .build();
+        ListTasksResult result2 = taskStore.list(params2);
+
+        assertEquals(5, result2.totalSize());
+        assertEquals(2, result2.pageSize());
+        assertNotNull(result2.nextPageToken(), "Should have next page token");
+
+        // Verify second page order (tasks with same timestamp, sorted by ID)
+        assertEquals("task-diff-b", result2.tasks().get(0).getId(), "Third task should be 5 min ago, ID 'b'");
+        assertEquals("task-diff-c", result2.tasks().get(1).getId(), "Fourth task should be 5 min ago, ID 'c'");
+
+        // Page 3: Get last task
+        ListTasksParams params3 = new ListTasksParams.Builder()
+                .contextId("context-diff-timestamps")
+                .pageSize(2)
+                .pageToken(result2.nextPageToken())
+                .build();
+        ListTasksResult result3 = taskStore.list(params3);
+
+        assertEquals(5, result3.totalSize());
+        assertEquals(1, result3.pageSize());
+        assertNull(result3.nextPageToken(), "Last page should have no next page token");
+
+        // Verify last task
+        assertEquals("task-diff-a", result3.tasks().get(0).getId(), "Last task should be oldest");
+
+        // Verify no duplicates across all pages
+        List<String> allTaskIds = new ArrayList<>();
+        allTaskIds.addAll(result1.tasks().stream().map(Task::getId).toList());
+        allTaskIds.addAll(result2.tasks().stream().map(Task::getId).toList());
+        allTaskIds.addAll(result3.tasks().stream().map(Task::getId).toList());
+
+        assertEquals(5, allTaskIds.size(), "Should have exactly 5 tasks across all pages");
+        assertEquals(5, allTaskIds.stream().distinct().count(), "Should have no duplicate tasks");
+    }
+
+    @Test
+    @Transactional
     public void testListTasksHistoryLimiting() {
         // Create messages for history
         List<Message> longHistory = new ArrayList<>();

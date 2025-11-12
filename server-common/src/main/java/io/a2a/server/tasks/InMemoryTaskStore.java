@@ -58,27 +58,59 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
         int pageSize = params.getEffectivePageSize();
         int startIndex = 0;
 
-        // Handle page token (cursor: task ID from previous page)
-        // Since we're sorted by timestamp DESC then ID ASC, we can't use binary search
-        // Instead, find the task with the matching ID using linear search
+        // Handle page token using keyset pagination (format: "timestamp_millis:taskId")
+        // Find the first task that comes after the pageToken position in sorted order
         if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-            for (int i = 0; i < allFilteredTasks.size(); i++) {
-                if (allFilteredTasks.get(i).getId().equals(params.pageToken())) {
-                    startIndex = i + 1;
-                    break;
+            String[] tokenParts = params.pageToken().split(":", 2);
+            if (tokenParts.length == 2) {
+                try {
+                    long tokenTimestampMillis = Long.parseLong(tokenParts[0]);
+                    java.time.Instant tokenTimestamp = java.time.Instant.ofEpochMilli(tokenTimestampMillis);
+                    String tokenId = tokenParts[1];
+
+                    // Find first task where: timestamp < tokenTimestamp OR (timestamp == tokenTimestamp AND id > tokenId)
+                    for (int i = 0; i < allFilteredTasks.size(); i++) {
+                        Task task = allFilteredTasks.get(i);
+                        if (task.getStatus() != null && task.getStatus().timestamp() != null) {
+                            java.time.Instant taskTimestamp = task.getStatus().timestamp().toInstant();
+                            int timestampCompare = taskTimestamp.compareTo(tokenTimestamp);
+
+                            if (timestampCompare < 0 || (timestampCompare == 0 && task.getId().compareTo(tokenId) > 0)) {
+                                startIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Invalid pageToken format, start from beginning
+                    startIndex = 0;
+                }
+            } else {
+                // Legacy format (ID only) - fallback for backward compatibility
+                for (int i = 0; i < allFilteredTasks.size(); i++) {
+                    if (allFilteredTasks.get(i).getId().equals(params.pageToken())) {
+                        startIndex = i + 1;
+                        break;
+                    }
                 }
             }
-            // If not found, startIndex remains 0 (start from beginning)
         }
 
         // Get the page of tasks
         int endIndex = Math.min(startIndex + pageSize, allFilteredTasks.size());
         List<Task> pageTasks = allFilteredTasks.subList(startIndex, endIndex);
 
-        // Determine next page token
+        // Determine next page token (format: "timestamp_millis:taskId")
         String nextPageToken = null;
         if (endIndex < allFilteredTasks.size()) {
-            nextPageToken = allFilteredTasks.get(endIndex - 1).getId();
+            Task lastTask = allFilteredTasks.get(endIndex - 1);
+            if (lastTask.getStatus() != null && lastTask.getStatus().timestamp() != null) {
+                long timestampMillis = lastTask.getStatus().timestamp().toInstant().toEpochMilli();
+                nextPageToken = timestampMillis + ":" + lastTask.getId();
+            } else {
+                // Fallback to ID-only if timestamp is missing
+                nextPageToken = lastTask.getId();
+            }
         }
 
         // Transform tasks: limit history and optionally remove artifacts

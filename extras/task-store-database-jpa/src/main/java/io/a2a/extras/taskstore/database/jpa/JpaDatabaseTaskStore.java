@@ -233,9 +233,17 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
             countQueryBuilder.append(" AND t.statusTimestamp > :lastUpdatedAfter");
         }
 
-        // Apply pagination cursor (tasks after pageToken)
+        // Apply pagination cursor using keyset pagination for composite sort (timestamp DESC, id ASC)
+        // PageToken format: "timestamp_millis:taskId" (e.g., "1699999999000:task-123")
         if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-            queryBuilder.append(" AND t.id > :pageToken");
+            String[] tokenParts = params.pageToken().split(":", 2);
+            if (tokenParts.length == 2) {
+                // Keyset pagination: get tasks where timestamp < tokenTimestamp OR (timestamp = tokenTimestamp AND id > tokenId)
+                queryBuilder.append(" AND (t.statusTimestamp < :tokenTimestamp OR (t.statusTimestamp = :tokenTimestamp AND t.id > :tokenId))");
+            } else {
+                // Fallback for legacy pageToken format (ID only) - for backward compatibility during transition
+                queryBuilder.append(" AND t.id > :pageToken");
+            }
         }
 
         // Sort by status timestamp descending (most recent first), then by ID for stable ordering
@@ -255,7 +263,23 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
             query.setParameter("lastUpdatedAfter", params.lastUpdatedAfter());
         }
         if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-            query.setParameter("pageToken", params.pageToken());
+            String[] tokenParts = params.pageToken().split(":", 2);
+            if (tokenParts.length == 2) {
+                // Parse keyset pagination parameters
+                try {
+                    long timestampMillis = Long.parseLong(tokenParts[0]);
+                    Instant tokenTimestamp = Instant.ofEpochMilli(timestampMillis);
+                    String tokenId = tokenParts[1];
+                    query.setParameter("tokenTimestamp", tokenTimestamp);
+                    query.setParameter("tokenId", tokenId);
+                } catch (NumberFormatException e) {
+                    // Invalid timestamp format, fall back to ID-only
+                    query.setParameter("pageToken", params.pageToken());
+                }
+            } else {
+                // Legacy format (ID only)
+                query.setParameter("pageToken", params.pageToken());
+            }
         }
 
         // Apply page size limit (+1 to check for next page)
@@ -295,10 +319,18 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
             }
         }
 
-        // Determine next page token (ID of last task if there are more results)
+        // Determine next page token (timestamp:ID of last task if there are more results)
+        // Format: "timestamp_millis:taskId" for keyset pagination
         String nextPageToken = null;
         if (hasMore && !tasks.isEmpty()) {
-            nextPageToken = tasks.get(tasks.size() - 1).getId();
+            Task lastTask = tasks.get(tasks.size() - 1);
+            if (lastTask.getStatus() != null && lastTask.getStatus().timestamp() != null) {
+                long timestampMillis = lastTask.getStatus().timestamp().toInstant().toEpochMilli();
+                nextPageToken = timestampMillis + ":" + lastTask.getId();
+            } else {
+                // Fallback to ID-only if timestamp is missing (shouldn't happen with proper data)
+                nextPageToken = lastTask.getId();
+            }
         }
 
         // Apply post-processing transformations (history limiting, artifact removal)
