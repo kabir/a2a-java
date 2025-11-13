@@ -300,7 +300,7 @@ public class RestHandler {
 
     private HTTPRestResponse createSuccessResponse(int statusCode, com.google.protobuf.Message.Builder builder) {
         try {
-            String jsonBody = JsonFormat.printer().print(builder);
+            String jsonBody = JsonFormat.printer().includingDefaultValueFields().print(builder);
             return new HTTPRestResponse(statusCode, "application/json", jsonBody);
         } catch (InvalidProtocolBufferException e) {
             return createErrorResponse(new InternalError("Failed to serialize response: " + e.getMessage()));

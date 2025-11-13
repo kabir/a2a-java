@@ -10,6 +10,9 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.a2a.spec.Artifact;
 import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.ListTasksResult;
@@ -19,10 +22,12 @@ import io.a2a.spec.Task;
 @ApplicationScoped
 public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryTaskStore.class);
     private final ConcurrentMap<String, Task> tasks = new ConcurrentHashMap<>();
 
     @Override
     public void save(Task task) {
+        LOGGER.debug("=== InMemoryTaskStore.save() === taskId=" + task.getId() + ", contextId=" + task.getContextId());
         tasks.put(task.getId(), task);
     }
 
@@ -38,6 +43,13 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
 
     @Override
     public ListTasksResult list(ListTasksParams params) {
+        // DEBUG: Log store contents for totalSize investigation
+        LOGGER.debug("=== InMemoryTaskStore.list() DEBUG ===");
+        LOGGER.debug("Total tasks in store: {}", tasks.size());
+        LOGGER.debug("Filter contextId: {}", params.contextId());
+        LOGGER.debug("Filter status: {}", params.status());
+        tasks.values().forEach(t -> LOGGER.debug("  Task: id={}, contextId={}", t.getId(), t.getContextId()));
+
         // Filter and sort tasks in a single stream pipeline
         List<Task> allFilteredTasks = tasks.values().stream()
                 .filter(task -> params.contextId() == null || params.contextId().equals(task.getContextId()))
@@ -57,6 +69,8 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
                 .toList();
 
         int totalSize = allFilteredTasks.size();
+        LOGGER.debug("Filtered tasks count: {}", totalSize);
+        LOGGER.debug("=== END DEBUG ===");
 
         // Apply pagination
         int pageSize = params.getEffectivePageSize();
