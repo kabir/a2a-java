@@ -163,6 +163,7 @@ public class ProtoUtils {
                 builder.setNextPageToken(result.nextPageToken());
             }
             builder.setTotalSize(result.totalSize());
+            builder.setPageSize(result.pageSize());
             return builder.build();
         }
 
