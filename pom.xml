@@ -434,6 +434,10 @@
     </build>
 
     <modules>
+        <!-- BOM test utilities - no dependencies, built first -->
+        <module>boms/test-utils</module>
+
+        <!-- Core SDK modules -->
         <module>client/base</module>
         <module>client/transport/grpc</module>
         <module>client/transport/jsonrpc</module>
@@ -459,6 +463,11 @@
         <module>transport/jsonrpc</module>
         <module>transport/grpc</module>
         <module>transport/rest</module>
+
+        <!-- BOMs - must be built AFTER modules they test -->
+        <module>boms/extras</module>
+        <module>boms/sdk</module>
+        <module>boms/reference</module>
     </modules>
 
     <profiles>
