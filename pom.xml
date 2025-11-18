@@ -464,10 +464,10 @@
         <module>transport/grpc</module>
         <module>transport/rest</module>
 
-        <!-- BOMs - must be built AFTER modules they test -->
+        <!-- BOMs - build order automatically determined by reactor based on dependencies -->
         <module>boms/extras</module>
-        <module>boms/sdk</module>
         <module>boms/reference</module>
+        <module>boms/sdk</module>
     </modules>
 
     <profiles>

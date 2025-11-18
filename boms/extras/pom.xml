@@ -57,6 +57,16 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- Declare actual dependency on SDK BOM so Maven reactor understands build order -->
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>a2a-java-sdk-bom</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
