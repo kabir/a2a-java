@@ -6,22 +6,25 @@ import java.util.Set;
 
 /**
  * Verifies Reference BOM completeness by attempting to load all discovered classes.
- * Includes SDK modules + Reference implementation modules.
- * Note: reference/ is NOT excluded - that's what we're testing!
+ * - Includes SDK modules + Reference implementation modules
+ * - Forbids extras/ to prove BOM doesn't leak extras dependencies
  */
 public class ReferenceBomVerifier extends DynamicBomVerifier {
 
     private static final Set<String> REFERENCE_EXCLUSIONS = Set.of(
         "boms/",       // BOM test modules themselves
         "examples/",   // Example applications
-        "extras/",     // Extra modules (potential separate BOM)
         "tck/",        // TCK test suite
         "tests/"       // Integration tests
         // Note: reference/ is NOT in this list - we want to verify those classes load
     );
 
+    private static final Set<String> REFERENCE_FORBIDDEN = Set.of(
+        "extras/"      // Extras modules (separate BOM) - must NOT be loadable
+    );
+
     public ReferenceBomVerifier() {
-        super(REFERENCE_EXCLUSIONS);
+        super(REFERENCE_EXCLUSIONS, REFERENCE_FORBIDDEN);
     }
 
     public static void main(String[] args) throws Exception {

@@ -6,14 +6,13 @@ import java.util.Set;
 
 /**
  * Verifies Extras BOM completeness by attempting to load all discovered classes.
- * Includes SDK modules + Extras modules (task stores, queue managers, etc.).
- * Note: extras/ is NOT excluded - that's what we're testing!
+ * - Includes SDK modules + Extras modules (task stores, queue managers, etc.)
+ * - Forbids reference/ to prove BOM doesn't leak reference implementation dependencies
  */
 public class ExtrasBomVerifier extends DynamicBomVerifier {
 
     private static final Set<String> EXTRAS_EXCLUSIONS = Set.of(
         "boms/",       // BOM test modules themselves
-        "reference/",  // Reference implementations (separate BOM)
         "examples/",   // Example applications
         "tck/",        // TCK test suite
         "tests/",      // Integration tests
@@ -22,8 +21,12 @@ public class ExtrasBomVerifier extends DynamicBomVerifier {
         // Note: extras/ production modules are NOT in this list - we want to verify those classes load
     );
 
+    private static final Set<String> EXTRAS_FORBIDDEN = Set.of(
+        "reference/"   // Reference implementations (separate BOM) - must NOT be loadable
+    );
+
     public ExtrasBomVerifier() {
-        super(EXTRAS_EXCLUSIONS);
+        super(EXTRAS_EXCLUSIONS, EXTRAS_FORBIDDEN);
     }
 
     public static void main(String[] args) throws Exception {

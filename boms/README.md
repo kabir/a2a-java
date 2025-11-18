@@ -4,10 +4,11 @@ This directory contains Bill of Materials (BOM) modules for the A2A Java SDK pro
 
 ## Overview
 
-The A2A Java SDK provides two BOMs for different use cases:
+The A2A Java SDK provides three BOMs for different use cases:
 
 1. **`a2a-java-sdk-bom`** - Core SDK BOM for general A2A agent development
-2. **`a2a-java-sdk-reference-bom`** - Reference implementations BOM with Quarkus dependencies
+2. **`a2a-java-sdk-extras-bom`** - Extras BOM with server-side enhancements (task stores, queue managers)
+3. **`a2a-java-sdk-reference-bom`** - Reference implementations BOM with Quarkus dependencies
 
 ## BOM Modules
 
@@ -19,10 +20,19 @@ The SDK BOM includes:
 - All A2A SDK core modules (spec, server, client, transport)
 - Core third-party dependencies (Jackson, gRPC, SLF4J)
 - Jakarta APIs (CDI, Inject, JSON, JAX-RS)
-- Extras modules (JPA task store, replicated queue manager)
 - Test utilities
 
 **Use this BOM when:** Building A2A agents with any framework (Quarkus, Spring Boot, vanilla Java, etc.)
+
+### Extras BOM (`boms/extras`)
+
+**Artifact:** `io.github.a2asdk:a2a-java-sdk-extras-bom`
+
+The Extras BOM includes:
+- Everything from `a2a-java-sdk-bom` (via import)
+- Server-side enhancement modules (database persistence, distributed queue management, etc.)
+
+**Use this BOM when:** Building production A2A servers needing advanced server-side features beyond the core SDK
 
 ### Reference BOM (`boms/reference`)
 
@@ -64,6 +74,36 @@ Add to your project's `pom.xml`:
     <dependency>
         <groupId>io.github.a2asdk</groupId>
         <artifactId>a2a-java-sdk-transport-jsonrpc</artifactId>
+    </dependency>
+</dependencies>
+```
+
+### For Extras Users (Database Persistence, Distributed Deployments)
+
+Add to your project's `pom.xml`:
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.github.a2asdk</groupId>
+            <artifactId>a2a-java-sdk-extras-bom</artifactId>
+            <version>0.4.0.Alpha1-SNAPSHOT</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <!-- No version needed - managed by BOM -->
+    <dependency>
+        <groupId>io.github.a2asdk</groupId>
+        <artifactId>a2a-java-sdk-server-common</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.github.a2asdk</groupId>
+        <artifactId>a2a-java-extras-task-store-database-jpa</artifactId>
     </dependency>
 </dependencies>
 ```
@@ -120,7 +160,7 @@ Following the WildFly pattern, we keep BOMs separate from internal dependency ma
 
 ## Automated Testing
 
-Both BOMs include **maven-invoker-plugin** integration tests that automatically verify:
+All three BOMs include **maven-invoker-plugin** integration tests that automatically verify:
 - ✅ BOM can be imported correctly
 - ✅ All declared dependencies resolve
 - ✅ No missing versions or conflicts
@@ -136,6 +176,11 @@ boms/
 │       └── sdk-usage-test/              # Integration test project
 │           ├── pom.xml                  # Imports SDK BOM
 │           └── src/main/java/           # Test code using SDK
+├── extras/
+│   └── src/it/
+│       └── extras-usage-test/           # Integration test project
+│           ├── pom.xml                  # Imports Extras BOM
+│           └── src/main/java/           # Test code using SDK + Extras
 └── reference/
     └── src/it/
         └── reference-usage-test/        # Integration test project
@@ -148,8 +193,8 @@ boms/
 Tests run automatically during `mvn install`:
 
 ```bash
-# Test both BOMs
-mvn clean install -DskipTests -pl boms/sdk,boms/reference
+# Test all BOMs
+mvn clean install -DskipTests -pl boms/sdk,boms/extras,boms/reference
 
 # Test individual BOM
 mvn clean install -DskipTests -pl boms/sdk
@@ -167,10 +212,11 @@ When updating dependencies in the project:
 
 1. **Update parent `pom.xml`** - Change version properties and dependencyManagement
 2. **Update SDK BOM** (`boms/sdk/pom.xml`) - Sync core dependency versions
-3. **Update Reference BOM** (`boms/reference/pom.xml`) - Sync if Quarkus or reference modules changed
-4. **Run automated tests** - Integration tests will catch any missing dependencies:
+3. **Update Extras BOM** (`boms/extras/pom.xml`) - Sync if extras modules changed
+4. **Update Reference BOM** (`boms/reference/pom.xml`) - Sync if Quarkus or reference modules changed
+5. **Run automated tests** - Integration tests will catch any missing dependencies:
    ```bash
-   mvn clean install -DskipTests -pl boms/sdk,boms/reference
+   mvn clean install -DskipTests -pl boms/sdk,boms/extras,boms/reference
    ```
 
 ### Adding New Dependencies to BOMs
@@ -191,16 +237,12 @@ The BOMs use `${project.version}` for all A2A SDK modules, ensuring:
 
 ## Build Order
 
-BOMs are listed first in the parent pom's `<modules>` section:
-```xml
-<modules>
-    <module>boms/sdk</module>
-    <module>boms/reference</module>
-    <!-- ... other modules ... -->
-</modules>
-```
+BOMs have explicit dependencies to ensure correct reactor build order:
+- **SDK BOM** builds first (no BOM dependencies)
+- **Extras BOM** builds second (depends on SDK BOM)
+- **Reference BOM** builds third (depends on SDK BOM)
 
-This ensures BOMs are built early, making them available for any future internal use if needed.
+Maven's reactor automatically orders them correctly based on their `<dependencies>` declarations, regardless of their position in the parent pom's `<modules>` section.
 
 ## Examples
 
@@ -212,7 +254,7 @@ See the `examples/` directory for sample projects using these BOMs:
 
 When releasing the A2A Java SDK:
 
-1. Both BOMs are released as separate Maven artifacts
+1. All three BOMs are released as separate Maven artifacts
 2. External users can depend on them via Maven Central
 3. BOMs follow the same version scheme as the SDK (e.g., `0.4.0.Alpha1`, `0.4.0`)
 
@@ -220,13 +262,17 @@ When releasing the A2A Java SDK:
 
 - **Which BOM should I use?**
   - Quarkus project → Reference BOM
-  - Other framework → SDK BOM
+  - Production server with database/distributed features → Extras BOM
+  - Other framework/basic agent → SDK BOM
+
+- **Can I use Extras BOM with Spring Boot?**
+  - Yes! Extras BOM imports SDK BOM and adds server enhancements that work with any framework.
 
 - **Can I use Reference BOM with Spring Boot?**
-  - Yes, but you'll get unnecessary Quarkus dependencies. Use SDK BOM instead.
+  - Yes, but you'll get unnecessary Quarkus dependencies. Use SDK BOM or Extras BOM instead.
 
-- **Do I need both BOMs?**
-  - No, choose one. Reference BOM already imports SDK BOM.
+- **Do I need multiple BOMs?**
+  - No, choose one. Extras BOM imports SDK BOM. Reference BOM imports SDK BOM.
 
 - **Why are test dependencies in SDK BOM?**
   - Test scope dependencies don't pollute runtime, but allow users to easily import test utilities.

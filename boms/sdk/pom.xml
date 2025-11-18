@@ -96,28 +96,6 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- Extras modules -->
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>a2a-java-extras-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>a2a-java-extras-task-store-database-jpa</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>a2a-java-extras-push-notification-config-store-database-jpa</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>a2a-java-extras-queue-manager-replicated</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
             <!-- Test utilities -->
             <dependency>
                 <groupId>${project.groupId}</groupId>
