@@ -35,7 +35,21 @@ public abstract class DynamicBomVerifier {
     }
 
     public void verify() throws Exception {
-        Path projectRoot = Paths.get("").toAbsolutePath().getParent().getParent().getParent().getParent().getParent();
+        Path projectRoot = null;
+        Path current = Paths.get("").toAbsolutePath();
+        while (current != null) {
+            if (Files.isDirectory(current)) {
+                if (Files.exists(current.resolve("pom.xml")) && Files.exists(current.resolve("boms"))) {
+                    projectRoot = current;
+                    break;
+                }
+            }
+            current = current.getParent();
+        }
+        if (projectRoot == null) {
+            throw new IllegalStateException("Could not find project root directory.");
+        }
+        //Path projectRoot = Paths.get("").toAbsolutePath().getParent().getParent().getParent().getParent().getParent();
         System.out.println("Scanning project root: " + projectRoot);
 
         Set<String> requiredClasses = discoverRequiredClasses(projectRoot);
