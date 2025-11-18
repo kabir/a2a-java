@@ -140,16 +140,8 @@ Add to your project's `pom.xml`:
 
 ## Internal Project Usage
 
-**Important:** The A2A Java SDK project itself does **NOT** import these BOMs in the parent `pom.xml`.
-
-### Why Not Use BOMs Internally?
-
-Following the WildFly pattern, we keep BOMs separate from internal dependency management for several reasons:
-
-1. **Build Order Complexity**: BOMs must be built before other modules, adding reactor ordering constraints
-2. **Flexibility**: Parent pom may need different scopes/configurations than external users
-3. **Simplicity**: Avoids potential circular dependencies and build complexity
-4. **Single Source of Truth**: Parent `pom.xml` remains authoritative for internal builds
+**Important:** The A2A Java SDK project itself does **NOT** import these BOMs in the parent `pom.xml`. The BOMs are 
+for the convenience of external users. 
 
 ### Maintenance Strategy
 
@@ -235,44 +227,4 @@ The BOMs use `${project.version}` for all A2A SDK modules, ensuring:
 - Version updates only need to change parent pom
 - No version drift between BOMs and SDK modules
 
-## Build Order
-
-BOMs have explicit dependencies to ensure correct reactor build order:
-- **SDK BOM** builds first (no BOM dependencies)
-- **Extras BOM** builds second (depends on SDK BOM)
-- **Reference BOM** builds third (depends on SDK BOM)
-
 Maven's reactor automatically orders them correctly based on their `<dependencies>` declarations, regardless of their position in the parent pom's `<modules>` section.
-
-## Examples
-
-See the `examples/` directory for sample projects using these BOMs:
-- `examples/helloworld/` - Basic agent using SDK BOM
-- `examples/cloud-deployment/` - Quarkus-based agent using Reference BOM
-
-## Release Process
-
-When releasing the A2A Java SDK:
-
-1. All three BOMs are released as separate Maven artifacts
-2. External users can depend on them via Maven Central
-3. BOMs follow the same version scheme as the SDK (e.g., `0.4.0.Alpha1`, `0.4.0`)
-
-## Questions?
-
-- **Which BOM should I use?**
-  - Quarkus project → Reference BOM
-  - Production server with database/distributed features → Extras BOM
-  - Other framework/basic agent → SDK BOM
-
-- **Can I use Extras BOM with Spring Boot?**
-  - Yes! Extras BOM imports SDK BOM and adds server enhancements that work with any framework.
-
-- **Can I use Reference BOM with Spring Boot?**
-  - Yes, but you'll get unnecessary Quarkus dependencies. Use SDK BOM or Extras BOM instead.
-
-- **Do I need multiple BOMs?**
-  - No, choose one. Extras BOM imports SDK BOM. Reference BOM imports SDK BOM.
-
-- **Why are test dependencies in SDK BOM?**
-  - Test scope dependencies don't pollute runtime, but allow users to easily import test utilities.

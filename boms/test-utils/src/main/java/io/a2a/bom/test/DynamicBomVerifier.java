@@ -43,14 +43,10 @@ public abstract class DynamicBomVerifier {
         Set<String> requiredClasses = discoverRequiredClasses(projectRoot);
         Set<String> forbiddenClasses = discoverForbiddenClasses(projectRoot);
 
-        // Do some sanity checks for some classes from both top-level and nested modules to make sure the
-        // discovery mechanism worked properly
-        sanityCheckDisovery("io.a2a.spec.AgentCard", requiredClasses);
-        sanityCheckDisovery("io.a2a.server.events.EventConsumer", requiredClasses);
-        sanityCheckDisovery("io.a2a.client.transport.spi.ClientTransport", requiredClasses);
-
         System.out.println("Discovered " + requiredClasses.size() + " required classes to verify");
         System.out.println("Discovered " + forbiddenClasses.size() + " forbidden classes to verify");
+
+        sanityCheckDiscovery(requiredClasses, forbiddenClasses);
 
         List<String> failures = new ArrayList<>();
         int successful = 0;
@@ -98,8 +94,28 @@ public abstract class DynamicBomVerifier {
         System.out.println("\n✅ BOM is COMPLETE - all required classes loaded, all forbidden classes not loadable!");
     }
 
-    private void sanityCheckDisovery(String className, Set<String> discovered) {
-        if (!discovered.contains(className)) {
+    private void sanityCheckDiscovery(Set<String> requiredClasses, Set<String> forbiddenClasses) {
+        // Do some sanity checks for some classes from both top-level and nested modules to make sure the
+        // discovery mechanism worked properly
+        sanityCheckDisovery("io.a2a.spec.AgentCard", requiredClasses, forbiddenClasses);
+        sanityCheckDisovery("io.a2a.server.events.EventConsumer", requiredClasses, forbiddenClasses);
+        sanityCheckDisovery("io.a2a.client.transport.spi.ClientTransport", requiredClasses, forbiddenClasses);
+
+        sanityCheckDisovery("io.a2a.server.common.quarkus.DefaultProducers", requiredClasses, forbiddenClasses);
+        sanityCheckDisovery("io.a2a.extras.common.events.TaskFinalizedEvent", requiredClasses, forbiddenClasses);
+        sanityCheckDisovery("io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem", requiredClasses, forbiddenClasses);
+
+        // Make sure that the required and forbidden sets don't contain the same classes
+        Set<String> intersection = new HashSet<>(requiredClasses);
+        intersection.retainAll(forbiddenClasses);
+        if (!intersection.isEmpty()) {
+            System.err.println("The following classes appear in both the required and forbidden sets: " + intersection);
+            System.exit(1);
+        }
+    }
+
+    private void sanityCheckDisovery(String className, Set<String> requiredClasses, Set<String> forbiddenClasses) {
+        if (!requiredClasses.contains(className) && !forbiddenClasses.contains(className)) {
             System.err.println("Class expected to be on the classpath was not discovered: " + className);
             System.exit(1);
         }
