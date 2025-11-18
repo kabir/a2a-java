@@ -35,9 +35,7 @@ public abstract class DynamicBomVerifier {
     }
 
     public void verify() throws Exception {
-        // Project root is 4 levels up from test: {module}/src/main/java/...
         Path projectRoot = Paths.get("").toAbsolutePath().getParent().getParent().getParent().getParent().getParent();
-
         System.out.println("Scanning project root: " + projectRoot);
 
         Set<String> requiredClasses = discoverRequiredClasses(projectRoot);
@@ -97,13 +95,13 @@ public abstract class DynamicBomVerifier {
     private void sanityCheckDiscovery(Set<String> requiredClasses, Set<String> forbiddenClasses) {
         // Do some sanity checks for some classes from both top-level and nested modules to make sure the
         // discovery mechanism worked properly
-        sanityCheckDisovery("io.a2a.spec.AgentCard", requiredClasses, forbiddenClasses);
-        sanityCheckDisovery("io.a2a.server.events.EventConsumer", requiredClasses, forbiddenClasses);
-        sanityCheckDisovery("io.a2a.client.transport.spi.ClientTransport", requiredClasses, forbiddenClasses);
+        sanityCheckDiscovery("io.a2a.spec.AgentCard", requiredClasses, forbiddenClasses);
+        sanityCheckDiscovery("io.a2a.server.events.EventConsumer", requiredClasses, forbiddenClasses);
+        sanityCheckDiscovery("io.a2a.client.transport.spi.ClientTransport", requiredClasses, forbiddenClasses);
 
-        sanityCheckDisovery("io.a2a.server.common.quarkus.DefaultProducers", requiredClasses, forbiddenClasses);
-        sanityCheckDisovery("io.a2a.extras.common.events.TaskFinalizedEvent", requiredClasses, forbiddenClasses);
-        sanityCheckDisovery("io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem", requiredClasses, forbiddenClasses);
+        sanityCheckDiscovery("io.a2a.server.common.quarkus.DefaultProducers", requiredClasses, forbiddenClasses);
+        sanityCheckDiscovery("io.a2a.extras.common.events.TaskFinalizedEvent", requiredClasses, forbiddenClasses);
+        sanityCheckDiscovery("io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem", requiredClasses, forbiddenClasses);
 
         // Make sure that the required and forbidden sets don't contain the same classes
         Set<String> intersection = new HashSet<>(requiredClasses);
@@ -114,7 +112,7 @@ public abstract class DynamicBomVerifier {
         }
     }
 
-    private void sanityCheckDisovery(String className, Set<String> requiredClasses, Set<String> forbiddenClasses) {
+    private void sanityCheckDiscovery(String className, Set<String> requiredClasses, Set<String> forbiddenClasses) {
         if (!requiredClasses.contains(className) && !forbiddenClasses.contains(className)) {
             System.err.println("Class expected to be on the classpath was not discovered: " + className);
             System.exit(1);
@@ -180,13 +178,12 @@ public abstract class DynamicBomVerifier {
         // Extract package name from file content
         String packageName = null;
         try (Stream<String> lines = Files.lines(javaFile)) {
-            for (String line : lines.collect(Collectors.toList())) {
-                Matcher pkgMatcher = PACKAGE_PATTERN.matcher(line.trim());
-                if (pkgMatcher.matches()) {
-                    packageName = pkgMatcher.group(1);
-                    break;
-                }
-            }
+            packageName = lines.map(String::trim)
+                    .map(PACKAGE_PATTERN::matcher)
+                    .filter(Matcher::matches)
+                    .map(m -> m.group(1))
+                    .findFirst()
+                    .orElse(null);
         }
 
         if (packageName != null) {
