@@ -1,14 +1,18 @@
 package io.a2a.integrations.microprofile;
 
-import io.a2a.server.config.A2AConfigProvider;
-import io.a2a.server.util.async.AsyncExecutorProducer;
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import jakarta.inject.Inject;
+
+import io.a2a.server.config.A2AConfigProvider;
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
 
 /**
  * CDI-based test to verify that MicroProfileConfigProvider is properly selected
