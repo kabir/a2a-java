@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaDatabaseTaskStore.class);
+    private static final String A2A_REPLICATION_GRACE_PERIOD_SECONDS = "a2a.replication.grace-period-seconds";
 
     @PersistenceContext(unitName = "a2a-java")
     EntityManager em;
@@ -60,7 +61,7 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
 
     @PostConstruct
     void initConfig() {
-        gracePeriodSeconds = Long.parseLong(configProvider.getValue("a2a.replication.grace-period-seconds"));
+        gracePeriodSeconds = Long.parseLong(configProvider.getValue(A2A_REPLICATION_GRACE_PERIOD_SECONDS));
     }
 
     @Transactional

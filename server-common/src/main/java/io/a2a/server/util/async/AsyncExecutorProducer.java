@@ -22,6 +22,9 @@ import org.slf4j.LoggerFactory;
 public class AsyncExecutorProducer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncExecutorProducer.class);
+    private static final String A2A_EXECUTOR_CORE_POOL_SIZE = "a2a.executor.core-pool-size";
+    private static final String A2A_EXECUTOR_MAX_POOL_SIZE = "a2a.executor.max-pool-size";
+    private static final String A2A_EXECUTOR_KEEP_ALIVE_SECONDS = "a2a.executor.keep-alive-seconds";
 
     @Inject
     A2AConfigProvider configProvider;
@@ -57,9 +60,9 @@ public class AsyncExecutorProducer {
 
     @PostConstruct
     public void init() {
-        corePoolSize = Integer.parseInt(configProvider.getValue("a2a.executor.core-pool-size"));
-        maxPoolSize = Integer.parseInt(configProvider.getValue("a2a.executor.max-pool-size"));
-        keepAliveSeconds = Long.parseLong(configProvider.getValue("a2a.executor.keep-alive-seconds"));
+        corePoolSize = Integer.parseInt(configProvider.getValue(A2A_EXECUTOR_CORE_POOL_SIZE));
+        maxPoolSize = Integer.parseInt(configProvider.getValue(A2A_EXECUTOR_MAX_POOL_SIZE));
+        keepAliveSeconds = Long.parseLong(configProvider.getValue(A2A_EXECUTOR_KEEP_ALIVE_SECONDS));
 
         LOGGER.info("Initializing async executor: corePoolSize={}, maxPoolSize={}, keepAliveSeconds={}",
                 corePoolSize, maxPoolSize, keepAliveSeconds);

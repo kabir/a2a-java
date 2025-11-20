@@ -1,13 +1,18 @@
 package io.a2a.integrations.microprofile;
 
-import io.a2a.server.config.A2AConfigProvider;
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import jakarta.inject.Inject;
+
+import io.a2a.server.config.A2AConfigProvider;
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
 
 /**
  * CDI-based test to verify that MicroProfileConfigProvider is properly selected
@@ -15,6 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @QuarkusTest
 public class MicroProfileConfigProviderTest {
+
+    private static final String A2A_EXECUTOR_CORE_POOL_SIZE = "a2a.executor.core-pool-size";
+    private static final String A2A_EXECUTOR_MAX_POOL_SIZE = "a2a.executor.max-pool-size";
+    private static final String A2A_EXECUTOR_KEEP_ALIVE_SECONDS = "a2a.executor.keep-alive-seconds";
 
     @Inject
     A2AConfigProvider configProvider;
@@ -31,7 +40,7 @@ public class MicroProfileConfigProviderTest {
     public void testGetValueFromMicroProfileConfig() {
         // Test that values from application.properties override defaults
         // The test application.properties sets a2a.executor.core-pool-size=15
-        String value = configProvider.getValue("a2a.executor.core-pool-size");
+        String value = configProvider.getValue(A2A_EXECUTOR_CORE_POOL_SIZE);
         assertEquals("15", value, "Should get value from MicroProfile Config (application.properties)");
     }
 
@@ -39,21 +48,21 @@ public class MicroProfileConfigProviderTest {
     public void testGetValueFallbackToDefaults() {
         // Test that values not in application.properties fall back to META-INF/a2a-defaults.properties
         // a2a.executor.max-pool-size is not in test application.properties, so should use default
-        String value = configProvider.getValue("a2a.executor.max-pool-size");
+        String value = configProvider.getValue(A2A_EXECUTOR_MAX_POOL_SIZE);
         assertEquals("50", value, "Should fall back to default value from META-INF/a2a-defaults.properties");
     }
 
     @Test
     public void testGetValueAnotherDefault() {
         // Test another default property to ensure fallback works
-        String value = configProvider.getValue("a2a.executor.keep-alive-seconds");
+        String value = configProvider.getValue(A2A_EXECUTOR_KEEP_ALIVE_SECONDS);
         assertEquals("60", value, "Should fall back to default value");
     }
 
     @Test
     public void testGetOptionalValueFromMicroProfileConfig() {
         // Test optional value that exists in application.properties
-        Optional<String> value = configProvider.getOptionalValue("a2a.executor.core-pool-size");
+        Optional<String> value = configProvider.getOptionalValue(A2A_EXECUTOR_CORE_POOL_SIZE);
         assertTrue(value.isPresent(), "Optional value should be present");
         assertEquals("15", value.get(), "Should get overridden value from MicroProfile Config");
     }
@@ -61,7 +70,7 @@ public class MicroProfileConfigProviderTest {
     @Test
     public void testGetOptionalValueFallbackToDefaults() {
         // Test optional value that falls back to defaults
-        Optional<String> value = configProvider.getOptionalValue("a2a.executor.max-pool-size");
+        Optional<String> value = configProvider.getOptionalValue(A2A_EXECUTOR_MAX_POOL_SIZE);
         assertTrue(value.isPresent(), "Optional value should be present from defaults");
         assertEquals("50", value.get(), "Should get default value");
     }

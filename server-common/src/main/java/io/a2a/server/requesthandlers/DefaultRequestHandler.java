@@ -73,6 +73,9 @@ public class DefaultRequestHandler implements RequestHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultRequestHandler.class);
 
+    private static final String A2A_BLOCKING_AGENT_TIMEOUT_SECONDS = "a2a.blocking.agent.timeout.seconds";
+    private static final String A2A_BLOCKING_CONSUMPTION_TIMEOUT_SECONDS = "a2a.blocking.consumption.timeout.seconds";
+
     @Inject
     A2AConfigProvider configProvider;
 
@@ -130,9 +133,9 @@ public class DefaultRequestHandler implements RequestHandler {
     @PostConstruct
     void initConfig() {
         agentCompletionTimeoutSeconds = Integer.parseInt(
-                configProvider.getValue("a2a.blocking.agent.timeout.seconds"));
+                configProvider.getValue(A2A_BLOCKING_AGENT_TIMEOUT_SECONDS));
         consumptionCompletionTimeoutSeconds = Integer.parseInt(
-                configProvider.getValue("a2a.blocking.consumption.timeout.seconds"));
+                configProvider.getValue(A2A_BLOCKING_CONSUMPTION_TIMEOUT_SECONDS));
     }
 
     /**
