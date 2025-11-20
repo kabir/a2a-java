@@ -3,8 +3,8 @@ package io.a2a.grpc.utils;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
-
 import io.a2a.grpc.StreamResponse;
 import io.a2a.spec.APIKeySecurityScheme;
 import io.a2a.spec.AgentCapabilities;
@@ -39,7 +38,6 @@ import io.a2a.spec.ImplicitOAuthFlow;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.MessageSendConfiguration;
 import io.a2a.spec.MessageSendParams;

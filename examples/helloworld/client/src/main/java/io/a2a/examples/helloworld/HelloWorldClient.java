@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.a2a.A2A;
 
 import io.a2a.client.Client;
-import io.a2a.client.ClientBuilder;
 import io.a2a.client.ClientEvent;
 import io.a2a.client.MessageEvent;
 import io.a2a.client.http.A2ACardResolver;

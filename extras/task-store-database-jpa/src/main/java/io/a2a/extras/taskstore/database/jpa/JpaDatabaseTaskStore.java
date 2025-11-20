@@ -3,9 +3,7 @@ package io.a2a.extras.taskstore.database.jpa;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Priority;

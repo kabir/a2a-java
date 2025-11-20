@@ -1,6 +1,5 @@
 package io.a2a.server;
 
-import io.a2a.spec.TransportProtocol;
 
 /**
  * Interface for transport endpoint implementations to provide metadata about their transport.
