@@ -365,7 +365,7 @@ public class ProtoUtils {
                 builder.setHistoryLength(messageSendConfiguration.historyLength());
             }
             if (messageSendConfiguration.pushNotificationConfig() != null) {
-                builder.setPushNotification(pushNotificationConfig(messageSendConfiguration.pushNotificationConfig()));
+                builder.setPushNotificationConfig(pushNotificationConfig(messageSendConfiguration.pushNotificationConfig()));
             }
             builder.setBlocking(messageSendConfiguration.blocking());
             return builder.build();
@@ -874,7 +874,7 @@ public class ProtoUtils {
                     sendMessageConfiguration.getAcceptedOutputModesList().isEmpty() ? null :
                             new ArrayList<>(sendMessageConfiguration.getAcceptedOutputModesList()),
                     sendMessageConfiguration.getHistoryLength(),
-                    pushNotification(sendMessageConfiguration.getPushNotification()),
+                    pushNotification(sendMessageConfiguration.getPushNotificationConfig()),
                     sendMessageConfiguration.getBlocking()
             );
         }
