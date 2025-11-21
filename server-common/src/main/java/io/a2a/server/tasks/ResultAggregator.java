@@ -16,7 +16,6 @@ import io.a2a.server.events.EventQueueItem;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
 import io.a2a.spec.EventKind;
-import io.a2a.spec.InternalError;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;

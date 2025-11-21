@@ -1,10 +1,5 @@
 package io.a2a.client.transport.rest.sse;
 
-import static io.a2a.grpc.StreamResponse.PayloadCase.ARTIFACT_UPDATE;
-import static io.a2a.grpc.StreamResponse.PayloadCase.MSG;
-import static io.a2a.grpc.StreamResponse.PayloadCase.STATUS_UPDATE;
-import static io.a2a.grpc.StreamResponse.PayloadCase.TASK;
-
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
