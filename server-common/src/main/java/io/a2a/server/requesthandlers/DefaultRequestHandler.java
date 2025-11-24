@@ -306,6 +306,13 @@ public class DefaultRequestHandler implements RequestHandler {
             // We do this HERE (not in ResultAggregator) to avoid blocking Vert.x worker threads
             // during the consumption loop itself.
             kind = etai.eventType();
+
+            // Store push notification config for newly created tasks (mirrors streaming logic)
+            if (kind instanceof Task createdTask && shouldAddPushInfo(params)) {
+                LOGGER.debug("Storing push notification config for new task {}", createdTask.getId());
+                pushConfigStore.setInfo(createdTask.getId(), params.configuration().pushNotificationConfig());
+            }
+
             if (blocking && interruptedOrNonBlocking) {
                 // For blocking calls: ensure all events are processed before returning
                 // Order of operations is critical to avoid circular dependency:
