@@ -946,8 +946,8 @@ public class DefaultRequestHandlerTest {
         List<PushNotificationConfig> storedConfigs = pushConfigStore.getInfo(taskId);
         assertNotNull(storedConfigs,
             "Push notification config should be stored for existing task");
-        assertTrue(storedConfigs.size() >= 1,
-            "Should have at least 1 push config stored");
+        assertEquals(1, storedConfigs.size(),
+            "Should have exactly 1 push config stored");
         assertEquals("config-existing-1", storedConfigs.get(0).id());
         assertEquals("https://example.com/existing-webhook", storedConfigs.get(0).url());
     }

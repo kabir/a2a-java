@@ -308,7 +308,8 @@ public class DefaultRequestHandler implements RequestHandler {
             kind = etai.eventType();
 
             // Store push notification config for newly created tasks (mirrors streaming logic)
-            if (kind instanceof Task createdTask && shouldAddPushInfo(params)) {
+            // Only for NEW tasks - existing tasks are handled by initMessageSend()
+            if (mss.task() == null && kind instanceof Task createdTask && shouldAddPushInfo(params)) {
                 LOGGER.debug("Storing push notification config for new task {}", createdTask.getId());
                 pushConfigStore.setInfo(createdTask.getId(), params.configuration().pushNotificationConfig());
             }
