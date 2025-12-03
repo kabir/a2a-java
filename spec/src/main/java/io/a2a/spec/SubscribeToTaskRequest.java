@@ -57,6 +57,10 @@ public final class SubscribeToTaskRequest extends StreamingJSONRPCRequest<TaskId
         this(null, id, METHOD, params);
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static class Builder {
         private String jsonrpc;
         private Object id;

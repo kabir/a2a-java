@@ -1,6 +1,9 @@
 package io.a2a.grpc.mapper;
 
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 /**
  * Mapper between {@link io.a2a.spec.SubscribeToTaskRequest} and {@link io.a2a.grpc.SubscribeToTaskRequest}.
@@ -11,9 +14,9 @@ import org.mapstruct.Mapper;
  * <li>Proto: Simple request with name field in format "tasks/{task_id}"</li>
  * </ul>
  * <p>
- * Note: The domain object is a complete JSONRPC request, while the proto is just the gRPC
- * request parameters. The JSONRPC envelope (id, jsonrpc, method) is handled separately
- * by the transport layer.
+ * Uses {@link ResourceNameParser} to convert between task ID and resource name format.
+ * The domain JSONRPC envelope fields (id, jsonrpc, method) are populated with defaults
+ * by the Builder when converting from proto.
  */
 @Mapper(config = A2AProtoMapperConfig.class, uses = {TaskIdParamsMapper.class})
 public interface SubscribeToTaskRequestMapper {
@@ -27,28 +30,21 @@ public interface SubscribeToTaskRequestMapper {
      * @param domain the domain SubscribeToTaskRequest
      * @return the proto SubscribeToTaskRequest
      */
-    default io.a2a.grpc.SubscribeToTaskRequest toProto(io.a2a.spec.SubscribeToTaskRequest domain) {
-        if (domain == null || domain.getParams() == null || domain.getParams().id() == null) {
-            return null;
-        }
-        return io.a2a.grpc.SubscribeToTaskRequest.newBuilder()
-                .setName(ResourceNameParser.defineTaskName(domain.getParams().id()))
-                .build();
-    }
+    @Mapping(target = "name", expression = "java(ResourceNameParser.defineTaskName(domain.getParams().id()))")
+    io.a2a.grpc.SubscribeToTaskRequest toProto(io.a2a.spec.SubscribeToTaskRequest domain);
 
     /**
      * Converts proto SubscribeToTaskRequest to domain SubscribeToTaskRequest.
      * Extracts the task ID from the name field and creates a TaskIdParams.
+     * The JSONRPC envelope fields (id, jsonrpc, method) are populated with defaults by the Builder.
      *
      * @param proto the proto SubscribeToTaskRequest
      * @return the domain SubscribeToTaskRequest
      */
-    default io.a2a.spec.SubscribeToTaskRequest fromProto(io.a2a.grpc.SubscribeToTaskRequest proto) {
-        if (proto == null || proto.getName() == null) {
-            return null;
-        }
-        return new io.a2a.spec.SubscribeToTaskRequest.Builder()
-                .params(new io.a2a.spec.TaskIdParams(ResourceNameParser.extractTaskId(proto.getName())))
-                .build();
-    }
+    @BeanMapping(builder = @Builder(buildMethod = "build"))
+    @Mapping(target = "params", expression = "java(new io.a2a.spec.TaskIdParams(ResourceNameParser.extractTaskId(proto.getName())))")
+    @Mapping(target = "id", ignore = true) // Builder sets UUID default
+    @Mapping(target = "jsonrpc", ignore = true) // Builder sets "2.0" default
+    @Mapping(target = "method", ignore = true) // Builder sets "SubscribeToTask" default
+    io.a2a.spec.SubscribeToTaskRequest fromProto(io.a2a.grpc.SubscribeToTaskRequest proto);
 }
