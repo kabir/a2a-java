@@ -19,7 +19,10 @@ import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.events.EventQueue;
+import io.a2a.server.events.EventQueueUtil;
 import io.a2a.server.events.InMemoryQueueManager;
+import io.a2a.server.events.MainEventBus;
+import io.a2a.server.events.MainEventBusProcessor;
 import io.a2a.server.tasks.InMemoryPushNotificationConfigStore;
 import io.a2a.server.tasks.InMemoryTaskStore;
 import io.a2a.server.tasks.TaskUpdater;
@@ -32,6 +35,7 @@ import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TextPart;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -50,12 +54,21 @@ public class DefaultRequestHandlerTest {
     private InMemoryQueueManager queueManager;
     private TestAgentExecutor agentExecutor;
     private ServerCallContext serverCallContext;
+    private MainEventBus mainEventBus;
+    private MainEventBusProcessor mainEventBusProcessor;
 
     @BeforeEach
     void setUp() {
         taskStore = new InMemoryTaskStore();
+
+        // Create MainEventBus and MainEventBusProcessor (production code path)
+        mainEventBus = new MainEventBus();
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore);
+        EventQueueUtil.start(mainEventBusProcessor);
+
         // Pass taskStore as TaskStateProvider to queueManager for task-aware queue management
-        queueManager = new InMemoryQueueManager(taskStore);
+        queueManager = new InMemoryQueueManager(taskStore, mainEventBus);
+
         agentExecutor = new TestAgentExecutor();
 
         requestHandler = DefaultRequestHandler.create(
@@ -68,6 +81,14 @@ public class DefaultRequestHandlerTest {
         );
 
         serverCallContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of());
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Stop MainEventBusProcessor background thread
+        if (mainEventBusProcessor != null) {
+            EventQueueUtil.stop(mainEventBusProcessor);
+        }
     }
 
     /**

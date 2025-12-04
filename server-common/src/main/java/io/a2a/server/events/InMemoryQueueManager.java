@@ -18,11 +18,11 @@ public class InMemoryQueueManager implements QueueManager {
     private final EventQueueFactory factory;
     private final TaskStateProvider taskStateProvider;
 
-    @Inject
     MainEventBus mainEventBus;
 
     @Inject
-    public InMemoryQueueManager(TaskStateProvider taskStateProvider) {
+    public InMemoryQueueManager(TaskStateProvider taskStateProvider, MainEventBus mainEventBus) {
+        this.mainEventBus = mainEventBus;
         this.factory = new DefaultEventQueueFactory();
         this.taskStateProvider = taskStateProvider;
     }

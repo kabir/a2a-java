@@ -21,7 +21,10 @@ import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.events.EventQueueItem;
+import io.a2a.server.events.EventQueueUtil;
 import io.a2a.server.events.InMemoryQueueManager;
+import io.a2a.server.events.MainEventBus;
+import io.a2a.server.events.MainEventBusProcessor;
 import io.a2a.server.tasks.BasePushNotificationSender;
 import io.a2a.server.tasks.InMemoryPushNotificationConfigStore;
 import io.a2a.server.tasks.InMemoryTaskStore;
@@ -71,6 +74,8 @@ public class AbstractA2ARequestHandlerTest {
     protected AgentExecutorMethod agentExecutorCancel;
     protected InMemoryQueueManager queueManager;
     protected TestHttpClient httpClient;
+    protected MainEventBus mainEventBus;
+    protected MainEventBusProcessor mainEventBusProcessor;
 
     protected final Executor internalExecutor = Executors.newCachedThreadPool();
 
@@ -94,7 +99,14 @@ public class AbstractA2ARequestHandlerTest {
 
         InMemoryTaskStore inMemoryTaskStore = new InMemoryTaskStore();
         taskStore = inMemoryTaskStore;
-        queueManager = new InMemoryQueueManager(inMemoryTaskStore);
+
+        // Create MainEventBus and MainEventBusProcessor (production code path)
+        mainEventBus = new MainEventBus();
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore);
+        EventQueueUtil.start(mainEventBusProcessor);
+
+        queueManager = new InMemoryQueueManager(inMemoryTaskStore, mainEventBus);
+
         httpClient = new TestHttpClient();
         PushNotificationConfigStore pushConfigStore = new InMemoryPushNotificationConfigStore();
         PushNotificationSender pushSender = new BasePushNotificationSender(pushConfigStore, httpClient);
@@ -107,6 +119,11 @@ public class AbstractA2ARequestHandlerTest {
     public void cleanup() {
         agentExecutorExecute = null;
         agentExecutorCancel = null;
+
+        // Stop MainEventBusProcessor background thread
+        if (mainEventBusProcessor != null) {
+            EventQueueUtil.stop(mainEventBusProcessor);
+        }
     }
 
     protected static AgentCard createAgentCard(boolean streaming, boolean pushNotifications, boolean stateTransitionHistory) {

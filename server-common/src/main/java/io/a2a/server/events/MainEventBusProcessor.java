@@ -33,14 +33,19 @@ import org.slf4j.LoggerFactory;
 public class MainEventBusProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainEventBusProcessor.class);
 
-    @Inject
-    MainEventBus eventBus;
 
-    @Inject
-    TaskStore taskStore;
+    private final MainEventBus eventBus;
+
+    private final TaskStore taskStore;
 
     private volatile boolean running = true;
     private Thread processorThread;
+
+    @Inject
+    public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore) {
+        this.eventBus = eventBus;
+        this.taskStore = taskStore;
+    }
 
     @PostConstruct
     void start() {
@@ -91,10 +96,10 @@ public class MainEventBusProcessor implements Runnable {
 
         LOGGER.debug("Processing event for task {}: {}", taskId, event.getClass().getSimpleName());
 
-        // Step 1: Update TaskStore FIRST
+        // Step 1: Update TaskStore FIRST (persistence before clients see it)
         updateTaskStore(taskId, event);
 
-        // Step 2: Then distribute to ChildQueues
+        // Step 2: Then distribute to ChildQueues (clients see it AFTER persistence)
         if (eventQueue instanceof EventQueue.MainQueue mainQueue) {
             mainQueue.distributeToChildren(context.eventQueueItem());
             LOGGER.debug("Distributed event to children for task {}", taskId);

@@ -14,7 +14,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
+import io.a2a.server.tasks.InMemoryTaskStore;
 import io.a2a.server.tasks.MockTaskStateProvider;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,11 +24,24 @@ public class InMemoryQueueManagerTest {
 
     private InMemoryQueueManager queueManager;
     private MockTaskStateProvider taskStateProvider;
+    private InMemoryTaskStore taskStore;
+    private MainEventBus mainEventBus;
+    private MainEventBusProcessor mainEventBusProcessor;
 
     @BeforeEach
     public void setUp() {
         taskStateProvider = new MockTaskStateProvider();
-        queueManager = new InMemoryQueueManager(taskStateProvider);
+        taskStore = new InMemoryTaskStore();
+        mainEventBus = new MainEventBus();
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore);
+        EventQueueUtil.start(mainEventBusProcessor);
+
+        queueManager = new InMemoryQueueManager(taskStateProvider, mainEventBus);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        EventQueueUtil.stop(mainEventBusProcessor);
     }
 
     @Test

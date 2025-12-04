@@ -316,13 +316,12 @@ public abstract class EventQueue implements AutoCloseable {
             queue.add(item);
             LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
 
-            // Submit to MainEventBus instead of immediate distribution to children
+            // Submit to MainEventBus for centralized persistence + distribution
             if (mainEventBus != null && taskId != null) {
                 mainEventBus.submit(taskId, this, item);
             } else {
-                // Fallback: immediate distribution (for tests/non-bus mode)
-                LOGGER.warn("MainEventBus not configured for task {}, using immediate distribution", taskId);
-                children.forEach(eq -> eq.internalEnqueueItem(item));
+                // This should not happen in properly configured systems
+                LOGGER.error("MainEventBus not configured for task {} - events will NOT be distributed to children!", taskId);
             }
 
             // Trigger replication hook if configured (KEEP for inter-process replication)
