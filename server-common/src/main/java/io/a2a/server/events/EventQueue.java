@@ -53,6 +53,7 @@ public abstract class EventQueue implements AutoCloseable {
         private String taskId;
         private List<Runnable> onCloseCallbacks = new java.util.ArrayList<>();
         private TaskStateProvider taskStateProvider;
+        private MainEventBus mainEventBus;
 
         public EventQueueBuilder queueSize(int queueSize) {
             this.queueSize = queueSize;
@@ -81,9 +82,14 @@ public abstract class EventQueue implements AutoCloseable {
             return this;
         }
 
+        public EventQueueBuilder mainEventBus(MainEventBus mainEventBus) {
+            this.mainEventBus = mainEventBus;
+            return this;
+        }
+
         public EventQueue build() {
-            if (hook != null || !onCloseCallbacks.isEmpty() || taskStateProvider != null) {
-                return new MainQueue(queueSize, hook, taskId, onCloseCallbacks, taskStateProvider);
+            if (hook != null || !onCloseCallbacks.isEmpty() || taskStateProvider != null || mainEventBus != null) {
+                return new MainQueue(queueSize, hook, taskId, onCloseCallbacks, taskStateProvider, mainEventBus);
             } else {
                 return new MainQueue(queueSize);
             }
@@ -222,6 +228,7 @@ public abstract class EventQueue implements AutoCloseable {
         private final String taskId;
         private final List<Runnable> onCloseCallbacks;
         private final TaskStateProvider taskStateProvider;
+        private final MainEventBus mainEventBus;
 
         MainQueue() {
             super();
@@ -229,6 +236,7 @@ public abstract class EventQueue implements AutoCloseable {
             this.taskId = null;
             this.onCloseCallbacks = List.of();
             this.taskStateProvider = null;
+            this.mainEventBus = null;
         }
 
         MainQueue(int queueSize) {
@@ -237,6 +245,7 @@ public abstract class EventQueue implements AutoCloseable {
             this.taskId = null;
             this.onCloseCallbacks = List.of();
             this.taskStateProvider = null;
+            this.mainEventBus = null;
         }
 
         MainQueue(EventEnqueueHook hook) {
@@ -245,6 +254,7 @@ public abstract class EventQueue implements AutoCloseable {
             this.taskId = null;
             this.onCloseCallbacks = List.of();
             this.taskStateProvider = null;
+            this.mainEventBus = null;
         }
 
         MainQueue(int queueSize, EventEnqueueHook hook) {
@@ -253,6 +263,7 @@ public abstract class EventQueue implements AutoCloseable {
             this.taskId = null;
             this.onCloseCallbacks = List.of();
             this.taskStateProvider = null;
+            this.mainEventBus = null;
         }
 
         MainQueue(int queueSize, EventEnqueueHook hook, String taskId, List<Runnable> onCloseCallbacks, TaskStateProvider taskStateProvider) {
@@ -261,8 +272,20 @@ public abstract class EventQueue implements AutoCloseable {
             this.taskId = taskId;
             this.onCloseCallbacks = List.copyOf(onCloseCallbacks);  // Defensive copy
             this.taskStateProvider = taskStateProvider;
+            this.mainEventBus = null;
             LOGGER.debug("Created MainQueue for task {} with {} onClose callbacks and TaskStateProvider: {}",
                     taskId, onCloseCallbacks.size(), taskStateProvider != null);
+        }
+
+        MainQueue(int queueSize, EventEnqueueHook hook, String taskId, List<Runnable> onCloseCallbacks, TaskStateProvider taskStateProvider, MainEventBus mainEventBus) {
+            super(queueSize);
+            this.enqueueHook = hook;
+            this.taskId = taskId;
+            this.onCloseCallbacks = List.copyOf(onCloseCallbacks);  // Defensive copy
+            this.taskStateProvider = taskStateProvider;
+            this.mainEventBus = mainEventBus;
+            LOGGER.debug("Created MainQueue for task {} with {} onClose callbacks, TaskStateProvider: {}, MainEventBus: {}",
+                    taskId, onCloseCallbacks.size(), taskStateProvider != null, mainEventBus != null);
         }
 
         public EventQueue tap() {
@@ -293,10 +316,16 @@ public abstract class EventQueue implements AutoCloseable {
             queue.add(item);
             LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
 
-            // Distribute to all ChildQueues (they will receive the event even if MainQueue is closed)
-            children.forEach(eq -> eq.internalEnqueueItem(item));
+            // Submit to MainEventBus instead of immediate distribution to children
+            if (mainEventBus != null && taskId != null) {
+                mainEventBus.submit(taskId, this, item);
+            } else {
+                // Fallback: immediate distribution (for tests/non-bus mode)
+                LOGGER.warn("MainEventBus not configured for task {}, using immediate distribution", taskId);
+                children.forEach(eq -> eq.internalEnqueueItem(item));
+            }
 
-            // Trigger replication hook if configured
+            // Trigger replication hook if configured (KEEP for inter-process replication)
             if (enqueueHook != null) {
                 enqueueHook.onEnqueue(item);
             }
@@ -348,6 +377,19 @@ public abstract class EventQueue implements AutoCloseable {
             }
 
             this.doClose(immediate);
+        }
+
+        /**
+         * Distribute event to all ChildQueues.
+         * Called by MainEventBusProcessor after TaskStore persistence.
+         */
+        void distributeToChildren(EventQueueItem item) {
+            synchronized (children) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Distributing event to {} children for task {}", children.size(), taskId);
+                }
+                children.forEach(child -> child.internalEnqueueItem(item));
+            }
         }
 
         /**

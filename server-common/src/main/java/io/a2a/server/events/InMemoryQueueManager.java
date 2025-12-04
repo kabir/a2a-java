@@ -19,6 +19,9 @@ public class InMemoryQueueManager implements QueueManager {
     private final TaskStateProvider taskStateProvider;
 
     @Inject
+    MainEventBus mainEventBus;
+
+    @Inject
     public InMemoryQueueManager(TaskStateProvider taskStateProvider) {
         this.factory = new DefaultEventQueueFactory();
         this.taskStateProvider = taskStateProvider;
@@ -166,7 +169,8 @@ public class InMemoryQueueManager implements QueueManager {
             return EventQueue.builder()
                     .taskId(taskId)
                     .addOnCloseCallback(getCleanupCallback(taskId))
-                    .taskStateProvider(taskStateProvider);
+                    .taskStateProvider(taskStateProvider)
+                    .mainEventBus(mainEventBus);
         }
     }
 }
