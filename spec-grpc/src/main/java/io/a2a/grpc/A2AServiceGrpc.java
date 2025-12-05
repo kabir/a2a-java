@@ -7,9 +7,6 @@ import static io.grpc.MethodDescriptor.generateFullMethodName;
  * A2AService defines the operations of the A2A protocol.
  * </pre>
  */
-@javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.73.0)",
-    comments = "Source: a2a.proto")
 @io.grpc.stub.annotations.GrpcGenerated
 public final class A2AServiceGrpc {
 
@@ -717,8 +714,8 @@ public final class A2AServiceGrpc {
      * Send a message to the agent.
      * </pre>
      */
-    public io.a2a.grpc.SendMessageResponse sendMessage(io.a2a.grpc.SendMessageRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+    public io.a2a.grpc.SendMessageResponse sendMessage(io.a2a.grpc.SendMessageRequest request) throws io.grpc.StatusException {
+      return io.grpc.stub.ClientCalls.blockingV2UnaryCall(
           getChannel(), getSendMessageMethod(), getCallOptions(), request);
     }
 
@@ -739,8 +736,8 @@ public final class A2AServiceGrpc {
      * Get the current state of a task from the agent.
      * </pre>
      */
-    public io.a2a.grpc.Task getTask(io.a2a.grpc.GetTaskRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+    public io.a2a.grpc.Task getTask(io.a2a.grpc.GetTaskRequest request) throws io.grpc.StatusException {
+      return io.grpc.stub.ClientCalls.blockingV2UnaryCall(
           getChannel(), getGetTaskMethod(), getCallOptions(), request);
     }
 
@@ -749,8 +746,8 @@ public final class A2AServiceGrpc {
      * List tasks with optional filtering and pagination.
      * </pre>
      */
-    public io.a2a.grpc.ListTasksResponse listTasks(io.a2a.grpc.ListTasksRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+    public io.a2a.grpc.ListTasksResponse listTasks(io.a2a.grpc.ListTasksRequest request) throws io.grpc.StatusException {
+      return io.grpc.stub.ClientCalls.blockingV2UnaryCall(
           getChannel(), getListTasksMethod(), getCallOptions(), request);
     }
 
@@ -759,8 +756,8 @@ public final class A2AServiceGrpc {
      * Cancel a task.
      * </pre>
      */
-    public io.a2a.grpc.Task cancelTask(io.a2a.grpc.CancelTaskRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+    public io.a2a.grpc.Task cancelTask(io.a2a.grpc.CancelTaskRequest request) throws io.grpc.StatusException {
+      return io.grpc.stub.ClientCalls.blockingV2UnaryCall(
           getChannel(), getCancelTaskMethod(), getCallOptions(), request);
     }
 
@@ -792,8 +789,8 @@ public final class A2AServiceGrpc {
      * Get a push notification config for a task.
      * </pre>
      */
-    public io.a2a.grpc.TaskPushNotificationConfig getTaskPushNotificationConfig(io.a2a.grpc.GetTaskPushNotificationConfigRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+    public io.a2a.grpc.TaskPushNotificationConfig getTaskPushNotificationConfig(io.a2a.grpc.GetTaskPushNotificationConfigRequest request) throws io.grpc.StatusException {
+      return io.grpc.stub.ClientCalls.blockingV2UnaryCall(
           getChannel(), getGetTaskPushNotificationConfigMethod(), getCallOptions(), request);
     }
 
@@ -802,8 +799,8 @@ public final class A2AServiceGrpc {
      * Get a list of push notifications configured for a task.
      * </pre>
      */
-    public io.a2a.grpc.ListTaskPushNotificationConfigResponse listTaskPushNotificationConfig(io.a2a.grpc.ListTaskPushNotificationConfigRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+    public io.a2a.grpc.ListTaskPushNotificationConfigResponse listTaskPushNotificationConfig(io.a2a.grpc.ListTaskPushNotificationConfigRequest request) throws io.grpc.StatusException {
+      return io.grpc.stub.ClientCalls.blockingV2UnaryCall(
           getChannel(), getListTaskPushNotificationConfigMethod(), getCallOptions(), request);
     }
 
@@ -822,8 +819,8 @@ public final class A2AServiceGrpc {
      * Delete a push notification config for a task.
      * </pre>
      */
-    public com.google.protobuf.Empty deleteTaskPushNotificationConfig(io.a2a.grpc.DeleteTaskPushNotificationConfigRequest request) {
-      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+    public com.google.protobuf.Empty deleteTaskPushNotificationConfig(io.a2a.grpc.DeleteTaskPushNotificationConfigRequest request) throws io.grpc.StatusException {
+      return io.grpc.stub.ClientCalls.blockingV2UnaryCall(
           getChannel(), getDeleteTaskPushNotificationConfigMethod(), getCallOptions(), request);
     }
   }
