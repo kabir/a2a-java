@@ -30,6 +30,10 @@ import org.slf4j.LoggerFactory;
  * This architecture ensures clients never receive events before they're persisted,
  * eliminating race conditions and enabling reliable event replay.
  * </p>
+ * <p>
+ * <b>Note:</b> This bean is eagerly initialized by {@link MainEventBusProcessorInitializer}
+ * to ensure the background thread starts automatically when the application starts.
+ * </p>
  */
 @ApplicationScoped
 public class MainEventBusProcessor implements Runnable {
@@ -77,6 +81,14 @@ public class MainEventBusProcessor implements Runnable {
         processorThread.setDaemon(false); // Keep JVM alive
         processorThread.start();
         LOGGER.info("MainEventBusProcessor started");
+    }
+
+    /**
+     * No-op method to force CDI proxy resolution and ensure @PostConstruct has been called.
+     * Called by MainEventBusProcessorInitializer during application startup.
+     */
+    public void ensureStarted() {
+        // Method intentionally empty - just forces proxy resolution
     }
 
     @PreDestroy
