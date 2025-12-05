@@ -99,7 +99,10 @@ public class MainEventBusProcessor implements Runnable {
         LOGGER.info("MainEventBusProcessor processing loop started");
         while (running) {
             try {
+                LOGGER.debug("MainEventBusProcessor: Waiting for event from MainEventBus...");
                 MainEventBusContext context = eventBus.take();
+                LOGGER.debug("MainEventBusProcessor: Retrieved event for task {} from MainEventBus",
+                            context.taskId());
                 processEvent(context);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -118,7 +121,8 @@ public class MainEventBusProcessor implements Runnable {
         Event event = context.eventQueueItem().getEvent();
         EventQueue eventQueue = context.eventQueue();
 
-        LOGGER.debug("Processing event for task {}: {}", taskId, event.getClass().getSimpleName());
+        LOGGER.debug("MainEventBusProcessor: Processing event for task {}: {} (queue type: {})",
+                    taskId, event.getClass().getSimpleName(), eventQueue.getClass().getSimpleName());
 
         // Step 1: Update TaskStore FIRST (persistence before clients see it)
         updateTaskStore(taskId, event);
@@ -128,14 +132,17 @@ public class MainEventBusProcessor implements Runnable {
 
         // Step 3: Then distribute to ChildQueues (clients see it AFTER persistence + notification)
         if (eventQueue instanceof EventQueue.MainQueue mainQueue) {
+            int childCount = mainQueue.getChildCount();
+            LOGGER.debug("MainEventBusProcessor: Distributing event to {} children for task {}", childCount, taskId);
             mainQueue.distributeToChildren(context.eventQueueItem());
-            LOGGER.debug("Distributed event to children for task {}", taskId);
+            LOGGER.debug("MainEventBusProcessor: Distributed event {} to {} children for task {}",
+                        event.getClass().getSimpleName(), childCount, taskId);
         } else {
-            LOGGER.warn("Expected MainQueue but got {} for task {}",
+            LOGGER.warn("MainEventBusProcessor: Expected MainQueue but got {} for task {}",
                     eventQueue.getClass().getSimpleName(), taskId);
         }
 
-        LOGGER.debug("Completed processing event for task {}", taskId);
+        LOGGER.debug("MainEventBusProcessor: Completed processing event for task {}", taskId);
 
         // Step 4: Notify callback after all processing is complete
         callback.onEventProcessed(taskId, event);

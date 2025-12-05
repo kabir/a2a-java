@@ -294,6 +294,14 @@ public abstract class EventQueue implements AutoCloseable {
             return child;
         }
 
+        /**
+         * Returns the current number of child queues.
+         * Useful for debugging and logging event distribution.
+         */
+        public int getChildCount() {
+            return children.size();
+        }
+
         @Override
         public void enqueueItem(EventQueueItem item) {
             // MainQueue must accept events even when closed to support:
@@ -384,10 +392,20 @@ public abstract class EventQueue implements AutoCloseable {
          */
         void distributeToChildren(EventQueueItem item) {
             synchronized (children) {
+                int childCount = children.size();
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Distributing event to {} children for task {}", children.size(), taskId);
+                    LOGGER.debug("MainQueue[{}]: Distributing event {} to {} children",
+                                taskId, item.getEvent().getClass().getSimpleName(), childCount);
                 }
-                children.forEach(child -> child.internalEnqueueItem(item));
+                children.forEach(child -> {
+                    LOGGER.debug("MainQueue[{}]: Enqueueing event {} to child queue",
+                                taskId, item.getEvent().getClass().getSimpleName());
+                    child.internalEnqueueItem(item);
+                });
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("MainQueue[{}]: Completed distribution of {} to {} children",
+                                taskId, item.getEvent().getClass().getSimpleName(), childCount);
+                }
             }
         }
 

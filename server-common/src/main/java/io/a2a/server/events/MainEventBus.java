@@ -29,7 +29,11 @@ public class MainEventBus {
     }
 
     public MainEventBusContext take() throws InterruptedException {
-        return queue.take();
+        LOGGER.debug("MainEventBus: Waiting to take event (current queue size: {})...", queue.size());
+        MainEventBusContext context = queue.take();
+        LOGGER.debug("MainEventBus: Took event for task {} (remaining queue size: {})",
+                    context.taskId(), queue.size());
+        return context;
     }
 
     public int size() {

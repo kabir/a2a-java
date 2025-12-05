@@ -760,14 +760,23 @@ public class DefaultRequestHandler implements RequestHandler {
                 LOGGER.debug("Agent and consumption both completed successfully for task {}", taskId);
             }
 
-            // Always close the ChildQueue and notify the parent MainQueue
-            // The parent will close itself when all children are closed (childClosing logic)
-            // This ensures proper cleanup and removal from QueueManager map
-            LOGGER.debug("{} call, closing ChildQueue for task {} (immediate=false, notifyParent=true)",
-                    isStreaming ? "Streaming" : "Non-streaming", taskId);
+            if (isStreaming) {
+                // For streaming: DON'T close the ChildQueue here
+                // The ChildQueue must stay open so MainEventBusProcessor can distribute events to it
+                // and the subscriber can consume them. EventConsumer will close the queue when:
+                // 1. A final event is detected, or
+                // 2. The subscriber cancels, or
+                // 3. EventConsumer completes naturally
+                LOGGER.debug("Streaming call, NOT closing ChildQueue in cleanup for task {} (EventConsumer will close it)", taskId);
+            } else {
+                // For non-streaming: close the ChildQueue and notify the parent MainQueue
+                // The parent will close itself when all children are closed (childClosing logic)
+                // This ensures proper cleanup and removal from QueueManager map
+                LOGGER.debug("Non-streaming call, closing ChildQueue for task {} (immediate=false, notifyParent=true)", taskId);
 
-            // Always notify parent so MainQueue can clean up when last child closes
-            queue.close(false, true);
+                // Always notify parent so MainQueue can clean up when last child closes
+                queue.close(false, true);
+            }
 
             // For replicated environments, the poison pill is now sent via CDI events
             // When JpaDatabaseTaskStore.save() persists a final task, it fires TaskFinalizedEvent
