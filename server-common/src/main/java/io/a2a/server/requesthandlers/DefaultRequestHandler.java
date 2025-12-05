@@ -105,7 +105,6 @@ public class DefaultRequestHandler implements RequestHandler {
     private final TaskStore taskStore;
     private final QueueManager queueManager;
     private final PushNotificationConfigStore pushConfigStore;
-    private final PushNotificationSender pushSender;
     private final Supplier<RequestContext.Builder> requestContextBuilder;
 
     private final ConcurrentMap<String, CompletableFuture<Void>> runningAgents = new ConcurrentHashMap<>();
@@ -116,12 +115,11 @@ public class DefaultRequestHandler implements RequestHandler {
     @Inject
     public DefaultRequestHandler(AgentExecutor agentExecutor, TaskStore taskStore,
                                  QueueManager queueManager, PushNotificationConfigStore pushConfigStore,
-                                 PushNotificationSender pushSender, @Internal Executor executor) {
+                                 @Internal Executor executor) {
         this.agentExecutor = agentExecutor;
         this.taskStore = taskStore;
         this.queueManager = queueManager;
         this.pushConfigStore = pushConfigStore;
-        this.pushSender = pushSender;
         this.executor = executor;
         // TODO In Python this is also a constructor parameter defaulting to this SimpleRequestContextBuilder
         //  implementation if the parameter is null. Skip that for now, since otherwise I get CDI errors, and
@@ -143,9 +141,9 @@ public class DefaultRequestHandler implements RequestHandler {
      */
     public static DefaultRequestHandler create(AgentExecutor agentExecutor, TaskStore taskStore,
                          QueueManager queueManager, PushNotificationConfigStore pushConfigStore,
-                         PushNotificationSender pushSender, Executor executor) {
+                         Executor executor) {
         DefaultRequestHandler handler =
-                new DefaultRequestHandler(agentExecutor, taskStore, queueManager, pushConfigStore, pushSender, executor);
+                new DefaultRequestHandler(agentExecutor, taskStore, queueManager, pushConfigStore, executor);
         handler.agentCompletionTimeoutSeconds = 5;
         handler.consumptionCompletionTimeoutSeconds = 2;
         return handler;
@@ -280,9 +278,6 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator.EventTypeAndInterrupt etai = null;
         EventKind kind = null;  // Declare outside try block so it's in scope for return
         try {
-            // Create callback for push notifications during background event processing
-            Runnable pushNotificationCallback = () -> sendPushNotification(taskId, resultAggregator);
-
             EventConsumer consumer = new EventConsumer(queue);
 
             // This callback must be added before we start consuming. Otherwise,
@@ -374,9 +369,6 @@ public class DefaultRequestHandler implements RequestHandler {
             if (kind instanceof Task taskResult && !taskId.equals(taskResult.getId())) {
                 throw new InternalError("Task ID mismatch in agent response");
             }
-
-            // Send push notification after initial return (for both blocking and non-blocking)
-            pushNotificationCallback.run();
         } finally {
             // Remove agent from map immediately to prevent accumulation
             CompletableFuture<Void> agentFuture = runningAgents.remove(taskId);
@@ -442,12 +434,7 @@ public class DefaultRequestHandler implements RequestHandler {
                     }
 
                 }
-                if (pushSender != null && taskId.get() != null) {
-                    EventKind latest = resultAggregator.getCurrentResult();
-                    if (latest instanceof Task latestTask) {
-                        pushSender.sendNotification(latestTask);
-                    }
-                }
+                // Push notifications now sent by MainEventBusProcessor after persistence
 
                 return true;
             }));
@@ -818,15 +805,6 @@ public class DefaultRequestHandler implements RequestHandler {
                 .setServerCallContext(context)
                 .build();
         return new MessageSendSetup(taskManager, task, requestContext);
-    }
-
-    private void sendPushNotification(String taskId, ResultAggregator resultAggregator) {
-        if (pushSender != null && taskId != null) {
-            EventKind latest = resultAggregator.getCurrentResult();
-            if (latest instanceof Task latestTask) {
-                pushSender.sendNotification(latestTask);
-            }
-        }
     }
 
     /**

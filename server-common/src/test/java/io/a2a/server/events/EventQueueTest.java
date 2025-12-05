@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
+import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
 import io.a2a.spec.JSONRPCError;
@@ -52,13 +53,14 @@ public class EventQueueTest {
             }
             """;
 
+    private static final PushNotificationSender NOOP_PUSHNOTIFICATION_SENDER = task -> {};
 
     @BeforeEach
     public void init() {
         // Set up MainEventBus and processor for production-like test environment
         InMemoryTaskStore taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore);
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
         EventQueueUtil.start(mainEventBusProcessor);
 
         eventQueue = EventQueue.builder()

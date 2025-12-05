@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 
 import io.a2a.server.tasks.InMemoryTaskStore;
 import io.a2a.server.tasks.MockTaskStateProvider;
+import io.a2a.server.tasks.PushNotificationSender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,13 +28,14 @@ public class InMemoryQueueManagerTest {
     private InMemoryTaskStore taskStore;
     private MainEventBus mainEventBus;
     private MainEventBusProcessor mainEventBusProcessor;
+    private static final PushNotificationSender NOOP_PUSHNOTIFICATION_SENDER = task -> {};
 
     @BeforeEach
     public void setUp() {
         taskStateProvider = new MockTaskStateProvider();
         taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore);
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
         EventQueueUtil.start(mainEventBusProcessor);
 
         queueManager = new InMemoryQueueManager(taskStateProvider, mainEventBus);

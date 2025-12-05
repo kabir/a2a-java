@@ -67,6 +67,8 @@ public class AbstractA2ARequestHandlerTest {
     private static final String PREFERRED_TRANSPORT = "preferred-transport";
     private static final String A2A_REQUESTHANDLER_TEST_PROPERTIES = "/a2a-requesthandler-test.properties";
 
+    private static final PushNotificationSender NOOP_PUSHNOTIFICATION_SENDER = task -> {};
+
     protected AgentExecutor executor;
     protected TaskStore taskStore;
     protected RequestHandler requestHandler;
@@ -100,19 +102,20 @@ public class AbstractA2ARequestHandlerTest {
         InMemoryTaskStore inMemoryTaskStore = new InMemoryTaskStore();
         taskStore = inMemoryTaskStore;
 
-        // Create MainEventBus and MainEventBusProcessor (production code path)
-        mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore);
-        EventQueueUtil.start(mainEventBusProcessor);
-
-        queueManager = new InMemoryQueueManager(inMemoryTaskStore, mainEventBus);
-
+        // Create push notification components BEFORE MainEventBusProcessor
         httpClient = new TestHttpClient();
         PushNotificationConfigStore pushConfigStore = new InMemoryPushNotificationConfigStore();
         PushNotificationSender pushSender = new BasePushNotificationSender(pushConfigStore, httpClient);
 
+        // Create MainEventBus and MainEventBusProcessor (production code path)
+        mainEventBus = new MainEventBus();
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, pushSender);
+        EventQueueUtil.start(mainEventBusProcessor);
+
+        queueManager = new InMemoryQueueManager(inMemoryTaskStore, mainEventBus);
+
         requestHandler = DefaultRequestHandler.create(
-                executor, taskStore, queueManager, pushConfigStore, pushSender, internalExecutor);
+                executor, taskStore, queueManager, pushConfigStore, internalExecutor);
     }
 
     @AfterEach

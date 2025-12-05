@@ -113,6 +113,12 @@ public class InMemoryQueueManager implements QueueManager {
     }
 
     @Override
+    public EventQueue.EventQueueBuilder getEventQueueBuilder(String taskId) {
+        // Use the factory to ensure proper configuration (MainEventBus, callbacks, etc.)
+        return factory.builder(taskId);
+    }
+
+    @Override
     public int getActiveChildQueueCount(String taskId) {
         EventQueue queue = queues.get(taskId);
         if (queue == null || queue.isClosed()) {

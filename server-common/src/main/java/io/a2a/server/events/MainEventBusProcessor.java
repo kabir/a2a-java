@@ -1,5 +1,11 @@
 package io.a2a.server.events;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.TaskManager;
 import io.a2a.server.tasks.TaskStore;
 import io.a2a.spec.A2AServerException;
@@ -7,10 +13,6 @@ import io.a2a.spec.Event;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,18 +35,40 @@ import org.slf4j.LoggerFactory;
 public class MainEventBusProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainEventBusProcessor.class);
 
+    /**
+     * Callback for testing synchronization with async event processing.
+     * Default is NOOP to avoid null checks in production code.
+     * Tests can inject their own callback via setCallback().
+     */
+    private static volatile MainEventBusProcessorCallback callback = MainEventBusProcessorCallback.NOOP;
 
     private final MainEventBus eventBus;
 
     private final TaskStore taskStore;
 
+    private final PushNotificationSender pushSender;
+
     private volatile boolean running = true;
     private Thread processorThread;
 
     @Inject
-    public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore) {
+    public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore, PushNotificationSender pushSender) {
         this.eventBus = eventBus;
         this.taskStore = taskStore;
+        this.pushSender = pushSender;
+    }
+
+    /**
+     * Set a callback for testing synchronization with async event processing.
+     * <p>
+     * This is primarily intended for tests that need to wait for event processing to complete.
+     * Pass null to reset to the default NOOP callback.
+     * </p>
+     *
+     * @param callback the callback to invoke during event processing, or null for NOOP
+     */
+    public static void setCallback(MainEventBusProcessorCallback callback) {
+        MainEventBusProcessor.callback = callback != null ? callback : MainEventBusProcessorCallback.NOOP;
     }
 
     @PostConstruct
@@ -99,7 +123,10 @@ public class MainEventBusProcessor implements Runnable {
         // Step 1: Update TaskStore FIRST (persistence before clients see it)
         updateTaskStore(taskId, event);
 
-        // Step 2: Then distribute to ChildQueues (clients see it AFTER persistence)
+        // Step 2: Send push notification AFTER persistence (ensures notification sees latest state)
+        sendPushNotification(taskId);
+
+        // Step 3: Then distribute to ChildQueues (clients see it AFTER persistence + notification)
         if (eventQueue instanceof EventQueue.MainQueue mainQueue) {
             mainQueue.distributeToChildren(context.eventQueueItem());
             LOGGER.debug("Distributed event to children for task {}", taskId);
@@ -109,6 +136,14 @@ public class MainEventBusProcessor implements Runnable {
         }
 
         LOGGER.debug("Completed processing event for task {}", taskId);
+
+        // Step 4: Notify callback after all processing is complete
+        callback.onEventProcessed(taskId, event);
+
+        // Step 5: If this is a final event, notify task finalization
+        if (isFinalEvent(event)) {
+            callback.onTaskFinalized(taskId);
+        }
     }
 
     /**
@@ -141,6 +176,28 @@ public class MainEventBusProcessor implements Runnable {
     }
 
     /**
+     * Sends push notification for the task AFTER persistence.
+     * <p>
+     * This is called after updateTaskStore() to ensure the notification contains
+     * the latest persisted state, avoiding race conditions.
+     * </p>
+     */
+    private void sendPushNotification(String taskId) {
+        try {
+            Task task = taskStore.get(taskId);
+            if (task != null) {
+                LOGGER.debug("Sending push notification for task {}", taskId);
+                pushSender.sendNotification(task);
+            } else {
+                LOGGER.debug("Skipping push notification - task {} not found in TaskStore", taskId);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error sending push notification for task {}", taskId, e);
+            // Don't rethrow - we still want to distribute to ChildQueues
+        }
+    }
+
+    /**
      * Extracts contextId from an event.
      * Returns null if the event type doesn't have a contextId (e.g., Message).
      */
@@ -154,5 +211,21 @@ public class MainEventBusProcessor implements Runnable {
         }
         // Message and other events don't have contextId
         return null;
+    }
+
+    /**
+     * Checks if an event represents a final task state.
+     *
+     * @param event the event to check
+     * @return true if the event represents a final state (COMPLETED, FAILED, CANCELED, REJECTED, UNKNOWN)
+     */
+    private boolean isFinalEvent(Event event) {
+        if (event instanceof Task task) {
+            return task.getStatus() != null && task.getStatus().state() != null
+                    && task.getStatus().state().isFinal();
+        } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
+            return statusUpdate.isFinal();
+        }
+        return false;
     }
 }

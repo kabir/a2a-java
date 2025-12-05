@@ -25,6 +25,7 @@ import io.a2a.server.events.MainEventBus;
 import io.a2a.server.events.MainEventBusProcessor;
 import io.a2a.server.tasks.InMemoryPushNotificationConfigStore;
 import io.a2a.server.tasks.InMemoryTaskStore;
+import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.TaskUpdater;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.Message;
@@ -57,13 +58,15 @@ public class DefaultRequestHandlerTest {
     private MainEventBus mainEventBus;
     private MainEventBusProcessor mainEventBusProcessor;
 
+    private static final PushNotificationSender NOOP_PUSHNOTIFICATION_SENDER = task -> {};
+
     @BeforeEach
     void setUp() {
         taskStore = new InMemoryTaskStore();
 
         // Create MainEventBus and MainEventBusProcessor (production code path)
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore);
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
         EventQueueUtil.start(mainEventBusProcessor);
 
         // Pass taskStore as TaskStateProvider to queueManager for task-aware queue management
@@ -76,7 +79,6 @@ public class DefaultRequestHandlerTest {
             taskStore,
             queueManager,
             null, // pushConfigStore
-            null, // pushSender
             Executors.newCachedThreadPool()
         );
 
@@ -844,7 +846,6 @@ public class DefaultRequestHandlerTest {
             taskStore,
             queueManager,
             pushConfigStore, // Add push config store
-            null, // pushSender
             Executors.newCachedThreadPool()
         );
 
@@ -914,7 +915,6 @@ public class DefaultRequestHandlerTest {
             taskStore,
             queueManager,
             pushConfigStore, // Add push config store
-            null, // pushSender
             Executors.newCachedThreadPool()
         );
 
