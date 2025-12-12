@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
  * @param acceptedOutputModes list of output modes the client can handle (e.g., "text", "audio")
  * @param historyLength number of previous messages to include in conversation context (must be non-negative)
  * @param pushNotificationConfig configuration for asynchronous push notifications when task state changes
- * @param blocking whether the request should block until task completion (defaults to true)
+ * @param blocking whether the request should block until task completion (defaults to false)
  * @see MessageSendParams for the parameters that use this configuration
  * @see PushNotificationConfig for push notification options
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
@@ -40,7 +40,7 @@ public record MessageSendConfiguration(List<String> acceptedOutputModes, Integer
         List<String> acceptedOutputModes;
         Integer historyLength;
         PushNotificationConfig pushNotificationConfig;
-        Boolean blocking = true;
+        Boolean blocking = false;
 
         /**
          * Sets the accepted output modes.

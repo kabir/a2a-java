@@ -516,9 +516,8 @@ public class DefaultRequestHandlerTest {
             .contextId(contextId)
             .build();
 
-        // Set blocking=false for non-blocking behavior
+        // Use default non-blocking behavior
         MessageSendConfiguration config = new MessageSendConfiguration.Builder()
-                .blocking(false)
                 .build();
 
         MessageSendParams params = new MessageSendParams(message, config, null);
@@ -880,7 +879,7 @@ public class DefaultRequestHandlerTest {
      */
     @Test
     @Timeout(10)
-    void testMessageStoresPushNotificationConfigForExistingTask() throws Exception {
+    void testBlockingMessageStoresPushNotificationConfigForExistingTask() throws Exception {
         String taskId = "push-config-existing-task";
         String contextId = "push-config-existing-ctx";
 

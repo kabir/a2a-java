@@ -3,6 +3,7 @@ package io.a2a.grpc.utils;
 import static io.a2a.grpc.Role.ROLE_AGENT;
 import static io.a2a.grpc.Role.ROLE_USER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.a2a.grpc.SendMessageConfiguration;
@@ -269,10 +270,9 @@ public class ToProtoTest {
     public void convertSendMessageConfiguration() {
         MessageSendConfiguration configuration = new MessageSendConfiguration.Builder()
                 .acceptedOutputModes(List.of("text"))
-                .blocking(false)
                 .build();
         SendMessageConfiguration result = ProtoUtils.ToProto.messageSendConfiguration(configuration);
-        assertEquals(false, result.getBlocking());
+        assertFalse(result.getBlocking());
         assertEquals(1, result.getAcceptedOutputModesCount());
         assertEquals("text", result.getAcceptedOutputModesBytes(0).toStringUtf8());
     }
