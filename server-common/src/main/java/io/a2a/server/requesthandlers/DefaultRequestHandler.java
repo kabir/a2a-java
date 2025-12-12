@@ -269,9 +269,9 @@ public class DefaultRequestHandler implements RequestHandler {
         EventQueue queue = queueManager.createOrTap(taskId);
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor);
 
-        boolean blocking = true; // Default to blocking behavior
-        if (params.configuration() != null && Boolean.FALSE.equals(params.configuration().blocking())) {
-            blocking = false;
+        boolean blocking = false; // Default to non-blocking behavior
+        if (params.configuration() != null && Boolean.TRUE.equals(params.configuration().blocking())) {
+            blocking = true;
         }
 
         boolean interruptedOrNonBlocking = false;
