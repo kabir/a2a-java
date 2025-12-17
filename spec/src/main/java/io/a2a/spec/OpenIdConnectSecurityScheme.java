@@ -30,15 +30,31 @@ import static io.a2a.spec.OpenIdConnectSecurityScheme.OPENID_CONNECT;
  */
 public final class OpenIdConnectSecurityScheme implements SecurityScheme {
 
+    /**
+     * The type identifier for OpenID Connect security schemes: "openIdConnect".
+     */
     public static final String OPENID_CONNECT = "openIdConnect";
     private final String openIdConnectUrl;
     private final String description;
     private final String type;
 
+    /**
+     * Constructs an OpenID Connect security scheme.
+     *
+     * @param openIdConnectUrl URL to the OpenID Connect Discovery document (required)
+     * @param description optional description of the security scheme
+     */
     public OpenIdConnectSecurityScheme(String openIdConnectUrl, String description) {
         this(openIdConnectUrl, description, OPENID_CONNECT);
     }
 
+    /**
+     * Constructs an OpenID Connect security scheme with explicit type.
+     *
+     * @param openIdConnectUrl URL to the OpenID Connect Discovery document (required)
+     * @param description optional description of the security scheme
+     * @param type the security scheme type (must be "openIdConnect")
+     */
     public OpenIdConnectSecurityScheme(String openIdConnectUrl, String description, String type) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("openIdConnectUrl", openIdConnectUrl);
@@ -50,15 +66,30 @@ public final class OpenIdConnectSecurityScheme implements SecurityScheme {
         this.type = type;
     }
 
+    /**
+     * Gets the Description.
+     *
+     * @return the Description
+     */
     @Override
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Gets the OpenIdConnectUrl.
+     *
+     * @return the OpenIdConnectUrl
+     */
     public String getOpenIdConnectUrl() {
         return openIdConnectUrl;
     }
 
+    /**
+     * Gets the Type.
+     *
+     * @return the Type
+     */
     public String getType() {
         return type;
     }

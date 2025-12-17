@@ -92,18 +92,6 @@ public final class DeleteTaskPushNotificationConfigRequest extends NonStreamingJ
         }
 
         /**
-         * Sets the JSON-RPC method name.
-         *
-         * @param method the method name (should be "DeleteTaskPushNotificationConfig")
-         * @return this builder for method chaining
-
-         * @deprecated
-         */
-        public Builder method(String method) {
-            return this;
-        }
-
-        /**
          * Sets the request parameters.
          *
          * @param params the request parameters containing task and config IDs (required)

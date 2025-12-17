@@ -7,12 +7,26 @@ import java.util.UUID;
  */
 public final class ListTasksRequest extends NonStreamingJSONRPCRequest<ListTasksParams> {
 
-    public static final String METHOD = "ListTask";
+    /** The JSON-RPC method name. */
+    public static final String METHOD = "ListTasks";
 
+    /**
+     * Constructs request with all parameters.
+     *
+     * @param jsonrpc the JSON-RPC version
+     * @param id the request ID
+     * @param params the request parameters
+     */
     public ListTasksRequest(String jsonrpc, Object id, ListTasksParams params) {
         super(jsonrpc, METHOD, id, params);
     }
 
+    /**
+     * Constructs request with ID and parameters.
+     *
+     * @param id the request ID
+     * @param params the request parameters
+     */
     public ListTasksRequest(Object id, ListTasksParams params) {
         this(JSONRPC_VERSION, id, params);
     }
@@ -26,6 +40,9 @@ public final class ListTasksRequest extends NonStreamingJSONRPCRequest<ListTasks
         return new Builder();
     }
 
+    /**
+     * Builder for constructing instances.
+     */
     public static class Builder {
         private String jsonrpc;
         private Object id;
@@ -37,28 +54,44 @@ public final class ListTasksRequest extends NonStreamingJSONRPCRequest<ListTasks
         private Builder() {
         }
 
+        /**
+         * Sets the jsonrpc.
+         *
+         * @param jsonrpc the jsonrpc
+         * @return this builder for method chaining
+         */
         public Builder jsonrpc(String jsonrpc) {
             this.jsonrpc = jsonrpc;
             return this;
         }
 
+        /**
+         * Sets the id.
+         *
+         * @param id the id
+         * @return this builder for method chaining
+         */
         public Builder id(Object id) {
             this.id = id;
             return this;
         }
 
         /**
-         * @deprecated
+         * Sets the params.
+         *
+         * @param params the params
+         * @return this builder for method chaining
          */
-        public Builder method(String method) {
-            return this;
-        }
-
         public Builder params(ListTasksParams params) {
             this.params = params;
             return this;
         }
 
+        /**
+         * Builds the instance.
+         *
+         * @return a new instance
+         */
         public ListTasksRequest build() {
             if (id == null) {
                 id = UUID.randomUUID().toString();

@@ -26,11 +26,27 @@ import io.a2a.util.Assert;
 public record MessageSendParams(Message message, MessageSendConfiguration configuration,
                                 Map<String, Object> metadata, String tenant) {
 
+    /**
+     * Compact constructor for validation.
+     * Validates that required parameters are not null.
+     *
+     * @param message the message to send
+     * @param configuration optional message send configuration
+     * @param metadata optional metadata
+     * @param tenant the tenant identifier
+     */
     public MessageSendParams {
         Assert.checkNotNullParam("message", message);
         Assert.checkNotNullParam("tenant", tenant);
     }
 
+    /**
+     * Convenience constructor with default tenant.
+     *
+     * @param message the message to send (required)
+     * @param configuration optional configuration for message processing
+     * @param metadata optional metadata
+     */
      public MessageSendParams(Message message, MessageSendConfiguration configuration, Map<String, Object> metadata) {
         this(message, configuration, metadata, "");
     }

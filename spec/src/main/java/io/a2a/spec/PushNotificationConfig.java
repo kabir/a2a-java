@@ -27,6 +27,15 @@ import io.a2a.util.Assert;
  */
 public record PushNotificationConfig(String url, String token, AuthenticationInfo authentication, String id) {
 
+    /**
+     * Compact constructor for validation.
+     * Validates that the URL is not null.
+     *
+     * @param url the notification endpoint URL
+     * @param token optional bearer token
+     * @param authentication optional authentication info
+     * @param id optional configuration identifier
+     */
     public PushNotificationConfig {
         Assert.checkNotNullParam("url", url);
     }

@@ -79,6 +79,7 @@ public final class CancelTaskRequest extends NonStreamingJSONRPCRequest<TaskIdPa
          * @param jsonrpc the JSON-RPC version (optional, defaults to "2.0")
          * @return this builder for method chaining
          */
+
         public CancelTaskRequest.Builder jsonrpc(String jsonrpc) {
             this.jsonrpc = jsonrpc;
             return this;
@@ -96,22 +97,12 @@ public final class CancelTaskRequest extends NonStreamingJSONRPCRequest<TaskIdPa
         }
 
         /**
-         * Sets the JSON-RPC method name.
-         *
-         * @param method the method name (should be "CancelTask")
-         * @return this builder for method chaining
-         * @deprecated
-         */
-        public CancelTaskRequest.Builder method(String method) {
-            return this;
-        }
-
-        /**
          * Sets the request parameters containing the task ID to cancel.
          *
          * @param params the request parameters (required)
          * @return this builder for method chaining
          */
+
         public CancelTaskRequest.Builder params(TaskIdParams params) {
             this.params = params;
             return this;

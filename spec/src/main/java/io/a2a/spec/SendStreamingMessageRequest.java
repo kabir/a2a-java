@@ -21,12 +21,26 @@ import java.util.UUID;
  */
 public final class SendStreamingMessageRequest extends StreamingJSONRPCRequest<MessageSendParams> {
 
+    /** The JSON-RPC method name. */
     public static final String METHOD = "SendStreamingMessage";
 
+    /**
+     * Constructs request with all parameters.
+     *
+     * @param jsonrpc the JSON-RPC version
+     * @param id the request ID
+     * @param params the request parameters
+     */
     public SendStreamingMessageRequest(String jsonrpc, Object id, MessageSendParams params) {
         super(jsonrpc, METHOD, id, params);
     }
 
+    /**
+     * Constructs request with ID and parameters.
+     *
+     * @param id the request ID
+     * @param params the request parameters
+     */
     public SendStreamingMessageRequest(Object id,  MessageSendParams params) {
         this(null, id, params);
     }
@@ -76,17 +90,6 @@ public final class SendStreamingMessageRequest extends StreamingJSONRPCRequest<M
              */
             public Builder id(Object id) {
                 this.id = id;
-                return this;
-            }
-
-            /**
-             * Sets the JSON-RPC method name.
-             *
-             * @param method the method name (defaults to "SendStreamingMessage")
-             * @return this builder
-             * @deprecated
-             */
-            public Builder method(String method) {
                 return this;
             }
 
