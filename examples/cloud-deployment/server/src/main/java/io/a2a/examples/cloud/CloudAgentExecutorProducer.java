@@ -5,7 +5,7 @@ import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.tasks.TaskUpdater;
 import io.a2a.spec.InternalError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Part;
 import io.a2a.spec.TextPart;
@@ -45,7 +45,7 @@ public class CloudAgentExecutorProducer {
     private static class CloudAgentExecutor implements AgentExecutor {
 
         @Override
-        public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+        public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
             TaskUpdater updater = new TaskUpdater(context, eventQueue);
 
             try {
@@ -98,7 +98,7 @@ public class CloudAgentExecutorProducer {
                     LOGGER.info("Artifact added on pod: {}", podName);
                 }
 
-            } catch (JSONRPCError e) {
+            } catch (A2AError e) {
                 LOGGER.error("JSONRPC error processing task", e);
                 throw e;
             } catch (Exception e) {
@@ -108,7 +108,7 @@ public class CloudAgentExecutorProducer {
         }
 
         @Override
-        public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+        public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
             LOGGER.info("Task cancellation requested");
             TaskUpdater updater = new TaskUpdater(context, eventQueue);
             updater.cancel();

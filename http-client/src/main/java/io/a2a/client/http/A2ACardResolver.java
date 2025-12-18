@@ -8,11 +8,11 @@ import java.util.Map;
 
 import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import io.a2a.spec.A2AClientError;
 import io.a2a.spec.A2AClientJSONError;
 import io.a2a.spec.AgentCard;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import org.jspecify.annotations.Nullable;
 
 import static io.a2a.util.Assert.checkNotNullParam;
@@ -135,9 +135,9 @@ public class A2ACardResolver {
 
         try {
             io.a2a.grpc.AgentCard.Builder agentCardBuilder = io.a2a.grpc.AgentCard.newBuilder();
-            JSONRPCUtils.parseJsonString(body, agentCardBuilder, null);
+            JSONRPCUtils.parseJsonString(body, agentCardBuilder, "");
             return ProtoUtils.FromProto.agentCard(agentCardBuilder);
-        } catch (JSONRPCError | JsonProcessingException e) {
+        } catch (A2AError | JsonProcessingException e) {
             throw new A2AClientJSONError("Could not unmarshal agent card response", e);
         }
     }

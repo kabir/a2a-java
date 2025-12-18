@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import io.a2a.json.JsonProcessingException;
 import com.google.protobuf.MessageOrBuilder;
 import io.a2a.client.http.A2ACardResolver;
 import io.a2a.client.http.A2AHttpClient;
@@ -22,42 +21,43 @@ import io.a2a.client.transport.spi.interceptors.ClientCallInterceptor;
 import io.a2a.client.transport.spi.interceptors.PayloadAndHeaders;
 import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
+import io.a2a.internal.json.JsonProcessingException;
+import io.a2a.internal.wrappers.A2AMessage;
+import io.a2a.internal.wrappers.A2AResponse;
+import io.a2a.internal.wrappers.CancelTaskRequest;
+import io.a2a.internal.wrappers.CancelTaskResponse;
+import io.a2a.internal.wrappers.DeleteTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.DeleteTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.GetAuthenticatedExtendedCardRequest;
+import io.a2a.internal.wrappers.GetAuthenticatedExtendedCardResponse;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.GetTaskRequest;
+import io.a2a.internal.wrappers.GetTaskResponse;
+import io.a2a.internal.wrappers.ListTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.ListTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.ListTasksRequest;
+import io.a2a.internal.wrappers.ListTasksResponse;
+import io.a2a.internal.wrappers.ListTasksResult;
+import io.a2a.internal.wrappers.SendMessageRequest;
+import io.a2a.internal.wrappers.SendMessageResponse;
+import io.a2a.internal.wrappers.SendStreamingMessageRequest;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.SubscribeToTaskRequest;
 import io.a2a.spec.A2AClientError;
 import io.a2a.spec.A2AClientException;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
-import io.a2a.spec.CancelTaskRequest;
-import io.a2a.spec.CancelTaskResponse;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
-import io.a2a.spec.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.spec.DeleteTaskPushNotificationConfigResponse;
 import io.a2a.spec.EventKind;
-import io.a2a.spec.GetAuthenticatedExtendedCardRequest;
-import io.a2a.spec.GetAuthenticatedExtendedCardResponse;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskPushNotificationConfigResponse;
-import io.a2a.spec.GetTaskRequest;
-import io.a2a.spec.GetTaskResponse;
-import io.a2a.spec.JSONRPCError;
-import io.a2a.spec.JSONRPCMessage;
-import io.a2a.spec.JSONRPCResponse;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
-import io.a2a.spec.ListTaskPushNotificationConfigRequest;
-import io.a2a.spec.ListTaskPushNotificationConfigResponse;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksRequest;
-import io.a2a.spec.ListTasksResponse;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.MessageSendParams;
-import io.a2a.spec.SendMessageRequest;
-import io.a2a.spec.SendMessageResponse;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigResponse;
 import io.a2a.spec.StreamingEventKind;
-import io.a2a.spec.SubscribeToTaskRequest;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskIdParams;
 import io.a2a.spec.TaskPushNotificationConfig;
@@ -304,7 +304,7 @@ public class JSONRPCTransport implements ClientTransport {
             }
 
             GetAuthenticatedExtendedCardRequest getExtendedAgentCardRequest = GetAuthenticatedExtendedCardRequest.builder()
-                    .jsonrpc(JSONRPCMessage.JSONRPC_VERSION)
+                    .jsonrpc(A2AMessage.JSONRPC_VERSION)
                     .build(); // id will be randomly generated
 
             PayloadAndHeaders payloadAndHeaders = applyInterceptors(GetAuthenticatedExtendedCardRequest.METHOD,
@@ -381,10 +381,10 @@ public class JSONRPCTransport implements ClientTransport {
      * @throws JsonProcessingException if the JSON cannot be processed
      */
     @SuppressWarnings("unchecked")
-    private <T extends JSONRPCResponse<?>> T unmarshalResponse(String response, String method)
+    private <T extends A2AResponse<?>> T unmarshalResponse(String response, String method)
             throws A2AClientException, JsonProcessingException {
-        JSONRPCResponse<?> value = JSONRPCUtils.parseResponseBody(response, method);
-        JSONRPCError error = value.getError();
+        A2AResponse<?> value = JSONRPCUtils.parseResponseBody(response, method);
+        A2AError error = value.getError();
         if (error != null) {
             throw new A2AClientException(error.getMessage() + (error.getData() != null ? ": " + error.getData() : ""), error);
         }

@@ -16,7 +16,7 @@ import io.a2a.client.MessageEvent;
 import io.a2a.client.http.A2ACardResolver;
 import io.a2a.client.transport.jsonrpc.JSONRPCTransport;
 import io.a2a.client.transport.jsonrpc.JSONRPCTransportConfig;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.Message;
 import io.a2a.spec.Part;

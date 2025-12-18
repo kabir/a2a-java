@@ -40,8 +40,9 @@ import io.a2a.client.TaskUpdateEvent;
 import io.a2a.client.config.ClientConfig;
 import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
-import io.a2a.json.JsonProcessingException;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.wrappers.ListTasksResult;
+import io.a2a.internal.json.JsonProcessingException;
+import io.a2a.internal.json.JsonUtil;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AgentCapabilities;
 import io.a2a.spec.AgentCard;
@@ -53,7 +54,7 @@ import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCErrorResponse;
+import io.a2a.internal.wrappers.A2AErrorResponse;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
@@ -62,9 +63,9 @@ import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.Part;
 import io.a2a.spec.PushNotificationConfig;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SendStreamingMessageResponse;
-import io.a2a.spec.StreamingJSONRPCRequest;
+import io.a2a.internal.wrappers.SendStreamingMessageRequest;
+import io.a2a.internal.wrappers.SendStreamingMessageResponse;
+import io.a2a.internal.wrappers.StreamingJSONRPCRequest;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskIdParams;
@@ -269,7 +270,7 @@ public abstract class AbstractA2AServerTest {
         try {
             // Test listing all tasks (no filters)
             io.a2a.spec.ListTasksParams params = ListTasksParams.builder().tenant("").build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertNotNull(result.tasks());
@@ -311,7 +312,7 @@ public abstract class AbstractA2AServerTest {
                     .contextId("context-filter-1")
                     .tenant("")
                     .build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertNotNull(result.tasks());
@@ -352,7 +353,7 @@ public abstract class AbstractA2AServerTest {
                     .status(TaskState.WORKING)
                     .tenant("")
                     .build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertNotNull(result.tasks());
@@ -397,7 +398,7 @@ public abstract class AbstractA2AServerTest {
                     .tenant("")
                     .pageSize(2)
                     .build();
-            io.a2a.spec.ListTasksResult result1 = getClient().listTasks(params1);
+            ListTasksResult result1 = getClient().listTasks(params1);
 
             assertNotNull(result1);
             assertEquals(2, result1.tasks().size(), "First page should have 2 tasks");
@@ -411,7 +412,7 @@ public abstract class AbstractA2AServerTest {
                     .pageSize(2)
                     .pageToken(result1.nextPageToken())
                     .build();
-            io.a2a.spec.ListTasksResult result2 = getClient().listTasks(params2);
+            ListTasksResult result2 = getClient().listTasks(params2);
 
             assertNotNull(result2);
             assertTrue(result2.tasks().size() >= 1, "Second page should have at least 1 task");
@@ -447,7 +448,7 @@ public abstract class AbstractA2AServerTest {
                     .tenant("")
                     .historyLength(2)
                     .build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertEquals(1, result.tasks().size());
@@ -1419,7 +1420,7 @@ public abstract class AbstractA2AServerTest {
 
         // missing closing bracket
         String malformedRequest = "{\"jsonrpc\": \"2.0\", \"method\": \"message/send\", \"params\": {\"foo\": \"bar\"}";
-        JSONRPCErrorResponse response = given()
+        A2AErrorResponse response = given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(malformedRequest)
                 .when()
@@ -1427,7 +1428,7 @@ public abstract class AbstractA2AServerTest {
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(JSONRPCErrorResponse.class);
+                .as(A2AErrorResponse.class);
         assertNotNull(response.getError());
         assertEquals(new JSONParseError().getCode(), response.getError().getCode());
     }
@@ -1450,7 +1451,7 @@ public abstract class AbstractA2AServerTest {
     }
 
     private void testInvalidParams(String invalidParamsRequest) {
-        JSONRPCErrorResponse response = given()
+        A2AErrorResponse response = given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(invalidParamsRequest)
                 .when()
@@ -1458,7 +1459,7 @@ public abstract class AbstractA2AServerTest {
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(JSONRPCErrorResponse.class);
+                .as(A2AErrorResponse.class);
         assertNotNull(response.getError());
         assertEquals(new InvalidParamsError().getCode(), response.getError().getCode());
         assertEquals("1", response.getId().toString());
@@ -1476,7 +1477,7 @@ public abstract class AbstractA2AServerTest {
              "params": {}
             }
             """;
-        JSONRPCErrorResponse response = given()
+        A2AErrorResponse response = given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(invalidRequest)
                 .when()
@@ -1484,7 +1485,7 @@ public abstract class AbstractA2AServerTest {
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(JSONRPCErrorResponse.class);
+                .as(A2AErrorResponse.class);
         assertNotNull(response.getError());
         assertEquals(new InvalidRequestError().getCode(), response.getError().getCode());
     }
@@ -1498,7 +1499,7 @@ public abstract class AbstractA2AServerTest {
         String invalidRequest = """
             {"jsonrpc": "2.0", "params": {}}
             """;
-        JSONRPCErrorResponse response = given()
+        A2AErrorResponse response = given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(invalidRequest)
                 .when()
@@ -1506,7 +1507,7 @@ public abstract class AbstractA2AServerTest {
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(JSONRPCErrorResponse.class);
+                .as(A2AErrorResponse.class);
         assertNotNull(response.getError());
         assertEquals(new InvalidRequestError().getCode(), response.getError().getCode());
     }
@@ -1520,7 +1521,7 @@ public abstract class AbstractA2AServerTest {
         String invalidRequest = """
             {"jsonrpc": "2.0", "method": "SendMessage", "params": {}, "id": {"bad": "type"}}
             """;
-        JSONRPCErrorResponse response = given()
+        A2AErrorResponse response = given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(invalidRequest)
                 .when()
@@ -1528,7 +1529,7 @@ public abstract class AbstractA2AServerTest {
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(JSONRPCErrorResponse.class);
+                .as(A2AErrorResponse.class);
         assertNotNull(response.getError());
         assertEquals(new InvalidRequestError().getCode(), response.getError().getCode());
     }
@@ -1542,7 +1543,7 @@ public abstract class AbstractA2AServerTest {
         String invalidRequest = """
             {"jsonrpc": "2.0", "id":"5", "method" : "nonexistent/method", "params": {}}
             """;
-        JSONRPCErrorResponse response = given()
+        A2AErrorResponse response = given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(invalidRequest)
                 .when()
@@ -1550,7 +1551,7 @@ public abstract class AbstractA2AServerTest {
                 .then()
                 .statusCode(200)
                 .extract()
-                .as(JSONRPCErrorResponse.class);
+                .as(A2AErrorResponse.class);
         assertNotNull(response.getError());
         assertEquals(new MethodNotFoundError().getCode(), response.getError().getCode());
     }

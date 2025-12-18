@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 
 import io.a2a.server.events.EventQueueItem;
 import io.a2a.spec.Event;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.StreamingEventKind;
 
 public class ReplicatedEventQueueItem implements EventQueueItem {
@@ -17,7 +17,7 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
     private StreamingEventKind event;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private JSONRPCError error;
+    private A2AError error;
 
     private boolean closedEvent;
 
@@ -32,8 +32,8 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
         this.error = null;
     }
 
-    // Constructor for creating from A2A JSONRPCError objects
-    public ReplicatedEventQueueItem(String taskId, JSONRPCError error) {
+    // Constructor for creating from A2A A2AError objects
+    public ReplicatedEventQueueItem(String taskId, A2AError error) {
         this.taskId = taskId;
         this.event = null;
         this.error = error;
@@ -50,12 +50,12 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
             this.event = streamingEvent;
             this.error = null;
             this.closedEvent = false;
-        } else if (event instanceof JSONRPCError jsonRpcError) {
+        } else if (event instanceof A2AError jsonRpcError) {
             this.event = null;
             this.error = jsonRpcError;
             this.closedEvent = false;
         } else {
-            throw new IllegalArgumentException("Event must be StreamingEventKind, JSONRPCError, or QueueClosedEvent, got: " + event.getClass());
+            throw new IllegalArgumentException("Event must be StreamingEventKind, A2AError, or QueueClosedEvent, got: " + event.getClass());
         }
     }
 
@@ -85,17 +85,17 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
     }
 
     /**
-     * Get the JSONRPCError field (for JSON serialization).
-     * @return the JSONRPCError or null
+     * Get the A2AError field (for JSON serialization).
+     * @return the A2AError or null
      */
     @JsonGetter("error")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public JSONRPCError getErrorObject() {
+    public A2AError getErrorObject() {
         return error;
     }
 
     @JsonSetter("error")
-    public void setError(JSONRPCError error) {
+    public void setError(A2AError error) {
         this.error = error;
         this.event = null; // Clear event when setting error
     }
@@ -103,7 +103,7 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
     /**
      * Get the contained event as the generic Event interface (implements EventQueueItem).
      * This is the method required by the EventQueueItem interface.
-     * @return the event (StreamingEventKind, JSONRPCError, or QueueClosedEvent) or null if none is set
+     * @return the event (StreamingEventKind, A2AError, or QueueClosedEvent) or null if none is set
      */
     @JsonIgnore
     @Override
@@ -137,7 +137,7 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
 
     /**
      * Check if this ReplicatedEvent contains an error.
-     * @return true if it contains a JSONRPCError
+     * @return true if it contains a A2AError
      */
     public boolean hasError() {
         return error != null;

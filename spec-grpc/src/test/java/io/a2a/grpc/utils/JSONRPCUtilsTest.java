@@ -6,18 +6,18 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import com.google.gson.JsonSyntaxException;
-import io.a2a.json.JsonMappingException;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskPushNotificationConfigResponse;
+import io.a2a.internal.json.JsonMappingException;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.InvalidParamsJsonMappingException;
+import io.a2a.internal.json.InvalidParamsJsonMappingException;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCRequest;
+import io.a2a.internal.wrappers.A2ARequest;
 import io.a2a.spec.PushNotificationConfig;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigResponse;
 import io.a2a.spec.TaskPushNotificationConfig;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +47,7 @@ public class JSONRPCUtilsTest {
             }
             """;
 
-        JSONRPCRequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
+        A2ARequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
 
         assertNotNull(request);
         assertInstanceOf(SetTaskPushNotificationConfigRequest.class, request);
@@ -76,7 +76,7 @@ public class JSONRPCUtilsTest {
             }
             """;
 
-        JSONRPCRequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
+        A2ARequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
 
         assertNotNull(request);
         assertInstanceOf(GetTaskPushNotificationConfigRequest.class, request);

@@ -24,7 +24,7 @@ import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.transport.grpc.handler.GrpcHandler;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 
 @Path("/test")
 @ApplicationScoped

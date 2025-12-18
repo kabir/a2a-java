@@ -27,11 +27,9 @@ import static io.a2a.util.Utils.defaultIfNull;
  * throw new InvalidRequestError("Missing 'method' field in request");
  * }</pre>
  *
- * @see JSONRPCError for the base error class
- * @see A2AError for the error marker interface
  * @see <a href="https://www.jsonrpc.org/specification#error_object">JSON-RPC 2.0 Error Codes</a>
  */
-public class InvalidRequestError extends JSONRPCError {
+public class InvalidRequestError extends A2AError {
 
     /**
      * Constructs an invalid request error with default message.

@@ -14,7 +14,6 @@ import org.jspecify.annotations.Nullable;
  * @param id the task identifier (required)
  * @param pushNotificationConfigId optional specific configuration ID to retrieve
  * @param tenant optional tenant, provided as a path parameter.
- * @see GetTaskPushNotificationConfigRequest for the request using these parameters
  * @see TaskPushNotificationConfig for the returned configuration structure
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */

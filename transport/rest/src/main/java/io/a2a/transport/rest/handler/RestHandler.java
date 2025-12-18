@@ -3,26 +3,34 @@ package io.a2a.transport.rest.handler;
 import static io.a2a.server.util.async.AsyncUtils.createTubeConfig;
 import static io.a2a.spec.A2AErrorCodes.JSON_PARSE_ERROR_CODE;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Flow;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.a2a.grpc.utils.ProtoUtils;
+import io.a2a.internal.json.JsonUtil;
+import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.server.AgentCardValidator;
 import io.a2a.server.ExtendedAgentCard;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Flow;
-
 import io.a2a.server.PublicAgentCard;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.requesthandlers.RequestHandler;
+import io.a2a.server.util.async.Internal;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;
 import io.a2a.spec.ContentTypeNotSupportedError;
@@ -34,11 +42,9 @@ import io.a2a.spec.InvalidAgentResponseError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.PushNotificationNotSupportedError;
 import io.a2a.spec.StreamingEventKind;
@@ -50,13 +56,6 @@ import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskQueryParams;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.server.util.async.Internal;
-import io.a2a.json.JsonUtil;
-import jakarta.enterprise.inject.Instance;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import mutiny.zero.ZeroPublisher;
 import org.jspecify.annotations.Nullable;
 
@@ -100,7 +99,7 @@ public class RestHandler {
             request.setTenant(tenant);
             EventKind result = requestHandler.onMessageSend(ProtoUtils.FromProto.messageSendParams(request), context);
             return createSuccessResponse(200, io.a2a.grpc.SendMessageResponse.newBuilder(ProtoUtils.ToProto.taskOrMessage(result)));
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
@@ -117,7 +116,7 @@ public class RestHandler {
             request.setTenant(tenant);
             Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(ProtoUtils.FromProto.messageSendParams(request), context);
             return createStreamingResponse(publisher);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new HTTPRestStreamingResponse(ZeroPublisher.fromItems(new HTTPRestErrorResponse(e).toJson()));
         } catch (Throwable throwable) {
             return new HTTPRestStreamingResponse(ZeroPublisher.fromItems(new HTTPRestErrorResponse(new InternalError(throwable.getMessage())).toJson()));
@@ -135,7 +134,7 @@ public class RestHandler {
                 return createSuccessResponse(200, io.a2a.grpc.Task.newBuilder(ProtoUtils.ToProto.task(task)));
             }
             throw new UnsupportedOperationError();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
@@ -152,7 +151,7 @@ public class RestHandler {
             builder.setTenant(tenant);
             TaskPushNotificationConfig result = requestHandler.onSetTaskPushNotificationConfig(ProtoUtils.FromProto.setTaskPushNotificationConfig(builder), context);
             return createSuccessResponse(201, io.a2a.grpc.TaskPushNotificationConfig.newBuilder(ProtoUtils.ToProto.taskPushNotificationConfig(result)));
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
@@ -167,7 +166,7 @@ public class RestHandler {
             TaskIdParams params = new TaskIdParams(taskId, tenant);
             Flow.Publisher<StreamingEventKind> publisher = requestHandler.onResubscribeToTask(params, context);
             return createStreamingResponse(publisher);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new HTTPRestStreamingResponse(ZeroPublisher.fromItems(new HTTPRestErrorResponse(e).toJson()));
         } catch (Throwable throwable) {
             return new HTTPRestStreamingResponse(ZeroPublisher.fromItems(new HTTPRestErrorResponse(new InternalError(throwable.getMessage())).toJson()));
@@ -182,7 +181,7 @@ public class RestHandler {
                 return createSuccessResponse(200, io.a2a.grpc.Task.newBuilder(ProtoUtils.ToProto.task(task)));
             }
             throw new TaskNotFoundError();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
@@ -230,7 +229,7 @@ public class RestHandler {
 
             ListTasksResult result = requestHandler.onListTasks(params, context);
             return createSuccessResponse(200, io.a2a.grpc.ListTasksResponse.newBuilder(ProtoUtils.ToProto.listTasksResult(result)));
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
@@ -245,7 +244,7 @@ public class RestHandler {
             GetTaskPushNotificationConfigParams params = new GetTaskPushNotificationConfigParams(taskId, configId, tenant);
             TaskPushNotificationConfig config = requestHandler.onGetTaskPushNotificationConfig(params, context);
             return createSuccessResponse(200, io.a2a.grpc.TaskPushNotificationConfig.newBuilder(ProtoUtils.ToProto.taskPushNotificationConfig(config)));
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
@@ -260,7 +259,7 @@ public class RestHandler {
             ListTaskPushNotificationConfigParams params = new ListTaskPushNotificationConfigParams(taskId, pageSize, pageToken, tenant);
             ListTaskPushNotificationConfigResult result = requestHandler.onListTaskPushNotificationConfig(params, context);
             return createSuccessResponse(200, io.a2a.grpc.ListTaskPushNotificationConfigResponse.newBuilder(ProtoUtils.ToProto.listTaskPushNotificationConfigResponse(result)));
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
@@ -275,14 +274,14 @@ public class RestHandler {
             DeleteTaskPushNotificationConfigParams params = new DeleteTaskPushNotificationConfigParams(taskId, configId, tenant);
             requestHandler.onDeleteTaskPushNotificationConfig(params, context);
             return new HTTPRestResponse(204, "application/json", "");
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable throwable) {
             return createErrorResponse(new InternalError(throwable.getMessage()));
         }
     }
 
-    private void parseRequestBody(String body, com.google.protobuf.Message.Builder builder) throws JSONRPCError {
+    private void parseRequestBody(String body, com.google.protobuf.Message.Builder builder) throws A2AError {
         try {
             if (body == null || body.trim().isEmpty()) {
                 throw new InvalidRequestError("Request body is required");
@@ -313,12 +312,12 @@ public class RestHandler {
         }
     }
 
-    public HTTPRestResponse createErrorResponse(JSONRPCError error) {
+    public HTTPRestResponse createErrorResponse(A2AError error) {
         int statusCode = mapErrorToHttpStatus(error);
         return createErrorResponse(statusCode, error);
     }
 
-    private HTTPRestResponse createErrorResponse(int statusCode, JSONRPCError error) {
+    private HTTPRestResponse createErrorResponse(int statusCode, A2AError error) {
         String jsonBody = new HTTPRestErrorResponse(error).toJson();
         return new HTTPRestResponse(statusCode, "application/json", jsonBody);
     }
@@ -358,7 +357,7 @@ public class RestHandler {
 
                     @Override
                     public void onError(Throwable throwable) {
-                        if (throwable instanceof JSONRPCError jsonrpcError) {
+                        if (throwable instanceof A2AError jsonrpcError) {
                             tube.send(new HTTPRestErrorResponse(jsonrpcError).toJson());
                         } else {
                             tube.send(new HTTPRestErrorResponse(new InternalError(throwable.getMessage())).toJson());
@@ -375,7 +374,7 @@ public class RestHandler {
         });
     }
 
-    private int mapErrorToHttpStatus(JSONRPCError error) {
+    private int mapErrorToHttpStatus(A2AError error) {
         if (error instanceof InvalidRequestError || error instanceof JSONParseError) {
             return 400;
         }
@@ -409,7 +408,7 @@ public class RestHandler {
                 throw new AuthenticatedExtendedCardNotConfiguredError(null, "Authenticated Extended Card not configured", null);
             }
             return new HTTPRestResponse(200, "application/json", JsonUtil.toJson(extendedAgentCard.get()));
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return createErrorResponse(e);
         } catch (Throwable t) {
             return createErrorResponse(500, new InternalError(t.getMessage()));
@@ -474,7 +473,7 @@ public class RestHandler {
         private final @Nullable
         String message;
 
-        private HTTPRestErrorResponse(JSONRPCError jsonRpcError) {
+        private HTTPRestErrorResponse(A2AError jsonRpcError) {
             this.error = jsonRpcError.getClass().getName();
             this.message = jsonRpcError.getMessage();
         }

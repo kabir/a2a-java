@@ -13,7 +13,6 @@ import io.a2a.util.Assert;
  * @param id the task identifier (required)
  * @param pushNotificationConfigId the specific configuration ID to delete (required)
  * @param tenant optional tenant, provided as a path parameter.
- * @see DeleteTaskPushNotificationConfigRequest for the request using these parameters
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 public record DeleteTaskPushNotificationConfigParams(String id, String pushNotificationConfigId, String tenant) {

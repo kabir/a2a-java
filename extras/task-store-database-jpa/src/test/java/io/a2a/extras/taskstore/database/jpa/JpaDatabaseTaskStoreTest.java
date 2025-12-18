@@ -18,7 +18,7 @@ import jakarta.transaction.Transactional;
 import io.a2a.server.tasks.TaskStore;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
+import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;

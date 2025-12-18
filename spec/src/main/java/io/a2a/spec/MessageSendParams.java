@@ -8,8 +8,7 @@ import io.a2a.util.Assert;
  * Parameters for sending a message to an agent in the A2A Protocol.
  * <p>
  * This record encapsulates the message content, optional configuration, and metadata for
- * agent task requests. It is used by both {@link SendMessageRequest} and
- * {@link SendStreamingMessageRequest} to define what message to send and how to process it.
+ * agent task requests. It is used to define what message to send and how to process it.
  * <p>
  * The message can create a new task, continue an existing task (if it contains a task ID),
  * or restart a task depending on the agent's implementation and the message context.
@@ -18,8 +17,6 @@ import io.a2a.util.Assert;
  * @param configuration optional configuration for message processing behavior
  * @param metadata optional arbitrary key-value metadata for the request
  * @param tenant optional tenant, provided as a path parameter.
- * @see SendMessageRequest for non-streaming message delivery
- * @see SendStreamingMessageRequest for streaming message delivery
  * @see MessageSendConfiguration for available configuration options
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */

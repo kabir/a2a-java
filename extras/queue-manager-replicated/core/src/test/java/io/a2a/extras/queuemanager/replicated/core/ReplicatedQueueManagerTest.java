@@ -27,7 +27,7 @@ import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

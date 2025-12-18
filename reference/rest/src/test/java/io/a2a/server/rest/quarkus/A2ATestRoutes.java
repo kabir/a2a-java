@@ -1,7 +1,5 @@
 package io.a2a.server.rest.quarkus;
 
-import io.a2a.server.rest.quarkus.A2AServerRoutes;
-
 import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -17,7 +15,7 @@ import io.a2a.spec.PushNotificationConfig;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;

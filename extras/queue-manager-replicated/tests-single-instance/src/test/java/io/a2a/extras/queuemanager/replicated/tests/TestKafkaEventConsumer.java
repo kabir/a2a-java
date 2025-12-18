@@ -9,7 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.quarkus.arc.profile.IfBuildProfile;
 
 /**

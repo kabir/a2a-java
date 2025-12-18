@@ -38,7 +38,7 @@ import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
  * @see MessageSendConfiguration for client content type preferences
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class ContentTypeNotSupportedError extends JSONRPCError {
+public class ContentTypeNotSupportedError extends A2AError {
 
     /**
      * Constructs a content type not supported error.

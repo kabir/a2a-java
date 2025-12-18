@@ -18,11 +18,9 @@ import static io.a2a.util.Utils.defaultIfNull;
  * throw new MethodNotFoundError();
  * }</pre>
  *
- * @see JSONRPCError for the base error class
- * @see A2AError for the error marker interface
  * @see <a href="https://www.jsonrpc.org/specification#error_object">JSON-RPC 2.0 Error Codes</a>
  */
-public class MethodNotFoundError extends JSONRPCError {
+public class MethodNotFoundError extends A2AError {
 
     /**
      * Constructs error with all parameters.

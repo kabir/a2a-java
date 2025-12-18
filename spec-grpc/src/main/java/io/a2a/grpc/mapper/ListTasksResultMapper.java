@@ -1,11 +1,11 @@
 package io.a2a.grpc.mapper;
 
-import io.a2a.spec.ListTasksResult;
+import io.a2a.internal.wrappers.ListTasksResult;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 /**
- * Mapper between {@link io.a2a.spec.ListTasksResult} and {@link io.a2a.grpc.ListTasksResponse}.
+ * Mapper between {@link ListTasksResult} and {@link io.a2a.grpc.ListTasksResponse}.
  * <p>
  * Handles conversion with null handling for nextPageToken field.
  * Uses ADDER_PREFERRED strategy to avoid ProtocolMessageList instantiation issues.

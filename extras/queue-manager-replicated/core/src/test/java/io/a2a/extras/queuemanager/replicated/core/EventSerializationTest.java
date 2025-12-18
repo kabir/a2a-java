@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import io.a2a.server.events.QueueClosedEvent;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
@@ -17,7 +17,7 @@ import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.Part;
@@ -32,12 +32,12 @@ import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import org.junit.jupiter.api.Test;
 
 /**
  * Comprehensive test for serialization/deserialization of all StreamingEventKind classes
- * and JSONRPCError subclasses to ensure proper type handling in replication.
+ * and A2AError subclasses to ensure proper type handling in replication.
  */
 public class EventSerializationTest {
 
@@ -169,9 +169,9 @@ public class EventSerializationTest {
     }
 
     @Test
-    public void testJSONRPCErrorSubclassesSerialization() throws JsonProcessingException {
-        // Test various JSONRPCError subclasses
-        JSONRPCError[] errors = {
+    public void testA2AErrorSubclassesSerialization() throws JsonProcessingException {
+        // Test various A2AError subclasses
+        A2AError[] errors = {
             new InvalidRequestError("Invalid request"),
             new MethodNotFoundError(),
             new InvalidParamsError("Invalid params"),
@@ -184,13 +184,13 @@ public class EventSerializationTest {
             // Note: ContentTypeNotSupportedError and InvalidAgentResponseError need specific constructor parameters
         };
 
-        for (JSONRPCError originalError : errors) {
+        for (A2AError originalError : errors) {
             // Test serialization
             String json = JsonUtil.toJson(originalError);
             assertTrue(json.contains("\"message\""), "JSON should contain error message for " + originalError.getClass().getSimpleName());
 
-            // Test deserialization - it's acceptable to deserialize as base JSONRPCError
-            JSONRPCError deserializedError = JsonUtil.fromJson(json, JSONRPCError.class);
+            // Test deserialization - it's acceptable to deserialize as base A2AError
+            A2AError deserializedError = JsonUtil.fromJson(json, A2AError.class);
             assertNotNull(deserializedError, "Should deserialize successfully for " + originalError.getClass().getSimpleName());
             assertEquals(originalError.getMessage(), deserializedError.getMessage(), "Error message should match for " + originalError.getClass().getSimpleName());
             assertEquals(originalError.getCode(), deserializedError.getCode(), "Error code should match for " + originalError.getClass().getSimpleName());
@@ -243,10 +243,10 @@ public class EventSerializationTest {
 
     @Test
     public void testReplicatedEventWithErrorSerialization() throws JsonProcessingException {
-        // Test that ReplicatedEventQueueItem can properly handle JSONRPCError
+        // Test that ReplicatedEventQueueItem can properly handle A2AError
         InvalidRequestError error = new InvalidRequestError("Invalid request for testing");
 
-        // Create ReplicatedEventQueueItem with JSONRPCError
+        // Create ReplicatedEventQueueItem with A2AError
         ReplicatedEventQueueItem originalReplicatedEvent = new ReplicatedEventQueueItem("error-test-task", error);
 
         // Serialize the ReplicatedEventQueueItemQueueItem
@@ -261,7 +261,7 @@ public class EventSerializationTest {
         assertEquals(originalReplicatedEvent.getTaskId(), deserializedReplicatedEvent.getTaskId());
 
         // Should get the error back
-        JSONRPCError retrievedError = deserializedReplicatedEvent.getErrorObject();
+        A2AError retrievedError = deserializedReplicatedEvent.getErrorObject();
         assertNotNull(retrievedError);
         assertEquals(error.getMessage(), retrievedError.getMessage());
         assertEquals(error.getCode(), retrievedError.getCode());

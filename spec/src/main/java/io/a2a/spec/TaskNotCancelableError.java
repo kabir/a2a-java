@@ -6,7 +6,7 @@ import static io.a2a.util.Utils.defaultIfNull;
 /**
  * A2A Protocol error indicating that a task cannot be canceled in its current state.
  * <p>
- * This error is returned when a client attempts to cancel a task via {@link CancelTaskRequest}
+ * This error is returned when a client attempts to cancel a task
  * but the task is in a terminal state ({@link TaskState#COMPLETED}, {@link TaskState#FAILED},
  * {@link TaskState#CANCELED}) where cancellation is not applicable.
  * <p>
@@ -25,12 +25,11 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }
  * }</pre>
  *
- * @see CancelTaskRequest for task cancellation
  * @see TaskState for task state definitions
  * @see TaskStatus#state() for current task state
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class TaskNotCancelableError extends JSONRPCError {
+public class TaskNotCancelableError extends A2AError {
 
     /**
      * Constructs error with default message.

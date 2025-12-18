@@ -118,6 +118,11 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-internal</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>a2a-java-sdk-spec</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -484,6 +489,7 @@
         <module>extras/push-notification-config-store-database-jpa</module>
         <module>extras/queue-manager-replicated</module>
         <module>http-client</module>
+        <module>internal</module>
         <module>integrations/microprofile-config</module>
         <module>reference/common</module>
         <module>reference/grpc</module>

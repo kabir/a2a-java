@@ -6,8 +6,7 @@ import static io.a2a.util.Utils.defaultIfNull;
 /**
  * A2A Protocol error indicating that the requested task ID does not exist.
  * <p>
- * This error is returned when a client attempts to perform operations on a task (such as
- * {@link GetTaskRequest}, {@link CancelTaskRequest}, or push notification operations) using
+ * This error is returned when a client attempts to perform operations on a task using
  * a task ID that is not found in the server's task store.
  * <p>
  * Common causes:
@@ -29,11 +28,9 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }</pre>
  *
  * @see Task for task object definition
- * @see GetTaskRequest for task retrieval
- * @see CancelTaskRequest for task cancellation
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class TaskNotFoundError extends JSONRPCError {
+public class TaskNotFoundError extends A2AError {
 
     /**
      * Constructs error with default message.

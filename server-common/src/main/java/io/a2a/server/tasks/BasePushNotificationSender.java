@@ -4,23 +4,21 @@ import static io.a2a.client.http.A2AHttpClient.APPLICATION_JSON;
 import static io.a2a.client.http.A2AHttpClient.CONTENT_TYPE;
 import static io.a2a.common.A2AHeaders.X_A2A_NOTIFICATION_TOKEN;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.JdkA2AHttpClient;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.PushNotificationConfig;
 import io.a2a.spec.Task;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

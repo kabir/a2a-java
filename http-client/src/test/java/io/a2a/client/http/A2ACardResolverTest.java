@@ -12,7 +12,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import io.a2a.spec.A2AClientError;
 import io.a2a.spec.A2AClientJSONError;
 import io.a2a.spec.AgentCard;
@@ -82,7 +82,7 @@ public class A2ACardResolverTest {
 
     private AgentCard unmarshalFrom(String body) throws JsonProcessingException {
         io.a2a.grpc.AgentCard.Builder agentCardBuilder = io.a2a.grpc.AgentCard.newBuilder();
-        JSONRPCUtils.parseJsonString(body, agentCardBuilder, null);
+        JSONRPCUtils.parseJsonString(body, agentCardBuilder, "");
         return ProtoUtils.FromProto.agentCard(agentCardBuilder);
     }
 

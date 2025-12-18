@@ -10,7 +10,6 @@ import io.a2a.util.Assert;
  *
  * @param id the task identifier (required)
  * @param tenant optional tenant, provided as a path parameter.
- * @see ListTaskPushNotificationConfigRequest for the request using these parameters
  * @see TaskPushNotificationConfig for the configuration structure
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */

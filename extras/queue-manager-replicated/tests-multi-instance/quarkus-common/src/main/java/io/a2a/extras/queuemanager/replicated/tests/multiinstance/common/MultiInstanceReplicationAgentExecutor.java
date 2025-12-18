@@ -4,7 +4,7 @@ import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.tasks.TaskUpdater;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Task;
 import io.a2a.spec.TextPart;
 
@@ -18,7 +18,7 @@ import io.a2a.spec.TextPart;
  */
 public class MultiInstanceReplicationAgentExecutor implements AgentExecutor {
     @Override
-    public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+    public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
         Task task = context.getTask();
         TaskUpdater updater = new TaskUpdater(context, eventQueue);
 
@@ -41,7 +41,7 @@ public class MultiInstanceReplicationAgentExecutor implements AgentExecutor {
     }
 
     @Override
-    public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+    public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
         TaskUpdater updater = new TaskUpdater(context, eventQueue);
         updater.cancel();
     }

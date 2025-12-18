@@ -3,7 +3,7 @@ package io.a2a.server.tasks;
 import org.jspecify.annotations.Nullable;
 
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
+import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.spec.Task;
 
 /**

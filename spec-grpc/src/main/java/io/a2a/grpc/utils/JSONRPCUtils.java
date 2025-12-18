@@ -1,60 +1,5 @@
 package io.a2a.grpc.utils;
 
-import io.a2a.json.JsonMappingException;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.Strictness;
-import com.google.gson.stream.JsonWriter;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.util.JsonFormat;
-import io.a2a.grpc.StreamResponse;
-import io.a2a.spec.CancelTaskRequest;
-import io.a2a.spec.CancelTaskResponse;
-import io.a2a.spec.ContentTypeNotSupportedError;
-import io.a2a.spec.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.spec.DeleteTaskPushNotificationConfigResponse;
-import io.a2a.spec.GetAuthenticatedExtendedCardRequest;
-import io.a2a.spec.GetAuthenticatedExtendedCardResponse;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskPushNotificationConfigResponse;
-import io.a2a.spec.GetTaskRequest;
-import io.a2a.spec.GetTaskResponse;
-import io.a2a.spec.IdJsonMappingException;
-import io.a2a.spec.InvalidAgentResponseError;
-import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.InvalidParamsJsonMappingException;
-import io.a2a.spec.InvalidRequestError;
-import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
-import io.a2a.spec.JSONRPCMessage;
-import io.a2a.spec.JSONRPCRequest;
-import io.a2a.spec.JSONRPCResponse;
-import io.a2a.spec.ListTaskPushNotificationConfigRequest;
-import io.a2a.spec.ListTaskPushNotificationConfigResponse;
-import io.a2a.spec.ListTasksRequest;
-import io.a2a.spec.ListTasksResponse;
-import io.a2a.spec.MethodNotFoundError;
-import io.a2a.spec.MethodNotFoundJsonMappingException;
-import io.a2a.spec.PushNotificationNotSupportedError;
-import io.a2a.spec.SendMessageRequest;
-import io.a2a.spec.SendMessageResponse;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigResponse;
-import io.a2a.spec.SubscribeToTaskRequest;
-import io.a2a.spec.TaskNotCancelableError;
-import io.a2a.spec.TaskNotFoundError;
-import io.a2a.spec.UnsupportedOperationError;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.jspecify.annotations.Nullable;
-
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INTERNAL_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INVALID_AGENT_RESPONSE_ERROR_CODE;
@@ -67,9 +12,65 @@ import static io.a2a.spec.A2AErrorCodes.TASK_NOT_CANCELABLE_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.TASK_NOT_FOUND_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.UNSUPPORTED_OPERATION_ERROR_CODE;
 
-import io.a2a.json.JsonProcessingException;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.Strictness;
+import com.google.gson.stream.JsonWriter;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
+import io.a2a.grpc.StreamResponse;
+import io.a2a.internal.json.IdJsonMappingException;
+import io.a2a.internal.json.InvalidParamsJsonMappingException;
+import io.a2a.internal.json.JsonMappingException;
+import io.a2a.internal.json.JsonProcessingException;
+import io.a2a.internal.json.MethodNotFoundJsonMappingException;
+import io.a2a.internal.wrappers.A2AMessage;
+import io.a2a.internal.wrappers.A2ARequest;
+import io.a2a.internal.wrappers.A2AResponse;
+import io.a2a.internal.wrappers.CancelTaskRequest;
+import io.a2a.internal.wrappers.CancelTaskResponse;
+import io.a2a.internal.wrappers.DeleteTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.DeleteTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.GetAuthenticatedExtendedCardRequest;
+import io.a2a.internal.wrappers.GetAuthenticatedExtendedCardResponse;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.GetTaskRequest;
+import io.a2a.internal.wrappers.GetTaskResponse;
+import io.a2a.internal.wrappers.ListTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.ListTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.ListTasksRequest;
+import io.a2a.internal.wrappers.ListTasksResponse;
+import io.a2a.internal.wrappers.SendMessageRequest;
+import io.a2a.internal.wrappers.SendMessageResponse;
+import io.a2a.internal.wrappers.SendStreamingMessageRequest;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigResponse;
+import io.a2a.internal.wrappers.SubscribeToTaskRequest;
+import io.a2a.spec.A2AError;
+import io.a2a.spec.ContentTypeNotSupportedError;
+import io.a2a.spec.InvalidAgentResponseError;
+import io.a2a.spec.InvalidParamsError;
+import io.a2a.spec.InvalidRequestError;
+import io.a2a.spec.JSONParseError;
+import io.a2a.spec.MethodNotFoundError;
+import io.a2a.spec.PushNotificationNotSupportedError;
+import io.a2a.spec.TaskNotCancelableError;
+import io.a2a.spec.TaskNotFoundError;
+import io.a2a.spec.UnsupportedOperationError;
+import io.a2a.util.Utils;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utilities for converting between JSON-RPC 2.0 messages and Protocol Buffer objects.
@@ -150,8 +151,8 @@ import java.util.regex.Pattern;
  * }</pre>
  *
  * @see ProtoUtils
- * @see JSONRPCRequest
- * @see JSONRPCResponse
+ * @see A2ARequest
+ * @see A2AResponse
  * @see <a href="https://www.jsonrpc.org/specification">JSON-RPC 2.0 Specification</a>
  */
 public class JSONRPCUtils {
@@ -164,7 +165,7 @@ public class JSONRPCUtils {
     private static final Pattern EXTRACT_WRONG_TYPE = Pattern.compile("Expected (.*) but found \".*\"");
     static final String ERROR_MESSAGE = "Invalid request content: %s. Please verify the request matches the expected schema for this method.";
 
-    public static JSONRPCRequest<?> parseRequestBody(String body) throws JsonMappingException, JsonProcessingException {
+    public static A2ARequest<?> parseRequestBody(String body) throws JsonMappingException, JsonProcessingException {
         JsonElement jelement = JsonParser.parseString(body);
         JsonObject jsonRpc = jelement.getAsJsonObject();
         if (!jsonRpc.has("method")) {
@@ -176,15 +177,14 @@ public class JSONRPCUtils {
         Object id = getAndValidateId(jsonRpc);
         String method = jsonRpc.get("method").getAsString();
         JsonElement paramsNode = jsonRpc.get("params");
-
         try {
             return parseMethodRequest(version, id, method, paramsNode);
         } catch (InvalidParamsError e) {
-            throw new InvalidParamsJsonMappingException(e.getMessage(), id);
+            throw new InvalidParamsJsonMappingException(Utils.defaultIfNull(e.getMessage(), "Invalid parameters"), id);
         }
     }
 
-    private static JSONRPCRequest<?> parseMethodRequest(String version, Object id, String method, JsonElement paramsNode) throws InvalidParamsError, MethodNotFoundJsonMappingException, JsonProcessingException {
+    private static A2ARequest<?> parseMethodRequest(String version, Object id, String method, JsonElement paramsNode) throws InvalidParamsError, MethodNotFoundJsonMappingException, JsonProcessingException {
         switch (method) {
             case GetTaskRequest.METHOD -> {
                 io.a2a.grpc.GetTaskRequest.Builder builder = io.a2a.grpc.GetTaskRequest.newBuilder();
@@ -258,7 +258,7 @@ public class JSONRPCUtils {
         return builder.build();
     }
 
-    public static JSONRPCResponse<?> parseResponseBody(String body, String method) throws JsonMappingException, JsonProcessingException {
+    public static A2AResponse<?> parseResponseBody(String body, String method) throws JsonMappingException, JsonProcessingException {
         JsonElement jelement = JsonParser.parseString(body);
         JsonObject jsonRpc = jelement.getAsJsonObject();
         String version = getAndValidateJsonrpc(jsonRpc);
@@ -319,8 +319,8 @@ public class JSONRPCUtils {
         }
     }
 
-    public static JSONRPCResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
-        JSONRPCError rpcError = processError(error);
+    public static A2AResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
+        A2AError rpcError = processError(error);
         switch (method) {
             case GetTaskRequest.METHOD -> {
                 return new GetTaskResponse(id, rpcError);
@@ -351,7 +351,7 @@ public class JSONRPCUtils {
         }
     }
 
-    private static JSONRPCError processError(JsonObject error) {
+    private static A2AError processError(JsonObject error) {
         String message = error.has("message") ? error.get("message").getAsString() : null;
         Integer code = error.has("code") ? error.get("code").getAsInt() : null;
         String data = error.has("data") ? error.get("data").toString() : null;
@@ -380,17 +380,17 @@ public class JSONRPCUtils {
                 case TASK_NOT_FOUND_ERROR_CODE:
                     return new TaskNotFoundError(code, message, data);
                 default:
-                    return new JSONRPCError(code, message, data);
+                    return new A2AError(code, message, data);
             }
         }
-        return new JSONRPCError(code, message, data);
+        return new A2AError(code, message, data);
     }
 
     protected static void parseRequestBody(JsonElement jsonRpc, com.google.protobuf.Message.Builder builder, Object id) throws JsonProcessingException {
         parseJsonString(jsonRpc.toString(), builder, id);
     }
 
-    public static void parseJsonString(String body, com.google.protobuf.Message.Builder builder, @Nullable Object id) throws JsonProcessingException {
+    public static void parseJsonString(String body, com.google.protobuf.Message.Builder builder, Object id) throws JsonProcessingException {
         try {
             JsonFormat.parser().merge(body, builder);
         } catch (InvalidProtocolBufferException e) {
@@ -424,7 +424,7 @@ public class JSONRPCUtils {
      * @param id the request ID if it could be extracted, null otherwise
      * @return an appropriate JsonProcessingException subtype based on the error and ID availability
      */
-    private static JsonProcessingException convertProtoBufExceptionToJsonProcessingException(InvalidProtocolBufferException e, @Nullable Object id) {
+    private static JsonProcessingException convertProtoBufExceptionToJsonProcessingException(InvalidProtocolBufferException e, Object id) {
         // Log the original exception for debugging purposes
         log.log(Level.FINE, "Converting protobuf parsing exception to JSON-RPC error. Request ID: {0}", id);
         log.log(Level.FINE, "Original proto exception details", e);
@@ -448,12 +448,12 @@ public class JSONRPCUtils {
         Matcher matcher = EXTRACT_WRONG_TYPE.matcher(message);
         if (matcher.matches() && matcher.group(1) != null) {
             // ID is null -> use empty string sentinel value (see javadoc above)
-            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), id == null ? "" : id);
+            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), Utils.defaultIfNull(id, ""));
         }
         matcher = EXTRACT_WRONG_VALUE.matcher(message);
         if (matcher.matches() && matcher.group(1) != null) {
             // ID is null -> use empty string sentinel value (see javadoc above)
-            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), id == null ? "" : id);
+            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), Utils.defaultIfNull(id, ""));
         }
 
         // Generic error - couldn't match specific patterns
@@ -467,7 +467,7 @@ public class JSONRPCUtils {
                     getIdIfPossible(jsonRpc));
         }
         String version = jsonRpc.get("jsonrpc").getAsString();
-        if (!JSONRPCMessage.JSONRPC_VERSION.equals(version)) {
+        if (!A2AMessage.JSONRPC_VERSION.equals(version)) {
             throw new IdJsonMappingException(
                     "Unsupported JSON-RPC version: '" + version + "'. Expected version '2.0'",
                     getIdIfPossible(jsonRpc));
@@ -558,7 +558,7 @@ public class JSONRPCUtils {
         }
     }
 
-    public static String toJsonRPCErrorResponse(Object requestId, JSONRPCError error) {
+    public static String toJsonRPCErrorResponse(Object requestId, A2AError error) {
         try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");

@@ -6,6 +6,10 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
@@ -17,17 +21,29 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.a2a.common.A2AHeaders;
+import io.a2a.internal.wrappers.CancelTaskRequest;
+import io.a2a.internal.wrappers.DeleteTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.GetTaskRequest;
+import io.a2a.internal.wrappers.ListTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.ListTasksRequest;
+import io.a2a.internal.wrappers.SendMessageRequest;
+import io.a2a.internal.wrappers.SendStreamingMessageRequest;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.SubscribeToTaskRequest;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
+import io.a2a.server.extensions.A2AExtensions;
 import io.a2a.server.util.async.Internal;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.transport.rest.handler.RestHandler;
 import io.a2a.transport.rest.handler.RestHandler.HTTPRestResponse;
 import io.a2a.transport.rest.handler.RestHandler.HTTPRestStreamingResponse;
+import io.a2a.util.Utils;
 import io.quarkus.security.Authenticated;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.ReactiveRoutes;
@@ -39,23 +55,6 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import io.a2a.server.extensions.A2AExtensions;
-import io.a2a.spec.CancelTaskRequest;
-import io.a2a.spec.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskRequest;
-import io.a2a.spec.ListTaskPushNotificationConfigRequest;
-import io.a2a.spec.ListTasksRequest;
-import io.a2a.spec.SendMessageRequest;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
-import io.a2a.spec.SubscribeToTaskRequest;
-import io.a2a.util.Utils;
 import org.jspecify.annotations.Nullable;
 
 @Singleton
@@ -201,7 +200,7 @@ public class A2AServerRoutes {
                 response = jsonRestHandler.cancelTask(taskId, extractTenant(rc), context);
             }
         } catch (Throwable t) {
-            if (t instanceof JSONRPCError error) {
+            if (t instanceof A2AError error) {
                 response = jsonRestHandler.createErrorResponse(error);
             } else {
                 response = jsonRestHandler.createErrorResponse(new InternalError(t.getMessage()));
