@@ -14,7 +14,7 @@ import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidParamsJsonMappingException;
 import io.a2a.spec.JSONParseError;
-import io.a2a.internal.wrappers.JSONRPCRequest;
+import io.a2a.internal.wrappers.A2ARequest;
 import io.a2a.spec.PushNotificationConfig;
 import io.a2a.internal.wrappers.SetTaskPushNotificationConfigRequest;
 import io.a2a.internal.wrappers.SetTaskPushNotificationConfigResponse;
@@ -47,7 +47,7 @@ public class JSONRPCUtilsTest {
             }
             """;
 
-        JSONRPCRequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
+        A2ARequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
 
         assertNotNull(request);
         assertInstanceOf(SetTaskPushNotificationConfigRequest.class, request);
@@ -76,7 +76,7 @@ public class JSONRPCUtilsTest {
             }
             """;
 
-        JSONRPCRequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
+        A2ARequest<?> request = JSONRPCUtils.parseRequestBody(validRequest);
 
         assertNotNull(request);
         assertInstanceOf(GetTaskPushNotificationConfigRequest.class, request);

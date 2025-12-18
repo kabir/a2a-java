@@ -19,7 +19,7 @@ import io.a2a.spec.TaskPushNotificationConfig;
  * @see PushNotificationNotSupportedError for the error when unsupported
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public final class SetTaskPushNotificationConfigResponse extends JSONRPCResponse<TaskPushNotificationConfig> {
+public final class SetTaskPushNotificationConfigResponse extends A2AResponse<TaskPushNotificationConfig> {
 
     /**
      * Constructs response with all parameters.

@@ -5,7 +5,7 @@ import io.a2a.spec.JSONRPCError;
 /**
  * The response for a list tasks request.
  */
-public final class ListTasksResponse extends JSONRPCResponse<ListTasksResult> {
+public final class ListTasksResponse extends A2AResponse<ListTasksResult> {
 
     /**
      * Constructs response with all parameters.

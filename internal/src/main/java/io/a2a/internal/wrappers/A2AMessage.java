@@ -5,19 +5,19 @@ package io.a2a.internal.wrappers;
  * <p>
  * This sealed interface defines the fundamental structure shared by all JSON-RPC 2.0
  * messages used in the A2A Protocol's JSON-RPC transport layer. It ensures type safety
- * and exhaustiveness checking by permitting only {@link JSONRPCRequest} and {@link JSONRPCResponse}
+ * and exhaustiveness checking by permitting only {@link A2ARequest} and {@link A2AResponse}
  * as implementing types.
  * <p>
  * According to the JSON-RPC 2.0 specification, all messages must include a {@code jsonrpc}
  * version field set to "2.0", and may optionally include an {@code id} field for correlation
  * between requests and responses.
  *
- * @see JSONRPCRequest
- * @see JSONRPCResponse
+ * @see A2ARequest
+ * @see A2AResponse
  * @see <a href="https://www.jsonrpc.org/specification">JSON-RPC 2.0 Specification</a>
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public sealed interface JSONRPCMessage permits JSONRPCRequest, JSONRPCResponse {
+public sealed interface A2AMessage permits A2ARequest, A2AResponse {
 
     /**
      * The JSON-RPC protocol version string as defined by the JSON-RPC 2.0 specification.

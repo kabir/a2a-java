@@ -18,10 +18,10 @@ import io.a2a.util.Assert;
  * enforces that constraint by fixing the result type parameter to {@code Void}.
  *
  * @see JSONRPCError
- * @see JSONRPCResponse
+ * @see A2AResponse
  * @see <a href="https://www.jsonrpc.org/specification#response_object">JSON-RPC 2.0 Response Object</a>
  */
-public final class JSONRPCErrorResponse extends JSONRPCResponse<Void> {
+public final class A2AErrorResponse extends A2AResponse<Void> {
 
     /**
      * Constructs a JSON-RPC error response with all fields.
@@ -34,7 +34,7 @@ public final class JSONRPCErrorResponse extends JSONRPCResponse<Void> {
      * @param error the error object describing what went wrong (required)
      * @throws IllegalArgumentException if error is null
      */
-    public JSONRPCErrorResponse(String jsonrpc, Object id, Void result, JSONRPCError error) {
+    public A2AErrorResponse(String jsonrpc, Object id, Void result, JSONRPCError error) {
         super(jsonrpc, id, result, error, Void.class);
         Assert.checkNotNullParam("error", error);
     }
@@ -47,7 +47,7 @@ public final class JSONRPCErrorResponse extends JSONRPCResponse<Void> {
      * @param id the request ID
      * @param error the error object (required)
      */
-    public JSONRPCErrorResponse(Object id, JSONRPCError error) {
+    public A2AErrorResponse(Object id, JSONRPCError error) {
         this(null, id, null, error);
     }
 
@@ -59,7 +59,7 @@ public final class JSONRPCErrorResponse extends JSONRPCResponse<Void> {
      *
      * @param error the error object (required)
      */
-    public JSONRPCErrorResponse(JSONRPCError error) {
+    public A2AErrorResponse(JSONRPCError error) {
         this(null, null, null, error);
     }
 }

@@ -13,7 +13,7 @@ import io.a2a.spec.JSONRPCError;
  * @see DeleteTaskPushNotificationConfigRequest for the corresponding request
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public final class DeleteTaskPushNotificationConfigResponse extends JSONRPCResponse<Void> {
+public final class DeleteTaskPushNotificationConfigResponse extends A2AResponse<Void> {
 
     /**
      * Creates a new DeleteTaskPushNotificationConfigResponse with full JSON-RPC parameters.

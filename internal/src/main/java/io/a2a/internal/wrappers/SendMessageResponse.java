@@ -6,7 +6,7 @@ import io.a2a.spec.JSONRPCError;
 /**
  * The response after receiving a send message request.
  */
-public final class SendMessageResponse extends JSONRPCResponse<EventKind> {
+public final class SendMessageResponse extends A2AResponse<EventKind> {
 
     /**
      * Constructs response with all parameters.

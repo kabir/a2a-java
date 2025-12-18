@@ -20,7 +20,7 @@ import io.a2a.spec.JSONRPCError;
  * @see AuthenticatedExtendedCardNotConfiguredError for the error when unsupported
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public final class GetAuthenticatedExtendedCardResponse extends JSONRPCResponse<AgentCard> {
+public final class GetAuthenticatedExtendedCardResponse extends A2AResponse<AgentCard> {
 
     /**
      * Constructs response with full parameters.

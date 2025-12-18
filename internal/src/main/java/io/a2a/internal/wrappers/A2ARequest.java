@@ -28,7 +28,7 @@ import io.a2a.util.Utils;
  * @see <a href="https://www.jsonrpc.org/specification">JSON-RPC 2.0 Specification</a>
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public abstract sealed class JSONRPCRequest<T> implements JSONRPCMessage permits NonStreamingJSONRPCRequest, StreamingJSONRPCRequest {
+public abstract sealed class A2ARequest<T> implements A2AMessage permits NonStreamingJSONRPCRequest, StreamingJSONRPCRequest {
 
     /** The JSON-RPC protocol version. */
     protected String jsonrpc;
@@ -45,7 +45,7 @@ public abstract sealed class JSONRPCRequest<T> implements JSONRPCMessage permits
     /**
      * Default constructor for JSON deserialization.
      */
-    public JSONRPCRequest() {
+    public A2ARequest() {
     }
 
     /**

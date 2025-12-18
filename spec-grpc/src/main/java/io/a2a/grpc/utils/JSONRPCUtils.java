@@ -29,9 +29,9 @@ import io.a2a.spec.InvalidParamsJsonMappingException;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
 import io.a2a.spec.JSONRPCError;
-import io.a2a.internal.wrappers.JSONRPCMessage;
-import io.a2a.internal.wrappers.JSONRPCRequest;
-import io.a2a.internal.wrappers.JSONRPCResponse;
+import io.a2a.internal.wrappers.A2AMessage;
+import io.a2a.internal.wrappers.A2ARequest;
+import io.a2a.internal.wrappers.A2AResponse;
 import io.a2a.internal.wrappers.ListTaskPushNotificationConfigRequest;
 import io.a2a.internal.wrappers.ListTaskPushNotificationConfigResponse;
 import io.a2a.internal.wrappers.ListTasksRequest;
@@ -150,8 +150,8 @@ import java.util.regex.Pattern;
  * }</pre>
  *
  * @see ProtoUtils
- * @see JSONRPCRequest
- * @see JSONRPCResponse
+ * @see A2ARequest
+ * @see A2AResponse
  * @see <a href="https://www.jsonrpc.org/specification">JSON-RPC 2.0 Specification</a>
  */
 public class JSONRPCUtils {
@@ -164,7 +164,7 @@ public class JSONRPCUtils {
     private static final Pattern EXTRACT_WRONG_TYPE = Pattern.compile("Expected (.*) but found \".*\"");
     static final String ERROR_MESSAGE = "Invalid request content: %s. Please verify the request matches the expected schema for this method.";
 
-    public static JSONRPCRequest<?> parseRequestBody(String body) throws JsonMappingException, JsonProcessingException {
+    public static A2ARequest<?> parseRequestBody(String body) throws JsonMappingException, JsonProcessingException {
         JsonElement jelement = JsonParser.parseString(body);
         JsonObject jsonRpc = jelement.getAsJsonObject();
         if (!jsonRpc.has("method")) {
@@ -184,7 +184,7 @@ public class JSONRPCUtils {
         }
     }
 
-    private static JSONRPCRequest<?> parseMethodRequest(String version, Object id, String method, JsonElement paramsNode) throws InvalidParamsError, MethodNotFoundJsonMappingException, JsonProcessingException {
+    private static A2ARequest<?> parseMethodRequest(String version, Object id, String method, JsonElement paramsNode) throws InvalidParamsError, MethodNotFoundJsonMappingException, JsonProcessingException {
         switch (method) {
             case GetTaskRequest.METHOD -> {
                 io.a2a.grpc.GetTaskRequest.Builder builder = io.a2a.grpc.GetTaskRequest.newBuilder();
@@ -258,7 +258,7 @@ public class JSONRPCUtils {
         return builder.build();
     }
 
-    public static JSONRPCResponse<?> parseResponseBody(String body, String method) throws JsonMappingException, JsonProcessingException {
+    public static A2AResponse<?> parseResponseBody(String body, String method) throws JsonMappingException, JsonProcessingException {
         JsonElement jelement = JsonParser.parseString(body);
         JsonObject jsonRpc = jelement.getAsJsonObject();
         String version = getAndValidateJsonrpc(jsonRpc);
@@ -319,7 +319,7 @@ public class JSONRPCUtils {
         }
     }
 
-    public static JSONRPCResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
+    public static A2AResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
         JSONRPCError rpcError = processError(error);
         switch (method) {
             case GetTaskRequest.METHOD -> {
@@ -467,7 +467,7 @@ public class JSONRPCUtils {
                     getIdIfPossible(jsonRpc));
         }
         String version = jsonRpc.get("jsonrpc").getAsString();
-        if (!JSONRPCMessage.JSONRPC_VERSION.equals(version)) {
+        if (!A2AMessage.JSONRPC_VERSION.equals(version)) {
             throw new IdJsonMappingException(
                     "Unsupported JSON-RPC version: '" + version + "'. Expected version '2.0'",
                     getIdIfPossible(jsonRpc));

@@ -40,8 +40,8 @@ import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.internal.wrappers.GetTaskRequest;
 import io.a2a.internal.wrappers.GetTaskResponse;
 import io.a2a.spec.JSONRPCError;
-import io.a2a.internal.wrappers.JSONRPCMessage;
-import io.a2a.internal.wrappers.JSONRPCResponse;
+import io.a2a.internal.wrappers.A2AMessage;
+import io.a2a.internal.wrappers.A2AResponse;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.internal.wrappers.ListTaskPushNotificationConfigRequest;
 import io.a2a.internal.wrappers.ListTaskPushNotificationConfigResponse;
@@ -303,7 +303,7 @@ public class JSONRPCTransport implements ClientTransport {
             }
 
             GetAuthenticatedExtendedCardRequest getExtendedAgentCardRequest = GetAuthenticatedExtendedCardRequest.builder()
-                    .jsonrpc(JSONRPCMessage.JSONRPC_VERSION)
+                    .jsonrpc(A2AMessage.JSONRPC_VERSION)
                     .build(); // id will be randomly generated
 
             PayloadAndHeaders payloadAndHeaders = applyInterceptors(GetAuthenticatedExtendedCardRequest.METHOD,
@@ -380,9 +380,9 @@ public class JSONRPCTransport implements ClientTransport {
      * @throws JsonProcessingException if the JSON cannot be processed
      */
     @SuppressWarnings("unchecked")
-    private <T extends JSONRPCResponse<?>> T unmarshalResponse(String response, String method)
+    private <T extends A2AResponse<?>> T unmarshalResponse(String response, String method)
             throws A2AClientException, JsonProcessingException {
-        JSONRPCResponse<?> value = JSONRPCUtils.parseResponseBody(response, method);
+        A2AResponse<?> value = JSONRPCUtils.parseResponseBody(response, method);
         JSONRPCError error = value.getError();
         if (error != null) {
             throw new A2AClientException(error.getMessage() + (error.getData() != null ? ": " + error.getData() : ""), error);

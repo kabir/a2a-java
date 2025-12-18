@@ -5,7 +5,7 @@ import io.a2a.spec.StreamingEventKind;
 /**
  * Base class for JSON-RPC requests that support streaming responses in the A2A Protocol.
  * <p>
- * This sealed class extends {@link JSONRPCRequest} to provide specialized support for
+ * This sealed class extends {@link A2ARequest} to provide specialized support for
  * A2A Protocol methods that return streaming responses. Streaming requests enable
  * server-sent events and real-time updates to be pushed to clients as they occur,
  * rather than waiting for a complete response.
@@ -29,7 +29,7 @@ import io.a2a.spec.StreamingEventKind;
  * @see StreamingEventKind
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public abstract sealed class StreamingJSONRPCRequest<T> extends JSONRPCRequest<T> permits SubscribeToTaskRequest,
+public abstract sealed class StreamingJSONRPCRequest<T> extends A2ARequest<T> permits SubscribeToTaskRequest,
         SendStreamingMessageRequest {
 
     StreamingJSONRPCRequest(String jsonrpc, String method, Object id, T params) {

@@ -18,7 +18,7 @@ import io.a2a.spec.TaskNotFoundError;
  * @see TaskNotFoundError for the common error case
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public final class GetTaskResponse extends JSONRPCResponse<Task> {
+public final class GetTaskResponse extends A2AResponse<Task> {
 
     /**
      * Constructs response with full parameters.

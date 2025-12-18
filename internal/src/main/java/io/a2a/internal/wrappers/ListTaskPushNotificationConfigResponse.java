@@ -17,7 +17,7 @@ import io.a2a.spec.TaskPushNotificationConfig;
  * @see TaskPushNotificationConfig for the configuration structure
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public final class ListTaskPushNotificationConfigResponse extends JSONRPCResponse<List<TaskPushNotificationConfig>> {
+public final class ListTaskPushNotificationConfigResponse extends A2AResponse<List<TaskPushNotificationConfig>> {
 
     /**
      * Constructs response with all parameters.

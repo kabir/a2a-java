@@ -24,7 +24,7 @@ import io.a2a.spec.TaskStatusUpdateEvent;
  * @see StreamingEventKind for the types of events that can be streamed
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public final class SendStreamingMessageResponse extends JSONRPCResponse<StreamingEventKind> {
+public final class SendStreamingMessageResponse extends A2AResponse<StreamingEventKind> {
 
     /**
      * Constructs response with all parameters.

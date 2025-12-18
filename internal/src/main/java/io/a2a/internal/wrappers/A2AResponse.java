@@ -10,7 +10,7 @@ import io.a2a.util.Assert;
  *
  * @param <T> the type of the result value returned in successful responses
  */
-public abstract sealed class JSONRPCResponse<T> implements JSONRPCMessage permits CancelTaskResponse, DeleteTaskPushNotificationConfigResponse, GetAuthenticatedExtendedCardResponse, GetTaskPushNotificationConfigResponse, GetTaskResponse, JSONRPCErrorResponse, ListTaskPushNotificationConfigResponse, ListTasksResponse, SendMessageResponse, SendStreamingMessageResponse, SetTaskPushNotificationConfigResponse {
+public abstract sealed class A2AResponse<T> implements A2AMessage permits CancelTaskResponse, DeleteTaskPushNotificationConfigResponse, GetAuthenticatedExtendedCardResponse, GetTaskPushNotificationConfigResponse, GetTaskResponse, A2AErrorResponse, ListTaskPushNotificationConfigResponse, ListTasksResponse, SendMessageResponse, SendStreamingMessageResponse, SetTaskPushNotificationConfigResponse {
 
     /** The JSON-RPC protocol version. */
     protected String jsonrpc;
@@ -24,7 +24,7 @@ public abstract sealed class JSONRPCResponse<T> implements JSONRPCMessage permit
     /**
      * Default constructor for deserialization.
      */
-    public JSONRPCResponse() {
+    public A2AResponse() {
     }
 
     /**
@@ -36,7 +36,7 @@ public abstract sealed class JSONRPCResponse<T> implements JSONRPCMessage permit
      * @param error the error if any
      * @param resultType the result type class
      */
-    public JSONRPCResponse(String jsonrpc, Object id, T result, JSONRPCError error, Class<T> resultType) {
+    public A2AResponse(String jsonrpc, Object id, T result, JSONRPCError error, Class<T> resultType) {
         if (jsonrpc != null && ! jsonrpc.equals(JSONRPC_VERSION)) {
             throw new IllegalArgumentException("Invalid JSON-RPC protocol version");
         }

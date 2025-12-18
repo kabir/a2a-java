@@ -22,7 +22,7 @@ import io.a2a.spec.TaskState;
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 
-public final class CancelTaskResponse extends JSONRPCResponse<Task> {
+public final class CancelTaskResponse extends A2AResponse<Task> {
 
     /**
      * Constructs a CancelTaskResponse with full parameters.
