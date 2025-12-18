@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;
@@ -18,7 +18,7 @@ import io.a2a.spec.TaskStatusUpdateEvent;
  * {@link TaskArtifactUpdateEvent}, and {@link Message} as they are produced by the agent.
  * <p>
  * If an error occurs during request processing, the error field will be populated with
- * a {@link JSONRPCError} instead of streaming events.
+ * a {@link A2AError} instead of streaming events.
  *
  * @see SendStreamingMessageRequest for the corresponding request
  * @see StreamingEventKind for the types of events that can be streamed
@@ -34,7 +34,7 @@ public final class SendStreamingMessageResponse extends A2AResponse<StreamingEve
      * @param result the result
      * @param error the error if any
      */
-    public SendStreamingMessageResponse(String jsonrpc, Object id, StreamingEventKind result, JSONRPCError error) {
+    public SendStreamingMessageResponse(String jsonrpc, Object id, StreamingEventKind result, A2AError error) {
         super(jsonrpc, id, result, error, StreamingEventKind.class);
     }
 
@@ -54,7 +54,7 @@ public final class SendStreamingMessageResponse extends A2AResponse<StreamingEve
      * @param id the request ID
      * @param error the error
      */
-    public SendStreamingMessageResponse(Object id, JSONRPCError error) {
+    public SendStreamingMessageResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 }

@@ -23,7 +23,7 @@ import io.a2a.server.auth.User;
 import io.a2a.server.util.async.Internal;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.transport.rest.handler.RestHandler;
 import io.a2a.transport.rest.handler.RestHandler.HTTPRestResponse;
@@ -196,7 +196,7 @@ public class A2AServerRoutes {
                 response = jsonRestHandler.cancelTask(taskId, extractTenant(rc), context);
             }
         } catch (Throwable t) {
-            if (t instanceof JSONRPCError error) {
+            if (t instanceof A2AError error) {
                 response = jsonRestHandler.createErrorResponse(error);
             } else {
                 response = jsonRestHandler.createErrorResponse(new InternalError(t.getMessage()));

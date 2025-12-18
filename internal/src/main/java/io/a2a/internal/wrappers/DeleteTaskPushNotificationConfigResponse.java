@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 
 /**
  * JSON-RPC response confirming deletion of a task's push notification configuration.
@@ -8,7 +8,7 @@ import io.a2a.spec.JSONRPCError;
  * This response confirms successful deletion of the push notification configuration.
  * The result is void (no content) on success.
  * <p>
- * If an error occurs during deletion, the error field will contain a {@link JSONRPCError}.
+ * If an error occurs during deletion, the error field will contain a {@link A2AError}.
  *
  * @see DeleteTaskPushNotificationConfigRequest for the corresponding request
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
@@ -23,7 +23,7 @@ public final class DeleteTaskPushNotificationConfigResponse extends A2AResponse<
      * @param result the result (always null/Void for this response type)
      * @param error the error if the request failed, null on success
      */
-    public DeleteTaskPushNotificationConfigResponse(String jsonrpc, Object id, Void result,JSONRPCError error) {
+    public DeleteTaskPushNotificationConfigResponse(String jsonrpc, Object id, Void result,A2AError error) {
         super(jsonrpc, id, result, error, Void.class);
     }
 
@@ -33,7 +33,7 @@ public final class DeleteTaskPushNotificationConfigResponse extends A2AResponse<
      * @param id the response identifier matching the request
      * @param error the error describing why the deletion failed
      */
-    public DeleteTaskPushNotificationConfigResponse(Object id, JSONRPCError error) {
+    public DeleteTaskPushNotificationConfigResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 

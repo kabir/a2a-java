@@ -31,7 +31,7 @@ import io.a2a.spec.InvalidAgentResponseError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.Part;
@@ -53,7 +53,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import org.jspecify.annotations.Nullable;
 
-import static io.a2a.internal.json.JsonUtil.JSONRPCErrorTypeAdapter.THROWABLE_MARKER_FIELD;
+import static io.a2a.internal.json.JsonUtil.A2AErrorTypeAdapter.THROWABLE_MARKER_FIELD;
 
 /**
  * Utility class for JSON operations.
@@ -64,7 +64,7 @@ public class JsonUtil {
         return new GsonBuilder()
                 .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
                 .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeTypeAdapter())
-                .registerTypeHierarchyAdapter(JSONRPCError.class, new JSONRPCErrorTypeAdapter())
+                .registerTypeHierarchyAdapter(A2AError.class, new A2AErrorTypeAdapter())
                 .registerTypeAdapter(TaskState.class, new TaskStateTypeAdapter())
                 .registerTypeAdapter(Message.Role.class, new RoleTypeAdapter())
                 .registerTypeHierarchyAdapter(FileContent.class, new FileContentTypeAdapter());
@@ -261,7 +261,7 @@ public class JsonUtil {
     }
 
     /**
-     * Gson TypeAdapter for serializing and deserializing {@link JSONRPCError} and its subclasses.
+     * Gson TypeAdapter for serializing and deserializing {@link A2AError} and its subclasses.
      * <p>
      * This adapter handles polymorphic deserialization based on the error code, creating the
      * appropriate subclass instance.
@@ -279,12 +279,12 @@ public class JsonUtil {
      * <li>-32004: {@link UnsupportedOperationError}</li>
      * <li>-32005: {@link ContentTypeNotSupportedError}</li>
      * <li>-32006: {@link InvalidAgentResponseError}</li>
-     * <li>Other codes: {@link JSONRPCError}</li>
+     * <li>Other codes: {@link A2AError}</li>
      * </ul>
      *
-     * @see JSONRPCError
+     * @see A2AError
      */
-    static class JSONRPCErrorTypeAdapter extends TypeAdapter<JSONRPCError> {
+    static class A2AErrorTypeAdapter extends TypeAdapter<A2AError> {
 
         private static final ThrowableTypeAdapter THROWABLE_ADAPTER = new ThrowableTypeAdapter();
         static final String THROWABLE_MARKER_FIELD = "__throwable";
@@ -294,7 +294,7 @@ public class JsonUtil {
         private static final String TYPE_FIELD = "type";
 
         @Override
-        public void write(JsonWriter out, JSONRPCError value) throws java.io.IOException {
+        public void write(JsonWriter out, A2AError value) throws java.io.IOException {
             if (value == null) {
                 out.nullValue();
                 return;
@@ -317,7 +317,7 @@ public class JsonUtil {
 
         @Override
         public @Nullable
-        JSONRPCError read(JsonReader in) throws java.io.IOException {
+        A2AError read(JsonReader in) throws java.io.IOException {
             if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
                 in.nextNull();
                 return null;
@@ -390,11 +390,11 @@ public class JsonUtil {
         }
 
         /**
-         * Creates the appropriate JSONRPCError subclass based on the error code.
+         * Creates the appropriate A2AError subclass based on the error code.
          */
-        private JSONRPCError createErrorInstance(@Nullable Integer code, @Nullable String message, @Nullable Object data) {
+        private A2AError createErrorInstance(@Nullable Integer code, @Nullable String message, @Nullable Object data) {
             if (code == null) {
-                throw new JsonSyntaxException("JSONRPCError must have a code field");
+                throw new JsonSyntaxException("A2AError must have a code field");
             }
 
             return switch (code) {
@@ -421,7 +421,7 @@ public class JsonUtil {
                 case INVALID_AGENT_RESPONSE_ERROR_CODE ->
                     new InvalidAgentResponseError(code, message, data);
                 default ->
-                    new JSONRPCError(code, message, data);
+                    new A2AError(code, message, data);
             };
         }
     }

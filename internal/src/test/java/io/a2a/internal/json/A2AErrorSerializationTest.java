@@ -22,7 +22,7 @@ import io.a2a.spec.InvalidAgentResponseError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.PushNotificationNotSupportedError;
 import io.a2a.spec.TaskNotCancelableError;
@@ -31,14 +31,14 @@ import io.a2a.spec.UnsupportedOperationError;
 import org.junit.jupiter.api.Test;
 
 
-public class JSONRPCErrorSerializationTest {
+public class A2AErrorSerializationTest {
     @Test
-    public void shouldDeserializeToCorrectJSONRPCErrorSubclass() throws JsonProcessingException {
+    public void shouldDeserializeToCorrectA2AErrorSubclass() throws JsonProcessingException {
         String jsonTemplate = """
                 {"code": %s, "message": "error", "data": "anything"}
                 """;
 
-        record ErrorCase(int code, Class<? extends JSONRPCError> clazz) {}
+        record ErrorCase(int code, Class<? extends A2AError> clazz) {}
 
         List<ErrorCase> cases = List.of(new ErrorCase(JSON_PARSE_ERROR_CODE, JSONParseError.class),
                 new ErrorCase(INVALID_REQUEST_ERROR_CODE, InvalidRequestError.class),
@@ -51,12 +51,12 @@ public class JSONRPCErrorSerializationTest {
                 new ErrorCase(INVALID_AGENT_RESPONSE_ERROR_CODE, InvalidAgentResponseError.class),
                 new ErrorCase(TASK_NOT_CANCELABLE_ERROR_CODE, TaskNotCancelableError.class),
                 new ErrorCase(TASK_NOT_FOUND_ERROR_CODE, TaskNotFoundError.class),
-                new ErrorCase(Integer.MAX_VALUE, JSONRPCError.class) // Any unknown code will be treated as JSONRPCError
+                new ErrorCase(Integer.MAX_VALUE, A2AError.class) // Any unknown code will be treated as A2AError
         );
 
         for (ErrorCase errorCase : cases) {
             String json = jsonTemplate.formatted(errorCase.code());
-            JSONRPCError error = JsonUtil.fromJson(json, JSONRPCError.class);
+            A2AError error = JsonUtil.fromJson(json, A2AError.class);
             assertInstanceOf(errorCase.clazz(), error);
             assertEquals("error", error.getMessage());
             assertEquals("anything", error.getData().toString());

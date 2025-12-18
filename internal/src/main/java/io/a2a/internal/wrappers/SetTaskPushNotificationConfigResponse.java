@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.PushNotificationNotSupportedError;
 import io.a2a.spec.TaskPushNotificationConfig;
 
@@ -12,7 +12,7 @@ import io.a2a.spec.TaskPushNotificationConfig;
  * as stored by the agent.
  * <p>
  * If push notifications are not supported or an error occurs, the error field will contain
- * a {@link JSONRPCError} (e.g., {@link PushNotificationNotSupportedError}).
+ * a {@link A2AError} (e.g., {@link PushNotificationNotSupportedError}).
  *
  * @see SetTaskPushNotificationConfigRequest for the corresponding request
  * @see TaskPushNotificationConfig for the configuration structure
@@ -29,7 +29,7 @@ public final class SetTaskPushNotificationConfigResponse extends A2AResponse<Tas
      * @param result the push notification configuration
      * @param error the error (if any)
      */
-    public SetTaskPushNotificationConfigResponse(String jsonrpc, Object id, TaskPushNotificationConfig result, JSONRPCError error) {
+    public SetTaskPushNotificationConfigResponse(String jsonrpc, Object id, TaskPushNotificationConfig result, A2AError error) {
         super(jsonrpc, id, result, error, TaskPushNotificationConfig.class);
     }
 
@@ -39,7 +39,7 @@ public final class SetTaskPushNotificationConfigResponse extends A2AResponse<Tas
      * @param id the request ID
      * @param error the error
      */
-    public SetTaskPushNotificationConfigResponse(Object id, JSONRPCError error) {
+    public SetTaskPushNotificationConfigResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 

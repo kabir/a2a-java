@@ -8,7 +8,7 @@ import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.tasks.TaskUpdater;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskNotCancelableError;
 import io.a2a.spec.TaskState;
@@ -27,7 +27,7 @@ public class AgentExecutorProducer {
     private static class FireAndForgetAgentExecutor implements AgentExecutor {
 
         @Override
-        public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+        public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
             Task task = context.getTask();
 
             if (task == null) {
@@ -70,7 +70,7 @@ public class AgentExecutorProducer {
         }
 
         @Override
-        public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+        public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
             System.out.println("====> task cancel request received");
             Task task = context.getTask();
             if (task == null) {

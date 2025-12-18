@@ -1,7 +1,7 @@
 package io.a2a.internal.wrappers;
 
 import io.a2a.spec.EventKind;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 
 /**
  * The response after receiving a send message request.
@@ -16,7 +16,7 @@ public final class SendMessageResponse extends A2AResponse<EventKind> {
      * @param result the result
      * @param error the error if any
      */
-    public SendMessageResponse(String jsonrpc, Object id, EventKind result, JSONRPCError error) {
+    public SendMessageResponse(String jsonrpc, Object id, EventKind result, A2AError error) {
         super(jsonrpc, id, result, error, EventKind.class);
     }
 
@@ -36,7 +36,7 @@ public final class SendMessageResponse extends A2AResponse<EventKind> {
      * @param id the request ID
      * @param error the error
      */
-    public SendMessageResponse(Object id, JSONRPCError error) {
+    public SendMessageResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 }

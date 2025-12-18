@@ -24,11 +24,10 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }</pre>
  *
  * @see AgentCapabilities#pushNotifications() for push notification capability
- * @see SetTaskPushNotificationConfigRequest for configuring push notifications
  * @see TaskPushNotificationConfig for push notification configuration
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class PushNotificationNotSupportedError extends JSONRPCError {
+public class PushNotificationNotSupportedError extends A2AError {
 
     /**
      * Constructs error with default message.

@@ -40,7 +40,7 @@ import io.a2a.spec.InvalidAgentResponseError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.MethodNotFoundError;
@@ -81,7 +81,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             io.a2a.grpc.SendMessageResponse response = ToProto.taskOrMessage(taskOrMessage);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -103,7 +103,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             } else {
                 handleError(responseObserver, new TaskNotFoundError());
             }
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -121,7 +121,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             ListTasksResult result = getRequestHandler().onListTasks(params, context);
             responseObserver.onNext(ToProto.listTasksResult(result));
             responseObserver.onCompleted();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -143,7 +143,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             } else {
                 handleError(responseObserver, new TaskNotFoundError());
             }
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -166,7 +166,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             TaskPushNotificationConfig responseConfig = getRequestHandler().onSetTaskPushNotificationConfig(config, context);
             responseObserver.onNext(ToProto.taskPushNotificationConfig(responseConfig));
             responseObserver.onCompleted();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -189,7 +189,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             TaskPushNotificationConfig config = getRequestHandler().onGetTaskPushNotificationConfig(params, context);
             responseObserver.onNext(ToProto.taskPushNotificationConfig(config));
             responseObserver.onCompleted();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -217,7 +217,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             }
             responseObserver.onNext(responseBuilder.build());
             responseObserver.onCompleted();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -239,7 +239,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             MessageSendParams params = FromProto.messageSendParams(request);
             Flow.Publisher<StreamingEventKind> publisher = getRequestHandler().onMessageSendStream(params, context);
             convertToStreamResponse(publisher, responseObserver);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -261,7 +261,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             TaskIdParams params = FromProto.taskIdParams(request);
             Flow.Publisher<StreamingEventKind> publisher = getRequestHandler().onResubscribeToTask(params, context);
             convertToStreamResponse(publisher, responseObserver);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -301,7 +301,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
                 @Override
                 public void onError(Throwable throwable) {
-                    if (throwable instanceof JSONRPCError jsonrpcError) {
+                    if (throwable instanceof A2AError jsonrpcError) {
                         handleError(responseObserver, jsonrpcError);
                     } else {
                         handleInternalError(responseObserver, throwable);
@@ -343,7 +343,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             // void response
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             handleError(responseObserver, e);
         } catch (SecurityException e) {
             handleSecurityException(responseObserver, e);
@@ -409,7 +409,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         }
     }
 
-    private <V> void handleError(StreamObserver<V> responseObserver, JSONRPCError error) {
+    private <V> void handleError(StreamObserver<V> responseObserver, A2AError error) {
         Status status;
         String description;
         if (error instanceof InvalidRequestError) {

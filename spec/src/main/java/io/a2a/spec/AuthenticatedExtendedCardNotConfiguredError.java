@@ -25,11 +25,10 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }
  * }</pre>
  *
- * @see GetAuthenticatedExtendedCardRequest for retrieving authenticated extended cards
  * @see AgentCard for the base agent card structure
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class AuthenticatedExtendedCardNotConfiguredError extends JSONRPCError {
+public class AuthenticatedExtendedCardNotConfiguredError extends A2AError {
 
     /**
      * Constructs an error for agents that don't support authenticated extended card retrieval.

@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskNotCancelableError;
 import io.a2a.spec.TaskNotFoundError;
@@ -13,7 +13,7 @@ import io.a2a.spec.TaskState;
  * showing {@link TaskState#CANCELED} status if the cancellation was successful.
  * <p>
  * If the task cannot be canceled (e.g., already completed) or is not found, the error
- * field will contain a {@link JSONRPCError} such as {@link TaskNotCancelableError} or
+ * field will contain a {@link io.a2a.spec.A2AError} such as {@link TaskNotCancelableError} or
  * {@link TaskNotFoundError}.
  *
  * @see CancelTaskRequest for the corresponding request
@@ -32,7 +32,7 @@ public final class CancelTaskResponse extends A2AResponse<Task> {
      * @param result the task result
      * @param error the error if any
      */
-    public CancelTaskResponse(String jsonrpc, Object id, Task result, JSONRPCError error) {
+    public CancelTaskResponse(String jsonrpc, Object id, Task result, A2AError error) {
         super(jsonrpc, id, result, error, Task.class);
     }
 
@@ -42,7 +42,7 @@ public final class CancelTaskResponse extends A2AResponse<Task> {
      * @param id the request ID
      * @param error the error
      */
-    public CancelTaskResponse(Object id, JSONRPCError error) {
+    public CancelTaskResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 

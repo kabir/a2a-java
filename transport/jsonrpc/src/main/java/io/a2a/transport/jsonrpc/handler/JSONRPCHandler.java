@@ -31,7 +31,7 @@ import io.a2a.internal.wrappers.GetTaskRequest;
 import io.a2a.internal.wrappers.GetTaskResponse;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidRequestError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.internal.wrappers.ListTaskPushNotificationConfigRequest;
 import io.a2a.internal.wrappers.ListTaskPushNotificationConfigResponse;
 import io.a2a.internal.wrappers.ListTasksRequest;
@@ -81,7 +81,7 @@ public class JSONRPCHandler {
         try {
             EventKind taskOrMessage = requestHandler.onMessageSend(request.getParams(), context);
             return new SendMessageResponse(request.getId(), taskOrMessage);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new SendMessageResponse(request.getId(), e);
         } catch (Throwable t) {
             return new SendMessageResponse(request.getId(), new InternalError(t.getMessage()));
@@ -104,7 +104,7 @@ public class JSONRPCHandler {
             // We can't use the convertingProcessor convenience method since that propagates any errors as an error handled
             // via Subscriber.onError() rather than as part of the SendStreamingResponse payload
             return convertToSendStreamingMessageResponse(request.getId(), publisher);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), e));
         } catch (Throwable throwable) {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), new InternalError(throwable.getMessage())));
@@ -118,7 +118,7 @@ public class JSONRPCHandler {
                 return new CancelTaskResponse(request.getId(), task);
             }
             return new CancelTaskResponse(request.getId(), new TaskNotFoundError());
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new CancelTaskResponse(request.getId(), e);
         } catch (Throwable t) {
             return new CancelTaskResponse(request.getId(), new InternalError(t.getMessage()));
@@ -140,7 +140,7 @@ public class JSONRPCHandler {
             // We can't use the convertingProcessor convenience method since that propagates any errors as an error handled
             // via Subscriber.onError() rather than as part of the SendStreamingResponse payload
             return convertToSendStreamingMessageResponse(request.getId(), publisher);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), e));
         } catch (Throwable throwable) {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), new InternalError(throwable.getMessage())));
@@ -157,7 +157,7 @@ public class JSONRPCHandler {
             TaskPushNotificationConfig config =
                     requestHandler.onGetTaskPushNotificationConfig(request.getParams(), context);
             return new GetTaskPushNotificationConfigResponse(request.getId(), config);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new GetTaskPushNotificationConfigResponse(request.getId().toString(), e);
         } catch (Throwable t) {
             return new GetTaskPushNotificationConfigResponse(request.getId(), new InternalError(t.getMessage()));
@@ -174,7 +174,7 @@ public class JSONRPCHandler {
             TaskPushNotificationConfig config =
                     requestHandler.onSetTaskPushNotificationConfig(request.getParams(), context);
             return new SetTaskPushNotificationConfigResponse(request.getId().toString(), config);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new SetTaskPushNotificationConfigResponse(request.getId(), e);
         } catch (Throwable t) {
             return new SetTaskPushNotificationConfigResponse(request.getId(), new InternalError(t.getMessage()));
@@ -185,7 +185,7 @@ public class JSONRPCHandler {
         try {
             Task task = requestHandler.onGetTask(request.getParams(), context);
             return new GetTaskResponse(request.getId(), task);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new GetTaskResponse(request.getId(), e);
         } catch (Throwable t) {
             return new GetTaskResponse(request.getId(), new InternalError(t.getMessage()));
@@ -196,7 +196,7 @@ public class JSONRPCHandler {
         try {
             ListTasksResult result = requestHandler.onListTasks(request.getParams(), context);
             return new ListTasksResponse(request.getId(), result);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new ListTasksResponse(request.getId(), e);
         } catch (Throwable t) {
             return new ListTasksResponse(request.getId(), new InternalError(t.getMessage()));
@@ -213,7 +213,7 @@ public class JSONRPCHandler {
             List<TaskPushNotificationConfig> pushNotificationConfigList =
                     requestHandler.onListTaskPushNotificationConfig(request.getParams(), context);
             return new ListTaskPushNotificationConfigResponse(request.getId(), pushNotificationConfigList);
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new ListTaskPushNotificationConfigResponse(request.getId(), e);
         } catch (Throwable t) {
             return new ListTaskPushNotificationConfigResponse(request.getId(), new InternalError(t.getMessage()));
@@ -229,7 +229,7 @@ public class JSONRPCHandler {
         try {
             requestHandler.onDeleteTaskPushNotificationConfig(request.getParams(), context);
             return new DeleteTaskPushNotificationConfigResponse(request.getId());
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new DeleteTaskPushNotificationConfigResponse(request.getId(), e);
         } catch (Throwable t) {
             return new DeleteTaskPushNotificationConfigResponse(request.getId(), new InternalError(t.getMessage()));
@@ -245,7 +245,7 @@ public class JSONRPCHandler {
         }
         try {
             return new GetAuthenticatedExtendedCardResponse(request.getId(), extendedAgentCard.get());
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             return new GetAuthenticatedExtendedCardResponse(request.getId(), e);
         } catch (Throwable t) {
             return new GetAuthenticatedExtendedCardResponse(request.getId(), new InternalError(t.getMessage()));
@@ -280,7 +280,7 @@ public class JSONRPCHandler {
 
                         @Override
                         public void onError(Throwable throwable) {
-                            if (throwable instanceof JSONRPCError jsonrpcError) {
+                            if (throwable instanceof A2AError jsonrpcError) {
                                 tube.send(new SendStreamingMessageResponse(requestId, jsonrpcError));
                             } else {
                                 tube.send(

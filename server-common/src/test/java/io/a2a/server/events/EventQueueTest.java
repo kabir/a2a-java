@@ -14,7 +14,7 @@ import java.util.List;
 
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
@@ -288,7 +288,7 @@ public class EventQueueTest {
     public void testEnqueueDifferentEventTypes() throws Exception {
         List<Event> events = List.of(
                 new TaskNotFoundError(),
-                new JSONRPCError(111, "rpc error", null));
+                new A2AError(111, "rpc error", null));
 
         for (Event event : events) {
             eventQueue.enqueueEvent(event);

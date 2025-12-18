@@ -2,7 +2,7 @@ package io.a2a.internal.wrappers;
 
 import static io.a2a.util.Utils.defaultIfNull;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.util.Assert;
 
 /**
@@ -19,7 +19,7 @@ public abstract sealed class A2AResponse<T> implements A2AMessage permits Cancel
     /** The result of the method invocation. */
     protected T result;
     /** The error object if the invocation failed. */
-    protected JSONRPCError error;
+    protected A2AError error;
 
     /**
      * Default constructor for deserialization.
@@ -36,7 +36,7 @@ public abstract sealed class A2AResponse<T> implements A2AMessage permits Cancel
      * @param error the error if any
      * @param resultType the result type class
      */
-    public A2AResponse(String jsonrpc, Object id, T result, JSONRPCError error, Class<T> resultType) {
+    public A2AResponse(String jsonrpc, Object id, T result, A2AError error, Class<T> resultType) {
         if (jsonrpc != null && ! jsonrpc.equals(JSONRPC_VERSION)) {
             throw new IllegalArgumentException("Invalid JSON-RPC protocol version");
         }
@@ -77,7 +77,7 @@ public abstract sealed class A2AResponse<T> implements A2AMessage permits Cancel
      *
      * @return the error if any
      */
-    public JSONRPCError getError() {
+    public A2AError getError() {
         return this.error;
     }
 }

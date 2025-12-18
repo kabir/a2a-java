@@ -44,7 +44,7 @@ import io.a2a.internal.json.IdJsonMappingException;
 import io.a2a.spec.InternalError;
 import io.a2a.internal.json.InvalidParamsJsonMappingException;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.internal.wrappers.A2AErrorResponse;
 import io.a2a.internal.wrappers.A2ARequest;
 import io.a2a.internal.wrappers.A2AResponse;
@@ -109,7 +109,7 @@ public class A2AServerRoutes {
                 streaming = true;
                 streamingResponse = processStreamingRequest(request, context);
             }
-        } catch (JSONRPCError e) {
+        } catch (A2AError e) {
             error = new A2AErrorResponse(e);
         } catch (InvalidParamsJsonMappingException e) {
             error = new A2AErrorResponse(e.getId(), new io.a2a.spec.InvalidParamsError(null, e.getMessage(), null));
@@ -204,7 +204,7 @@ public class A2AServerRoutes {
         return Multi.createFrom().publisher(publisher);
     }
 
-    private A2AResponse<?> generateErrorResponse(A2ARequest<?> request, JSONRPCError error) {
+    private A2AResponse<?> generateErrorResponse(A2ARequest<?> request, A2AError error) {
         return new A2AErrorResponse(request.getId(), error);
     }
 

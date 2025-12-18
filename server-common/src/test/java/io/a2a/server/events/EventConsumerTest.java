@@ -20,7 +20,7 @@ import io.a2a.spec.A2AError;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
@@ -73,13 +73,13 @@ public class EventConsumerTest {
 
     @Test
     public void testConsumeOneA2AErrorEvent() throws Exception {
-        Event event = new A2AError() {};
+        Event event = new A2AError(-1, "", null);
         enqueueAndConsumeOneEvent(event);
     }
 
     @Test
     public void testConsumeOneJsonRpcErrorEvent() throws Exception {
-        Event event = new JSONRPCError(123, "Some Error", null);
+        Event event = new A2AError(123, "Some Error", null);
         enqueueAndConsumeOneEvent(event);
     }
 

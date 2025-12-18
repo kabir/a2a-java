@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.TaskPushNotificationConfig;
 
 /**
@@ -10,7 +10,7 @@ import io.a2a.spec.TaskPushNotificationConfig;
  * showing the current push notification endpoint and authentication settings.
  * <p>
  * If no configuration exists or an error occurs, the error field will contain a
- * {@link JSONRPCError}.
+ * {@link A2AError}.
  *
  * @see GetTaskPushNotificationConfigRequest for the corresponding request
  * @see TaskPushNotificationConfig for the configuration structure
@@ -26,7 +26,7 @@ public final class GetTaskPushNotificationConfigResponse extends A2AResponse<Tas
      * @param result the push notification config result
      * @param error the error if any
      */
-    public GetTaskPushNotificationConfigResponse(String jsonrpc, Object id, TaskPushNotificationConfig result, JSONRPCError error) {
+    public GetTaskPushNotificationConfigResponse(String jsonrpc, Object id, TaskPushNotificationConfig result, A2AError error) {
         super(jsonrpc, id, result, error, TaskPushNotificationConfig.class);
     }
 
@@ -36,7 +36,7 @@ public final class GetTaskPushNotificationConfigResponse extends A2AResponse<Tas
      * @param id the request ID
      * @param error the error
      */
-    public GetTaskPushNotificationConfigResponse(Object id, JSONRPCError error) {
+    public GetTaskPushNotificationConfigResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 

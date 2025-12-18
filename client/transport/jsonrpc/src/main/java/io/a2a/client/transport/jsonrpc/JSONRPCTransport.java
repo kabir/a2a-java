@@ -39,7 +39,7 @@ import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
 import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.internal.wrappers.GetTaskRequest;
 import io.a2a.internal.wrappers.GetTaskResponse;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.internal.wrappers.A2AMessage;
 import io.a2a.internal.wrappers.A2AResponse;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
@@ -383,7 +383,7 @@ public class JSONRPCTransport implements ClientTransport {
     private <T extends A2AResponse<?>> T unmarshalResponse(String response, String method)
             throws A2AClientException, JsonProcessingException {
         A2AResponse<?> value = JSONRPCUtils.parseResponseBody(response, method);
-        JSONRPCError error = value.getError();
+        A2AError error = value.getError();
         if (error != null) {
             throw new A2AClientException(error.getMessage() + (error.getData() != null ? ": " + error.getData() : ""), error);
         }

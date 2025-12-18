@@ -23,11 +23,9 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }
  * }</pre>
  *
- * @see JSONRPCError for the base error class
- * @see A2AError for the error marker interface
  * @see <a href="https://www.jsonrpc.org/specification#error_object">JSON-RPC 2.0 Error Codes</a>
  */
-public class InternalError extends JSONRPCError {
+public class InternalError extends A2AError {
 
     /**
      * Constructs an internal error with full parameters.

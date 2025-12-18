@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 
 /**
  * The response for a list tasks request.
@@ -15,7 +15,7 @@ public final class ListTasksResponse extends A2AResponse<ListTasksResult> {
      * @param result the result
      * @param error the error if any
      */
-    public ListTasksResponse(String jsonrpc, Object id, ListTasksResult result, JSONRPCError error) {
+    public ListTasksResponse(String jsonrpc, Object id, ListTasksResult result, A2AError error) {
         super(jsonrpc, id, result, error, ListTasksResult.class);
     }
 
@@ -35,7 +35,7 @@ public final class ListTasksResponse extends A2AResponse<ListTasksResult> {
      * @param id the request ID
      * @param error the error
      */
-    public ListTasksResponse(Object id, JSONRPCError error) {
+    public ListTasksResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 }

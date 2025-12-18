@@ -25,12 +25,11 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }
  * }</pre>
  *
- * @see CancelTaskRequest for task cancellation
  * @see TaskState for task state definitions
  * @see TaskStatus#state() for current task state
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class TaskNotCancelableError extends JSONRPCError {
+public class TaskNotCancelableError extends A2AError {
 
     /**
      * Constructs error with default message.

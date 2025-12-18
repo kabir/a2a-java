@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.util.Assert;
 
 /**
@@ -10,14 +10,14 @@ import io.a2a.util.Assert;
  * According to the JSON-RPC 2.0 specification, an error response must contain:
  * <ul>
  *   <li>{@code jsonrpc} - Always "2.0"</li>
- *   <li>{@code error} - A {@link JSONRPCError} object describing the error</li>
+ *   <li>{@code error} - A {@link A2AError} object describing the error</li>
  *   <li>{@code id} - The request ID, or null if the ID could not be determined</li>
  * </ul>
  * <p>
  * The {@code result} field must be absent or null in error responses. This class
  * enforces that constraint by fixing the result type parameter to {@code Void}.
  *
- * @see JSONRPCError
+ * @see A2AError
  * @see A2AResponse
  * @see <a href="https://www.jsonrpc.org/specification#response_object">JSON-RPC 2.0 Response Object</a>
  */
@@ -34,7 +34,7 @@ public final class A2AErrorResponse extends A2AResponse<Void> {
      * @param error the error object describing what went wrong (required)
      * @throws IllegalArgumentException if error is null
      */
-    public A2AErrorResponse(String jsonrpc, Object id, Void result, JSONRPCError error) {
+    public A2AErrorResponse(String jsonrpc, Object id, Void result, A2AError error) {
         super(jsonrpc, id, result, error, Void.class);
         Assert.checkNotNullParam("error", error);
     }
@@ -47,7 +47,7 @@ public final class A2AErrorResponse extends A2AResponse<Void> {
      * @param id the request ID
      * @param error the error object (required)
      */
-    public A2AErrorResponse(Object id, JSONRPCError error) {
+    public A2AErrorResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 
@@ -59,7 +59,7 @@ public final class A2AErrorResponse extends A2AResponse<Void> {
      *
      * @param error the error object (required)
      */
-    public A2AErrorResponse(JSONRPCError error) {
+    public A2AErrorResponse(A2AError error) {
         this(null, null, null, error);
     }
 }

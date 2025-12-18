@@ -28,7 +28,7 @@ import io.a2a.spec.InvalidParamsError;
 import io.a2a.internal.json.InvalidParamsJsonMappingException;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.internal.wrappers.A2AMessage;
 import io.a2a.internal.wrappers.A2ARequest;
 import io.a2a.internal.wrappers.A2AResponse;
@@ -320,7 +320,7 @@ public class JSONRPCUtils {
     }
 
     public static A2AResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
-        JSONRPCError rpcError = processError(error);
+        A2AError rpcError = processError(error);
         switch (method) {
             case GetTaskRequest.METHOD -> {
                 return new GetTaskResponse(id, rpcError);
@@ -351,7 +351,7 @@ public class JSONRPCUtils {
         }
     }
 
-    private static JSONRPCError processError(JsonObject error) {
+    private static A2AError processError(JsonObject error) {
         String message = error.has("message") ? error.get("message").getAsString() : null;
         Integer code = error.has("code") ? error.get("code").getAsInt() : null;
         String data = error.has("data") ? error.get("data").toString() : null;
@@ -380,10 +380,10 @@ public class JSONRPCUtils {
                 case TASK_NOT_FOUND_ERROR_CODE:
                     return new TaskNotFoundError(code, message, data);
                 default:
-                    return new JSONRPCError(code, message, data);
+                    return new A2AError(code, message, data);
             }
         }
-        return new JSONRPCError(code, message, data);
+        return new A2AError(code, message, data);
     }
 
     protected static void parseRequestBody(JsonElement jsonRpc, com.google.protobuf.Message.Builder builder, Object id) throws JsonProcessingException {
@@ -558,7 +558,7 @@ public class JSONRPCUtils {
         }
     }
 
-    public static String toJsonRPCErrorResponse(Object requestId, JSONRPCError error) {
+    public static String toJsonRPCErrorResponse(Object requestId, A2AError error) {
         try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");

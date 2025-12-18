@@ -2,7 +2,7 @@ package io.a2a.internal.wrappers;
 
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 
 /**
  * JSON-RPC response containing an agent's extended card with authenticated details.
@@ -12,7 +12,7 @@ import io.a2a.spec.JSONRPCError;
  * security configurations, or other authenticated-only capabilities.
  * <p>
  * If the agent doesn't support authenticated extended cards or authentication fails,
- * the error field will contain a {@link JSONRPCError} such as
+ * the error field will contain a {@link A2AError} such as
  * {@link AuthenticatedExtendedCardNotConfiguredError}.
  *
  * @see GetAuthenticatedExtendedCardRequest for the corresponding request
@@ -30,7 +30,7 @@ public final class GetAuthenticatedExtendedCardResponse extends A2AResponse<Agen
      * @param result the agent card result
      * @param error the error if any
      */
-    public GetAuthenticatedExtendedCardResponse(String jsonrpc, Object id, AgentCard result, JSONRPCError error) {
+    public GetAuthenticatedExtendedCardResponse(String jsonrpc, Object id, AgentCard result, A2AError error) {
         super(jsonrpc, id, result, error, AgentCard.class);
     }
 
@@ -40,7 +40,7 @@ public final class GetAuthenticatedExtendedCardResponse extends A2AResponse<Agen
      * @param id the request ID
      * @param error the error
      */
-    public GetAuthenticatedExtendedCardResponse(Object id, JSONRPCError error) {
+    public GetAuthenticatedExtendedCardResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 

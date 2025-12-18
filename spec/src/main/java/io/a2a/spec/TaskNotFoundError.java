@@ -29,11 +29,9 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }</pre>
  *
  * @see Task for task object definition
- * @see GetTaskRequest for task retrieval
- * @see CancelTaskRequest for task cancellation
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class TaskNotFoundError extends JSONRPCError {
+public class TaskNotFoundError extends A2AError {
 
     /**
      * Constructs error with default message.

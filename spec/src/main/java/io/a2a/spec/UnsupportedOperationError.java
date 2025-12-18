@@ -31,7 +31,7 @@ import static io.a2a.util.Utils.defaultIfNull;
  * @see MethodNotFoundError for unknown method errors
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class UnsupportedOperationError extends JSONRPCError {
+public class UnsupportedOperationError extends A2AError {
 
     /**
      * Constructs error with all parameters.

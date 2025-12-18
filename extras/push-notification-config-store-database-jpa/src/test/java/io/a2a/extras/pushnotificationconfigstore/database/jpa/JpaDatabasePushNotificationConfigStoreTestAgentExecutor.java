@@ -12,7 +12,7 @@ import io.a2a.server.events.EventQueue;
 import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.TaskUpdater;
 import io.a2a.spec.InvalidRequestError;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Part;
 import io.a2a.spec.TextPart;
@@ -33,7 +33,7 @@ public class JpaDatabasePushNotificationConfigStoreTestAgentExecutor {
     public AgentExecutor agentExecutor() {
         return new AgentExecutor() {
             @Override
-            public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+            public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
                 TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
                 String command = getLastTextPart(context.getMessage());
 
@@ -55,14 +55,14 @@ public class JpaDatabasePushNotificationConfigStoreTestAgentExecutor {
             }
 
             @Override
-            public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+            public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
                 TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
                 taskUpdater.cancel();
             }
         };
     }
 
-    private String getLastTextPart(Message message) throws JSONRPCError {
+    private String getLastTextPart(Message message) throws A2AError {
         if (message.parts() == null || message.parts().isEmpty()) {
             return "";
         }

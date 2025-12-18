@@ -1,15 +1,15 @@
 package io.a2a.server;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 
 public class JSONRPCException extends Exception{
-    private final JSONRPCError error;
+    private final A2AError error;
 
-    public JSONRPCException(JSONRPCError error) {
+    public JSONRPCException(A2AError error) {
         this.error = error;
     }
 
-    public JSONRPCError getError() {
+    public A2AError getError() {
         return error;
     }
 }

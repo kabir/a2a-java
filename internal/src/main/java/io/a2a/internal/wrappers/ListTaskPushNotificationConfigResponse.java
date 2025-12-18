@@ -2,7 +2,7 @@ package io.a2a.internal.wrappers;
 
 import java.util.List;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.TaskPushNotificationConfig;
 
 /**
@@ -11,7 +11,7 @@ import io.a2a.spec.TaskPushNotificationConfig;
  * This response returns a list of all {@link TaskPushNotificationConfig} entries
  * configured for the requested task, showing all active notification endpoints.
  * <p>
- * If an error occurs, the error field will contain a {@link JSONRPCError}.
+ * If an error occurs, the error field will contain a {@link A2AError}.
  *
  * @see ListTaskPushNotificationConfigRequest for the corresponding request
  * @see TaskPushNotificationConfig for the configuration structure
@@ -27,7 +27,7 @@ public final class ListTaskPushNotificationConfigResponse extends A2AResponse<Li
      * @param result the list of push notification configurations
      * @param error the error (if any)
      */
-    public ListTaskPushNotificationConfigResponse(String jsonrpc, Object id, List<TaskPushNotificationConfig> result, JSONRPCError error) {
+    public ListTaskPushNotificationConfigResponse(String jsonrpc, Object id, List<TaskPushNotificationConfig> result, A2AError error) {
         super(jsonrpc, id, result, error, (Class<List<TaskPushNotificationConfig>>) (Class<?>) List.class);
     }
 
@@ -37,7 +37,7 @@ public final class ListTaskPushNotificationConfigResponse extends A2AResponse<Li
      * @param id the request ID
      * @param error the error
      */
-    public ListTaskPushNotificationConfigResponse(Object id, JSONRPCError error) {
+    public ListTaskPushNotificationConfigResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 

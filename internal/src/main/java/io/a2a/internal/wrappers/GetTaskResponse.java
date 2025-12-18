@@ -1,6 +1,6 @@
 package io.a2a.internal.wrappers;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskNotFoundError;
 
@@ -11,7 +11,7 @@ import io.a2a.spec.TaskNotFoundError;
  * {@link GetTaskRequest}, including all task metadata, status, artifacts, and messages.
  * <p>
  * If the task is not found or an error occurs, the error field will be populated with
- * a {@link JSONRPCError} (typically {@link TaskNotFoundError}) instead of a result.
+ * a {@link A2AError} (typically {@link TaskNotFoundError}) instead of a result.
  *
  * @see GetTaskRequest for the corresponding request
  * @see Task for the task structure
@@ -28,7 +28,7 @@ public final class GetTaskResponse extends A2AResponse<Task> {
      * @param result the task result
      * @param error the error if any
      */
-    public GetTaskResponse(String jsonrpc, Object id, Task result, JSONRPCError error) {
+    public GetTaskResponse(String jsonrpc, Object id, Task result, A2AError error) {
         super(jsonrpc, id, result, error, Task.class);
     }
 
@@ -38,7 +38,7 @@ public final class GetTaskResponse extends A2AResponse<Task> {
      * @param id the request ID
      * @param error the error
      */
-    public GetTaskResponse(Object id, JSONRPCError error) {
+    public GetTaskResponse(Object id, A2AError error) {
         this(null, id, null, error);
     }
 
