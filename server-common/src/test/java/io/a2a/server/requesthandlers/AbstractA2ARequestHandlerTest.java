@@ -21,7 +21,7 @@ import jakarta.enterprise.context.Dependent;
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpResponse;
 import io.a2a.json.JsonProcessingException;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;

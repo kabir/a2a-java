@@ -50,7 +50,7 @@ import io.a2a.spec.TaskQueryParams;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.UnsupportedOperationError;
 import io.a2a.server.util.async.Internal;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import jakarta.enterprise.inject.Instance;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;

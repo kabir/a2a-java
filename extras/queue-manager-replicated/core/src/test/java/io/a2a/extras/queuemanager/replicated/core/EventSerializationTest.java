@@ -32,7 +32,7 @@ import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import org.junit.jupiter.api.Test;
 
 /**

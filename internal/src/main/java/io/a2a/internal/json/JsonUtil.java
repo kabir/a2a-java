@@ -1,4 +1,4 @@
-package io.a2a.json;
+package io.a2a.internal.json;
 
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INTERNAL_ERROR_CODE;
@@ -21,6 +21,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
+import io.a2a.json.JsonProcessingException;
 import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.spec.DataPart;
 import io.a2a.spec.FileContent;
@@ -53,7 +54,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import org.jspecify.annotations.Nullable;
 
-import static io.a2a.json.JsonUtil.JSONRPCErrorTypeAdapter.THROWABLE_MARKER_FIELD;
+import static io.a2a.internal.json.JsonUtil.JSONRPCErrorTypeAdapter.THROWABLE_MARKER_FIELD;
 
 /**
  * Utility class for JSON operations.

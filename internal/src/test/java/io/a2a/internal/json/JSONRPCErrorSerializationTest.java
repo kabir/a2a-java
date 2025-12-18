@@ -1,11 +1,5 @@
-package io.a2a.spec;
+package io.a2a.internal.json;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INTERNAL_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INVALID_AGENT_RESPONSE_ERROR_CODE;
@@ -17,9 +11,25 @@ import static io.a2a.spec.A2AErrorCodes.PUSH_NOTIFICATION_NOT_SUPPORTED_ERROR_CO
 import static io.a2a.spec.A2AErrorCodes.TASK_NOT_CANCELABLE_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.TASK_NOT_FOUND_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.UNSUPPORTED_OPERATION_ERROR_CODE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
+import java.util.List;
 
 import io.a2a.json.JsonProcessingException;
-import io.a2a.json.JsonUtil;
+import io.a2a.spec.ContentTypeNotSupportedError;
+import io.a2a.spec.InternalError;
+import io.a2a.spec.InvalidAgentResponseError;
+import io.a2a.spec.InvalidParamsError;
+import io.a2a.spec.InvalidRequestError;
+import io.a2a.spec.JSONParseError;
+import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.MethodNotFoundError;
+import io.a2a.spec.PushNotificationNotSupportedError;
+import io.a2a.spec.TaskNotCancelableError;
+import io.a2a.spec.TaskNotFoundError;
+import io.a2a.spec.UnsupportedOperationError;
+import org.junit.jupiter.api.Test;
 
 
 public class JSONRPCErrorSerializationTest {

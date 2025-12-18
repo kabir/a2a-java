@@ -1,5 +1,6 @@
 package io.a2a.server.events;
 
+import static io.a2a.internal.json.JsonUtil.fromJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,7 +28,6 @@ import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
-import io.a2a.util.Utils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,13 +61,13 @@ public class EventConsumerTest {
 
     @Test
     public void testConsumeOneTaskEvent() throws Exception {
-        Task event = Utils.unmarshalFrom(MINIMAL_TASK, Task.class);
+        Task event = fromJson(MINIMAL_TASK, Task.class);
         enqueueAndConsumeOneEvent(event);
     }
 
     @Test
     public void testConsumeOneMessageEvent() throws Exception {
-        Event event = Utils.unmarshalFrom(MESSAGE_PAYLOAD, Message.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
         enqueueAndConsumeOneEvent(event);
     }
 
@@ -91,7 +91,7 @@ public class EventConsumerTest {
     @Test
     public void testConsumeAllMultipleEvents() throws JsonProcessingException {
         List<Event> events = List.of(
-                Utils.unmarshalFrom(MINIMAL_TASK, Task.class),
+                fromJson(MINIMAL_TASK, Task.class),
                 TaskArtifactUpdateEvent.builder()
                         .taskId("task-123")
                         .contextId("session-xyz")
@@ -152,7 +152,7 @@ public class EventConsumerTest {
     @Test
     public void testConsumeUntilMessage() throws Exception {
         List<Event> events = List.of(
-                Utils.unmarshalFrom(MINIMAL_TASK, Task.class),
+                fromJson(MINIMAL_TASK, Task.class),
                 TaskArtifactUpdateEvent.builder()
                         .taskId("task-123")
                         .contextId("session-xyz")
@@ -212,7 +212,7 @@ public class EventConsumerTest {
 
     @Test
     public void testConsumeMessageEvents() throws Exception {
-        Message message = Utils.unmarshalFrom(MESSAGE_PAYLOAD, Message.class);
+        Message message = fromJson(MESSAGE_PAYLOAD, Message.class);
         Message message2 = Message.builder(message).build();
 
         List<Event> events = List.of(message, message2);
@@ -391,7 +391,7 @@ public class EventConsumerTest {
         EventConsumer consumer = new EventConsumer(queue);
 
         // Add a message event (which will complete the stream)
-        Event message = Utils.unmarshalFrom(MESSAGE_PAYLOAD, Message.class);
+        Event message = fromJson(MESSAGE_PAYLOAD, Message.class);
         queue.enqueueEvent(message);
 
         // Close the queue before consuming

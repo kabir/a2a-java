@@ -42,7 +42,7 @@ import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
 import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.json.JsonProcessingException;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AgentCapabilities;
 import io.a2a.spec.AgentCard;

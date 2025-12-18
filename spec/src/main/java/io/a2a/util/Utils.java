@@ -1,23 +1,20 @@
 package io.a2a.util;
 
+import static io.a2a.util.Assert.checkNotNullParam;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import com.google.gson.Gson;
-import io.a2a.json.JsonProcessingException;
-import io.a2a.json.JsonUtil;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
-
 import io.a2a.spec.Artifact;
+import io.a2a.spec.Part;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
-import io.a2a.spec.Part;
-import java.util.logging.Logger;
 import org.jspecify.annotations.Nullable;
-
-import static io.a2a.util.Assert.checkNotNullParam;
 
 /**
  * Utility class providing common helper methods for A2A Protocol operations.
@@ -45,21 +42,6 @@ public class Utils {
      * Specification version constant for deprecation annotations.
      */
     public static final String SPEC_VERSION_1_0 = "1.0";
-
-    /**
-     * Deserializes JSON string into a typed object using Gson.
-     * <p>
-     * This method uses the pre-configured {@link JsonUtil#fromJson(String, Class)} to parse JSON.
-     *
-     * @param <T> the target type
-     * @param data JSON string to deserialize
-     * @param typeRef class reference specifying the target type
-     * @return deserialized object of type T
-     * @throws JsonProcessingException if JSON parsing fails
-     */
-    public static <T> T unmarshalFrom(String data, Class<T> typeRef) throws JsonProcessingException {
-        return JsonUtil.fromJson(data, typeRef);
-    }
 
     /**
      * Returns the provided value if non-null, otherwise returns the default value.

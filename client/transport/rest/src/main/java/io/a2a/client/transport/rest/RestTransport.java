@@ -27,7 +27,7 @@ import io.a2a.client.transport.spi.interceptors.ClientCallContext;
 import io.a2a.client.transport.spi.interceptors.ClientCallInterceptor;
 import io.a2a.client.transport.spi.interceptors.PayloadAndHeaders;
 import io.a2a.grpc.utils.ProtoUtils;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.a2a.spec.A2AClientError;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AgentCard;

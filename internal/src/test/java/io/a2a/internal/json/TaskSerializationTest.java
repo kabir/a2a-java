@@ -1,4 +1,4 @@
-package io.a2a.spec;
+package io.a2a.internal.json;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -11,7 +11,17 @@ import java.util.List;
 import java.util.Map;
 
 import io.a2a.json.JsonProcessingException;
-import io.a2a.json.JsonUtil;
+import io.a2a.spec.Artifact;
+import io.a2a.spec.DataPart;
+import io.a2a.spec.FilePart;
+import io.a2a.spec.FileWithBytes;
+import io.a2a.spec.FileWithUri;
+import io.a2a.spec.Message;
+import io.a2a.spec.Part;
+import io.a2a.spec.Task;
+import io.a2a.spec.TaskState;
+import io.a2a.spec.TaskStatus;
+import io.a2a.spec.TextPart;
 import org.junit.jupiter.api.Test;
 
 /**

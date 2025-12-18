@@ -15,7 +15,7 @@ import io.a2a.spec.PushNotificationConfig;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
-import io.a2a.json.JsonUtil;
+import io.a2a.internal.json.JsonUtil;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
