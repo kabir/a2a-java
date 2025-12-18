@@ -15,7 +15,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import io.a2a.spec.A2AError;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Artifact;

@@ -6,13 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import com.google.gson.JsonSyntaxException;
-import io.a2a.json.JsonMappingException;
+import io.a2a.internal.json.JsonMappingException;
 import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
 import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.InvalidParamsJsonMappingException;
+import io.a2a.internal.json.InvalidParamsJsonMappingException;
 import io.a2a.spec.JSONParseError;
 import io.a2a.internal.wrappers.A2ARequest;
 import io.a2a.spec.PushNotificationConfig;

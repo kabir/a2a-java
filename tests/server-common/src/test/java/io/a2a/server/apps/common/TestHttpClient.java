@@ -13,7 +13,7 @@ import jakarta.enterprise.inject.Alternative;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpResponse;
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import io.a2a.spec.Task;
 import io.a2a.internal.json.JsonUtil;
 import java.util.Map;

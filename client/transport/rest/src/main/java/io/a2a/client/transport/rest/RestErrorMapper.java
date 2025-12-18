@@ -2,7 +2,7 @@ package io.a2a.client.transport.rest;
 
 import com.google.gson.JsonObject;
 import io.a2a.client.http.A2AHttpResponse;
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import io.a2a.internal.json.JsonUtil;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;

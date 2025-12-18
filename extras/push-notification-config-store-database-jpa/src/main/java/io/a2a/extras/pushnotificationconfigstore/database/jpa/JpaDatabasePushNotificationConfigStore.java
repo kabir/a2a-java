@@ -9,7 +9,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import io.a2a.server.tasks.PushNotificationConfigStore;
 import io.a2a.spec.PushNotificationConfig;
 import org.slf4j.Logger;

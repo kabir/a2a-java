@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
-import io.a2a.json.JsonProcessingException;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Message;
 import io.a2a.spec.StreamingEventKind;

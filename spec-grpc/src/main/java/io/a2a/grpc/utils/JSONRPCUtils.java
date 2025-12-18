@@ -1,6 +1,6 @@
 package io.a2a.grpc.utils;
 
-import io.a2a.json.JsonMappingException;
+import io.a2a.internal.json.JsonMappingException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -22,10 +22,10 @@ import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
 import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.internal.wrappers.GetTaskRequest;
 import io.a2a.internal.wrappers.GetTaskResponse;
-import io.a2a.spec.IdJsonMappingException;
+import io.a2a.internal.json.IdJsonMappingException;
 import io.a2a.spec.InvalidAgentResponseError;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.InvalidParamsJsonMappingException;
+import io.a2a.internal.json.InvalidParamsJsonMappingException;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
 import io.a2a.spec.JSONRPCError;
@@ -37,7 +37,7 @@ import io.a2a.internal.wrappers.ListTaskPushNotificationConfigResponse;
 import io.a2a.internal.wrappers.ListTasksRequest;
 import io.a2a.internal.wrappers.ListTasksResponse;
 import io.a2a.spec.MethodNotFoundError;
-import io.a2a.spec.MethodNotFoundJsonMappingException;
+import io.a2a.internal.json.MethodNotFoundJsonMappingException;
 import io.a2a.spec.PushNotificationNotSupportedError;
 import io.a2a.internal.wrappers.SendMessageRequest;
 import io.a2a.internal.wrappers.SendMessageResponse;
@@ -67,7 +67,7 @@ import static io.a2a.spec.A2AErrorCodes.TASK_NOT_CANCELABLE_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.TASK_NOT_FOUND_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.UNSUPPORTED_OPERATION_ERROR_CODE;
 
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

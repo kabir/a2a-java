@@ -1,4 +1,6 @@
-package io.a2a.spec;
+package io.a2a.internal.json;
+
+import io.a2a.spec.MethodNotFoundError;
 
 /**
  * Exception thrown when JSON mapping fails due to a method not found error.

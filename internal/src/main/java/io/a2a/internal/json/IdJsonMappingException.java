@@ -1,6 +1,4 @@
-package io.a2a.spec;
-
-import io.a2a.json.JsonMappingException;
+package io.a2a.internal.json;
 
 /**
  * JSON mapping exception that includes request ID for error tracking.

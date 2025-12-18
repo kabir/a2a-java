@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.util.List;
 
-import io.a2a.json.JsonProcessingException;
 import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidAgentResponseError;

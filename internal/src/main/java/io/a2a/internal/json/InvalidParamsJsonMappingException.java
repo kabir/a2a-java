@@ -1,4 +1,4 @@
-package io.a2a.spec;
+package io.a2a.internal.json;
 
 /**
  * Exception for invalid parameters during JSON mapping.

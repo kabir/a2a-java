@@ -10,7 +10,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-import io.a2a.json.JsonProcessingException;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.DataPart;
 import io.a2a.spec.FilePart;

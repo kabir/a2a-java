@@ -21,7 +21,6 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
-import io.a2a.json.JsonProcessingException;
 import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.spec.DataPart;
 import io.a2a.spec.FileContent;

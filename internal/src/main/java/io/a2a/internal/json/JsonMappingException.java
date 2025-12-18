@@ -1,4 +1,4 @@
-package io.a2a.json;
+package io.a2a.internal.json;
 
 import org.jspecify.annotations.Nullable;
 

@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import io.a2a.json.JsonProcessingException;
+import io.a2a.internal.json.JsonProcessingException;
 import com.google.protobuf.MessageOrBuilder;
 import io.a2a.client.http.A2ACardResolver;
 import io.a2a.client.http.A2AHttpClient;

@@ -5,4 +5,4 @@
  * allowing the SDK to be independent of any specific JSON library implementation.
  */
 @org.jspecify.annotations.NullMarked
-package io.a2a.json;
+package io.a2a.internal.json;
