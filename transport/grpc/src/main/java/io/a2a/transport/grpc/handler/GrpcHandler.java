@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+import io.a2a.internal.wrappers.ListTasksResult;
 import io.grpc.Context;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -117,7 +118,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             ServerCallContext context = createCallContext(responseObserver);
             io.a2a.spec.ListTasksParams params = FromProto.listTasksParams(request);
-            io.a2a.spec.ListTasksResult result = getRequestHandler().onListTasks(params, context);
+            ListTasksResult result = getRequestHandler().onListTasks(params, context);
             responseObserver.onNext(ToProto.listTasksResult(result));
             responseObserver.onCompleted();
         } catch (JSONRPCError e) {

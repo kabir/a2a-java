@@ -37,7 +37,7 @@ import io.a2a.spec.JSONParseError;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
+import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.PushNotificationNotSupportedError;
 import io.a2a.spec.StreamingEventKind;

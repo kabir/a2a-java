@@ -10,7 +10,7 @@ import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
+import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;

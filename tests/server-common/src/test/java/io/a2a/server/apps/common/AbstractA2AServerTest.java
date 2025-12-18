@@ -40,6 +40,7 @@ import io.a2a.client.TaskUpdateEvent;
 import io.a2a.client.config.ClientConfig;
 import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
+import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.json.JsonProcessingException;
 import io.a2a.json.JsonUtil;
 import io.a2a.spec.A2AClientException;
@@ -53,7 +54,7 @@ import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCErrorResponse;
+import io.a2a.internal.wrappers.JSONRPCErrorResponse;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.Message;
@@ -61,9 +62,9 @@ import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.Part;
 import io.a2a.spec.PushNotificationConfig;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SendStreamingMessageResponse;
-import io.a2a.spec.StreamingJSONRPCRequest;
+import io.a2a.internal.wrappers.SendStreamingMessageRequest;
+import io.a2a.internal.wrappers.SendStreamingMessageResponse;
+import io.a2a.internal.wrappers.StreamingJSONRPCRequest;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskIdParams;
@@ -268,7 +269,7 @@ public abstract class AbstractA2AServerTest {
         try {
             // Test listing all tasks (no filters)
             io.a2a.spec.ListTasksParams params = ListTasksParams.builder().tenant("").build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertNotNull(result.tasks());
@@ -310,7 +311,7 @@ public abstract class AbstractA2AServerTest {
                     .contextId("context-filter-1")
                     .tenant("")
                     .build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertNotNull(result.tasks());
@@ -351,7 +352,7 @@ public abstract class AbstractA2AServerTest {
                     .status(TaskState.WORKING)
                     .tenant("")
                     .build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertNotNull(result.tasks());
@@ -396,7 +397,7 @@ public abstract class AbstractA2AServerTest {
                     .tenant("")
                     .pageSize(2)
                     .build();
-            io.a2a.spec.ListTasksResult result1 = getClient().listTasks(params1);
+            ListTasksResult result1 = getClient().listTasks(params1);
 
             assertNotNull(result1);
             assertEquals(2, result1.tasks().size(), "First page should have 2 tasks");
@@ -410,7 +411,7 @@ public abstract class AbstractA2AServerTest {
                     .pageSize(2)
                     .pageToken(result1.nextPageToken())
                     .build();
-            io.a2a.spec.ListTasksResult result2 = getClient().listTasks(params2);
+            ListTasksResult result2 = getClient().listTasks(params2);
 
             assertNotNull(result2);
             assertTrue(result2.tasks().size() >= 1, "Second page should have at least 1 task");
@@ -446,7 +447,7 @@ public abstract class AbstractA2AServerTest {
                     .tenant("")
                     .historyLength(2)
                     .build();
-            io.a2a.spec.ListTasksResult result = getClient().listTasks(params);
+            ListTasksResult result = getClient().listTasks(params);
 
             assertNotNull(result);
             assertEquals(1, result.tasks().size());

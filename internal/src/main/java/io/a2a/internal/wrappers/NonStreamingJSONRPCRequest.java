@@ -1,0 +1,20 @@
+package io.a2a.internal.wrappers;
+
+/**
+ * Represents a non-streaming JSON-RPC request.
+ *
+ * @param <T> the type of the request parameters
+ */
+public abstract sealed class NonStreamingJSONRPCRequest<T> extends JSONRPCRequest<T> permits GetTaskRequest,
+        CancelTaskRequest, SetTaskPushNotificationConfigRequest, GetTaskPushNotificationConfigRequest,
+        SendMessageRequest, DeleteTaskPushNotificationConfigRequest, ListTaskPushNotificationConfigRequest,
+        GetAuthenticatedExtendedCardRequest, ListTasksRequest {
+
+    NonStreamingJSONRPCRequest(String jsonrpc, String method, Object id, T params) {
+        validateAndSetJsonParameters(jsonrpc, method, id, params, true);
+    }
+
+    NonStreamingJSONRPCRequest(String jsonrpc, String method, Object id) {
+        validateAndSetJsonParameters(jsonrpc, method, id, null, false);
+    }
+}

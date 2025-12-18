@@ -45,16 +45,16 @@ import java.util.Map;
 import java.util.Set;
 
 import io.a2a.server.extensions.A2AExtensions;
-import io.a2a.spec.CancelTaskRequest;
-import io.a2a.spec.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskRequest;
-import io.a2a.spec.ListTaskPushNotificationConfigRequest;
-import io.a2a.spec.ListTasksRequest;
-import io.a2a.spec.SendMessageRequest;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
-import io.a2a.spec.SubscribeToTaskRequest;
+import io.a2a.internal.wrappers.CancelTaskRequest;
+import io.a2a.internal.wrappers.DeleteTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.GetTaskRequest;
+import io.a2a.internal.wrappers.ListTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.ListTasksRequest;
+import io.a2a.internal.wrappers.SendMessageRequest;
+import io.a2a.internal.wrappers.SendStreamingMessageRequest;
+import io.a2a.internal.wrappers.SetTaskPushNotificationConfigRequest;
+import io.a2a.internal.wrappers.SubscribeToTaskRequest;
 import org.jspecify.annotations.Nullable;
 
 @Singleton
