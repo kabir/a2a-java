@@ -1,6 +1,6 @@
 package io.a2a.server.events;
 
-import static io.a2a.internal.json.JsonUtil.fromJson;
+import static io.a2a.jsonrpc.common.json.JsonUtil.fromJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

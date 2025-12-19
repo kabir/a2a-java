@@ -3,7 +3,6 @@ package io.a2a.spec;
 
 import java.util.Map;
 
-
 import io.a2a.util.Assert;
 
 /**

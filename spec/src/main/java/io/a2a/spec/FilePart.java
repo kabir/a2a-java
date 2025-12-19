@@ -3,8 +3,6 @@ package io.a2a.spec;
 
 import io.a2a.util.Assert;
 
-import static io.a2a.util.Utils.SPEC_VERSION_1_0;
-
 
 /**
  * Represents a file content part within a {@link Message} or {@link Artifact}.

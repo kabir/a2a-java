@@ -1,6 +1,6 @@
 package io.a2a.server.tasks;
 
-import static io.a2a.internal.json.JsonUtil.fromJson;
+import static io.a2a.jsonrpc.common.json.JsonUtil.fromJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;

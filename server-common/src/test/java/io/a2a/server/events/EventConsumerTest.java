@@ -1,6 +1,6 @@
 package io.a2a.server.events;
 
-import static io.a2a.internal.json.JsonUtil.fromJson;
+import static io.a2a.jsonrpc.common.json.JsonUtil.fromJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -15,12 +15,11 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.a2a.internal.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
 import io.a2a.spec.A2AError;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
-import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;

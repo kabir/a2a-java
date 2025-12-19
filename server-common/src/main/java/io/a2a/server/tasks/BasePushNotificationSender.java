@@ -14,7 +14,7 @@ import jakarta.inject.Inject;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.JdkA2AHttpClient;
-import io.a2a.internal.json.JsonUtil;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.PushNotificationConfig;

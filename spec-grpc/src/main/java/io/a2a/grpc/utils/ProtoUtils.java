@@ -1,9 +1,10 @@
 package io.a2a.grpc.utils;
 
-import io.a2a.grpc.GetExtendedAgentCardRequest;
-import io.a2a.grpc.StreamResponse;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.a2a.grpc.GetExtendedAgentCardRequest;
+import io.a2a.grpc.StreamResponse;
 import io.a2a.grpc.mapper.AgentCardMapper;
 import io.a2a.grpc.mapper.DeleteTaskPushNotificationConfigParamsMapper;
 import io.a2a.grpc.mapper.GetTaskPushNotificationConfigParamsMapper;
@@ -22,16 +23,16 @@ import io.a2a.grpc.mapper.TaskPushNotificationConfigMapper;
 import io.a2a.grpc.mapper.TaskQueryParamsMapper;
 import io.a2a.grpc.mapper.TaskStateMapper;
 import io.a2a.grpc.mapper.TaskStatusUpdateEventMapper;
+import io.a2a.jsonrpc.common.wrappers.GetAuthenticatedExtendedCardRequest;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
 import io.a2a.spec.EventKind;
-import io.a2a.internal.wrappers.GetAuthenticatedExtendedCardRequest;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.internal.wrappers.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.MessageSendConfiguration;
 import io.a2a.spec.MessageSendParams;

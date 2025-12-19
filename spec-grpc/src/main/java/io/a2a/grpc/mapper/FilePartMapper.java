@@ -1,12 +1,13 @@
 package io.a2a.grpc.mapper;
 
 
+import java.util.Base64;
+
 import com.google.protobuf.ByteString;
 import io.a2a.spec.FileContent;
 import io.a2a.spec.FileWithBytes;
 import io.a2a.spec.FileWithUri;
 import io.a2a.spec.InvalidRequestError;
-import java.util.Base64;
 import org.mapstruct.Mapper;
 
 /**

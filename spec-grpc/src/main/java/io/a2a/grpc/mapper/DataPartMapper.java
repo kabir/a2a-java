@@ -2,7 +2,6 @@ package io.a2a.grpc.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.ObjectFactory;
 
 /**
  * Mapper between {@link io.a2a.spec.DataPart} and {@link io.a2a.grpc.DataPart}.

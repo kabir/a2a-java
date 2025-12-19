@@ -2,14 +2,14 @@
 syntax = "proto3";
 package a2a.v1;
 
-//From commit c196824396bb4af4c595f30e2c503a5ab1dbac4b
-
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+
+//From commit c196824396bb4af4c595f30e2c503a5ab1dbac4b
 
 option csharp_namespace = "A2a.V1";
 option go_package = "google.golang.org/a2a/v1";

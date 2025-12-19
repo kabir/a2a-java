@@ -1,9 +1,7 @@
 package io.a2a.spec;
 
-import static io.a2a.util.Utils.defaultIfNull;
-
-
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
+import static io.a2a.util.Utils.defaultIfNull;
 
 /**
  * A2A Protocol error indicating incompatibility between requested content types and agent capabilities.

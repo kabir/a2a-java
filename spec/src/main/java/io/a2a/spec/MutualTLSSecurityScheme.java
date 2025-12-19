@@ -1,7 +1,5 @@
 package io.a2a.spec;
 
-import static io.a2a.spec.MutualTLSSecurityScheme.MUTUAL_TLS;
-
 /**
  * Mutual TLS (mTLS) security scheme for agent authentication.
  * <p>

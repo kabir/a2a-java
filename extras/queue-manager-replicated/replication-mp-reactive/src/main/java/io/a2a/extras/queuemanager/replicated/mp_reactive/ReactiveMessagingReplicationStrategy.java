@@ -6,7 +6,7 @@ import jakarta.inject.Inject;
 
 import io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem;
 import io.a2a.extras.queuemanager.replicated.core.ReplicationStrategy;
-import io.a2a.internal.json.JsonUtil;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;

@@ -25,7 +25,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import io.a2a.internal.wrappers.ListTasksResult;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;

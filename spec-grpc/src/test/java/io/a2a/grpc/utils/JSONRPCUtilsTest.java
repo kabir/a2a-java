@@ -6,18 +6,18 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.a2a.internal.json.JsonProcessingException;
 import com.google.gson.JsonSyntaxException;
-import io.a2a.internal.json.JsonMappingException;
-import io.a2a.internal.wrappers.GetTaskPushNotificationConfigRequest;
-import io.a2a.internal.wrappers.GetTaskPushNotificationConfigResponse;
+import io.a2a.jsonrpc.common.json.InvalidParamsJsonMappingException;
+import io.a2a.jsonrpc.common.json.JsonMappingException;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.wrappers.A2ARequest;
+import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
+import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigResponse;
+import io.a2a.jsonrpc.common.wrappers.SetTaskPushNotificationConfigRequest;
+import io.a2a.jsonrpc.common.wrappers.SetTaskPushNotificationConfigResponse;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.internal.json.InvalidParamsJsonMappingException;
 import io.a2a.spec.JSONParseError;
-import io.a2a.internal.wrappers.A2ARequest;
 import io.a2a.spec.PushNotificationConfig;
-import io.a2a.internal.wrappers.SetTaskPushNotificationConfigRequest;
-import io.a2a.internal.wrappers.SetTaskPushNotificationConfigResponse;
 import io.a2a.spec.TaskPushNotificationConfig;
 import org.junit.jupiter.api.Test;
 

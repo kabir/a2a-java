@@ -1,6 +1,6 @@
 package io.a2a.grpc.mapper;
 
-import io.a2a.internal.wrappers.ListTasksResult;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

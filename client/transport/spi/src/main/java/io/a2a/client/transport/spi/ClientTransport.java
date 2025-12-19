@@ -1,6 +1,5 @@
 package io.a2a.client.transport.spi;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import io.a2a.client.transport.spi.interceptors.ClientCallContext;
@@ -12,7 +11,7 @@ import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.internal.wrappers.ListTasksResult;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;

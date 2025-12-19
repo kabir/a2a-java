@@ -1,9 +1,9 @@
 package io.a2a.spec;
 
+import java.util.List;
+
 import io.a2a.util.Assert;
 import org.jspecify.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * Result of listing push notification configurations for a task with pagination support.

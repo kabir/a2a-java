@@ -1,7 +1,5 @@
 package io.a2a.spec;
 
-import static io.a2a.spec.APIKeySecurityScheme.API_KEY;
-
 /**
  * Base interface for security schemes used to authenticate access to agent endpoints.
  * <p>

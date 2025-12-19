@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
-import io.a2a.internal.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
 import io.a2a.server.events.QueueClosedEvent;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
@@ -32,7 +32,7 @@ import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.internal.json.JsonUtil;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import org.junit.jupiter.api.Test;
 
 /**

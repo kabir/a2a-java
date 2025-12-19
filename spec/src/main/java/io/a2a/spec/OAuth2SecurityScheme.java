@@ -2,8 +2,6 @@ package io.a2a.spec;
 
 import io.a2a.util.Assert;
 
-import static io.a2a.spec.OAuth2SecurityScheme.OAUTH2;
-
 /**
  * OAuth 2.0 security scheme for agent authentication.
  * <p>
