@@ -32,7 +32,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>a2a-java-sdk-internal</artifactId>
+            <artifactId>a2a-java-sdk-jsonrpc-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

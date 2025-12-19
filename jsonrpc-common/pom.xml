@@ -9,7 +9,7 @@
         <artifactId>a2a-java-sdk-parent</artifactId>
         <version>0.4.0.Alpha1-SNAPSHOT</version>
     </parent>
-    <artifactId>a2a-java-sdk-internal</artifactId>
+    <artifactId>a2a-java-sdk-jsonrpc-common</artifactId>
 
     <packaging>jar</packaging>
 
