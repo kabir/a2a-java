@@ -27,7 +27,7 @@ import io.a2a.util.Assert;
  * @see <a href="https://www.jsonrpc.org/specification#error_object">JSON-RPC 2.0 Error Object</a>
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class A2AError  extends Error implements Event {
+public class A2AError extends RuntimeException implements Event {
     /**
      * The numeric error code (see JSON-RPC 2.0 spec for standard codes).
      */
