@@ -2,6 +2,7 @@ package io.a2a.client.transport.rest;
 
 import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
 import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
 import static io.a2a.spec.A2AMethods.GET_TASK_METHOD;
 import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 import static io.a2a.spec.A2AMethods.LIST_TASK_METHOD;
@@ -426,7 +427,7 @@ public class RestTransport implements ClientTransport {
             if (!needsExtendedCard) {
                 return agentCard;
             }
-            PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_TASK_METHOD, null, agentCard, context);
+            PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_EXTENDED_AGENT_CARD_METHOD, null, agentCard, context);
             String url = Utils.buildBaseUrl(agentInterface, "") + "/extendedAgentCard";
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
             if (payloadAndHeaders.getHeaders() != null) {
