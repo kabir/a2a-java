@@ -17,7 +17,6 @@ import org.jspecify.annotations.Nullable;
  * @param taskId the unique identifier of the task to receive push notifications for (required)
  * @param pushNotificationConfig the push notification endpoint and authentication configuration (required)
  * @see PushNotificationConfig for notification endpoint details
- * @see SetTaskPushNotificationConfigRequest for setting push notifications
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 public record TaskPushNotificationConfig(String taskId, PushNotificationConfig pushNotificationConfig, @Nullable String tenant) {

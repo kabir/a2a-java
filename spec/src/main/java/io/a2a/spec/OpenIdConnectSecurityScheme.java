@@ -2,8 +2,6 @@ package io.a2a.spec;
 
 import io.a2a.util.Assert;
 
-import static io.a2a.spec.OpenIdConnectSecurityScheme.OPENID_CONNECT;
-
 /**
  * OpenID Connect security scheme for agent authentication.
  * <p>

@@ -4,12 +4,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.jspecify.annotations.Nullable;
-
 import io.a2a.spec.Artifact;
 import io.a2a.spec.DataPart;
 import io.a2a.spec.Part;
 import io.a2a.spec.TextPart;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utility functions for creating A2A Artifact objects.

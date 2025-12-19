@@ -1,10 +1,10 @@
 package io.a2a.client.transport.grpc;
 
+import java.util.function.Function;
+
 import io.a2a.client.transport.spi.ClientTransportConfig;
 import io.a2a.util.Assert;
 import io.grpc.Channel;
-
-import java.util.function.Function;
 
 public class GrpcTransportConfig extends ClientTransportConfig<GrpcTransport> {
 

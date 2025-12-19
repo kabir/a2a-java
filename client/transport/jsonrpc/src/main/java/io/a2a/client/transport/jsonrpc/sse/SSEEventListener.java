@@ -1,10 +1,5 @@
 package io.a2a.client.transport.jsonrpc.sse;
 
-import io.a2a.json.JsonProcessingException;
-import io.a2a.spec.JSONRPCError;
-import io.a2a.spec.StreamingEventKind;
-import io.a2a.spec.TaskStatusUpdateEvent;
-
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -12,6 +7,10 @@ import java.util.logging.Logger;
 import io.a2a.grpc.StreamResponse;
 import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.spec.A2AError;
+import io.a2a.spec.StreamingEventKind;
+import io.a2a.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
 
 public class SSEEventListener {
@@ -70,7 +69,7 @@ public class SSEEventListener {
                     future.cancel(true); // close SSE channel
                 }
             }
-        } catch (JSONRPCError error) {
+        } catch (A2AError error) {
             if (errorHandler != null) {
                 errorHandler.accept(error);
             }

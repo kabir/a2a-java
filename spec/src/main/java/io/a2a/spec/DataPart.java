@@ -4,8 +4,6 @@ import java.util.Map;
 
 import io.a2a.util.Assert;
 
-import static io.a2a.util.Utils.SPEC_VERSION_1_0;
-
 
 /**
  * Represents a structured data content part within a {@link Message} or {@link Artifact}.

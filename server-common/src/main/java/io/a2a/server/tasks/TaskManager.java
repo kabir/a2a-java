@@ -5,11 +5,10 @@ import static io.a2a.util.Assert.checkNotNullParam;
 import static io.a2a.util.Utils.appendArtifactToTask;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.jspecify.annotations.Nullable;
 
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
@@ -19,7 +18,7 @@ import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
-import java.util.Collections;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

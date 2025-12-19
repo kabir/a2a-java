@@ -21,7 +21,7 @@ import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.tasks.InMemoryPushNotificationConfigStore;
 import io.a2a.server.tasks.InMemoryTaskStore;
 import io.a2a.server.tasks.TaskUpdater;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.Message;
@@ -959,7 +959,7 @@ public class DefaultRequestHandlerTest {
         private volatile boolean executing = false;
 
         interface ExecuteCallback {
-            void call(RequestContext context, EventQueue queue) throws JSONRPCError;
+            void call(RequestContext context, EventQueue queue) throws A2AError;
         }
 
         void setExecuteCallback(ExecuteCallback callback) {
@@ -971,7 +971,7 @@ public class DefaultRequestHandlerTest {
         }
 
         @Override
-        public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+        public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
             executing = true;
             try {
                 if (executeCallback != null) {
@@ -993,7 +993,7 @@ public class DefaultRequestHandlerTest {
         }
 
         @Override
-        public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+        public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
             // Simple cancel implementation
             executing = false;
         }

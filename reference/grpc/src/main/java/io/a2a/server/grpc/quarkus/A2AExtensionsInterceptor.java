@@ -1,14 +1,15 @@
 package io.a2a.server.grpc.quarkus;
 
 import jakarta.enterprise.context.ApplicationScoped;
+
+import io.a2a.common.A2AHeaders;
+import io.a2a.transport.grpc.context.GrpcContextKeys;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
-import io.a2a.common.A2AHeaders;
-import io.a2a.transport.grpc.context.GrpcContextKeys;
 
 /**
  * gRPC server interceptor that captures request metadata and context information,

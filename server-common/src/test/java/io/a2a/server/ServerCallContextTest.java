@@ -9,9 +9,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
-
 import io.a2a.server.auth.User;
+import org.junit.jupiter.api.Test;
 
 class ServerCallContextTest {
 

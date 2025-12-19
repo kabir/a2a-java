@@ -33,11 +33,9 @@ import static io.a2a.util.Utils.defaultIfNull;
  * }
  * }</pre>
  *
- * @see JSONRPCResponse for response structure
- * @see SendMessageResponse for message send response
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public class InvalidAgentResponseError extends JSONRPCError {
+public class InvalidAgentResponseError extends A2AError {
 
     /**
      * Constructs an invalid agent response error.

@@ -3,7 +3,7 @@ package io.a2a.server.requesthandlers;
 import static io.a2a.server.util.async.AsyncUtils.convertingProcessor;
 import static io.a2a.server.util.async.AsyncUtils.createTubeConfig;
 import static io.a2a.server.util.async.AsyncUtils.processor;
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -21,16 +21,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.jspecify.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
-
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.agentexecution.SimpleRequestContextBuilder;
+import io.a2a.server.config.A2AConfigProvider;
 import io.a2a.server.events.EnhancedRunnable;
 import io.a2a.server.events.EventConsumer;
 import io.a2a.server.events.EventQueue;
@@ -43,17 +43,16 @@ import io.a2a.server.tasks.ResultAggregator;
 import io.a2a.server.tasks.TaskManager;
 import io.a2a.server.tasks.TaskStore;
 import io.a2a.server.util.async.Internal;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
 import io.a2a.spec.Event;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.PushNotificationConfig;
@@ -66,8 +65,8 @@ import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskQueryParams;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.server.config.A2AConfigProvider;
-import jakarta.annotation.PostConstruct;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,7 +154,7 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public Task onGetTask(TaskQueryParams params, ServerCallContext context) throws JSONRPCError {
+    public Task onGetTask(TaskQueryParams params, ServerCallContext context) throws A2AError {
         LOGGER.debug("onGetTask {}", params.id());
         Task task = taskStore.get(params.id());
         if (task == null) {
@@ -188,7 +187,7 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public ListTasksResult onListTasks(ListTasksParams params, ServerCallContext context) throws JSONRPCError {
+    public ListTasksResult onListTasks(ListTasksParams params, ServerCallContext context) throws A2AError {
         LOGGER.debug("onListTasks with contextId={}, status={}, pageSize={}, pageToken={}, lastUpdatedAfter={}",
                 params.contextId(), params.status(), params.pageSize(), params.pageToken(), params.lastUpdatedAfter());
 
@@ -210,7 +209,7 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public Task onCancelTask(TaskIdParams params, ServerCallContext context) throws JSONRPCError {
+    public Task onCancelTask(TaskIdParams params, ServerCallContext context) throws A2AError {
         Task task = taskStore.get(params.id());
         if (task == null) {
             throw new TaskNotFoundError();
@@ -262,7 +261,7 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public EventKind onMessageSend(MessageSendParams params, ServerCallContext context) throws JSONRPCError {
+    public EventKind onMessageSend(MessageSendParams params, ServerCallContext context) throws A2AError {
         LOGGER.debug("onMessageSend - task: {}; context {}", params.message().taskId(), params.message().contextId());
         MessageSendSetup mss = initMessageSend(params, context);
 
@@ -398,7 +397,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
     @Override
     public Flow.Publisher<StreamingEventKind> onMessageSendStream(
-            MessageSendParams params, ServerCallContext context) throws JSONRPCError {
+            MessageSendParams params, ServerCallContext context) throws A2AError {
         LOGGER.debug("onMessageSendStream START - task: {}; context: {}; runningAgents: {}; backgroundTasks: {}",
                 params.message().taskId(), params.message().contextId(), runningAgents.size(), backgroundTasks.size());
         MessageSendSetup mss = initMessageSend(params, context);
@@ -560,7 +559,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
     @Override
     public TaskPushNotificationConfig onSetTaskPushNotificationConfig(
-            TaskPushNotificationConfig params, ServerCallContext context) throws JSONRPCError {
+            TaskPushNotificationConfig params, ServerCallContext context) throws A2AError {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -575,7 +574,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
     @Override
     public TaskPushNotificationConfig onGetTaskPushNotificationConfig(
-            GetTaskPushNotificationConfigParams params, ServerCallContext context) throws JSONRPCError {
+            GetTaskPushNotificationConfigParams params, ServerCallContext context) throws A2AError {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -607,7 +606,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
     @Override
     public Flow.Publisher<StreamingEventKind> onResubscribeToTask(
-            TaskIdParams params, ServerCallContext context) throws JSONRPCError {
+            TaskIdParams params, ServerCallContext context) throws A2AError {
         LOGGER.debug("onResubscribeToTask - taskId: {}", params.id());
         Task task = taskStore.get(params.id());
         if (task == null) {
@@ -638,7 +637,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
     @Override
     public ListTaskPushNotificationConfigResult onListTaskPushNotificationConfig(
-            ListTaskPushNotificationConfigParams params, ServerCallContext context) throws JSONRPCError {
+            ListTaskPushNotificationConfigParams params, ServerCallContext context) throws A2AError {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }

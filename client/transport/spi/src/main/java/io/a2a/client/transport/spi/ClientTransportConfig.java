@@ -1,9 +1,9 @@
 package io.a2a.client.transport.spi;
 
-import io.a2a.client.transport.spi.interceptors.ClientCallInterceptor;
 import java.util.ArrayList;
-
 import java.util.List;
+
+import io.a2a.client.transport.spi.interceptors.ClientCallInterceptor;
 
 /**
  * Configuration for an A2A client transport.

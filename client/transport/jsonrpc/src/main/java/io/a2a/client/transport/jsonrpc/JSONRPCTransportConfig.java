@@ -1,7 +1,7 @@
 package io.a2a.client.transport.jsonrpc;
 
-import io.a2a.client.transport.spi.ClientTransportConfig;
 import io.a2a.client.http.A2AHttpClient;
+import io.a2a.client.transport.spi.ClientTransportConfig;
 import org.jspecify.annotations.Nullable;
 
 public class JSONRPCTransportConfig extends ClientTransportConfig<JSONRPCTransport> {

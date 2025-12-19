@@ -8,6 +8,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import io.a2a.client.transport.spi.interceptors.ClientCallContext;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
@@ -15,7 +16,6 @@ import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.PushNotificationConfig;
 import io.a2a.spec.Task;

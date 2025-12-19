@@ -22,6 +22,11 @@
         </dependency>
         <dependency>
             <groupId>io.github.a2asdk</groupId>
+            <artifactId>a2a-java-sdk-jsonrpc-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-extras-common</artifactId>
             <version>${project.version}</version>
         </dependency>

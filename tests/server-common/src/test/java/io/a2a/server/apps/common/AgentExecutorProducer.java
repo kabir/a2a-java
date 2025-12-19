@@ -1,15 +1,15 @@
 package io.a2a.server.apps.common;
 
+import java.util.List;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-
-import java.util.List;
 
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.tasks.TaskUpdater;
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
 import io.quarkus.arc.profile.IfBuildProfile;
@@ -22,7 +22,7 @@ public class AgentExecutorProducer {
     public AgentExecutor agentExecutor() {
         return new AgentExecutor() {
             @Override
-            public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+            public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
                 TaskUpdater updater = new TaskUpdater(context, eventQueue);
                 String taskId = context.getTaskId();
 
@@ -50,7 +50,7 @@ public class AgentExecutorProducer {
             }
 
             @Override
-            public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+            public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
                 if (context.getTask().id().equals("cancel-task-123")) {
                     TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
                     taskUpdater.cancel();

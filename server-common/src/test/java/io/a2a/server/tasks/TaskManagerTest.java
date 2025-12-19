@@ -1,5 +1,6 @@
 package io.a2a.server.tasks;
 
+import static io.a2a.jsonrpc.common.json.JsonUtil.fromJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -22,7 +23,6 @@ import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
-import io.a2a.util.Utils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +40,7 @@ public class TaskManagerTest {
 
     @BeforeEach
     public void init() throws Exception {
-        minimalTask = Utils.unmarshalFrom(TASK_JSON, Task.class);
+        minimalTask = fromJson(TASK_JSON, Task.class);
         taskStore = new InMemoryTaskStore();
         taskManager = new TaskManager(minimalTask.id(), minimalTask.contextId(), taskStore, null);
     }

@@ -11,15 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.mockito.ArgumentCaptor;
-
 import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -36,6 +28,12 @@ import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 @QuarkusTest
 public class JpaPushNotificationConfigStoreTest {

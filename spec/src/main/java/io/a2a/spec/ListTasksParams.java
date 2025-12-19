@@ -1,9 +1,9 @@
 package io.a2a.spec;
 
+import java.time.Instant;
+
 import io.a2a.util.Assert;
 import org.jspecify.annotations.Nullable;
-
-import java.time.Instant;
 
 /**
  * Parameters for listing tasks with optional filtering and pagination.

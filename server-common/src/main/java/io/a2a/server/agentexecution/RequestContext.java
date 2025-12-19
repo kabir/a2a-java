@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.jspecify.annotations.Nullable;
-
 import io.a2a.server.ServerCallContext;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.Message;
@@ -16,6 +14,7 @@ import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.Part;
 import io.a2a.spec.Task;
 import io.a2a.spec.TextPart;
+import org.jspecify.annotations.Nullable;
 
 public class RequestContext {
 

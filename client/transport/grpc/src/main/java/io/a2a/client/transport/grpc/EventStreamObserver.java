@@ -1,14 +1,14 @@
 package io.a2a.client.transport.grpc;
 
 
-import io.a2a.grpc.StreamResponse;
-import io.a2a.spec.StreamingEventKind;
-import io.grpc.stub.StreamObserver;
+import static io.a2a.grpc.utils.ProtoUtils.FromProto;
 
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static io.a2a.grpc.utils.ProtoUtils.FromProto;
+import io.a2a.grpc.StreamResponse;
+import io.a2a.spec.StreamingEventKind;
+import io.grpc.stub.StreamObserver;
 
 public class EventStreamObserver implements StreamObserver<StreamResponse> {
 

@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Collections;
+
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Message;
 import io.a2a.spec.StreamingEventKind;
@@ -14,7 +16,6 @@ import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
-import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 public class StreamResponseMapperTest {

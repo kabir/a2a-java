@@ -6,7 +6,6 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 
-import com.google.gson.JsonSyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,47 +19,48 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import io.a2a.json.JsonProcessingException;
+import com.google.gson.JsonSyntaxException;
 import io.a2a.common.A2AHeaders;
 import io.a2a.grpc.utils.JSONRPCUtils;
-import io.a2a.json.JsonMappingException;
+import io.a2a.jsonrpc.common.json.IdJsonMappingException;
+import io.a2a.jsonrpc.common.json.InvalidParamsJsonMappingException;
+import io.a2a.jsonrpc.common.json.JsonMappingException;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.MethodNotFoundJsonMappingException;
+import io.a2a.jsonrpc.common.wrappers.A2AErrorResponse;
+import io.a2a.jsonrpc.common.wrappers.A2ARequest;
+import io.a2a.jsonrpc.common.wrappers.A2AResponse;
+import io.a2a.jsonrpc.common.wrappers.CancelTaskRequest;
+import io.a2a.jsonrpc.common.wrappers.CancelTaskResponse;
+import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
+import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigResponse;
+import io.a2a.jsonrpc.common.wrappers.GetAuthenticatedExtendedCardRequest;
+import io.a2a.jsonrpc.common.wrappers.GetAuthenticatedExtendedCardResponse;
+import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
+import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigResponse;
+import io.a2a.jsonrpc.common.wrappers.GetTaskRequest;
+import io.a2a.jsonrpc.common.wrappers.GetTaskResponse;
+import io.a2a.jsonrpc.common.wrappers.ListTaskPushNotificationConfigRequest;
+import io.a2a.jsonrpc.common.wrappers.ListTaskPushNotificationConfigResponse;
+import io.a2a.jsonrpc.common.wrappers.ListTasksRequest;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResponse;
+import io.a2a.jsonrpc.common.wrappers.NonStreamingJSONRPCRequest;
+import io.a2a.jsonrpc.common.wrappers.SendMessageRequest;
+import io.a2a.jsonrpc.common.wrappers.SendMessageResponse;
+import io.a2a.jsonrpc.common.wrappers.SendStreamingMessageRequest;
+import io.a2a.jsonrpc.common.wrappers.SendStreamingMessageResponse;
+import io.a2a.jsonrpc.common.wrappers.SetTaskPushNotificationConfigRequest;
+import io.a2a.jsonrpc.common.wrappers.SetTaskPushNotificationConfigResponse;
+import io.a2a.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
 import io.a2a.server.extensions.A2AExtensions;
 import io.a2a.server.util.async.Internal;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.AgentCard;
-import io.a2a.spec.CancelTaskRequest;
-import io.a2a.spec.CancelTaskResponse;
-import io.a2a.spec.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.spec.DeleteTaskPushNotificationConfigResponse;
-import io.a2a.spec.GetAuthenticatedExtendedCardRequest;
-import io.a2a.spec.GetAuthenticatedExtendedCardResponse;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskPushNotificationConfigResponse;
-import io.a2a.spec.GetTaskRequest;
-import io.a2a.spec.GetTaskResponse;
-import io.a2a.spec.IdJsonMappingException;
 import io.a2a.spec.InternalError;
-import io.a2a.spec.InvalidParamsJsonMappingException;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
-import io.a2a.spec.JSONRPCErrorResponse;
-import io.a2a.spec.JSONRPCRequest;
-import io.a2a.spec.JSONRPCResponse;
-import io.a2a.spec.ListTaskPushNotificationConfigRequest;
-import io.a2a.spec.ListTaskPushNotificationConfigResponse;
-import io.a2a.spec.ListTasksRequest;
-import io.a2a.spec.ListTasksResponse;
-import io.a2a.spec.MethodNotFoundJsonMappingException;
-import io.a2a.spec.NonStreamingJSONRPCRequest;
-import io.a2a.spec.SendMessageRequest;
-import io.a2a.spec.SendMessageResponse;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SendStreamingMessageResponse;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigResponse;
-import io.a2a.spec.SubscribeToTaskRequest;
 import io.a2a.spec.UnsupportedOperationError;
 import io.a2a.transport.jsonrpc.handler.JSONRPCHandler;
 import io.quarkus.security.Authenticated;
@@ -97,11 +97,11 @@ public class A2AServerRoutes {
     public void invokeJSONRPCHandler(@Body String body, RoutingContext rc) {
         boolean streaming = false;
         ServerCallContext context = createCallContext(rc);
-        JSONRPCResponse<?> nonStreamingResponse = null;
-        Multi<? extends JSONRPCResponse<?>> streamingResponse = null;
-        JSONRPCErrorResponse error = null;
+        A2AResponse<?> nonStreamingResponse = null;
+        Multi<? extends A2AResponse<?>> streamingResponse = null;
+        A2AErrorResponse error = null;
         try {
-            JSONRPCRequest<?> request = JSONRPCUtils.parseRequestBody(body);
+            A2ARequest<?> request = JSONRPCUtils.parseRequestBody(body);
             context.getState().put(METHOD_NAME_KEY, request.getMethod());
             if (request instanceof NonStreamingJSONRPCRequest nonStreamingRequest) {
                 nonStreamingResponse = processNonStreamingRequest(nonStreamingRequest, context);
@@ -109,23 +109,23 @@ public class A2AServerRoutes {
                 streaming = true;
                 streamingResponse = processStreamingRequest(request, context);
             }
-        } catch (JSONRPCError e) {
-            error = new JSONRPCErrorResponse(e);
+        } catch (A2AError e) {
+            error = new A2AErrorResponse(e);
         } catch (InvalidParamsJsonMappingException e) {
-            error = new JSONRPCErrorResponse(e.getId(), new io.a2a.spec.InvalidParamsError(null, e.getMessage(), null));
+            error = new A2AErrorResponse(e.getId(), new io.a2a.spec.InvalidParamsError(null, e.getMessage(), null));
         } catch (MethodNotFoundJsonMappingException e) {
-            error = new JSONRPCErrorResponse(e.getId(), new io.a2a.spec.MethodNotFoundError(null, e.getMessage(), null));
+            error = new A2AErrorResponse(e.getId(), new io.a2a.spec.MethodNotFoundError(null, e.getMessage(), null));
         } catch (IdJsonMappingException e) {
-            error = new JSONRPCErrorResponse(e.getId(), new io.a2a.spec.InvalidRequestError(null, e.getMessage(), null));
+            error = new A2AErrorResponse(e.getId(), new io.a2a.spec.InvalidRequestError(null, e.getMessage(), null));
         } catch (JsonMappingException e) {
             // General JsonMappingException - treat as InvalidRequest
-            error = new JSONRPCErrorResponse(new io.a2a.spec.InvalidRequestError(null, e.getMessage(), null));
+            error = new A2AErrorResponse(new io.a2a.spec.InvalidRequestError(null, e.getMessage(), null));
         } catch (JsonSyntaxException e) {
-            error = new JSONRPCErrorResponse(new JSONParseError(e.getMessage()));
+            error = new A2AErrorResponse(new JSONParseError(e.getMessage()));
         } catch (JsonProcessingException e) {
-            error = new JSONRPCErrorResponse(new JSONParseError(e.getMessage()));
+            error = new A2AErrorResponse(new JSONParseError(e.getMessage()));
         } catch (Throwable t) {
-            error = new JSONRPCErrorResponse(new InternalError(t.getMessage()));
+            error = new A2AErrorResponse(new InternalError(t.getMessage()));
         } finally {
             if (error != null) {
                 rc.response()
@@ -133,7 +133,7 @@ public class A2AServerRoutes {
                         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .end(serializeResponse(error));
             } else if (streaming) {
-                final Multi<? extends JSONRPCResponse<?>> finalStreamingResponse = streamingResponse;
+                final Multi<? extends A2AResponse<?>> finalStreamingResponse = streamingResponse;
                 executor.execute(() -> {
                     MultiSseSupport.subscribeObject(
                             finalStreamingResponse.map(i -> (Object) i), rc);
@@ -160,7 +160,7 @@ public class A2AServerRoutes {
         return jsonRpcHandler.getAgentCard();
     }
 
-    private JSONRPCResponse<?> processNonStreamingRequest(NonStreamingJSONRPCRequest<?> request, ServerCallContext context) {
+    private A2AResponse<?> processNonStreamingRequest(NonStreamingJSONRPCRequest<?> request, ServerCallContext context) {
         if (request instanceof GetTaskRequest req) {
             return jsonRpcHandler.onGetTask(req, context);
         }
@@ -191,9 +191,9 @@ public class A2AServerRoutes {
         return generateErrorResponse(request, new UnsupportedOperationError());
     }
 
-    private Multi<? extends JSONRPCResponse<?>> processStreamingRequest(
-            JSONRPCRequest<?> request, ServerCallContext context) {
-        Flow.Publisher<? extends JSONRPCResponse<?>> publisher;
+    private Multi<? extends A2AResponse<?>> processStreamingRequest(
+            A2ARequest<?> request, ServerCallContext context) {
+        Flow.Publisher<? extends A2AResponse<?>> publisher;
         if (request instanceof SendStreamingMessageRequest req) {
             publisher = jsonRpcHandler.onMessageSendStream(req, context);
         } else if (request instanceof SubscribeToTaskRequest req) {
@@ -204,8 +204,8 @@ public class A2AServerRoutes {
         return Multi.createFrom().publisher(publisher);
     }
 
-    private JSONRPCResponse<?> generateErrorResponse(JSONRPCRequest<?> request, JSONRPCError error) {
-        return new JSONRPCErrorResponse(request.getId(), error);
+    private A2AResponse<?> generateErrorResponse(A2ARequest<?> request, A2AError error) {
+        return new A2AErrorResponse(request.getId(), error);
     }
 
     static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
@@ -252,9 +252,9 @@ public class A2AServerRoutes {
         }
     }
 
-    private static String serializeResponse(JSONRPCResponse<?> response) {
+    private static String serializeResponse(A2AResponse<?> response) {
         // For error responses, use Jackson serialization (errors are standardized)
-        if (response instanceof JSONRPCErrorResponse error) {
+        if (response instanceof A2AErrorResponse error) {
             return JSONRPCUtils.toJsonRPCErrorResponse(error.getId(), error.getError());
         }
         if (response.getError() != null) {
@@ -265,7 +265,7 @@ public class A2AServerRoutes {
         return JSONRPCUtils.toJsonRPCResultResponse(response.getId(), protoMessage);
     }
 
-    private static com.google.protobuf.MessageOrBuilder convertToProto(JSONRPCResponse<?> response) {
+    private static com.google.protobuf.MessageOrBuilder convertToProto(A2AResponse<?> response) {
         if (response instanceof GetTaskResponse r) {
             return io.a2a.grpc.utils.ProtoUtils.ToProto.task(r.getResult());
         } else if (response instanceof CancelTaskResponse r) {
@@ -366,10 +366,10 @@ public class A2AServerRoutes {
                         ReactiveRoutes.ServerSentEvent<?> ev = (ReactiveRoutes.ServerSentEvent<?>) o;
                         long id = ev.id() != -1 ? ev.id() : count.getAndIncrement();
                         String e = ev.event() == null ? "" : "event: " + ev.event() + "\n";
-                        String data = serializeResponse((JSONRPCResponse<?>) ev.data());
+                        String data = serializeResponse((A2AResponse<?>) ev.data());
                         return Buffer.buffer(e + "data: " + data + "\nid: " + id + "\n\n");
                     }
-                    String data = serializeResponse((JSONRPCResponse<?>) o);
+                    String data = serializeResponse((A2AResponse<?>) o);
                     return Buffer.buffer("data: " + data + "\nid: " + count.getAndIncrement() + "\n\n");
                 }
             }), rc);

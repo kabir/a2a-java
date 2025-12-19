@@ -25,6 +25,11 @@
             <artifactId>a2a-java-queue-manager-replication-mp-reactive</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.a2asdk</groupId>
+            <artifactId>a2a-java-sdk-jsonrpc-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- A2A Reference Impl for a runnable app -->
         <dependency>

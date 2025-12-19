@@ -11,19 +11,18 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.jspecify.annotations.Nullable;
-
 import io.a2a.server.events.EventConsumer;
 import io.a2a.server.events.EventQueueItem;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
 import io.a2a.spec.EventKind;
-import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.util.Utils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +65,7 @@ public class ResultAggregator {
         });
     }
 
-    public EventKind consumeAll(EventConsumer consumer) throws JSONRPCError {
+    public EventKind consumeAll(EventConsumer consumer) throws A2AError {
         AtomicReference<EventKind> returnedEvent = new AtomicReference<>();
         Flow.Publisher<EventQueueItem> allItems = consumer.consumeAll();
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -111,7 +110,7 @@ public class ResultAggregator {
         return task;
     }
 
-    public EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer, boolean blocking) throws JSONRPCError {
+    public EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer, boolean blocking) throws A2AError {
         Flow.Publisher<EventQueueItem> allItems = consumer.consumeAll();
         AtomicReference<Message> message = new AtomicReference<>();
         AtomicBoolean interrupted = new AtomicBoolean(false);

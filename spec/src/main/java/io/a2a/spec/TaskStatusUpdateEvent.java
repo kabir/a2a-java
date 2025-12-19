@@ -1,8 +1,8 @@
 package io.a2a.spec;
 
-import com.google.gson.annotations.SerializedName;
 import java.util.Map;
 
+import com.google.gson.annotations.SerializedName;
 import io.a2a.util.Assert;
 
 /**

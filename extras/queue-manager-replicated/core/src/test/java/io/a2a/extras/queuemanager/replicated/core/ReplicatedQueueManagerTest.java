@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.a2a.extras.common.events.TaskFinalizedEvent;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.events.EventQueueClosedException;
 import io.a2a.server.events.EventQueueItem;
@@ -27,7 +28,6 @@ import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
-import io.a2a.json.JsonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

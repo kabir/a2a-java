@@ -1,5 +1,16 @@
 package io.a2a.client.transport.rest;
 
+import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_MESSAGE_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
+import static io.a2a.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 import static io.a2a.util.Assert.checkNotNullParam;
 
 import java.io.IOException;
@@ -13,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import io.a2a.json.JsonProcessingException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
@@ -27,30 +37,21 @@ import io.a2a.client.transport.spi.interceptors.ClientCallContext;
 import io.a2a.client.transport.spi.interceptors.ClientCallInterceptor;
 import io.a2a.client.transport.spi.interceptors.PayloadAndHeaders;
 import io.a2a.grpc.utils.ProtoUtils;
-import io.a2a.json.JsonUtil;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.JsonUtil;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.A2AClientError;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
-import io.a2a.spec.CancelTaskRequest;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
-import io.a2a.spec.DeleteTaskPushNotificationConfigRequest;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskRequest;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
-import io.a2a.spec.ListTaskPushNotificationConfigRequest;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksRequest;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.MessageSendParams;
-import io.a2a.spec.SendMessageRequest;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
 import io.a2a.spec.StreamingEventKind;
-import io.a2a.spec.SubscribeToTaskRequest;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskIdParams;
 import io.a2a.spec.TaskPushNotificationConfig;
@@ -83,7 +84,7 @@ public class RestTransport implements ClientTransport {
     public EventKind sendMessage(MessageSendParams messageSendParams, @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("messageSendParams", messageSendParams);
         io.a2a.grpc.SendMessageRequest.Builder builder = io.a2a.grpc.SendMessageRequest.newBuilder(ProtoUtils.ToProto.sendMessageRequest(messageSendParams));
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SendMessageRequest.METHOD, builder, agentCard, context);
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SEND_MESSAGE_METHOD, builder, agentCard, context);
         try {
             String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, messageSendParams.tenant()) + "/message:send", payloadAndHeaders);
             io.a2a.grpc.SendMessageResponse.Builder responseBuilder = io.a2a.grpc.SendMessageResponse.newBuilder();
@@ -108,8 +109,7 @@ public class RestTransport implements ClientTransport {
         checkNotNullParam("eventConsumer", eventConsumer);
         checkNotNullParam("messageSendParams", messageSendParams);
         io.a2a.grpc.SendMessageRequest.Builder builder = io.a2a.grpc.SendMessageRequest.newBuilder(ProtoUtils.ToProto.sendMessageRequest(messageSendParams));
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SendStreamingMessageRequest.METHOD,
-                builder, agentCard, context);
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SEND_STREAMING_MESSAGE_METHOD, builder, agentCard, context);
         AtomicReference<CompletableFuture<Void>> ref = new AtomicReference<>();
         RestSSEEventListener sseEventListener = new RestSSEEventListener(eventConsumer, errorConsumer);
         try {
@@ -134,8 +134,7 @@ public class RestTransport implements ClientTransport {
         checkNotNullParam("taskQueryParams", taskQueryParams);
         io.a2a.grpc.GetTaskRequest.Builder builder = io.a2a.grpc.GetTaskRequest.newBuilder();
         builder.setName("tasks/" + taskQueryParams.id());
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(GetTaskRequest.METHOD, builder,
-                agentCard, context);
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_TASK_METHOD, builder, agentCard, context);
         try {
             StringBuilder url = new StringBuilder(Utils.buildBaseUrl(agentInterface, taskQueryParams.tenant()));
             if (taskQueryParams.historyLength() != null && taskQueryParams.historyLength() > 0) {
@@ -169,8 +168,7 @@ public class RestTransport implements ClientTransport {
         checkNotNullParam("taskIdParams", taskIdParams);
         io.a2a.grpc.CancelTaskRequest.Builder builder = io.a2a.grpc.CancelTaskRequest.newBuilder();
         builder.setName("tasks/" + taskIdParams.id());
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(CancelTaskRequest.METHOD, builder,
-                agentCard, context);
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(CANCEL_TASK_METHOD, builder, agentCard, context);
         try {
             String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, taskIdParams.tenant()) + String.format("/tasks/%1s:cancel", taskIdParams.id()), payloadAndHeaders);
             io.a2a.grpc.Task.Builder responseBuilder = io.a2a.grpc.Task.newBuilder();
@@ -209,8 +207,7 @@ public class RestTransport implements ClientTransport {
             builder.setIncludeArtifacts(true);
         }
 
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(ListTasksRequest.METHOD, builder,
-                agentCard, context);
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(LIST_TASK_METHOD, builder, agentCard, context);
 
         try {
             // Build query string
@@ -282,7 +279,7 @@ public class RestTransport implements ClientTransport {
         if (request.pushNotificationConfig().id() != null) {
             builder.setConfigId(request.pushNotificationConfig().id());
         }
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SetTaskPushNotificationConfigRequest.METHOD, builder, agentCard, context);
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, builder, agentCard, context);
         try {
             String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, request.tenant()) + String.format("/tasks/%1s/pushNotificationConfigs", request.taskId()), payloadAndHeaders);
             io.a2a.grpc.TaskPushNotificationConfig.Builder responseBuilder = io.a2a.grpc.TaskPushNotificationConfig.newBuilder();
@@ -310,7 +307,7 @@ public class RestTransport implements ClientTransport {
             builder.setName(String.format("/tasks/%1s/pushNotificationConfigs/", request.id()));
             url.append(builder.getName());
         }
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(GetTaskPushNotificationConfigRequest.METHOD, builder,
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, builder,
                 agentCard, context);
         try {
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url.toString());
@@ -340,7 +337,7 @@ public class RestTransport implements ClientTransport {
         io.a2a.grpc.ListTaskPushNotificationConfigRequest.Builder builder
                 = io.a2a.grpc.ListTaskPushNotificationConfigRequest.newBuilder();
         builder.setParent(String.format("/tasks/%1s/pushNotificationConfigs", request.id()));
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(ListTaskPushNotificationConfigRequest.METHOD, builder,
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, builder,
                 agentCard, context);
         try {
             String url = Utils.buildBaseUrl(agentInterface, request.tenant()) + String.format("/tasks/%1s/pushNotificationConfigs", request.id());
@@ -369,7 +366,7 @@ public class RestTransport implements ClientTransport {
     public void deleteTaskPushNotificationConfigurations(DeleteTaskPushNotificationConfigParams request, @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("request", request);
         io.a2a.grpc.DeleteTaskPushNotificationConfigRequestOrBuilder builder = io.a2a.grpc.DeleteTaskPushNotificationConfigRequest.newBuilder();
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(DeleteTaskPushNotificationConfigRequest.METHOD, builder,
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, builder,
                 agentCard, context);
         try {
             String url = Utils.buildBaseUrl(agentInterface, request.tenant()) + String.format("/tasks/%1s/pushNotificationConfigs/%2s", request.id(), request.pushNotificationConfigId());
@@ -396,7 +393,7 @@ public class RestTransport implements ClientTransport {
         checkNotNullParam("request", request);
         io.a2a.grpc.SubscribeToTaskRequest.Builder builder = io.a2a.grpc.SubscribeToTaskRequest.newBuilder();
         builder.setName("tasks/" + request.id());
-        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SubscribeToTaskRequest.METHOD, builder,
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SUBSCRIBE_TO_TASK_METHOD, builder,
                 agentCard, context);
         AtomicReference<CompletableFuture<Void>> ref = new AtomicReference<>();
         RestSSEEventListener sseEventListener = new RestSSEEventListener(eventConsumer, errorConsumer);
@@ -430,8 +427,7 @@ public class RestTransport implements ClientTransport {
             if (!needsExtendedCard) {
                 return agentCard;
             }
-            PayloadAndHeaders payloadAndHeaders = applyInterceptors(GetTaskRequest.METHOD, null,
-                    agentCard, context);
+            PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_EXTENDED_AGENT_CARD_METHOD, null, agentCard, context);
             String url = Utils.buildBaseUrl(agentInterface, "") + "/extendedAgentCard";
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
             if (payloadAndHeaders.getHeaders() != null) {

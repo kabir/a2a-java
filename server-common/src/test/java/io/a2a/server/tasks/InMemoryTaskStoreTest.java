@@ -1,10 +1,10 @@
 package io.a2a.server.tasks;
 
+import static io.a2a.jsonrpc.common.json.JsonUtil.fromJson;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import io.a2a.spec.Task;
-import io.a2a.util.Utils;
 import org.junit.jupiter.api.Test;
 
 public class InMemoryTaskStoreTest {
@@ -18,7 +18,7 @@ public class InMemoryTaskStoreTest {
     @Test
     public void testSaveAndGet() throws Exception {
         InMemoryTaskStore store = new InMemoryTaskStore();
-        Task task = Utils.unmarshalFrom(TASK_JSON, Task.class);
+        Task task = fromJson(TASK_JSON, Task.class);
         store.save(task);
         Task retrieved = store.get(task.id());
         assertSame(task, retrieved);
@@ -34,7 +34,7 @@ public class InMemoryTaskStoreTest {
     @Test
     public void testDelete() throws Exception {
         InMemoryTaskStore store = new InMemoryTaskStore();
-        Task task = Utils.unmarshalFrom(TASK_JSON, Task.class);
+        Task task = fromJson(TASK_JSON, Task.class);
         store.save(task);
         store.delete(task.id());
         Task retrieved = store.get(task.id());

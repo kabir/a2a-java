@@ -1,9 +1,9 @@
 package io.a2a.client.transport.spi;
 
-import io.a2a.client.transport.spi.interceptors.ClientCallInterceptor;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import io.a2a.client.transport.spi.interceptors.ClientCallInterceptor;
 
 public abstract class ClientTransportConfigBuilder<T extends ClientTransportConfig<? extends ClientTransport>,
         B extends ClientTransportConfigBuilder<T, B>> {

@@ -1,23 +1,23 @@
 package io.a2a.server;
 
-import io.a2a.spec.JSONRPCError;
+import io.a2a.spec.A2AError;
 
 /**
  * Exception wrapper for JSON-RPC protocol errors.
  * <p>
- * This exception encapsulates a {@link JSONRPCError} for handling
+ * This exception encapsulates a {@link A2AError} for handling
  * protocol-level errors during JSON-RPC request processing.
  * </p>
  */
 public class JSONRPCException extends Exception{
-    private final JSONRPCError error;
+    private final A2AError error;
 
     /**
      * Creates a JSONRPCException wrapping the specified error.
      *
      * @param error the JSON-RPC error
      */
-    public JSONRPCException(JSONRPCError error) {
+    public JSONRPCException(A2AError error) {
         this.error = error;
     }
 
@@ -26,7 +26,7 @@ public class JSONRPCException extends Exception{
      *
      * @return the JSON-RPC error
      */
-    public JSONRPCError getError() {
+    public A2AError getError() {
         return error;
     }
 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
@@ -13,10 +14,9 @@ import jakarta.enterprise.inject.Alternative;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpResponse;
-import io.a2a.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.spec.Task;
-import io.a2a.json.JsonUtil;
-import java.util.Map;
 
 @Dependent
 @Alternative

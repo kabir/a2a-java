@@ -7,9 +7,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import org.jspecify.annotations.Nullable;

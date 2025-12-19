@@ -3,6 +3,7 @@ package io.a2a.grpc.mapper;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -10,7 +11,6 @@ import java.util.stream.Collectors;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.Value;
-import java.util.Collections;
 import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 

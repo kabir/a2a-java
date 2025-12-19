@@ -1,10 +1,10 @@
 package io.a2a.grpc.mapper;
 
-import io.a2a.spec.SubscribeToTaskRequest;
+import io.a2a.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import org.mapstruct.Mapper;
 
 /**
- * Mapper between {@link io.a2a.spec.SubscribeToTaskRequest} and {@link io.a2a.grpc.SubscribeToTaskRequest}.
+ * Mapper between {@link SubscribeToTaskRequest} and {@link io.a2a.grpc.SubscribeToTaskRequest}.
  * <p>
  * The mapping handles the structural difference between domain and proto representations:
  * <ul>

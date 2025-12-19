@@ -7,17 +7,16 @@ import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.a2a.extras.common.events.TaskFinalizedEvent;
-import io.a2a.server.tasks.TaskStateProvider;
 import io.a2a.server.events.EventEnqueueHook;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.events.EventQueueFactory;
 import io.a2a.server.events.EventQueueItem;
 import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.events.QueueManager;
+import io.a2a.server.tasks.TaskStateProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 @Alternative

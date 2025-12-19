@@ -20,8 +20,8 @@ import jakarta.enterprise.context.Dependent;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpResponse;
-import io.a2a.json.JsonProcessingException;
-import io.a2a.json.JsonUtil;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
@@ -33,11 +33,11 @@ import io.a2a.server.tasks.InMemoryTaskStore;
 import io.a2a.server.tasks.PushNotificationConfigStore;
 import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.TaskStore;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.AgentCapabilities;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
 import io.a2a.spec.Event;
-import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;
@@ -80,14 +80,14 @@ public class AbstractA2ARequestHandlerTest {
     public void init() {
         executor = new AgentExecutor() {
             @Override
-            public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+            public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
                 if (agentExecutorExecute != null) {
                     agentExecutorExecute.invoke(context, eventQueue);
                 }
             }
 
             @Override
-            public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+            public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
                 if (agentExecutorCancel != null) {
                     agentExecutorCancel.invoke(context, eventQueue);
                 }
@@ -149,7 +149,7 @@ public class AbstractA2ARequestHandlerTest {
     }
 
     protected interface AgentExecutorMethod {
-        void invoke(RequestContext context, EventQueue eventQueue) throws JSONRPCError;
+        void invoke(RequestContext context, EventQueue eventQueue) throws A2AError;
     }
 
     /**

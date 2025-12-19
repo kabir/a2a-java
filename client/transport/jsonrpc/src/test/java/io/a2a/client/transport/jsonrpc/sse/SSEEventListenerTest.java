@@ -14,10 +14,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.a2a.client.transport.jsonrpc.JsonStreamingMessages;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Artifact;
-import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.Message;
-import io.a2a.spec.Part;
 import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
@@ -158,8 +157,8 @@ public class SSEEventListenerTest {
 
         // Verify the error was processed correctly
         assertNotNull(receivedError.get());
-        assertInstanceOf(JSONRPCError.class, receivedError.get());
-        JSONRPCError jsonrpcError = (JSONRPCError) receivedError.get();
+        assertInstanceOf(A2AError.class, receivedError.get());
+        A2AError jsonrpcError = (A2AError) receivedError.get();
         assertEquals(-32602, jsonrpcError.getCode());
         assertEquals("Invalid parameters", jsonrpcError.getMessage());
         assertEquals("\"Missing required field\"", jsonrpcError.getData());

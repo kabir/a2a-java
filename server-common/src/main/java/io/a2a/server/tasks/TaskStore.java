@@ -1,10 +1,9 @@
 package io.a2a.server.tasks;
 
-import org.jspecify.annotations.Nullable;
-
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.spec.ListTasksResult;
 import io.a2a.spec.Task;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Storage interface for managing task persistence.
