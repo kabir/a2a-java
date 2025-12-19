@@ -1,5 +1,7 @@
 package io.a2a.jsonrpc.common.wrappers;
 
+import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+
 import java.util.UUID;
 
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
@@ -20,9 +22,6 @@ import io.a2a.spec.TaskPushNotificationConfig;
  */
 public final class GetTaskPushNotificationConfigRequest extends NonStreamingJSONRPCRequest<GetTaskPushNotificationConfigParams> {
 
-    /** The JSON-RPC method name. */
-    public static final String METHOD = "GetTaskPushNotificationConfig";
-
     /**
      * Constructs request with all parameters.
      *
@@ -31,7 +30,7 @@ public final class GetTaskPushNotificationConfigRequest extends NonStreamingJSON
      * @param params the request parameters
      */
     public GetTaskPushNotificationConfigRequest(String jsonrpc, Object id, GetTaskPushNotificationConfigParams params) {
-        super(jsonrpc, METHOD, id, params);
+        super(jsonrpc, GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, id, params);
     }
 
     /**

@@ -1,5 +1,8 @@
 package io.a2a.server.apps.quarkus;
 
+import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
 import static io.a2a.spec.AgentCard.CURRENT_PROTOCOL_VERSION;
 import static io.a2a.transport.jsonrpc.context.JSONRPCContextKeys.METHOD_NAME_KEY;
 import static java.util.Collections.singletonList;
@@ -56,6 +59,14 @@ import io.vertx.ext.web.RoutingContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_MESSAGE_METHOD;
+import static io.a2a.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 
 /**
  * Unit test for JSON-RPC A2AServerRoutes that verifies the method names are properly set
@@ -154,7 +165,7 @@ public class A2AServerRoutesTest {
         verify(mockJsonRpcHandler).onMessageSend(any(SendMessageRequest.class), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SendMessageRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SEND_MESSAGE_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -201,7 +212,7 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SendStreamingMessageRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SEND_STREAMING_MESSAGE_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -238,7 +249,7 @@ public class A2AServerRoutesTest {
         verify(mockJsonRpcHandler).onGetTask(any(GetTaskRequest.class), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(GetTaskRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(GET_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -274,7 +285,7 @@ public class A2AServerRoutesTest {
         verify(mockJsonRpcHandler).onCancelTask(any(CancelTaskRequest.class), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(CancelTaskRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(CANCEL_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -306,7 +317,7 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SubscribeToTaskRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SUBSCRIBE_TO_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -357,7 +368,7 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SetTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -397,7 +408,7 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(GetTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -437,7 +448,7 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(ListTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -469,13 +480,13 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(DeleteTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
     public void testGetAuthenticatedExtendedCard_MethodNameSetInContext() {
         // Arrange
-        String jsonRpcRequest = "{\"jsonrpc\":\"2.0\",\"id\":\"5\",\"method\":\"" + GetAuthenticatedExtendedCardRequest.METHOD
+        String jsonRpcRequest = "{\"jsonrpc\":\"2.0\",\"id\":\"5\",\"method\":\"" + GET_EXTENDED_AGENT_CARD_METHOD
                 + "\",\"id\":1}";
         when(mockRequestBody.asString()).thenReturn(jsonRpcRequest);
 
@@ -506,7 +517,7 @@ public class A2AServerRoutesTest {
                 any(GetAuthenticatedExtendedCardRequest.class), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(GetAuthenticatedExtendedCardRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(GET_EXTENDED_AGENT_CARD_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     /**

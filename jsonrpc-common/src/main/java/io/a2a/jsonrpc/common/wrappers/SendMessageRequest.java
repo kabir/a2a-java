@@ -1,5 +1,7 @@
 package io.a2a.jsonrpc.common.wrappers;
 
+import static io.a2a.spec.A2AMethods.SEND_MESSAGE_METHOD;
+
 import java.util.UUID;
 
 import io.a2a.spec.MessageSendParams;
@@ -23,7 +25,7 @@ import io.a2a.spec.Task;
  * with the {@code SendStreamingMessage} method instead.
  * <p>
  * This class includes a fluent {@link Builder} for convenient request construction. The method
- * name is fixed as {@value #METHOD} and is set automatically by the constructor.
+ * name is fixed as "SendMessage" and is set automatically by the constructor.
  *
  * @see SendStreamingMessageRequest
  * @see MessageSendParams
@@ -31,11 +33,6 @@ import io.a2a.spec.Task;
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 public final class SendMessageRequest extends NonStreamingJSONRPCRequest<MessageSendParams> {
-
-    /**
-     * The JSON-RPC method name for sending a message: "SendMessage".
-     */
-    public static final String METHOD = "SendMessage";
 
     /**
      * Constructs a SendMessageRequest with the specified JSON-RPC fields.
@@ -49,7 +46,7 @@ public final class SendMessageRequest extends NonStreamingJSONRPCRequest<Message
      * @throws IllegalArgumentException if validation fails
      */
     public SendMessageRequest(String jsonrpc, Object id, MessageSendParams params) {
-        super(jsonrpc, METHOD, id, params);
+        super(jsonrpc, SEND_MESSAGE_METHOD, id, params);
     }
 
     /**
@@ -74,7 +71,7 @@ public final class SendMessageRequest extends NonStreamingJSONRPCRequest<Message
     /**
      * Builder for constructing {@link SendMessageRequest} instances with a fluent API.
      * <p>
-     * The method name is automatically set to {@value SendMessageRequest#METHOD} and cannot be changed.
+     * The method name is automatically set to "SendMessage" and cannot be changed.
      * If no ID is provided, a UUID will be auto-generated when {@link #build()} is called.
      * <p>
      * Example usage:

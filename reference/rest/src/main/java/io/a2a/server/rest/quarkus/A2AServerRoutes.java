@@ -1,5 +1,7 @@
 package io.a2a.server.rest.quarkus;
 
+import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
 import static io.a2a.transport.rest.context.RestContextKeys.HEADERS_KEY;
 import static io.a2a.transport.rest.context.RestContextKeys.METHOD_NAME_KEY;
 import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
@@ -21,16 +23,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.a2a.common.A2AHeaders;
-import io.a2a.jsonrpc.common.wrappers.CancelTaskRequest;
-import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.GetTaskRequest;
-import io.a2a.jsonrpc.common.wrappers.ListTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.ListTasksRequest;
-import io.a2a.jsonrpc.common.wrappers.SendMessageRequest;
-import io.a2a.jsonrpc.common.wrappers.SendStreamingMessageRequest;
-import io.a2a.jsonrpc.common.wrappers.SetTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
@@ -57,6 +49,15 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import org.jspecify.annotations.Nullable;
 
+import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_MESSAGE_METHOD;
+import static io.a2a.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
+
 @Singleton
 @Authenticated
 public class A2AServerRoutes {
@@ -82,7 +83,7 @@ public class A2AServerRoutes {
 
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)message:send$", order = 1, methods = {Route.HttpMethod.POST}, consumes = {APPLICATION_JSON}, type = Route.HandlerType.BLOCKING)
     public void sendMessage(@Body String body, RoutingContext rc) {
-        ServerCallContext context = createCallContext(rc, SendMessageRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, SEND_MESSAGE_METHOD);
         HTTPRestResponse response = null;
         try {
             response = jsonRestHandler.sendMessage(body, extractTenant(rc), context);
@@ -95,7 +96,7 @@ public class A2AServerRoutes {
 
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)message:stream$", order = 1, methods = {Route.HttpMethod.POST}, consumes = {APPLICATION_JSON}, type = Route.HandlerType.BLOCKING)
     public void sendMessageStreaming(@Body String body, RoutingContext rc) {
-        ServerCallContext context = createCallContext(rc, SendStreamingMessageRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, SEND_STREAMING_MESSAGE_METHOD);
         HTTPRestStreamingResponse streamingResponse = null;
         HTTPRestResponse error = null;
         try {
@@ -120,7 +121,7 @@ public class A2AServerRoutes {
 
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)tasks\\??", order = 0, methods = {Route.HttpMethod.GET}, type = Route.HandlerType.BLOCKING)
     public void listTasks(RoutingContext rc) {
-        ServerCallContext context = createCallContext(rc, ListTasksRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, LIST_TASK_METHOD);
         HTTPRestResponse response = null;
         try {
             // Extract query parameters
@@ -167,7 +168,7 @@ public class A2AServerRoutes {
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^:^/]+)$", order = 1, methods = {Route.HttpMethod.GET}, type = Route.HandlerType.BLOCKING)
     public void getTask(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
-        ServerCallContext context = createCallContext(rc, GetTaskRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, GET_TASK_METHOD);
         HTTPRestResponse response = null;
         try {
             if (taskId == null || taskId.isEmpty()) {
@@ -191,7 +192,7 @@ public class A2AServerRoutes {
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^/]+):cancel$", order = 1, methods = {Route.HttpMethod.POST}, type = Route.HandlerType.BLOCKING)
     public void cancelTask(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
-        ServerCallContext context = createCallContext(rc, CancelTaskRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, CANCEL_TASK_METHOD);
         HTTPRestResponse response = null;
         try {
             if (taskId == null || taskId.isEmpty()) {
@@ -224,7 +225,7 @@ public class A2AServerRoutes {
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^/]+):subscribe$", order = 1, methods = {Route.HttpMethod.POST}, type = Route.HandlerType.BLOCKING)
     public void subscribeToTask(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
-        ServerCallContext context = createCallContext(rc, SubscribeToTaskRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, SUBSCRIBE_TO_TASK_METHOD);
         HTTPRestStreamingResponse streamingResponse = null;
         HTTPRestResponse error = null;
         try {
@@ -254,7 +255,7 @@ public class A2AServerRoutes {
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^/]+)\\/pushNotificationConfigs$", order = 1, methods = {Route.HttpMethod.POST}, consumes = {APPLICATION_JSON}, type = Route.HandlerType.BLOCKING)
     public void setTaskPushNotificationConfiguration(@Body String body, RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
-        ServerCallContext context = createCallContext(rc, SetTaskPushNotificationConfigRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
         HTTPRestResponse response = null;
         try {
             if (taskId == null || taskId.isEmpty()) {
@@ -273,7 +274,7 @@ public class A2AServerRoutes {
     public void getTaskPushNotificationConfiguration(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
         String configId = rc.pathParam("configId");
-        ServerCallContext context = createCallContext(rc, GetTaskPushNotificationConfigRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
         HTTPRestResponse response = null;
         try {
             if (taskId == null || taskId.isEmpty()) {
@@ -291,7 +292,7 @@ public class A2AServerRoutes {
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^/]+)\\/pushNotificationConfigs\\/$", order = 1, methods = {Route.HttpMethod.GET}, type = Route.HandlerType.BLOCKING)
     public void getTaskPushNotificationConfigurationWithoutId(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
-        ServerCallContext context = createCallContext(rc, GetTaskPushNotificationConfigRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
         HTTPRestResponse response = null;
         try {
             if (taskId == null || taskId.isEmpty()) {
@@ -310,7 +311,7 @@ public class A2AServerRoutes {
     @Route(regex = "^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^/]+)\\/pushNotificationConfigs", order = 3, methods = {Route.HttpMethod.GET}, type = Route.HandlerType.BLOCKING)
     public void listTaskPushNotificationConfigurations(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
-        ServerCallContext context = createCallContext(rc, ListTaskPushNotificationConfigRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
         HTTPRestResponse response = null;
         try {
             if (taskId == null || taskId.isEmpty()) {
@@ -339,7 +340,7 @@ public class A2AServerRoutes {
     public void deleteTaskPushNotificationConfiguration(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
         String configId = rc.pathParam("configId");
-        ServerCallContext context = createCallContext(rc, DeleteTaskPushNotificationConfigRequest.METHOD);
+        ServerCallContext context = createCallContext(rc, DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
         HTTPRestResponse response = null;
         try {
             if (taskId == null || taskId.isEmpty()) {
