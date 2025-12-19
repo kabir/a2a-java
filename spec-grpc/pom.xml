@@ -27,7 +27,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>a2a-java-sdk-jsonrpc-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -97,7 +96,7 @@
             <plugin>
                 <groupId>io.github.ascopes</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
-                <version>4.0.2</version>
+                <version>4.0.3</version>
                 <configuration>
                     <skip>${skip.protobuf.generate}</skip>
                     <cleanOutputDirectories>true</cleanOutputDirectories>

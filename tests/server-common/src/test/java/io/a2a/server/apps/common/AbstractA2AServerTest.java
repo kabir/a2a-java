@@ -1,5 +1,6 @@
 package io.a2a.server.apps.common;
 
+import static io.a2a.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
 import static io.a2a.spec.AgentCard.CURRENT_PROTOCOL_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1695,7 +1696,7 @@ public abstract class AbstractA2AServerTest {
                 .build();
         String body = "";
         if (request instanceof SendStreamingMessageRequest streamingRequest) {
-            body = JSONRPCUtils.toJsonRPCRequest((String) streamingRequest.getId(), SendStreamingMessageRequest.METHOD, ProtoUtils.ToProto.sendMessageRequest(streamingRequest.getParams()));
+            body = JSONRPCUtils.toJsonRPCRequest((String) streamingRequest.getId(), SEND_STREAMING_MESSAGE_METHOD, ProtoUtils.ToProto.sendMessageRequest(streamingRequest.getParams()));
         }
 
         // Create the request

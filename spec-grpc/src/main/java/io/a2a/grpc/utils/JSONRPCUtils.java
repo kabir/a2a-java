@@ -11,6 +11,9 @@ import static io.a2a.spec.A2AErrorCodes.PUSH_NOTIFICATION_NOT_SUPPORTED_ERROR_CO
 import static io.a2a.spec.A2AErrorCodes.TASK_NOT_CANCELABLE_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.TASK_NOT_FOUND_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.UNSUPPORTED_OPERATION_ERROR_CODE;
+import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -71,6 +74,15 @@ import io.a2a.spec.TaskNotFoundError;
 import io.a2a.spec.UnsupportedOperationError;
 import io.a2a.util.Utils;
 import org.jspecify.annotations.Nullable;
+
+import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_MESSAGE_METHOD;
+import static io.a2a.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 
 /**
  * Utilities for converting between JSON-RPC 2.0 messages and Protocol Buffer objects.
@@ -186,55 +198,55 @@ public class JSONRPCUtils {
 
     private static A2ARequest<?> parseMethodRequest(String version, Object id, String method, JsonElement paramsNode) throws InvalidParamsError, MethodNotFoundJsonMappingException, JsonProcessingException {
         switch (method) {
-            case GetTaskRequest.METHOD -> {
+            case GET_TASK_METHOD -> {
                 io.a2a.grpc.GetTaskRequest.Builder builder = io.a2a.grpc.GetTaskRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new GetTaskRequest(version, id, ProtoUtils.FromProto.taskQueryParams(builder));
             }
-            case CancelTaskRequest.METHOD -> {
+            case CANCEL_TASK_METHOD -> {
                 io.a2a.grpc.CancelTaskRequest.Builder builder = io.a2a.grpc.CancelTaskRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new CancelTaskRequest(version, id, ProtoUtils.FromProto.taskIdParams(builder));
             }
-            case ListTasksRequest.METHOD -> {
+            case LIST_TASK_METHOD -> {
                 io.a2a.grpc.ListTasksRequest.Builder builder = io.a2a.grpc.ListTasksRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new ListTasksRequest(version, id, ProtoUtils.FromProto.listTasksParams(builder));
             }
-            case SetTaskPushNotificationConfigRequest.METHOD -> {
+            case SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 io.a2a.grpc.SetTaskPushNotificationConfigRequest.Builder builder = io.a2a.grpc.SetTaskPushNotificationConfigRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new SetTaskPushNotificationConfigRequest(version, id, ProtoUtils.FromProto.setTaskPushNotificationConfig(builder));
             }
-            case GetTaskPushNotificationConfigRequest.METHOD -> {
+            case GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 io.a2a.grpc.GetTaskPushNotificationConfigRequest.Builder builder = io.a2a.grpc.GetTaskPushNotificationConfigRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new GetTaskPushNotificationConfigRequest(version, id, ProtoUtils.FromProto.getTaskPushNotificationConfigParams(builder));
             }
-            case SendMessageRequest.METHOD -> {
+            case SEND_MESSAGE_METHOD -> {
                 io.a2a.grpc.SendMessageRequest.Builder builder = io.a2a.grpc.SendMessageRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new SendMessageRequest(version, id, ProtoUtils.FromProto.messageSendParams(builder));
             }
-            case ListTaskPushNotificationConfigRequest.METHOD -> {
+            case LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 io.a2a.grpc.ListTaskPushNotificationConfigRequest.Builder builder = io.a2a.grpc.ListTaskPushNotificationConfigRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new ListTaskPushNotificationConfigRequest(version, id, ProtoUtils.FromProto.listTaskPushNotificationConfigParams(builder));
             }
-            case DeleteTaskPushNotificationConfigRequest.METHOD -> {
+            case DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 io.a2a.grpc.DeleteTaskPushNotificationConfigRequest.Builder builder = io.a2a.grpc.DeleteTaskPushNotificationConfigRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new DeleteTaskPushNotificationConfigRequest(version, id, ProtoUtils.FromProto.deleteTaskPushNotificationConfigParams(builder));
             }
-            case GetAuthenticatedExtendedCardRequest.METHOD -> {
+            case GET_EXTENDED_AGENT_CARD_METHOD -> {
                 return new GetAuthenticatedExtendedCardRequest(version, id);
             }
-            case SendStreamingMessageRequest.METHOD -> {
+            case SEND_STREAMING_MESSAGE_METHOD -> {
                 io.a2a.grpc.SendMessageRequest.Builder builder = io.a2a.grpc.SendMessageRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new SendStreamingMessageRequest(version, id, ProtoUtils.FromProto.messageSendParams(builder));
             }
-            case SubscribeToTaskRequest.METHOD -> {
+            case SUBSCRIBE_TO_TASK_METHOD -> {
                 io.a2a.grpc.SubscribeToTaskRequest.Builder builder = io.a2a.grpc.SubscribeToTaskRequest.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new SubscribeToTaskRequest(version, id, ProtoUtils.FromProto.taskIdParams(builder));
@@ -268,32 +280,32 @@ public class JSONRPCUtils {
             return parseError(jsonRpc.getAsJsonObject("error"), id, method);
         }
         switch (method) {
-            case GetTaskRequest.METHOD -> {
+            case GET_TASK_METHOD -> {
                 io.a2a.grpc.Task.Builder builder = io.a2a.grpc.Task.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new GetTaskResponse(id, ProtoUtils.FromProto.task(builder));
             }
-            case CancelTaskRequest.METHOD -> {
+            case CANCEL_TASK_METHOD -> {
                 io.a2a.grpc.Task.Builder builder = io.a2a.grpc.Task.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new CancelTaskResponse(id, ProtoUtils.FromProto.task(builder));
             }
-            case ListTasksRequest.METHOD -> {
+            case LIST_TASK_METHOD -> {
                 io.a2a.grpc.ListTasksResponse.Builder builder = io.a2a.grpc.ListTasksResponse.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new ListTasksResponse(id, ProtoUtils.FromProto.listTasksResult(builder));
             }
-            case SetTaskPushNotificationConfigRequest.METHOD -> {
+            case SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 io.a2a.grpc.TaskPushNotificationConfig.Builder builder = io.a2a.grpc.TaskPushNotificationConfig.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new SetTaskPushNotificationConfigResponse(id, ProtoUtils.FromProto.taskPushNotificationConfig(builder));
             }
-            case GetTaskPushNotificationConfigRequest.METHOD -> {
+            case GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 io.a2a.grpc.TaskPushNotificationConfig.Builder builder = io.a2a.grpc.TaskPushNotificationConfig.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new GetTaskPushNotificationConfigResponse(id, ProtoUtils.FromProto.taskPushNotificationConfig(builder));
             }
-            case SendMessageRequest.METHOD -> {
+            case SEND_MESSAGE_METHOD -> {
                 io.a2a.grpc.SendMessageResponse.Builder builder = io.a2a.grpc.SendMessageResponse.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 if (builder.hasMsg()) {
@@ -301,15 +313,15 @@ public class JSONRPCUtils {
                 }
                 return new SendMessageResponse(id, ProtoUtils.FromProto.task(builder.getTask()));
             }
-            case ListTaskPushNotificationConfigRequest.METHOD -> {
+            case LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 io.a2a.grpc.ListTaskPushNotificationConfigResponse.Builder builder = io.a2a.grpc.ListTaskPushNotificationConfigResponse.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new ListTaskPushNotificationConfigResponse(id, ProtoUtils.FromProto.listTaskPushNotificationConfigResult(builder));
             }
-            case DeleteTaskPushNotificationConfigRequest.METHOD -> {
+            case DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 return new DeleteTaskPushNotificationConfigResponse(id);
             }
-            case GetAuthenticatedExtendedCardRequest.METHOD -> {
+            case GET_EXTENDED_AGENT_CARD_METHOD -> {
                 io.a2a.grpc.AgentCard.Builder builder = io.a2a.grpc.AgentCard.newBuilder();
                 parseRequestBody(paramsNode, builder, id);
                 return new GetAuthenticatedExtendedCardResponse(id, ProtoUtils.FromProto.agentCard(builder));
@@ -322,28 +334,28 @@ public class JSONRPCUtils {
     public static A2AResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
         A2AError rpcError = processError(error);
         switch (method) {
-            case GetTaskRequest.METHOD -> {
+            case GET_TASK_METHOD -> {
                 return new GetTaskResponse(id, rpcError);
             }
-            case CancelTaskRequest.METHOD -> {
+            case CANCEL_TASK_METHOD -> {
                 return new CancelTaskResponse(id, rpcError);
             }
-            case ListTasksRequest.METHOD -> {
+            case LIST_TASK_METHOD -> {
                 return new ListTasksResponse(id, rpcError);
             }
-            case SetTaskPushNotificationConfigRequest.METHOD -> {
+            case SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 return new SetTaskPushNotificationConfigResponse(id, rpcError);
             }
-            case GetTaskPushNotificationConfigRequest.METHOD -> {
+            case GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 return new GetTaskPushNotificationConfigResponse(id, rpcError);
             }
-            case SendMessageRequest.METHOD -> {
+            case SEND_MESSAGE_METHOD -> {
                 return new SendMessageResponse(id, rpcError);
             }
-            case ListTaskPushNotificationConfigRequest.METHOD -> {
+            case LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 return new ListTaskPushNotificationConfigResponse(id, rpcError);
             }
-            case DeleteTaskPushNotificationConfigRequest.METHOD -> {
+            case DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 return new DeleteTaskPushNotificationConfigResponse(id, rpcError);
             }
             default ->

@@ -1,6 +1,8 @@
 package io.a2a.grpc.utils;
 
 import static io.a2a.grpc.utils.JSONRPCUtils.ERROR_MESSAGE;
+import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -285,7 +287,7 @@ public class JSONRPCUtilsTest {
             """;
 
         SetTaskPushNotificationConfigResponse response =
-            (SetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(responseJson, SetTaskPushNotificationConfigRequest.METHOD);
+            (SetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(responseJson, SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
 
         assertNotNull(response);
         assertEquals(1, response.getId());
@@ -311,7 +313,7 @@ public class JSONRPCUtilsTest {
             """;
 
         GetTaskPushNotificationConfigResponse response =
-            (GetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(responseJson, GetTaskPushNotificationConfigRequest.METHOD);
+            (GetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(responseJson, GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
 
         assertNotNull(response);
         assertEquals(2, response.getId());
@@ -334,7 +336,7 @@ public class JSONRPCUtilsTest {
             """;
 
         SetTaskPushNotificationConfigResponse response =
-            (SetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(errorResponse, SetTaskPushNotificationConfigRequest.METHOD);
+            (SetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(errorResponse, SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
 
         assertNotNull(response);
         assertEquals(5, response.getId());
@@ -358,7 +360,7 @@ public class JSONRPCUtilsTest {
             """;
 
         SetTaskPushNotificationConfigResponse response =
-            (SetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(errorResponse, SetTaskPushNotificationConfigRequest.METHOD);
+            (SetTaskPushNotificationConfigResponse) JSONRPCUtils.parseResponseBody(errorResponse, SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD);
 
         assertNotNull(response);
         assertEquals(6, response.getId());

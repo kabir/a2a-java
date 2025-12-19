@@ -1,5 +1,7 @@
 package io.a2a.jsonrpc.common.wrappers;
 
+import static io.a2a.spec.A2AMethods.LIST_TASK_METHOD;
+
 import java.util.UUID;
 
 import io.a2a.spec.ListTasksParams;
@@ -9,9 +11,6 @@ import io.a2a.spec.ListTasksParams;
  */
 public final class ListTasksRequest extends NonStreamingJSONRPCRequest<ListTasksParams> {
 
-    /** The JSON-RPC method name. */
-    public static final String METHOD = "ListTasks";
-
     /**
      * Constructs request with all parameters.
      *
@@ -20,7 +19,7 @@ public final class ListTasksRequest extends NonStreamingJSONRPCRequest<ListTasks
      * @param params the request parameters
      */
     public ListTasksRequest(String jsonrpc, Object id, ListTasksParams params) {
-        super(jsonrpc, METHOD, id, params);
+        super(jsonrpc, LIST_TASK_METHOD, id, params);
     }
 
     /**

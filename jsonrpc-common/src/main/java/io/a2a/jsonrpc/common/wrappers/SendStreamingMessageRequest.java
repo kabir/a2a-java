@@ -1,5 +1,7 @@
 package io.a2a.jsonrpc.common.wrappers;
 
+import static io.a2a.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
+
 import java.util.UUID;
 
 import io.a2a.spec.MessageSendParams;
@@ -24,9 +26,6 @@ import io.a2a.spec.StreamingEventKind;
  */
 public final class SendStreamingMessageRequest extends StreamingJSONRPCRequest<MessageSendParams> {
 
-    /** The JSON-RPC method name. */
-    public static final String METHOD = "SendStreamingMessage";
-
     /**
      * Constructs request with all parameters.
      *
@@ -35,7 +34,7 @@ public final class SendStreamingMessageRequest extends StreamingJSONRPCRequest<M
      * @param params the request parameters
      */
     public SendStreamingMessageRequest(String jsonrpc, Object id, MessageSendParams params) {
-        super(jsonrpc, METHOD, id, params);
+        super(jsonrpc, SEND_STREAMING_MESSAGE_METHOD, id, params);
     }
 
     /**

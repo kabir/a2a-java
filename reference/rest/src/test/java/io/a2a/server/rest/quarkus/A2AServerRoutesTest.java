@@ -1,5 +1,14 @@
 package io.a2a.server.rest.quarkus;
 
+import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_METHOD;
+import static io.a2a.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_MESSAGE_METHOD;
+import static io.a2a.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
+import static io.a2a.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static io.a2a.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 import static io.a2a.transport.rest.context.RestContextKeys.METHOD_NAME_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,15 +24,6 @@ import java.util.concurrent.Executor;
 
 import jakarta.enterprise.inject.Instance;
 
-import io.a2a.jsonrpc.common.wrappers.CancelTaskRequest;
-import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.GetTaskRequest;
-import io.a2a.jsonrpc.common.wrappers.ListTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.SendMessageRequest;
-import io.a2a.jsonrpc.common.wrappers.SendStreamingMessageRequest;
-import io.a2a.jsonrpc.common.wrappers.SetTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import io.a2a.server.ServerCallContext;
 import io.a2a.transport.rest.handler.RestHandler;
 import io.a2a.transport.rest.handler.RestHandler.HTTPRestResponse;
@@ -105,7 +105,7 @@ public class A2AServerRoutesTest {
         verify(mockRestHandler).sendMessage(eq("{}"), anyString(), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SendMessageRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SEND_MESSAGE_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -127,7 +127,7 @@ public class A2AServerRoutesTest {
         verify(mockRestHandler).sendStreamingMessage(eq("{}"), anyString(), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SendStreamingMessageRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SEND_STREAMING_MESSAGE_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -149,7 +149,7 @@ public class A2AServerRoutesTest {
         verify(mockRestHandler).getTask(eq("task123"), any(), anyString(), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(GetTaskRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(GET_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -171,7 +171,7 @@ public class A2AServerRoutesTest {
         verify(mockRestHandler).cancelTask(eq("task123"), anyString(), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(CancelTaskRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(CANCEL_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -194,7 +194,7 @@ public class A2AServerRoutesTest {
         verify(mockRestHandler).subscribeToTask(eq("task123"), anyString(), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SubscribeToTaskRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SUBSCRIBE_TO_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -217,7 +217,7 @@ public class A2AServerRoutesTest {
         verify(mockRestHandler).setTaskPushNotificationConfiguration(eq("task123"), eq("{}"), anyString(), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(SetTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -242,7 +242,7 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(GetTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -265,7 +265,7 @@ public class A2AServerRoutesTest {
         verify(mockRestHandler).listTaskPushNotificationConfigurations(eq("task123"), anyInt(), anyString(), anyString(), contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(ListTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     @Test
@@ -290,7 +290,7 @@ public class A2AServerRoutesTest {
                 contextCaptor.capture());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
-        assertEquals(DeleteTaskPushNotificationConfigRequest.METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+        assertEquals(DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
     }
 
     /**

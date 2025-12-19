@@ -1,5 +1,7 @@
 package io.a2a.jsonrpc.common.wrappers;
 
+import static io.a2a.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
+
 import java.util.UUID;
 
 import io.a2a.spec.AgentCard;
@@ -31,9 +33,6 @@ import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;
  */
 public final class GetAuthenticatedExtendedCardRequest extends NonStreamingJSONRPCRequest<Void> {
 
-    /** The JSON-RPC method name for getting extended agent card. */
-    public static final String METHOD = "GetExtendedAgentCard";
-
     /**
      * Constructs request with full parameters.
      *
@@ -41,7 +40,7 @@ public final class GetAuthenticatedExtendedCardRequest extends NonStreamingJSONR
      * @param id the request ID
      */
     public GetAuthenticatedExtendedCardRequest(String jsonrpc, Object id) {
-        super(jsonrpc, METHOD, id);
+        super(jsonrpc, GET_EXTENDED_AGENT_CARD_METHOD, id);
     }
 
     /**

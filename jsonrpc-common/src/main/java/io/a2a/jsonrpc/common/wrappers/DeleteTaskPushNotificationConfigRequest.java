@@ -1,8 +1,11 @@
 package io.a2a.jsonrpc.common.wrappers;
 
+
 import java.util.UUID;
 
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
+
+import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 
 /**
  * JSON-RPC request to delete a push notification configuration from a task.
@@ -19,9 +22,6 @@ import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
  */
 public final class DeleteTaskPushNotificationConfigRequest extends NonStreamingJSONRPCRequest<DeleteTaskPushNotificationConfigParams> {
 
-    /** The JSON-RPC method name for deleting push notification configurations. */
-    public static final String METHOD = "DeleteTaskPushNotificationConfig";
-
     /**
      * Creates a new DeleteTaskPushNotificationConfigRequest with the specified JSON-RPC parameters.
      *
@@ -31,7 +31,7 @@ public final class DeleteTaskPushNotificationConfigRequest extends NonStreamingJ
      * @throws IllegalArgumentException if jsonrpc version is invalid, method is not "DeleteTaskPushNotificationConfig", or id is not a string/integer/null
      */
     public DeleteTaskPushNotificationConfigRequest(String jsonrpc, Object id, DeleteTaskPushNotificationConfigParams params) {
-        super(jsonrpc, METHOD, id, params);
+        super(jsonrpc, DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, id, params);
     }
 
     /**

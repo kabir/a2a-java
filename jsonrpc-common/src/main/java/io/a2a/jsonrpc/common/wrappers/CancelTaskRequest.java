@@ -1,5 +1,7 @@
 package io.a2a.jsonrpc.common.wrappers;
 
+import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
+
 import java.util.UUID;
 
 import io.a2a.spec.TaskIdParams;
@@ -25,9 +27,6 @@ import io.a2a.spec.TaskState;
  */
 public final class CancelTaskRequest extends NonStreamingJSONRPCRequest<TaskIdParams> {
 
-    /** The JSON-RPC method name for canceling tasks. */
-    public static final String METHOD = "CancelTask";
-
     /**
      * Creates a new CancelTaskRequest with the specified JSON-RPC parameters.
      *
@@ -37,7 +36,7 @@ public final class CancelTaskRequest extends NonStreamingJSONRPCRequest<TaskIdPa
      * @throws IllegalArgumentException if jsonrpc version is invalid, method is not "CancelTask", params is null, or id is not a String/Integer/null
      */
     public CancelTaskRequest(String jsonrpc, Object id, TaskIdParams params) {
-        super(jsonrpc, METHOD, id, params);
+        super(jsonrpc, CANCEL_TASK_METHOD, id, params);
     }
 
     /**
