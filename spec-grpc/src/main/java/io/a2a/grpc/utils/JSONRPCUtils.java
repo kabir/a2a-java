@@ -68,6 +68,7 @@ import static io.a2a.spec.A2AErrorCodes.TASK_NOT_FOUND_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.UNSUPPORTED_OPERATION_ERROR_CODE;
 
 import io.a2a.internal.json.JsonProcessingException;
+import io.a2a.util.Utils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -176,11 +177,10 @@ public class JSONRPCUtils {
         Object id = getAndValidateId(jsonRpc);
         String method = jsonRpc.get("method").getAsString();
         JsonElement paramsNode = jsonRpc.get("params");
-
         try {
             return parseMethodRequest(version, id, method, paramsNode);
         } catch (InvalidParamsError e) {
-            throw new InvalidParamsJsonMappingException(e.getMessage(), id);
+            throw new InvalidParamsJsonMappingException(Utils.defaultIfNull(e.getMessage(), "Invalid parameters"), id);
         }
     }
 
@@ -390,7 +390,7 @@ public class JSONRPCUtils {
         parseJsonString(jsonRpc.toString(), builder, id);
     }
 
-    public static void parseJsonString(String body, com.google.protobuf.Message.Builder builder, @Nullable Object id) throws JsonProcessingException {
+    public static void parseJsonString(String body, com.google.protobuf.Message.Builder builder, Object id) throws JsonProcessingException {
         try {
             JsonFormat.parser().merge(body, builder);
         } catch (InvalidProtocolBufferException e) {
@@ -424,7 +424,7 @@ public class JSONRPCUtils {
      * @param id the request ID if it could be extracted, null otherwise
      * @return an appropriate JsonProcessingException subtype based on the error and ID availability
      */
-    private static JsonProcessingException convertProtoBufExceptionToJsonProcessingException(InvalidProtocolBufferException e, @Nullable Object id) {
+    private static JsonProcessingException convertProtoBufExceptionToJsonProcessingException(InvalidProtocolBufferException e, Object id) {
         // Log the original exception for debugging purposes
         log.log(Level.FINE, "Converting protobuf parsing exception to JSON-RPC error. Request ID: {0}", id);
         log.log(Level.FINE, "Original proto exception details", e);
@@ -448,12 +448,12 @@ public class JSONRPCUtils {
         Matcher matcher = EXTRACT_WRONG_TYPE.matcher(message);
         if (matcher.matches() && matcher.group(1) != null) {
             // ID is null -> use empty string sentinel value (see javadoc above)
-            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), id == null ? "" : id);
+            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), Utils.defaultIfNull(id, ""));
         }
         matcher = EXTRACT_WRONG_VALUE.matcher(message);
         if (matcher.matches() && matcher.group(1) != null) {
             // ID is null -> use empty string sentinel value (see javadoc above)
-            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), id == null ? "" : id);
+            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(matcher.group(1)), Utils.defaultIfNull(id, ""));
         }
 
         // Generic error - couldn't match specific patterns

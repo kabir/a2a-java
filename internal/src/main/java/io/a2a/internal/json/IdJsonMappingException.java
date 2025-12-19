@@ -8,7 +8,7 @@ public class IdJsonMappingException extends JsonMappingException {
     /**
      * The JSON-RPC request ID associated with this exception.
      */
-    Object id;
+    private Object id;
 
     /**
      * Constructs exception with message and ID.

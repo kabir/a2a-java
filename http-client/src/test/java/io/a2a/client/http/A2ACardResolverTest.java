@@ -82,7 +82,7 @@ public class A2ACardResolverTest {
 
     private AgentCard unmarshalFrom(String body) throws JsonProcessingException {
         io.a2a.grpc.AgentCard.Builder agentCardBuilder = io.a2a.grpc.AgentCard.newBuilder();
-        JSONRPCUtils.parseJsonString(body, agentCardBuilder, null);
+        JSONRPCUtils.parseJsonString(body, agentCardBuilder, "");
         return ProtoUtils.FromProto.agentCard(agentCardBuilder);
     }
 
