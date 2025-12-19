@@ -15,7 +15,6 @@ import java.util.concurrent.Executor;
 
 import jakarta.enterprise.inject.Instance;
 
-import io.a2a.server.ServerCallContext;
 import io.a2a.jsonrpc.common.wrappers.CancelTaskRequest;
 import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
 import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
@@ -25,6 +24,7 @@ import io.a2a.jsonrpc.common.wrappers.SendMessageRequest;
 import io.a2a.jsonrpc.common.wrappers.SendStreamingMessageRequest;
 import io.a2a.jsonrpc.common.wrappers.SetTaskPushNotificationConfigRequest;
 import io.a2a.jsonrpc.common.wrappers.SubscribeToTaskRequest;
+import io.a2a.server.ServerCallContext;
 import io.a2a.transport.rest.handler.RestHandler;
 import io.a2a.transport.rest.handler.RestHandler.HTTPRestResponse;
 import io.vertx.core.Future;

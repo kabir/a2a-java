@@ -14,10 +14,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.a2a.client.transport.jsonrpc.JsonStreamingMessages;
-import io.a2a.spec.Artifact;
 import io.a2a.spec.A2AError;
+import io.a2a.spec.Artifact;
 import io.a2a.spec.Message;
-import io.a2a.spec.Part;
 import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;

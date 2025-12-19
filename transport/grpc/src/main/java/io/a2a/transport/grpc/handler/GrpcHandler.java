@@ -3,8 +3,6 @@ package io.a2a.transport.grpc.handler;
 import static io.a2a.grpc.utils.ProtoUtils.FromProto;
 import static io.a2a.grpc.utils.ProtoUtils.ToProto;
 
-import jakarta.enterprise.inject.Vetoed;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,24 +10,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-
-import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
-import io.grpc.Context;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
+
+import jakarta.enterprise.inject.Vetoed;
 
 import com.google.protobuf.Empty;
 import io.a2a.common.A2AErrorMessages;
 import io.a2a.grpc.A2AServiceGrpc;
 import io.a2a.grpc.StreamResponse;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.server.AgentCardValidator;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.auth.User;
 import io.a2a.server.extensions.A2AExtensions;
-import io.a2a.transport.grpc.context.GrpcContextKeys;
 import io.a2a.server.requesthandlers.RequestHandler;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
@@ -40,7 +38,6 @@ import io.a2a.spec.InvalidAgentResponseError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.A2AError;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.MessageSendParams;
@@ -54,6 +51,8 @@ import io.a2a.spec.TaskNotFoundError;
 import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskQueryParams;
 import io.a2a.spec.UnsupportedOperationError;
+import io.a2a.transport.grpc.context.GrpcContextKeys;
+import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 

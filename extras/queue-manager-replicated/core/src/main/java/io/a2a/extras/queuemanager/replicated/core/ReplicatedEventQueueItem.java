@@ -4,10 +4,9 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSetter;
-
 import io.a2a.server.events.EventQueueItem;
-import io.a2a.spec.Event;
 import io.a2a.spec.A2AError;
+import io.a2a.spec.Event;
 import io.a2a.spec.StreamingEventKind;
 
 public class ReplicatedEventQueueItem implements EventQueueItem {

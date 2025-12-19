@@ -2,8 +2,6 @@ package io.a2a.server.events;
 
 import java.util.concurrent.Flow;
 
-import org.jspecify.annotations.Nullable;
-
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
 import io.a2a.spec.Message;
@@ -12,6 +10,7 @@ import io.a2a.spec.TaskStatusUpdateEvent;
 import mutiny.zero.BackpressureStrategy;
 import mutiny.zero.TubeConfiguration;
 import mutiny.zero.ZeroPublisher;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

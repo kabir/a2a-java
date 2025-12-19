@@ -2,8 +2,6 @@ package io.a2a.client.transport.jsonrpc;
 
 import static io.a2a.spec.AgentCard.CURRENT_PROTOCOL_VERSION;
 
-import io.a2a.spec.AgentCard;
-
 /**
  * Request and response messages used by the tests. These have been created following examples from
  * the <a href="https://google.github.io/A2A/specification/sample-messages">A2A sample messages</a>.

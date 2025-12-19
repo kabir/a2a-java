@@ -1,5 +1,8 @@
 package io.a2a.client.transport.rest;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.google.gson.JsonObject;
 import io.a2a.client.http.A2AHttpResponse;
 import io.a2a.jsonrpc.common.json.JsonProcessingException;
@@ -17,8 +20,6 @@ import io.a2a.spec.PushNotificationNotSupportedError;
 import io.a2a.spec.TaskNotCancelableError;
 import io.a2a.spec.TaskNotFoundError;
 import io.a2a.spec.UnsupportedOperationError;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Utility class to A2AHttpResponse to appropriate A2A error types

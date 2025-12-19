@@ -2,8 +2,6 @@ package io.a2a.server.tasks;
 
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
-
-
 import io.a2a.spec.PushNotificationConfig;
 
 /**

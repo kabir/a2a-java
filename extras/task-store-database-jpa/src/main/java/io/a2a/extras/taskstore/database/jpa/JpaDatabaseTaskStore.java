@@ -16,14 +16,14 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
-import io.a2a.jsonrpc.common.json.JsonProcessingException;
 import io.a2a.extras.common.events.TaskFinalizedEvent;
+import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.server.config.A2AConfigProvider;
 import io.a2a.server.tasks.TaskStateProvider;
 import io.a2a.server.tasks.TaskStore;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import org.slf4j.Logger;

@@ -1,13 +1,16 @@
 package io.a2a.client;
 
+import static io.a2a.util.Assert.checkNotNullParam;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import io.a2a.client.config.ClientConfig;
-import io.a2a.client.transport.spi.interceptors.ClientCallContext;
 import io.a2a.client.transport.spi.ClientTransport;
+import io.a2a.client.transport.spi.interceptors.ClientCallContext;
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.A2AClientError;
 import io.a2a.spec.A2AClientException;
 import io.a2a.spec.A2AClientInvalidStateError;
@@ -18,7 +21,6 @@ import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.MessageSendConfiguration;
 import io.a2a.spec.MessageSendParams;
@@ -30,9 +32,6 @@ import io.a2a.spec.TaskIdParams;
 import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskQueryParams;
 import io.a2a.spec.TaskStatusUpdateEvent;
-
-import static io.a2a.util.Assert.checkNotNullParam;
-
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 

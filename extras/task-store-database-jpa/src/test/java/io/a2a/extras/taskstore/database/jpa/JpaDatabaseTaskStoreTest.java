@@ -15,10 +15,10 @@ import java.util.List;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.server.tasks.TaskStore;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.ListTasksParams;
-import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;

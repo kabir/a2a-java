@@ -19,7 +19,6 @@ import io.a2a.spec.OAuth2SecurityScheme;
 import io.a2a.spec.OAuthFlows;
 import io.a2a.spec.OpenIdConnectSecurityScheme;
 import io.a2a.spec.SecurityScheme;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

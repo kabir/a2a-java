@@ -1,9 +1,9 @@
 package io.a2a.server.grpc.quarkus;
 
+import java.util.concurrent.Executor;
+
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-
-import java.util.concurrent.Executor;
 
 import io.a2a.server.PublicAgentCard;
 import io.a2a.server.requesthandlers.RequestHandler;

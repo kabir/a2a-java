@@ -6,11 +6,10 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-
 import io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem;
 import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.quarkus.arc.profile.IfBuildProfile;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 /**
  * Test consumer for Kafka replicated events using reactive messaging.

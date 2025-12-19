@@ -1,19 +1,19 @@
 package io.a2a.transport.rest.handler;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.HashSet;
 import java.util.Map;
-
-import io.a2a.server.ServerCallContext;
-import io.a2a.server.auth.UnauthenticatedUser;
-import io.a2a.server.requesthandlers.AbstractA2ARequestHandlerTest;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.Task;
-import io.a2a.server.tasks.TaskUpdater;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import io.a2a.server.ServerCallContext;
+import io.a2a.server.auth.UnauthenticatedUser;
+import io.a2a.server.requesthandlers.AbstractA2ARequestHandlerTest;
+import io.a2a.server.tasks.TaskUpdater;
+import io.a2a.spec.AgentCard;
+import io.a2a.spec.Task;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -4,10 +4,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.jspecify.annotations.Nullable;
-
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentExtension;
+import org.jspecify.annotations.Nullable;
 
 public class A2AExtensions {
 

@@ -12,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
-import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;

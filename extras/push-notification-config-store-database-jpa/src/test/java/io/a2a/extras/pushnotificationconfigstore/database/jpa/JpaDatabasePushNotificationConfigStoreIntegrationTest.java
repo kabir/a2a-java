@@ -7,13 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import io.a2a.client.Client;
 import io.a2a.client.config.ClientConfig;

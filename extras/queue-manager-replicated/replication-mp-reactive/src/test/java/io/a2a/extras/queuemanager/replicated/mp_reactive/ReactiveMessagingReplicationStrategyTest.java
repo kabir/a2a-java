@@ -1,11 +1,21 @@
 package io.a2a.extras.queuemanager.replicated.mp_reactive;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import jakarta.enterprise.event.Event;
 
+import io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem;
+import io.a2a.jsonrpc.common.json.JsonUtil;
+import io.a2a.spec.StreamingEventKind;
+import io.a2a.spec.TaskState;
+import io.a2a.spec.TaskStatus;
+import io.a2a.spec.TaskStatusUpdateEvent;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,13 +23,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import io.a2a.extras.queuemanager.replicated.core.ReplicatedEventQueueItem;
-import io.a2a.spec.StreamingEventKind;
-import io.a2a.spec.TaskStatus;
-import io.a2a.spec.TaskState;
-import io.a2a.spec.TaskStatusUpdateEvent;
-import io.a2a.jsonrpc.common.json.JsonUtil;
 
 @ExtendWith(MockitoExtension.class)
 class ReactiveMessagingReplicationStrategyTest {

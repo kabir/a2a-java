@@ -1,11 +1,11 @@
 package io.a2a.client.config;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import io.a2a.spec.PushNotificationConfig;
-import java.util.ArrayList;
-import java.util.HashMap;
 import org.jspecify.annotations.Nullable;
 
 /**

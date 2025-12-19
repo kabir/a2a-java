@@ -10,7 +10,6 @@ import io.a2a.spec.TransportProtocol;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkus.test.junit.QuarkusTest;
-
 import org.junit.jupiter.api.AfterAll;
 
 @QuarkusTest

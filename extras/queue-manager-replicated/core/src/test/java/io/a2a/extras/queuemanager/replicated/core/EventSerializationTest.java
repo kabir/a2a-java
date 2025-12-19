@@ -10,14 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 
 import io.a2a.jsonrpc.common.json.JsonProcessingException;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.server.events.QueueClosedEvent;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.A2AError;
 import io.a2a.spec.Message;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.Part;
@@ -32,7 +33,6 @@ import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.jsonrpc.common.json.JsonUtil;
 import org.junit.jupiter.api.Test;
 
 /**
