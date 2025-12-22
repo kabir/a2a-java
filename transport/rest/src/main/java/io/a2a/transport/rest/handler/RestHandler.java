@@ -419,7 +419,7 @@ public class RestHandler {
     public HTTPRestResponse getExtendedAgentCard(String tenant) {
         try {
             if (!agentCard.supportsExtendedAgentCard() || extendedAgentCard == null || !extendedAgentCard.isResolvable()) {
-                throw new ExtendedCardNotConfiguredError(null, "Authenticated Extended Card not configured", null);
+                throw new ExtendedCardNotConfiguredError(null, "Extended Card not configured", null);
             }
             return new HTTPRestResponse(200, "application/json", JsonUtil.toJson(extendedAgentCard.get()));
         } catch (A2AError e) {

@@ -42,7 +42,7 @@ public class ExtendedCardNotConfiguredError extends A2AProtocolError {
             Object data) {
         super(
                 defaultIfNull(code, EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE),
-                defaultIfNull(message, "Authenticated Extended Card not configured"),
+                defaultIfNull(message, "Extended Card not configured"),
                 data,
                 "https://a2a-protocol.org/errors/extended-agent-card-not-configured");
     }

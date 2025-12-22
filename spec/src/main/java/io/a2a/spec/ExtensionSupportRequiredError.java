@@ -1,6 +1,5 @@
 package io.a2a.spec;
 
-import static io.a2a.spec.A2AErrorCodes.EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.EXTENSION_SUPPORT_REQUIRED_ERROR;
 import static io.a2a.util.Utils.defaultIfNull;
 
