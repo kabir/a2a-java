@@ -513,20 +513,6 @@
     <profiles>
         <profile>
             <!--
-                 This profile generates the required javadoc.
-            -->
-            <id>javadoc</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <!--
                 This profile generates the required sources and javadoc in order to be able to deploy.
                 The central-publishing-maven-plugin generates the required checksums upon deploy.
             -->
