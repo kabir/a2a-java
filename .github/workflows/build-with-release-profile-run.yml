@@ -22,7 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: read  # Required to download artifacts
+      actions: read    # Required to download artifacts
+      statuses: write  # Required to report status back to PR
 
     steps:
       - name: Download PR info
@@ -50,6 +51,21 @@ jobs:
           PR_REF=$(cat pr_ref)
           echo "pr_ref=${PR_REF}" >> $GITHUB_OUTPUT
           echo "PR Ref: ${PR_REF}"
+
+      - name: Report pending status to PR
+        if: steps.pr_info.outputs.pr_sha
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ steps.pr_info.outputs.pr_sha }}',
+              state: 'pending',
+              context: 'Build with -Prelease',
+              description: 'Building with release profile...',
+              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            });
 
       - name: Checkout PR code
         uses: actions/checkout@v4
@@ -106,3 +122,23 @@ jobs:
               echo "   PR #${{ steps.pr_info.outputs.pr_number }} has release profile issues"
             fi
           fi
+
+      - name: Report status to PR
+        if: always() && steps.pr_info.outputs.pr_sha
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const state = '${{ job.status }}' === 'success' ? 'success' : 'failure';
+            const description = state === 'success'
+              ? '✅ Release profile build passed'
+              : '❌ Release profile build failed';
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ steps.pr_info.outputs.pr_sha }}',
+              state: state,
+              context: 'Build with -Prelease',
+              description: description,
+              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            });
