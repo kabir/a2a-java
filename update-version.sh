@@ -10,17 +10,17 @@ TO_VERSION=$2
 
 # Validate arguments
 if [ -z "$FROM_VERSION" ] || [ -z "$TO_VERSION" ]; then
-    echo "❌ Error: Missing version arguments."
-    echo "Usage: $0 FROM_VERSION TO_VERSION [--dry-run]"
-    echo "Example: $0 0.3.0.Beta1-SNAPSHOT 0.3.0.Beta1"
+    echo "❌ Error: Missing version arguments." >&2
+    echo "Usage: $0 FROM_VERSION TO_VERSION [--dry-run]" >&2
+    echo "Example: $0 0.3.0.Beta1-SNAPSHOT 0.3.0.Beta1" >&2
     exit 1
 fi
 
 # Check if TO_VERSION looks like a flag
 if [[ "$TO_VERSION" == --* ]]; then
-    echo "❌ Error: TO_VERSION cannot be a flag. Did you mean to provide both FROM_VERSION and TO_VERSION?"
-    echo "Usage: $0 FROM_VERSION TO_VERSION [--dry-run]"
-    echo "Example: $0 0.3.0.Beta1-SNAPSHOT 0.3.0.Beta1"
+    echo "❌ Error: TO_VERSION cannot be a flag. Did you mean to provide both FROM_VERSION and TO_VERSION?" >&2
+    echo "Usage: $0 FROM_VERSION TO_VERSION [--dry-run]" >&2
+    echo "Example: $0 0.3.0.Beta1-SNAPSHOT 0.3.0.Beta1" >&2
     exit 1
 fi
 
@@ -28,14 +28,14 @@ DRY_RUN=false
 if [ "${3:-}" = "--dry-run" ]; then
     DRY_RUN=true
 elif [ -n "${3:-}" ]; then
-    echo "❌ Error: Invalid third argument. Only '--dry-run' is supported."
-    echo "Usage: $0 FROM_VERSION TO_VERSION [--dry-run]"
+    echo "❌ Error: Invalid third argument. Only '--dry-run' is supported." >&2
+    echo "Usage: $0 FROM_VERSION TO_VERSION [--dry-run]" >&2
     exit 1
 fi
 
 # Verify we're in the right directory
 if [ ! -f "pom.xml" ]; then
-    echo "❌ Error: pom.xml not found. Run this script from the a2a-java root directory."
+    echo "❌ Error: pom.xml not found. Run this script from the a2a-java root directory." >&2
     exit 1
 fi
 
