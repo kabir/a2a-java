@@ -25,9 +25,9 @@ if [[ "$TO_VERSION" == --* ]]; then
 fi
 
 DRY_RUN=false
-if [ "$3" = "--dry-run" ]; then
+if [ "${3:-}" = "--dry-run" ]; then
     DRY_RUN=true
-elif [ -n "$3" ]; then
+elif [ -n "${3:-}" ]; then
     echo "❌ Error: Invalid third argument. Only '--dry-run' is supported."
     echo "Usage: $0 FROM_VERSION TO_VERSION [--dry-run]"
     exit 1
