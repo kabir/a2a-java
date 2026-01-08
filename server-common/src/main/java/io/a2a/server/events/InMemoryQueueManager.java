@@ -19,6 +19,16 @@ public class InMemoryQueueManager implements QueueManager {
     private final EventQueueFactory factory;
     private final TaskStateProvider taskStateProvider;
 
+    /**
+     * No-args constructor for CDI proxy creation.
+     */
+    @SuppressWarnings("NullAway")
+    protected InMemoryQueueManager() {
+        // For CDI proxy creation
+        this.factory = null;
+        this.taskStateProvider = null;
+    }
+
     @Inject
     public InMemoryQueueManager(TaskStateProvider taskStateProvider) {
         this.factory = new DefaultEventQueueFactory();

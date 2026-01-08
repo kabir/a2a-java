@@ -220,6 +220,23 @@ public class DefaultRequestHandler implements RequestHandler {
 
     private final Executor executor;
 
+    /**
+     * No-args constructor for CDI proxy creation.
+     * CDI requires a non-private constructor to create proxies for @ApplicationScoped beans.
+     * All fields are initialized by the @Inject constructor during actual bean creation.
+     */
+    @SuppressWarnings("NullAway")
+    protected DefaultRequestHandler() {
+        // For CDI proxy creation
+        this.agentExecutor = null;
+        this.taskStore = null;
+        this.queueManager = null;
+        this.pushConfigStore = null;
+        this.pushSender = null;
+        this.requestContextBuilder = null;
+        this.executor = null;
+    }
+
     @Inject
     public DefaultRequestHandler(AgentExecutor agentExecutor, TaskStore taskStore,
                                  QueueManager queueManager, PushNotificationConfigStore pushConfigStore,

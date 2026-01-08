@@ -30,6 +30,16 @@ public class BasePushNotificationSender implements PushNotificationSender {
     private final A2AHttpClient httpClient;
     private final PushNotificationConfigStore configStore;
 
+    /**
+     * No-args constructor for CDI proxy creation.
+     */
+    @SuppressWarnings("NullAway")
+    protected BasePushNotificationSender() {
+        // For CDI proxy creation
+        this.httpClient = null;
+        this.configStore = null;
+    }
+
     @Inject
     public BasePushNotificationSender(PushNotificationConfigStore configStore) {
         this.httpClient = new JdkA2AHttpClient();

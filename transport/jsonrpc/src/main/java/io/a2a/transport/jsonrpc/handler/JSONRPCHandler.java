@@ -65,6 +65,15 @@ public class JSONRPCHandler {
     private RequestHandler requestHandler;
     private final Executor executor;
 
+    @SuppressWarnings("NullAway")
+    protected JSONRPCHandler() {
+        // For CDI proxy creation
+        this.agentCard = null;
+        this.extendedAgentCard = null;
+        this.requestHandler = null;
+        this.executor = null;
+    }
+
     @Inject
     public JSONRPCHandler(@PublicAgentCard AgentCard agentCard, @Nullable @ExtendedAgentCard Instance<AgentCard> extendedAgentCard,
                           RequestHandler requestHandler, @Internal Executor executor) {

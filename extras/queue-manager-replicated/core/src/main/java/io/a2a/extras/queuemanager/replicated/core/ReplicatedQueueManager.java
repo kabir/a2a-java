@@ -30,6 +30,17 @@ public class ReplicatedQueueManager implements QueueManager {
 
     private TaskStateProvider taskStateProvider;
 
+    /**
+     * No-args constructor for CDI proxy creation.
+     */
+    @SuppressWarnings("NullAway")
+    protected ReplicatedQueueManager() {
+        // For CDI proxy creation
+        this.delegate = null;
+        this.replicationStrategy = null;
+        this.taskStateProvider = null;
+    }
+
     @Inject
     public ReplicatedQueueManager(ReplicationStrategy replicationStrategy, TaskStateProvider taskStateProvider) {
         this.replicationStrategy = replicationStrategy;
