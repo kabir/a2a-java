@@ -56,7 +56,6 @@ import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.Message;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.PushNotificationConfig;
-import io.a2a.spec.PushNotificationNotSupportedError;
 import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskIdParams;
@@ -208,17 +207,37 @@ public class DefaultRequestHandler implements RequestHandler {
      */
     int consumptionCompletionTimeoutSeconds;
 
-    private final AgentExecutor agentExecutor;
-    private final TaskStore taskStore;
-    private final QueueManager queueManager;
-    private final PushNotificationConfigStore pushConfigStore;
-    private final PushNotificationSender pushSender;
-    private final Supplier<RequestContext.Builder> requestContextBuilder;
+    // Fields set by constructor injection cannot be final. We need a noargs constructor for
+    // Jakarta compatibility, and it seems that making fields set by constructor injection
+    // final, is not proxyable in all runtimes
+    private AgentExecutor agentExecutor;
+    private TaskStore taskStore;
+    private QueueManager queueManager;
+    private PushNotificationConfigStore pushConfigStore;
+    private PushNotificationSender pushSender;
+    private Supplier<RequestContext.Builder> requestContextBuilder;
 
     private final ConcurrentMap<String, CompletableFuture<Void>> runningAgents = new ConcurrentHashMap<>();
     private final Set<CompletableFuture<Void>> backgroundTasks = ConcurrentHashMap.newKeySet();
 
-    private final Executor executor;
+    private Executor executor;
+
+    /**
+     * No-args constructor for CDI proxy creation.
+     * CDI requires a non-private constructor to create proxies for @ApplicationScoped beans.
+     * All fields are initialized by the @Inject constructor during actual bean creation.
+     */
+    @SuppressWarnings("NullAway")
+    protected DefaultRequestHandler() {
+        // For CDI proxy creation
+        this.agentExecutor = null;
+        this.taskStore = null;
+        this.queueManager = null;
+        this.pushConfigStore = null;
+        this.pushSender = null;
+        this.requestContextBuilder = null;
+        this.executor = null;
+    }
 
     @Inject
     public DefaultRequestHandler(AgentExecutor agentExecutor, TaskStore taskStore,

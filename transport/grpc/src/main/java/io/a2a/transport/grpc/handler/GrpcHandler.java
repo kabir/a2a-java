@@ -67,7 +67,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     // Without this we get intermittent failures
     private static volatile Runnable streamingSubscribedRunnable;
 
-    private AtomicBoolean initialised = new AtomicBoolean(false);
+    private final AtomicBoolean initialised = new AtomicBoolean(false);
 
     private static final Logger LOGGER = Logger.getLogger(GrpcHandler.class.getName());
 
