@@ -24,10 +24,11 @@ import org.slf4j.LoggerFactory;
 public class ReplicatedQueueManager implements QueueManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatedQueueManager.class);
 
-    private final InMemoryQueueManager delegate;
-
+    // Fields set by constructor injection cannot be final. We need a noargs constructor for
+    // Jakarta compatibility, and it seems that making fields set by constructor injection
+    // final, is not proxyable in all runtimes
+    private InMemoryQueueManager delegate;
     private ReplicationStrategy replicationStrategy;
-
     private TaskStateProvider taskStateProvider;
 
     /**

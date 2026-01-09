@@ -67,10 +67,14 @@ import org.jspecify.annotations.Nullable;
 public class RestHandler {
 
     private static final Logger log = Logger.getLogger(RestHandler.class.getName());
+
+    // Fields set by constructor injection cannot be final. We need a noargs constructor for
+    // Jakarta compatibility, and it seems that making fields set by constructor injection
+    // final, is not proxyable in all runtimes
     private AgentCard agentCard;
     private @Nullable Instance<AgentCard> extendedAgentCard;
     private RequestHandler requestHandler;
-    private final Executor executor;
+    private Executor executor;
 
     @SuppressWarnings("NullAway")
     protected RestHandler() {

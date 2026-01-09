@@ -27,8 +27,11 @@ public class BasePushNotificationSender implements PushNotificationSender {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BasePushNotificationSender.class);
 
-    private final A2AHttpClient httpClient;
-    private final PushNotificationConfigStore configStore;
+    // Fields set by constructor injection cannot be final. We need a noargs constructor for
+    // Jakarta compatibility, and it seems that making fields set by constructor injection
+    // final, is not proxyable in all runtimes
+    private A2AHttpClient httpClient;
+    private PushNotificationConfigStore configStore;
 
     /**
      * No-args constructor for CDI proxy creation.
