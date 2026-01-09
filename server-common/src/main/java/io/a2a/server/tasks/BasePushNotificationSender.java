@@ -33,8 +33,11 @@ public class BasePushNotificationSender implements PushNotificationSender {
     private A2AHttpClient httpClient;
     private PushNotificationConfigStore configStore;
 
+
     /**
      * No-args constructor for CDI proxy creation.
+     * CDI requires a non-private constructor to create proxies for @ApplicationScoped beans.
+     * All fields are initialized by the @Inject constructor during actual bean creation.
      */
     @SuppressWarnings("NullAway")
     protected BasePushNotificationSender() {

@@ -76,6 +76,11 @@ public class RestHandler {
     private RequestHandler requestHandler;
     private Executor executor;
 
+    /**
+     * No-args constructor for CDI proxy creation.
+     * CDI requires a non-private constructor to create proxies for @ApplicationScoped beans.
+     * All fields are initialized by the @Inject constructor during actual bean creation.
+     */
     @SuppressWarnings("NullAway")
     protected RestHandler() {
         // For CDI
