@@ -966,7 +966,6 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         // Create handler that provides incompatible version 2.0 in the context
@@ -1012,7 +1011,6 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         // Create handler that provides incompatible version 2.0 in the context
@@ -1058,7 +1056,6 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         // Create handler that provides compatible version 1.1 in the context
@@ -1110,7 +1107,6 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         // Create handler that provides null version (should default to 1.0)

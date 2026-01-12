@@ -628,7 +628,6 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         RestHandler handler = new RestHandler(agentCard, requestHandler, internalExecutor);
@@ -680,7 +679,6 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         RestHandler handler = new RestHandler(agentCard, requestHandler, internalExecutor);
@@ -769,7 +767,6 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         RestHandler handler = new RestHandler(agentCard, requestHandler, internalExecutor);
@@ -825,7 +822,6 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         RestHandler handler = new RestHandler(agentCard, requestHandler, internalExecutor);

@@ -41,7 +41,7 @@ public class Utils {
     /**
      * Specification version constant for deprecation annotations.
      */
-    public static final String SPEC_VERSION_1_0 = "1.0";
+    public static final String SPEC_VERSION_1_0 = AgentCard.CURRENT_PROTOCOL_VERSION;
 
     /**
      * Returns the provided value if non-null, otherwise returns the default value.
