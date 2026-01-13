@@ -26,7 +26,7 @@ public class AgentCardProducer {
                 .name("Hello World Agent")
                 .description("Just a hello world agent")
                 .supportedInterfaces(Collections.singletonList(
-                        new AgentInterface("jsonrpc", "http://localhost:9999")))
+                        new AgentInterface("JSONRPC", "http://localhost:9999")))
                 .version("1.0.0")
                 .documentationUrl("http://example.com/docs")
                 .capabilities(AgentCapabilities.builder()
