@@ -1781,7 +1781,6 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         JSONRPCHandler handler = new JSONRPCHandler(agentCard, requestHandler, internalExecutor);
@@ -1821,7 +1820,6 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         JSONRPCHandler handler = new JSONRPCHandler(agentCard, requestHandler, internalExecutor);
@@ -1898,7 +1896,6 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         JSONRPCHandler handler = new JSONRPCHandler(agentCard, requestHandler, internalExecutor);
@@ -1942,7 +1939,6 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion("1.0")
                 .build();
 
         JSONRPCHandler handler = new JSONRPCHandler(agentCard, requestHandler, internalExecutor);
