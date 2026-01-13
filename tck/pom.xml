@@ -29,11 +29,6 @@
             <artifactId>a2a-java-sdk-reference-rest</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
             <scope>provided</scope>
