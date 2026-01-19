@@ -11,6 +11,7 @@ import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.Message;
+import io.a2a.util.PageToken;
 import io.a2a.spec.Task;
 import org.jspecify.annotations.Nullable;
 
@@ -73,54 +74,41 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
 
         // Handle page token using keyset pagination (format: "timestamp_millis:taskId")
         // Use binary search to efficiently find the first task after the pageToken position (O(log N))
-        if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-            String[] tokenParts = params.pageToken().split(":", 2);
-            if (tokenParts.length == 2) {
-                try {
-                    long tokenTimestampMillis = Long.parseLong(tokenParts[0]);
-                    java.time.Instant tokenTimestamp = java.time.Instant.ofEpochMilli(tokenTimestampMillis);
-                    String tokenId = tokenParts[1];
+        PageToken pageToken = PageToken.fromString(params.pageToken());
+        if (pageToken != null) {
+            java.time.Instant tokenTimestamp = pageToken.timestamp();
+            String tokenId = pageToken.id();
 
-                    // Binary search for first task where: timestamp < tokenTimestamp OR (timestamp == tokenTimestamp AND id > tokenId)
-                    // Since list is sorted (timestamp DESC, id ASC), we search for the insertion point
-                    int left = 0;
-                    int right = allFilteredTasks.size();
+            // Binary search for first task where: timestamp < tokenTimestamp OR (timestamp == tokenTimestamp AND id > tokenId)
+            // Since list is sorted (timestamp DESC, id ASC), we search for the insertion point
+            int left = 0;
+            int right = allFilteredTasks.size();
 
-                    while (left < right) {
-                        int mid = left + (right - left) / 2;
-                        Task task = allFilteredTasks.get(mid);
+            while (left < right) {
+                int mid = left + (right - left) / 2;
+                Task task = allFilteredTasks.get(mid);
 
-                        java.time.Instant taskTimestamp = (task.status() != null && task.status().timestamp() != null)
-                                ? task.status().timestamp().toInstant().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
-                                : null;
+                java.time.Instant taskTimestamp = (task.status() != null && task.status().timestamp() != null)
+                        ? task.status().timestamp().toInstant().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
+                        : null;
 
-                        if (taskTimestamp == null) {
-                            // Task with null timestamp is always "before" a token with a timestamp, as they are sorted last.
-                            // So, we search in the right half.
-                            left = mid + 1;
-                        } else {
-                            int timestampCompare = taskTimestamp.compareTo(tokenTimestamp);
+                if (taskTimestamp == null) {
+                    // Task with null timestamp is always "before" a token with a timestamp, as they are sorted last.
+                    // So, we search in the right half.
+                    left = mid + 1;
+                } else {
+                    int timestampCompare = taskTimestamp.compareTo(tokenTimestamp);
 
-                            if (timestampCompare < 0 || (timestampCompare == 0 && task.id().compareTo(tokenId) > 0)) {
-                                // This task is after the token, search left half
-                                right = mid;
-                            } else {
-                                // This task is before or equal to token, search right half
-                                left = mid + 1;
-                            }
-                        }
+                    if (timestampCompare < 0 || (timestampCompare == 0 && task.id().compareTo(tokenId) > 0)) {
+                        // This task is after the token, search left half
+                        right = mid;
+                    } else {
+                        // This task is before or equal to token, search right half
+                        left = mid + 1;
                     }
-                    startIndex = left;
-                } catch (NumberFormatException e) {
-                    // Malformed timestamp in pageToken
-                    throw new io.a2a.spec.InvalidParamsError(null,
-                        "Invalid pageToken format: timestamp must be numeric milliseconds", null);
                 }
-            } else {
-                // Legacy ID-only pageToken format is not supported with timestamp-based sorting
-                // Throw error to prevent incorrect pagination results
-                throw new io.a2a.spec.InvalidParamsError(null, "Invalid pageToken format: expected 'timestamp:id'", null);
             }
+            startIndex = left;
         }
 
         // Get the page of tasks
@@ -132,8 +120,8 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
         if (endIndex < allFilteredTasks.size()) {
             Task lastTask = allFilteredTasks.get(endIndex - 1);
             // All tasks have timestamps (TaskStatus canonical constructor ensures this)
-            long timestampMillis = lastTask.status().timestamp().toInstant().toEpochMilli();
-            nextPageToken = timestampMillis + ":" + lastTask.id();
+            java.time.Instant timestamp = lastTask.status().timestamp().toInstant();
+            nextPageToken = new PageToken(timestamp, lastTask.id()).toString();
         }
 
         // Transform tasks: limit history and optionally remove artifacts

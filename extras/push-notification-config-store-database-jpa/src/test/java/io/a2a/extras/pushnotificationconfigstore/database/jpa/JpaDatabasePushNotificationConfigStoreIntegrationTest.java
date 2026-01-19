@@ -352,15 +352,12 @@ public class JpaDatabasePushNotificationConfigStoreIntegrationTest {
         // Create 5 configs
         createSamples(taskId, 5);
 
-        // Request with invalid pageToken - JPA implementation behavior is to start from beginning
+        // Request with invalid pageToken - should throw InvalidParamsError for invalid format
         ListTaskPushNotificationConfigParams params = new ListTaskPushNotificationConfigParams(
                 taskId, 2, "invalid_token_that_does_not_exist", "");
-        ListTaskPushNotificationConfigResult result = pushNotificationConfigStore.getInfo(params);
 
-        assertNotNull(result);
-        // When token is not found, implementation starts from beginning
-        assertEquals(2, result.configs().size(), "Should return first page when token is not found");
-        assertNotNull(result.nextPageToken(), "Should have nextPageToken since more items exist");
+        assertThrows(io.a2a.spec.InvalidParamsError.class, () -> pushNotificationConfigStore.getInfo(params),
+          "Should throw InvalidParamsError for invalid pageToken format (missing colon)");
     }
 
     @Test
@@ -428,12 +425,9 @@ public class JpaDatabasePushNotificationConfigStoreIntegrationTest {
 
       ListTaskPushNotificationConfigParams params =
           new ListTaskPushNotificationConfigParams(taskId, 2, "123456789cfg1", "");
-      ListTaskPushNotificationConfigResult result = pushNotificationConfigStore.getInfo(params);
 
-      assertNotNull(result);
-      assertEquals(2, result.configs().size(),
-          "Should return first page when pageToken format is invalid (missing colon)");
-      assertNotNull(result.nextPageToken(), "Should have nextPageToken since more items exist");
+      assertThrows(io.a2a.spec.InvalidParamsError.class, () -> pushNotificationConfigStore.getInfo(params),
+          "Should throw InvalidParamsError for invalid pageToken format (missing colon)");
     }
 
     @Test
