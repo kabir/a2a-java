@@ -44,6 +44,9 @@ public record PageToken(Instant timestamp, String id) {
         try {
             long timestampMillis = Long.parseLong(tokenParts[0]);
             String id = tokenParts[1];
+            if (id.isEmpty()) {
+                throw new InvalidParamsError(null, "Invalid pageToken format: id part cannot be empty", null);
+            }
             return new PageToken(Instant.ofEpochMilli(timestampMillis), id);
         } catch (NumberFormatException e) {
             throw new InvalidParamsError(null,
