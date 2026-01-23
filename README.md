@@ -672,7 +672,9 @@ This project is licensed under the terms of the [Apache 2.0 License](LICENSE).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines. 
+
+If you would like to discuss your fixes more interactively than GitHub issue comments, we are also on [Discord](https://discord.gg/fh5JF52nFy). Use the `#sdk-java` channel.
 
 ## Server Integrations
 The following list contains community contributed integrations with various Java Runtimes.
