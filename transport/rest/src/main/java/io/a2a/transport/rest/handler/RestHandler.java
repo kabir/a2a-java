@@ -36,7 +36,7 @@ import io.a2a.server.version.A2AVersionValidator;
 import io.a2a.server.util.async.Internal;
 import io.a2a.spec.A2AError;
 import io.a2a.spec.AgentCard;
-import io.a2a.spec.ExtendedCardNotConfiguredError;
+import io.a2a.spec.ExtendedAgentCardNotConfiguredError;
 import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
 import io.a2a.spec.EventKind;
@@ -210,7 +210,7 @@ public class RestHandler {
 
     public HTTPRestResponse listTasks(@Nullable String contextId, @Nullable String status,
                                        @Nullable Integer pageSize, @Nullable String pageToken,
-                                       @Nullable Integer historyLength, @Nullable String lastUpdatedAfter,
+                                       @Nullable Integer historyLength, @Nullable String statusTimestampAfter,
                                        @Nullable Boolean includeArtifacts, String tenant,
                                        ServerCallContext context) {
         try {
@@ -266,21 +266,21 @@ public class RestHandler {
                 paramsBuilder.historyLength(historyLength);
             }
             paramsBuilder.tenant(tenant);
-            if (lastUpdatedAfter != null) {
+            if (statusTimestampAfter != null) {
                 try {
                     // Try parsing as Unix milliseconds first (integer)
-                    long millis = Long.parseLong(lastUpdatedAfter);
+                    long millis = Long.parseLong(statusTimestampAfter);
                     if (millis < 0L) {
                         Map<String, Object> errorData = new HashMap<>();
-                        errorData.put("parameter", "lastUpdatedAfter");
+                        errorData.put("parameter", "statusTimestampAfter");
                         errorData.put("reason", "Must be a non-negative timestamp value, got: " + millis);
                         throw new InvalidParamsError(null, "Invalid params", errorData);
                     }
-                    paramsBuilder.lastUpdatedAfter(Instant.ofEpochMilli(millis));
+                    paramsBuilder.statusTimestampAfter(Instant.ofEpochMilli(millis));
                 } catch (NumberFormatException nfe) {
                     // Fall back to ISO-8601 format
                     try {
-                        paramsBuilder.lastUpdatedAfter(Instant.parse(lastUpdatedAfter));
+                        paramsBuilder.statusTimestampAfter(Instant.parse(statusTimestampAfter));
                     } catch (DateTimeParseException e) {
                         Map<String, Object> errorData = new HashMap<>();
                         errorData.put("parameter", "lastUpdatedAfter");
@@ -466,7 +466,7 @@ public class RestHandler {
         if (error instanceof InvalidAgentResponseError) {
             return 502;
         }
-        if (error instanceof ExtendedCardNotConfiguredError
+        if (error instanceof ExtendedAgentCardNotConfiguredError
                 || error instanceof ExtensionSupportRequiredError) {
             return 400;
         }
@@ -478,8 +478,8 @@ public class RestHandler {
 
     public HTTPRestResponse getExtendedAgentCard(String tenant) {
         try {
-            if (!agentCard.supportsExtendedAgentCard() || extendedAgentCard == null || !extendedAgentCard.isResolvable()) {
-                throw new ExtendedCardNotConfiguredError(null, "Extended Card not configured", null);
+            if (!agentCard.capabilities().extendedAgentCard() || extendedAgentCard == null || !extendedAgentCard.isResolvable()) {
+                throw new ExtendedAgentCardNotConfiguredError(null, "Extended Card not configured", null);
             }
             return new HTTPRestResponse(200, "application/json", JsonUtil.toJson(extendedAgentCard.get()));
         } catch (A2AError e) {

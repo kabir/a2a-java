@@ -65,8 +65,7 @@ public class RestTransport implements ClientTransport {
     private final A2AHttpClient httpClient;
     private final AgentInterface agentInterface;
     private @Nullable final List<ClientCallInterceptor> interceptors;
-    private AgentCard agentCard;
-    private boolean needsExtendedCard = false;
+    private final AgentCard agentCard;
 
     public RestTransport(AgentCard agentCard) {
         this(null, agentCard, Utils.getFavoriteInterface(agentCard), null);
@@ -89,8 +88,8 @@ public class RestTransport implements ClientTransport {
             String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, messageSendParams.tenant()) + "/message:send", payloadAndHeaders);
             io.a2a.grpc.SendMessageResponse.Builder responseBuilder = io.a2a.grpc.SendMessageResponse.newBuilder();
             JsonFormat.parser().merge(httpResponseBody, responseBuilder);
-            if (responseBuilder.hasMsg()) {
-                return ProtoUtils.FromProto.message(responseBuilder.getMsg());
+            if (responseBuilder.hasMessage()) {
+                return ProtoUtils.FromProto.message(responseBuilder.getMessage());
             }
             if (responseBuilder.hasTask()) {
                 return ProtoUtils.FromProto.task(responseBuilder.getTask());
@@ -416,17 +415,8 @@ public class RestTransport implements ClientTransport {
     }
 
     @Override
-    public AgentCard getAgentCard(@Nullable ClientCallContext context) throws A2AClientException {
-        A2ACardResolver resolver;
+    public AgentCard getExtendedAgentCard(@Nullable ClientCallContext context) throws A2AClientException {
         try {
-            if (agentCard == null) {
-                resolver = new A2ACardResolver(httpClient, agentInterface.url(), agentInterface.tenant(), null, getHttpHeaders(context));
-                agentCard = resolver.getAgentCard();
-                needsExtendedCard = agentCard.supportsExtendedAgentCard();
-            }
-            if (!needsExtendedCard) {
-                return agentCard;
-            }
             PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_EXTENDED_AGENT_CARD_METHOD, null, agentCard, context);
             String url = Utils.buildBaseUrl(agentInterface, "") + "/extendedAgentCard";
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
@@ -440,9 +430,7 @@ public class RestTransport implements ClientTransport {
                 throw RestErrorMapper.mapRestError(response);
             }
             String httpResponseBody = response.body();
-            agentCard = JsonUtil.fromJson(httpResponseBody, AgentCard.class);
-            needsExtendedCard = false;
-            return agentCard;
+            return JsonUtil.fromJson(httpResponseBody, AgentCard.class);
         } catch (IOException | InterruptedException | JsonProcessingException e) {
             throw new A2AClientException("Failed to get authenticated extended agent card: " + e, e);
         } catch (A2AClientError e) {

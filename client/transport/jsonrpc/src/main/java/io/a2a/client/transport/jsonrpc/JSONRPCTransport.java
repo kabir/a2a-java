@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import com.google.protobuf.MessageOrBuilder;
-import io.a2a.client.http.A2ACardResolver;
+
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpClientFactory;
 import io.a2a.client.http.A2AHttpResponse;
@@ -33,12 +33,10 @@ import io.a2a.client.transport.spi.interceptors.PayloadAndHeaders;
 import io.a2a.grpc.utils.JSONRPCUtils;
 import io.a2a.grpc.utils.ProtoUtils;
 import io.a2a.jsonrpc.common.json.JsonProcessingException;
-import io.a2a.jsonrpc.common.wrappers.A2AMessage;
 import io.a2a.jsonrpc.common.wrappers.A2AResponse;
 import io.a2a.jsonrpc.common.wrappers.CancelTaskResponse;
 import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigResponse;
-import io.a2a.jsonrpc.common.wrappers.GetAuthenticatedExtendedCardRequest;
-import io.a2a.jsonrpc.common.wrappers.GetAuthenticatedExtendedCardResponse;
+import io.a2a.jsonrpc.common.wrappers.GetExtendedAgentCardResponse;
 import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.jsonrpc.common.wrappers.GetTaskResponse;
 import io.a2a.jsonrpc.common.wrappers.ListTaskPushNotificationConfigResponse;
@@ -71,8 +69,7 @@ public class JSONRPCTransport implements ClientTransport {
     private final A2AHttpClient httpClient;
     private final AgentInterface agentInterface;
     private final @Nullable List<ClientCallInterceptor> interceptors;
-    private @Nullable AgentCard agentCard;
-    private boolean needsExtendedCard = false;
+    private final @Nullable AgentCard agentCard;
 
     public JSONRPCTransport(String agentUrl) {
         this(null, null, new AgentInterface("JSONRPC", agentUrl),  null);
@@ -88,7 +85,6 @@ public class JSONRPCTransport implements ClientTransport {
         this.agentCard = agentCard;
         this.agentInterface = agentInterface;
         this.interceptors = interceptors;
-        this.needsExtendedCard = agentCard == null || agentCard.supportsExtendedAgentCard();
     }
 
     @Override
@@ -288,31 +284,15 @@ public class JSONRPCTransport implements ClientTransport {
     }
 
     @Override
-    public AgentCard getAgentCard(@Nullable ClientCallContext context) throws A2AClientException {
-        A2ACardResolver resolver;
+    public AgentCard getExtendedAgentCard(@Nullable ClientCallContext context) throws A2AClientException {
         try {
-            if (agentCard == null) {
-                resolver = new A2ACardResolver(httpClient, agentInterface.url(), agentInterface.tenant(), null, getHttpHeaders(context));
-                agentCard = resolver.getAgentCard();
-                needsExtendedCard = agentCard.supportsExtendedAgentCard();
-            }
-            if (!needsExtendedCard) {
-                return agentCard;
-            }
-
-            GetAuthenticatedExtendedCardRequest getExtendedAgentCardRequest = GetAuthenticatedExtendedCardRequest.builder()
-                    .jsonrpc(A2AMessage.JSONRPC_VERSION)
-                    .build(); // id will be randomly generated
-
             PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_EXTENDED_AGENT_CARD_METHOD,
                     ProtoUtils.ToProto.extendedAgentCard(), agentCard, context);
 
             try {
                 String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, ""), payloadAndHeaders, GET_EXTENDED_AGENT_CARD_METHOD);
-                GetAuthenticatedExtendedCardResponse response = unmarshalResponse(httpResponseBody, GET_EXTENDED_AGENT_CARD_METHOD);
-                agentCard = response.getResult();
-                needsExtendedCard = false;
-                return agentCard;
+                GetExtendedAgentCardResponse response = unmarshalResponse(httpResponseBody, GET_EXTENDED_AGENT_CARD_METHOD);
+                return response.getResult();
             } catch (IOException | InterruptedException | JsonProcessingException e) {
                 throw new A2AClientException("Failed to get authenticated extended agent card: " + e, e);
             }

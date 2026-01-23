@@ -12,6 +12,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import jakarta.enterprise.inject.Instance;
+
 import com.google.protobuf.Empty;
 import com.google.protobuf.Struct;
 import io.a2a.grpc.AuthenticationInfo;
@@ -49,16 +51,13 @@ import io.a2a.spec.AgentExtension;
 import io.a2a.spec.AgentInterface;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.Event;
-import io.a2a.spec.ExtensionSupportRequiredError;
 import io.a2a.spec.InternalError;
-import io.a2a.spec.VersionNotSupportedError;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.transport.grpc.context.GrpcContextKeys;
-import io.grpc.Context;
+
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.internal.testing.StreamRecorder;
@@ -194,7 +193,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1, result.size());
         SendMessageResponse response = result.get(0);
-        assertEquals(GRPC_MESSAGE, response.getMsg());
+        assertEquals(GRPC_MESSAGE, response.getMessage());
     }
 
     @Test
@@ -210,7 +209,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1, result.size());
         SendMessageResponse response = result.get(0);
-        assertEquals(GRPC_MESSAGE, response.getMsg());
+        assertEquals(GRPC_MESSAGE, response.getMessage());
     }
 
     @Test
@@ -316,8 +315,8 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1, result.size());
         StreamResponse response = result.get(0);
-        Assertions.assertTrue(response.hasMsg());
-        Message message = response.getMsg();
+        Assertions.assertTrue(response.hasMessage());
+        Message message = response.getMessage();
         Assertions.assertEquals(GRPC_MESSAGE, message);
     }
 
@@ -533,7 +532,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
         // We need to send some events in order for those to end up in the queue
         SendMessageRequest sendMessageRequest = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<StreamResponse> messageRecorder = StreamRecorder.create();
         handler.sendStreamingMessage(sendMessageRequest, messageRecorder);
@@ -545,8 +544,8 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1, result.size());
         StreamResponse response = result.get(0);
-        Assertions.assertTrue(response.hasMsg());
-        assertEquals(GRPC_MESSAGE, response.getMsg());
+        Assertions.assertTrue(response.hasMessage());
+        assertEquals(GRPC_MESSAGE, response.getMessage());
         Assertions.assertNull(streamRecorder.getError());
     }
 
@@ -755,7 +754,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Disabled
-    public void testOnGetAuthenticatedExtendedAgentCard() throws Exception {
+    public void testOnGetExtendedAgentCard() throws Exception {
         // TODO - getting the authenticated extended agent card isn't supported for gRPC right now
     }
 
@@ -843,13 +842,13 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion(AgentCard.CURRENT_PROTOCOL_VERSION)
+                .protocolVersions(AgentCard.CURRENT_PROTOCOL_VERSION)
                 .build();
 
         GrpcHandler handler = new TestGrpcHandler(cardWithExtension, requestHandler, internalExecutor);
 
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<SendMessageResponse> streamRecorder = StreamRecorder.create();
         handler.sendMessage(request, streamRecorder);
@@ -879,13 +878,13 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion(AgentCard.CURRENT_PROTOCOL_VERSION)
+                .protocolVersions(AgentCard.CURRENT_PROTOCOL_VERSION)
                 .build();
 
         GrpcHandler handler = new TestGrpcHandler(cardWithExtension, requestHandler, internalExecutor);
 
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<StreamResponse> streamRecorder = StreamRecorder.create();
         handler.sendStreamingMessage(request, streamRecorder);
@@ -915,7 +914,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion(AgentCard.CURRENT_PROTOCOL_VERSION)
+                .protocolVersions(AgentCard.CURRENT_PROTOCOL_VERSION)
                 .build();
 
         // Create a TestGrpcHandler that provides the required extension in the context
@@ -942,7 +941,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         };
 
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<SendMessageResponse> streamRecorder = StreamRecorder.create();
         handler.sendMessage(request, streamRecorder);
@@ -989,7 +988,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         };
 
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<SendMessageResponse> streamRecorder = StreamRecorder.create();
         handler.sendMessage(request, streamRecorder);
@@ -1034,7 +1033,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         };
 
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<StreamResponse> streamRecorder = StreamRecorder.create();
         handler.sendStreamingMessage(request, streamRecorder);
@@ -1083,7 +1082,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         };
 
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<SendMessageResponse> streamRecorder = StreamRecorder.create();
         handler.sendMessage(request, streamRecorder);
@@ -1134,7 +1133,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         };
 
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<SendMessageResponse> streamRecorder = StreamRecorder.create();
         handler.sendMessage(request, streamRecorder);
@@ -1147,7 +1146,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
     private StreamRecorder<SendMessageResponse> sendMessageRequest(GrpcHandler handler) throws Exception {
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<SendMessageResponse> streamRecorder = StreamRecorder.create();
         handler.sendMessage(request, streamRecorder);
@@ -1189,7 +1188,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
     private StreamRecorder<StreamResponse> sendStreamingMessageRequest(GrpcHandler handler) throws Exception {
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         StreamRecorder<StreamResponse> streamRecorder = StreamRecorder.create();
         handler.sendStreamingMessage(request, streamRecorder);
@@ -1199,7 +1198,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
     private void sendStreamingMessageRequest(GrpcHandler handler, StreamObserver<StreamResponse> streamObserver) throws Exception {
         SendMessageRequest request = SendMessageRequest.newBuilder()
-                .setRequest(GRPC_MESSAGE)
+                .setMessage(GRPC_MESSAGE)
                 .build();
         handler.sendStreamingMessage(request, streamObserver);
     }
@@ -1218,7 +1217,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
         // Negative timestamp should trigger validation error
         ListTasksRequest request = ListTasksRequest.newBuilder()
-                .setLastUpdatedAfter(-1L)
+                .setStatusTimestampAfter(com.google.protobuf.Timestamp.newBuilder().setSeconds(-1L).build())
                 .setTenant("")
                 .build();
 
@@ -1276,6 +1275,11 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
         @Override
         protected AgentCard getAgentCard() {
+            return card;
+        }
+
+        @Override
+        protected AgentCard getExtendedAgentCard() {
             return card;
         }
 

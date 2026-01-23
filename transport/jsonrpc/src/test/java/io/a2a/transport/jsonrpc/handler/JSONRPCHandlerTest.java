@@ -22,8 +22,8 @@ import io.a2a.jsonrpc.common.wrappers.CancelTaskRequest;
 import io.a2a.jsonrpc.common.wrappers.CancelTaskResponse;
 import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
 import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigResponse;
-import io.a2a.jsonrpc.common.wrappers.GetAuthenticatedExtendedCardRequest;
-import io.a2a.jsonrpc.common.wrappers.GetAuthenticatedExtendedCardResponse;
+import io.a2a.jsonrpc.common.wrappers.GetExtendedAgentCardRequest;
+import io.a2a.jsonrpc.common.wrappers.GetExtendedAgentCardResponse;
 import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
 import io.a2a.jsonrpc.common.wrappers.GetTaskPushNotificationConfigResponse;
 import io.a2a.jsonrpc.common.wrappers.GetTaskRequest;
@@ -52,14 +52,13 @@ import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentExtension;
 import io.a2a.spec.AgentInterface;
 import io.a2a.spec.Artifact;
-import io.a2a.spec.ExtendedCardNotConfiguredError;
+import io.a2a.spec.ExtendedAgentCardNotConfiguredError;
 import io.a2a.spec.ExtensionSupportRequiredError;
 import io.a2a.spec.VersionNotSupportedError;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
 import io.a2a.spec.Event;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InternalError;
-import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
@@ -1525,12 +1524,12 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
-    public void testOnGetAuthenticatedExtendedAgentCard() throws Exception {
+    public void testOnGetExtendedAgentCard() throws Exception {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
-        GetAuthenticatedExtendedCardRequest request = new GetAuthenticatedExtendedCardRequest("1");
-        GetAuthenticatedExtendedCardResponse response = handler.onGetAuthenticatedExtendedCardRequest(request, callContext);
+        GetExtendedAgentCardRequest request = new GetExtendedAgentCardRequest("1");
+        GetExtendedAgentCardResponse response = handler.onGetExtendedCardRequest(request, callContext);
         assertEquals(request.getId(), response.getId());
-        assertInstanceOf(ExtendedCardNotConfiguredError.class, response.getError());
+        assertInstanceOf(ExtendedAgentCardNotConfiguredError.class, response.getError());
         assertNull(response.getResult());
     }
 
@@ -1633,7 +1632,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion(AgentCard.CURRENT_PROTOCOL_VERSION)
+                .protocolVersions(AgentCard.CURRENT_PROTOCOL_VERSION)
                 .build();
 
         JSONRPCHandler handler = new JSONRPCHandler(cardWithExtension, requestHandler, internalExecutor);
@@ -1672,7 +1671,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion(AgentCard.CURRENT_PROTOCOL_VERSION)
+                .protocolVersions(AgentCard.CURRENT_PROTOCOL_VERSION)
                 .build();
 
         JSONRPCHandler handler = new JSONRPCHandler(cardWithExtension, requestHandler, internalExecutor);
@@ -1741,7 +1740,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .protocolVersion(AgentCard.CURRENT_PROTOCOL_VERSION)
+                .protocolVersions(AgentCard.CURRENT_PROTOCOL_VERSION)
                 .build();
 
         JSONRPCHandler handler = new JSONRPCHandler(cardWithExtension, requestHandler, internalExecutor);

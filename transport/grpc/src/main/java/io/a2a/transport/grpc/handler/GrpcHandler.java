@@ -33,7 +33,7 @@ import io.a2a.spec.AgentCard;
 import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
 import io.a2a.spec.EventKind;
-import io.a2a.spec.ExtendedCardNotConfiguredError;
+import io.a2a.spec.ExtendedAgentCardNotConfiguredError;
 import io.a2a.spec.ExtensionSupportRequiredError;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InternalError;
@@ -325,8 +325,11 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     public void getExtendedAgentCard(io.a2a.grpc.GetExtendedAgentCardRequest request,
                            StreamObserver<io.a2a.grpc.AgentCard> responseObserver) {
         try {
-            responseObserver.onNext(ToProto.agentCard(getAgentCardInternal()));
-            responseObserver.onCompleted();
+            AgentCard extendedAgentCard = getExtendedAgentCard();
+            if (extendedAgentCard != null) {
+                responseObserver.onNext(ToProto.agentCard(extendedAgentCard));
+                responseObserver.onCompleted();
+            }
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -452,7 +455,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         } else if (error instanceof InvalidAgentResponseError) {
             status = Status.INTERNAL;
             description = "InvalidAgentResponseError: " + error.getMessage();
-        } else if (error instanceof ExtendedCardNotConfiguredError) {
+        } else if (error instanceof ExtendedAgentCardNotConfiguredError) {
             status = Status.FAILED_PRECONDITION;
             description = "ExtendedCardNotConfiguredError: " + error.getMessage();
         } else if (error instanceof ExtensionSupportRequiredError) {
@@ -498,6 +501,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         handleError(responseObserver, new InternalError(t.getMessage()));
     }
 
+
     private AgentCard getAgentCardInternal() {
         AgentCard agentCard = getAgentCard();
         if (initialised.compareAndSet(false, true)) {
@@ -537,6 +541,8 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     protected abstract RequestHandler getRequestHandler();
 
     protected abstract AgentCard getAgentCard();
+
+    protected abstract AgentCard getExtendedAgentCard();
 
     protected abstract CallContextFactory getCallContextFactory();
 

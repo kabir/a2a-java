@@ -19,6 +19,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -606,21 +607,26 @@ public abstract class AbstractA2AServerTest {
     }
 
     @Test
-    public void testGetAgentCard() throws A2AClientException {
-        AgentCard agentCard = getClient().getAgentCard();
+    public void testGetExtendedAgentCard() throws A2AClientException {
+        AgentCard agentCard = getClient().getExtendedAgentCard();
         assertNotNull(agentCard);
         assertEquals("test-card", agentCard.name());
         assertEquals("A test agent card", agentCard.description());
         assertNotNull(agentCard.supportedInterfaces());
         assertFalse(agentCard.supportedInterfaces().isEmpty());
-        assertEquals(getTransportUrl(), Utils.getFavoriteInterface(agentCard).url());
+        Optional<AgentInterface> transportInterface = agentCard.supportedInterfaces().stream()
+                .filter(i -> getTransportProtocol().equals(i.protocolBinding()))
+                .findFirst();
+        assertTrue(transportInterface.isPresent());
+        System.out.println("transportInterface = " + transportInterface);
+        assertEquals(getTransportUrl(),transportInterface.get().url());
         assertEquals("1.0", agentCard.version());
         assertEquals("http://example.com/docs", agentCard.documentationUrl());
         assertTrue(agentCard.capabilities().pushNotifications());
         assertTrue(agentCard.capabilities().streaming());
         assertTrue(agentCard.capabilities().stateTransitionHistory());
+        assertTrue(agentCard.capabilities().extendedAgentCard());
         assertTrue(agentCard.skills().isEmpty());
-        assertFalse(agentCard.supportsExtendedAgentCard());
     }
 
     @Test
@@ -1994,7 +2000,7 @@ public abstract class AbstractA2AServerTest {
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
                 .supportedInterfaces(List.of(new AgentInterface(getTransportProtocol(), getTransportUrl())))
-                .protocolVersion(CURRENT_PROTOCOL_VERSION)
+                .protocolVersions(CURRENT_PROTOCOL_VERSION)
                 .build();
     }
 
