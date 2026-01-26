@@ -25,6 +25,7 @@ import io.a2a.server.tasks.TaskStore;
 import io.a2a.spec.Artifact;
 import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.Message;
+import io.a2a.util.PageToken;
 import io.a2a.spec.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -227,23 +228,9 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
                 params.contextId(), params.status(), params.pageSize(), params.pageToken());
 
         // Parse pageToken once at the beginning
-        Instant tokenTimestamp = null;
-        String tokenId = null;
-        if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-            String[] tokenParts = params.pageToken().split(":", 2);
-            if (tokenParts.length == 2) {
-                try {
-                    long timestampMillis = Long.parseLong(tokenParts[0]);
-                    tokenId = tokenParts[1];
-                    tokenTimestamp = Instant.ofEpochMilli(timestampMillis);
-                } catch (NumberFormatException e) {
-                    throw new io.a2a.spec.InvalidParamsError(null,
-                        "Invalid pageToken format: timestamp must be numeric milliseconds", null);
-                }
-            } else {
-                throw new io.a2a.spec.InvalidParamsError(null, "Invalid pageToken format: expected 'timestamp:id'", null);
-            }
-        }
+        PageToken pageToken = PageToken.fromString(params.pageToken());
+        Instant tokenTimestamp = pageToken != null ? pageToken.timestamp() : null;
+        String tokenId = pageToken != null ? pageToken.id() : null;
 
         // Build dynamic JPQL query with WHERE clauses for filtering
         StringBuilder queryBuilder = new StringBuilder("SELECT t FROM JpaTask t WHERE 1=1");
@@ -337,8 +324,8 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
         if (hasMore && !tasks.isEmpty()) {
             Task lastTask = tasks.get(tasks.size() - 1);
             // All tasks have timestamps (TaskStatus canonical constructor ensures this)
-            long timestampMillis = lastTask.status().timestamp().toInstant().toEpochMilli();
-            nextPageToken = timestampMillis + ":" + lastTask.id();
+            Instant timestamp = lastTask.status().timestamp().toInstant();
+            nextPageToken = new PageToken(timestamp, lastTask.id()).toString();
         }
 
         // Apply post-processing transformations (history limiting, artifact removal)

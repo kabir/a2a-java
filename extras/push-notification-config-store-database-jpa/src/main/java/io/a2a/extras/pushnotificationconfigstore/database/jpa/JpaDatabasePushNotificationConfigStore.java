@@ -15,6 +15,7 @@ import io.a2a.jsonrpc.common.json.JsonProcessingException;
 import io.a2a.server.tasks.PushNotificationConfigStore;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
+import io.a2a.util.PageToken;
 import io.a2a.spec.PushNotificationConfig;
 import io.a2a.spec.TaskPushNotificationConfig;
 import java.util.stream.Collectors;
@@ -79,18 +80,17 @@ public class JpaDatabasePushNotificationConfigStore implements PushNotificationC
         String taskId = params.id();
         LOGGER.debug("Retrieving PushNotificationConfigs for Task '{}' with params: pageSize={}, pageToken={}",
             taskId, params.pageSize(), params.pageToken());
+
+        // Parse pageToken once at the beginning
+        PageToken pageToken = PageToken.fromString(params.pageToken());
+
         try {
             StringBuilder queryBuilder = new StringBuilder("SELECT c FROM JpaPushNotificationConfig c WHERE c.id.taskId = :taskId");
 
-            if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-              String[] tokenParts = params.pageToken().split(":", 2);
-              if (tokenParts.length == 2) {
+            if (pageToken != null) {
                 // Keyset pagination: get tasks where timestamp < tokenTimestamp OR (timestamp = tokenTimestamp AND id > tokenId)
                 // All tasks have timestamps (TaskStatus canonical constructor ensures this)
                 queryBuilder.append(" AND (COALESCE(c.createdAt, :nullSentinel) < :tokenTimestamp OR (COALESCE(c.createdAt, :nullSentinel) = :tokenTimestamp AND c.id.configId > :tokenId))");
-              } else {
-                // Based on the comments in the test case, if the pageToken is invalid start from the beginning.
-              }
             }
 
             queryBuilder.append(" ORDER BY  COALESCE(c.createdAt, :nullSentinel) DESC, c.id.configId ASC");
@@ -99,22 +99,9 @@ public class JpaDatabasePushNotificationConfigStore implements PushNotificationC
             query.setParameter("taskId", taskId);
             query.setParameter("nullSentinel", NULL_TIMESTAMP_SENTINEL);
 
-            if (params.pageToken() != null && !params.pageToken().isEmpty()) {
-              String[] tokenParts = params.pageToken().split(":", 2);
-              if (tokenParts.length == 2) {
-                try {
-                  long timestampMillis = Long.parseLong(tokenParts[0]);
-                  String tokenId = tokenParts[1];
-
-                  Instant tokenTimestamp = Instant.ofEpochMilli(timestampMillis);
-                  query.setParameter("tokenTimestamp", tokenTimestamp);
-                  query.setParameter("tokenId", tokenId);
-                } catch (NumberFormatException e) {
-                  // Malformed timestamp in pageToken
-                  throw new io.a2a.spec.InvalidParamsError(null,
-                      "Invalid pageToken format: timestamp must be numeric milliseconds", null);
-                }
-              }
+            if (pageToken != null) {
+                query.setParameter("tokenTimestamp", pageToken.timestamp());
+                query.setParameter("tokenId", pageToken.id());
             }
 
             int pageSize = params.getEffectivePageSize();
@@ -128,7 +115,7 @@ public class JpaDatabasePushNotificationConfigStore implements PushNotificationC
               jpaConfigsPage = jpaConfigsPage.subList(0, pageSize);
               JpaPushNotificationConfig lastConfig =  jpaConfigsPage.get(jpaConfigsPage.size() - 1);
               Instant timestamp = lastConfig.getCreatedAt() != null ? lastConfig.getCreatedAt() : NULL_TIMESTAMP_SENTINEL;
-              nextPageToken = timestamp.toEpochMilli() + ":" + lastConfig.getId().getConfigId();
+              nextPageToken = new PageToken(timestamp, lastConfig.getId().getConfigId()).toString();
             }
 
             List<PushNotificationConfig> configs = jpaConfigsPage.stream()
