@@ -34,16 +34,20 @@ public class InMemoryQueueManager implements QueueManager {
         this.taskStateProvider = null;
     }
 
+    MainEventBus mainEventBus;
+
     @Inject
-    public InMemoryQueueManager(TaskStateProvider taskStateProvider) {
+    public InMemoryQueueManager(TaskStateProvider taskStateProvider, MainEventBus mainEventBus) {
+        this.mainEventBus = mainEventBus;
         this.factory = new DefaultEventQueueFactory();
         this.taskStateProvider = taskStateProvider;
     }
 
-    // For testing with custom factory
-    public InMemoryQueueManager(EventQueueFactory factory, TaskStateProvider taskStateProvider) {
+    // For testing/extensions with custom factory and MainEventBus
+    public InMemoryQueueManager(EventQueueFactory factory, TaskStateProvider taskStateProvider, MainEventBus mainEventBus) {
         this.factory = factory;
         this.taskStateProvider = taskStateProvider;
+        this.mainEventBus = mainEventBus;
     }
 
     @Override
@@ -52,6 +56,24 @@ public class InMemoryQueueManager implements QueueManager {
         if (existing != null) {
             throw new TaskQueueExistsException();
         }
+    }
+
+    @Override
+    public void switchKey(String oldId, String newId) {
+        EventQueue queue = queues.remove(oldId);
+        if (queue == null) {
+            throw new IllegalStateException("No queue found for old ID: " + oldId);
+        }
+
+        EventQueue existing = queues.putIfAbsent(newId, queue);
+        if (existing != null) {
+            // Rollback - put old one back
+            queues.putIfAbsent(oldId, queue);
+            throw new TaskQueueExistsException();
+        }
+
+        LOGGER.debug("Switched queue {} from temp ID {} to real task ID {}",
+                System.identityHashCode(queue), oldId, newId);
     }
 
     @Override
@@ -129,6 +151,12 @@ public class InMemoryQueueManager implements QueueManager {
     }
 
     @Override
+    public EventQueue.EventQueueBuilder getEventQueueBuilder(String taskId) {
+        // Use the factory to ensure proper configuration (MainEventBus, callbacks, etc.)
+        return factory.builder(taskId);
+    }
+
+    @Override
     public int getActiveChildQueueCount(String taskId) {
         EventQueue queue = queues.get(taskId);
         if (queue == null || queue.isClosed()) {
@@ -140,6 +168,14 @@ public class InMemoryQueueManager implements QueueManager {
         }
         // This should not happen in normal operation since we only store MainQueues
         return -1;
+    }
+
+    @Override
+    public EventQueue.EventQueueBuilder createBaseEventQueueBuilder(String taskId) {
+        return EventQueue.builder(mainEventBus)
+                .taskId(taskId)
+                .addOnCloseCallback(getCleanupCallback(taskId))
+                .taskStateProvider(taskStateProvider);
     }
 
     /**
@@ -181,11 +217,8 @@ public class InMemoryQueueManager implements QueueManager {
     private class DefaultEventQueueFactory implements EventQueueFactory {
         @Override
         public EventQueue.EventQueueBuilder builder(String taskId) {
-            // Return builder with callback that removes queue from map when closed
-            return EventQueue.builder()
-                    .taskId(taskId)
-                    .addOnCloseCallback(getCleanupCallback(taskId))
-                    .taskStateProvider(taskStateProvider);
+            // Delegate to the base builder creation method
+            return createBaseEventQueueBuilder(taskId);
         }
     }
 }
