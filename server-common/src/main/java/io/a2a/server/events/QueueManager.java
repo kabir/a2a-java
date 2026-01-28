@@ -167,7 +167,24 @@ public interface QueueManager {
      * @param taskId the task identifier
      * @return a MainQueue (if new task) or ChildQueue (if tapping existing)
      */
-    EventQueue createOrTap(String taskId);
+    default EventQueue createOrTap(String taskId) {
+        return createOrTap(taskId, null);
+    }
+
+    /**
+     * Creates a MainQueue if none exists, or taps the existing queue to create a ChildQueue.
+     * <p>
+     * This is the primary method used by {@link io.a2a.server.requesthandlers.DefaultRequestHandler}:
+     * <ul>
+     *   <li><b>New task:</b> Creates and returns a MainQueue with tempId</li>
+     *   <li><b>Resubscription:</b> Taps existing MainQueue and returns a ChildQueue</li>
+     * </ul>
+     *
+     * @param taskId the task identifier (may be temporary)
+     * @param tempId the temporary task ID if taskId is temporary, null otherwise
+     * @return a MainQueue (if new task) or ChildQueue (if tapping existing)
+     */
+    EventQueue createOrTap(String taskId, @Nullable String tempId);
 
     /**
      * Waits for the queue's consumer polling to start.

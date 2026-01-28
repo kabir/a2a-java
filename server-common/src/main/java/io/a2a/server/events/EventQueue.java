@@ -85,6 +85,7 @@ public abstract class EventQueue implements AutoCloseable {
         private int queueSize = DEFAULT_QUEUE_SIZE;
         private @Nullable EventEnqueueHook hook;
         private @Nullable String taskId;
+        private @Nullable String tempId = null;
         private List<Runnable> onCloseCallbacks = new java.util.ArrayList<>();
         private @Nullable TaskStateProvider taskStateProvider;
         private @Nullable MainEventBus mainEventBus;
@@ -119,6 +120,17 @@ public abstract class EventQueue implements AutoCloseable {
          */
         public EventQueueBuilder taskId(String taskId) {
             this.taskId = taskId;
+            return this;
+        }
+
+        /**
+         * Sets the temporary task ID if this queue is for a temporary task.
+         *
+         * @param tempId the temporary task ID, or null if not temporary
+         * @return this builder
+         */
+        public EventQueueBuilder tempId(@Nullable String tempId) {
+            this.tempId = tempId;
             return this;
         }
 
@@ -170,7 +182,7 @@ public abstract class EventQueue implements AutoCloseable {
             if (taskId == null) {
                 throw new IllegalStateException("taskId is required for EventQueue creation");
             }
-            return new MainQueue(queueSize, hook, taskId, onCloseCallbacks, taskStateProvider, mainEventBus);
+            return new MainQueue(queueSize, hook, taskId, tempId, onCloseCallbacks, taskStateProvider, mainEventBus);
         }
     }
 
@@ -330,14 +342,16 @@ public abstract class EventQueue implements AutoCloseable {
         private final CountDownLatch pollingStartedLatch = new CountDownLatch(1);
         private final AtomicBoolean pollingStarted = new AtomicBoolean(false);
         private final @Nullable EventEnqueueHook enqueueHook;
-        private final String taskId;
+        private volatile String taskId;  // Volatile to allow switching from temp to real ID across threads
         private final List<Runnable> onCloseCallbacks;
         private final @Nullable TaskStateProvider taskStateProvider;
         private final MainEventBus mainEventBus;
+        private final @Nullable String tempId;
 
         MainQueue(int queueSize,
                   @Nullable EventEnqueueHook hook,
                   String taskId,
+                  @Nullable String tempId,
                   List<Runnable> onCloseCallbacks,
                   @Nullable TaskStateProvider taskStateProvider,
                   @Nullable MainEventBus mainEventBus) {
@@ -345,11 +359,12 @@ public abstract class EventQueue implements AutoCloseable {
             this.semaphore = new Semaphore(queueSize, true);
             this.enqueueHook = hook;
             this.taskId = taskId;
+            this.tempId = tempId;
             this.onCloseCallbacks = List.copyOf(onCloseCallbacks);  // Defensive copy
             this.taskStateProvider = taskStateProvider;
             this.mainEventBus = Objects.requireNonNull(mainEventBus, "MainEventBus is required");
-            LOGGER.debug("Created MainQueue for task {} with {} onClose callbacks, TaskStateProvider: {}, MainEventBus configured",
-                    taskId, onCloseCallbacks.size(), taskStateProvider != null);
+            LOGGER.debug("Created MainQueue for task {} (tempId={}) with {} onClose callbacks, TaskStateProvider: {}, MainEventBus configured",
+                    taskId, tempId, onCloseCallbacks.size(), taskStateProvider != null);
         }
 
 
@@ -365,6 +380,30 @@ public abstract class EventQueue implements AutoCloseable {
          */
         public int getChildCount() {
             return children.size();
+        }
+
+        /**
+         * Returns the enqueue hook for replication (package-protected for MainEventBusProcessor).
+         */
+        @Nullable EventEnqueueHook getEnqueueHook() {
+            return enqueueHook;
+        }
+
+        /**
+         * Returns the temporary task ID if this queue was created with one, null otherwise.
+         * Package-protected for MainEventBusProcessor access.
+         */
+        @Nullable String getTempId() {
+            return tempId;
+        }
+
+        /**
+         * Updates the task ID when switching from temporary to real ID.
+         * Package-protected for MainEventBusProcessor access.
+         * @param newTaskId the real task ID to use
+         */
+        void setTaskId(String newTaskId) {
+            this.taskId = newTaskId;
         }
 
         @Override
@@ -401,12 +440,44 @@ public abstract class EventQueue implements AutoCloseable {
 
             // Submit to MainEventBus for centralized persistence + distribution
             // MainEventBus is guaranteed non-null by constructor requirement
-            mainEventBus.submit(taskId, this, item);
+            // Note: Replication now happens in MainEventBusProcessor AFTER persistence
 
-            // Trigger replication hook if configured (for inter-process replication)
-            if (enqueueHook != null) {
-                enqueueHook.onEnqueue(item);
+            // For temp ID scenarios: if event contains a real task ID different from our temp ID,
+            // use the real ID when submitting to MainEventBus. This ensures subsequent events
+            // are submitted with the correct ID even before MainEventBusProcessor updates our taskId field.
+            // IMPORTANT: We don't update our taskId here - that happens in MainEventBusProcessor
+            // AFTER TaskManager validates the ID (e.g., checking for duplicate task IDs).
+            String submissionId = taskId;
+            if (tempId != null && taskId.equals(tempId)) {
+                // Not yet switched - try to extract real ID from first event
+                String eventTaskId = extractTaskId(event);
+                if (eventTaskId != null && !eventTaskId.equals(taskId)) {
+                    // Event has a different (real) ID - use it for submission
+                    // but keep our taskId as temp-UUID for now (until MainEventBusProcessor switches it)
+                    submissionId = eventTaskId;
+                    LOGGER.debug("MainQueue submitting event with real ID {} (current taskId: {})", eventTaskId, taskId);
+                }
             }
+            // If already switched (tempId != null but taskId != tempId), submissionId stays as taskId (the real ID)
+            // This ensures subsequent events with stale temp IDs still get submitted with the correct real ID
+            mainEventBus.submit(submissionId, this, item);
+        }
+
+        /**
+         * Extracts taskId from an event (package-private helper).
+         */
+        @Nullable
+        private String extractTaskId(Event event) {
+            if (event instanceof io.a2a.spec.Task task) {
+                return task.id();
+            } else if (event instanceof io.a2a.spec.TaskStatusUpdateEvent statusUpdate) {
+                return statusUpdate.taskId();
+            } else if (event instanceof io.a2a.spec.TaskArtifactUpdateEvent artifactUpdate) {
+                return artifactUpdate.taskId();
+            } else if (event instanceof io.a2a.spec.Message message) {
+                return message.taskId();
+            }
+            return null;
         }
 
         @Override
@@ -429,20 +500,15 @@ public abstract class EventQueue implements AutoCloseable {
         void childClosing(ChildQueue child, boolean immediate) {
             children.remove(child);  // Remove the closing child
 
-            // Close immediately if requested
-            if (immediate) {
-                LOGGER.debug("MainQueue closing immediately (immediate=true)");
-                this.doClose(immediate);
-                return;
-            }
-
             // If there are still children, keep queue open
             if (!children.isEmpty()) {
                 LOGGER.debug("MainQueue staying open: {} children remaining", children.size());
                 return;
             }
 
-            // No children left - check if task is finalized before auto-closing
+            // No children left - check if task is finalized before closing
+            // IMPORTANT: This check must happen BEFORE the immediate flag check
+            // to prevent closing queues for non-final tasks (fire-and-forget, resubscription support)
             if (taskStateProvider != null && taskId != null) {
                 boolean isFinalized = taskStateProvider.isTaskFinalized(taskId);
                 if (!isFinalized) {
@@ -532,6 +598,10 @@ public abstract class EventQueue implements AutoCloseable {
         @Override
         public void close(boolean immediate, boolean notifyParent) {
             throw new UnsupportedOperationException("MainQueue does not support notifyParent parameter - use close(boolean) instead");
+        }
+
+        String getTaskId() {
+            return taskId;
         }
     }
 

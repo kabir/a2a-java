@@ -47,17 +47,20 @@ class ReplicatedQueueManagerTest {
 
     @BeforeEach
     void setUp() {
-        // Create MainEventBus and MainEventBusProcessor for tests
+        // Create MainEventBus first
         InMemoryTaskStore taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
-        EventQueueUtil.start(mainEventBusProcessor);
 
+        // Create QueueManager before MainEventBusProcessor (processor needs it as parameter)
         queueManager = new ReplicatedQueueManager(
             new NoOpReplicationStrategy(),
             new MockTaskStateProvider(true),
             mainEventBus
         );
+
+        // Create MainEventBusProcessor with QueueManager
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER, queueManager);
+        EventQueueUtil.start(mainEventBusProcessor);
 
         testEvent = TaskStatusUpdateEvent.builder()
                 .taskId("test-task")
@@ -129,12 +132,14 @@ class ReplicatedQueueManagerTest {
 
         String taskId = "test-task-1";
         EventQueue queue = queueManager.createOrTap(taskId);
+        TaskStatusUpdateEvent event = createEventForTask(taskId);
 
-        queue.enqueueEvent(testEvent);
+        // Wait for MainEventBusProcessor to process the event and trigger replication
+        waitForEventProcessing(() -> queue.enqueueEvent(event));
 
         assertEquals(1, strategy.getCallCount());
         assertEquals(taskId, strategy.getLastTaskId());
-        assertEquals(testEvent, strategy.getLastEvent());
+        assertEquals(event, strategy.getLastEvent());
     }
 
     @Test
@@ -158,13 +163,15 @@ class ReplicatedQueueManagerTest {
 
         String taskId = "test-task-3";
         EventQueue queue = queueManager.createOrTap(taskId);
+        TaskStatusUpdateEvent event = createEventForTask(taskId);
 
-        queue.enqueueEvent(testEvent);
-        queue.enqueueEvent(testEvent);
+        // Wait for MainEventBusProcessor to process each event
+        waitForEventProcessing(() -> queue.enqueueEvent(event));
+        waitForEventProcessing(() -> queue.enqueueEvent(event));
 
         assertEquals(2, countingStrategy.getCallCount());
         assertEquals(taskId, countingStrategy.getLastTaskId());
-        assertEquals(testEvent, countingStrategy.getLastEvent());
+        assertEquals(event, countingStrategy.getLastEvent());
 
         ReplicatedEventQueueItem replicatedEvent = new ReplicatedEventQueueItem(taskId, testEvent);
         queueManager.onReplicatedEvent(replicatedEvent);
@@ -245,16 +252,17 @@ class ReplicatedQueueManagerTest {
         String taskId = "test-task-6";
         CountingReplicationStrategy countingStrategy = new CountingReplicationStrategy();
         queueManager = new ReplicatedQueueManager(countingStrategy, new MockTaskStateProvider(true), mainEventBus);
+        TaskStatusUpdateEvent event = createEventForTask(taskId);
 
         EventQueue queue = queueManager.createOrTap(taskId);
-        queue.enqueueEvent(testEvent);
+        waitForEventProcessing(() -> queue.enqueueEvent(event));
 
         assertEquals(taskId, countingStrategy.getLastTaskId());
 
         queueManager.close(taskId);  // Task is active, so NO poison pill is sent
 
         EventQueue newQueue = queueManager.createOrTap(taskId);
-        newQueue.enqueueEvent(testEvent);
+        waitForEventProcessing(() -> newQueue.enqueueEvent(event));
 
         assertEquals(taskId, countingStrategy.getLastTaskId());
         // 2 replication calls: 1 testEvent, 1 testEvent (no QueueClosedEvent because task is active)
@@ -298,9 +306,24 @@ class ReplicatedQueueManagerTest {
 
         int numThreads = 10;
         int eventsPerThread = 5;
+        int expectedEventCount = (numThreads / 2) * eventsPerThread; // Only normal enqueues
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(numThreads);
+
+        // Set up callback to wait for all events to be processed by MainEventBusProcessor
+        CountDownLatch processingLatch = new CountDownLatch(expectedEventCount);
+        mainEventBusProcessor.setCallback(new io.a2a.server.events.MainEventBusProcessorCallback() {
+            @Override
+            public void onEventProcessed(String tid, io.a2a.spec.Event event) {
+                processingLatch.countDown();
+            }
+
+            @Override
+            public void onTaskFinalized(String tid) {
+                // Not needed for this test
+            }
+        });
 
         // Launch threads that will enqueue events normally (should trigger replication)
         for (int i = 0; i < numThreads / 2; i++) {
@@ -310,7 +333,7 @@ class ReplicatedQueueManagerTest {
                     startLatch.await();
                     for (int j = 0; j < eventsPerThread; j++) {
                         TaskStatusUpdateEvent event = TaskStatusUpdateEvent.builder()
-                                .taskId("normal-" + threadId + "-" + j)
+                                .taskId(taskId)  // Use same taskId as queue
                                 .contextId("test-context")
                                 .status(new TaskStatus(TaskState.WORKING))
                                 .isFinal(false)
@@ -334,7 +357,7 @@ class ReplicatedQueueManagerTest {
                     startLatch.await();
                     for (int j = 0; j < eventsPerThread; j++) {
                         TaskStatusUpdateEvent event = TaskStatusUpdateEvent.builder()
-                                .taskId("replicated-" + threadId + "-" + j)
+                                .taskId(taskId)  // Use same taskId as queue
                                 .contextId("test-context")
                                 .status(new TaskStatus(TaskState.COMPLETED))
                                 .isFinal(true)
@@ -359,6 +382,14 @@ class ReplicatedQueueManagerTest {
 
         executor.shutdown();
         assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS), "Executor should shutdown within 5 seconds");
+
+        // Wait for MainEventBusProcessor to process all events
+        try {
+            assertTrue(processingLatch.await(10, TimeUnit.SECONDS),
+                    "MainEventBusProcessor should have processed all events within timeout");
+        } finally {
+            mainEventBusProcessor.setCallback(null);
+        }
 
         // Only the normal enqueue operations should have triggered replication
         // numThreads/2 threads * eventsPerThread events each = total expected replication calls
@@ -467,9 +498,10 @@ class ReplicatedQueueManagerTest {
 
         String taskId = "poison-pill-test";
         EventQueue queue = queueManager.createOrTap(taskId);
+        TaskStatusUpdateEvent event = createEventForTask(taskId);
 
-        // Enqueue a normal event first
-        queue.enqueueEvent(testEvent);
+        // Enqueue a normal event first and wait for processing
+        waitForEventProcessing(() -> queue.enqueueEvent(event));
 
         // In the new architecture, QueueClosedEvent (poison pill) is sent via CDI events
         // when JpaDatabaseTaskStore.save() persists a final task and the transaction commits

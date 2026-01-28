@@ -64,7 +64,8 @@ public class EventConsumerTest {
         // Set up MainEventBus and processor for production-like test environment
         InMemoryTaskStore taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
+        InMemoryQueueManager queueManager = new InMemoryQueueManager(taskStore, mainEventBus);
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER, queueManager);
         EventQueueUtil.start(mainEventBusProcessor);
 
         eventQueue = EventQueueUtil.getEventQueueBuilder(mainEventBus)

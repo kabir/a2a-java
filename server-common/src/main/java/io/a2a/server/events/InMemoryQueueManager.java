@@ -59,7 +59,23 @@ public class InMemoryQueueManager implements QueueManager {
     }
 
     @Override
-    public void switchKey(String oldId, String newId) {
+    public synchronized void switchKey(String oldId, String newId) {
+        // Check if already switched (idempotent operation)
+        // This check is now safe because the method is synchronized
+        EventQueue existingNew = queues.get(newId);
+        if (existingNew != null) {
+            EventQueue oldQueue = queues.get(oldId);
+            if (oldQueue == null) {
+                // Already switched - idempotent success
+                LOGGER.debug("Queue already switched from {} to {}, skipping", oldId, newId);
+                return;
+            } else {
+                // Different queue already at newId - error
+                throw new TaskQueueExistsException();
+            }
+        }
+
+        // Normal path: move queue from oldId to newId
         EventQueue queue = queues.remove(oldId);
         if (queue == null) {
             throw new IllegalStateException("No queue found for old ID: " + oldId);
@@ -100,7 +116,12 @@ public class InMemoryQueueManager implements QueueManager {
 
     @Override
     public EventQueue createOrTap(String taskId) {
-        LOGGER.debug("createOrTap called for task {}, current map size: {}", taskId, queues.size());
+        return createOrTap(taskId, null);
+    }
+
+    @Override
+    public EventQueue createOrTap(String taskId, @Nullable String tempId) {
+        LOGGER.debug("createOrTap called for task {} (tempId={}), current map size: {}", taskId, tempId, queues.size());
         EventQueue existing = queues.get(taskId);
 
         // Lazy cleanup: only remove closed queues if task is finalized
@@ -123,8 +144,8 @@ public class InMemoryQueueManager implements QueueManager {
         EventQueue newQueue = null;
         if (existing == null) {
             // Use builder pattern for cleaner queue creation
-            // Use the new taskId-aware builder method if available
-            newQueue = factory.builder(taskId).build();
+            // Pass tempId to the builder
+            newQueue = factory.builder(taskId).tempId(tempId).build();
             // Make sure an existing queue has not been added in the meantime
             existing = queues.putIfAbsent(taskId, newQueue);
         }
@@ -136,8 +157,8 @@ public class InMemoryQueueManager implements QueueManager {
         EventQueue result = main.tap();  // Always return ChildQueue
 
         if (existing == null) {
-            LOGGER.debug("Created new MainQueue {} for task {}, returning ChildQueue {} (map size: {})",
-                System.identityHashCode(main), taskId, System.identityHashCode(result), queues.size());
+            LOGGER.debug("Created new MainQueue {} for task {} (tempId={}), returning ChildQueue {} (map size: {})",
+                System.identityHashCode(main), taskId, tempId, System.identityHashCode(result), queues.size());
         } else {
             LOGGER.debug("Tapped existing MainQueue {} -> ChildQueue {} for task {}",
                 System.identityHashCode(main), System.identityHashCode(result), taskId);

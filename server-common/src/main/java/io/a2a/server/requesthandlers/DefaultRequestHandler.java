@@ -474,7 +474,8 @@ public class DefaultRequestHandler implements RequestHandler {
                 task.id(),
                 task.contextId(),
                 taskStore,
-                null);
+                null,
+                false); // Not a temp ID - task already exists
 
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null, executor, eventConsumerExecutor);
 
@@ -509,15 +510,18 @@ public class DefaultRequestHandler implements RequestHandler {
     @Override
     public EventKind onMessageSend(MessageSendParams params, ServerCallContext context) throws A2AError {
         LOGGER.debug("onMessageSend - task: {}; context {}", params.message().taskId(), params.message().contextId());
-        MessageSendSetup mss = initMessageSend(params, context);
 
-        @Nullable String initialTaskId = mss.requestContext.getTaskId();
-        // For non-streaming, taskId can be null initially (will be set when Task event arrives)
-        // Use a temporary ID for queue creation if needed (same pattern as streaming)
-        String queueTaskId = initialTaskId != null ? initialTaskId : "temp-" + java.util.UUID.randomUUID();
-        LOGGER.debug("Request context taskId: {} (queue key: {})", initialTaskId, queueTaskId);
+        // Generate temp taskId BEFORE initMessageSend if client didn't provide one
+        // This ensures TaskManager is created with a valid taskId for ResultAggregator
+        @Nullable String messageTaskId = params.message().taskId();
+        boolean isTempId = messageTaskId == null;
+        String queueTaskId = isTempId ? "temp-" + java.util.UUID.randomUUID() : messageTaskId;
+        LOGGER.debug("Message taskId: {} (queue key: {}, isTempId: {})", messageTaskId, queueTaskId, isTempId);
 
-        EventQueue queue = queueManager.createOrTap(queueTaskId);
+        MessageSendSetup mss = initMessageSend(params, context, queueTaskId, isTempId);
+
+        // Pass the actual tempId string (queueTaskId) if this is a temp ID, null otherwise
+        EventQueue queue = queueManager.createOrTap(queueTaskId, isTempId ? queueTaskId : null);
         final java.util.concurrent.atomic.AtomicReference<@NonNull String> taskId = new java.util.concurrent.atomic.AtomicReference<>(queueTaskId);
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor);
 
@@ -571,12 +575,10 @@ public class DefaultRequestHandler implements RequestHandler {
                 String currentId = Objects.requireNonNull(taskId.get(), "taskId cannot be null");
                 if (!Objects.equals(currentId, createdTask.id())) {
                     try {
-                        queueManager.switchKey(currentId, createdTask.id());
+                        switchFromTempToRealTaskId(currentId, createdTask.id(), mss.taskManager);
                         taskId.set(createdTask.id());
-                        LOGGER.debug("Switched non-streaming queue from {} to real task ID {}",
-                                currentId, createdTask.id());
                     } catch (TaskQueueExistsException | IllegalStateException e) {
-                        String msg = "Failed to switch queue key from " + currentId + " to " + createdTask.id() + ": " + e.getMessage();
+                        String msg = "Failed to switch from temp ID " + currentId + " to real task ID " + createdTask.id() + ": " + e.getMessage();
                         LOGGER.error(msg, e);
                         throw new InternalError(msg);
                     }
@@ -710,16 +712,19 @@ public class DefaultRequestHandler implements RequestHandler {
             MessageSendParams params, ServerCallContext context) throws A2AError {
         LOGGER.debug("onMessageSendStream START - task: {}; context: {}; runningAgents: {}",
                 params.message().taskId(), params.message().contextId(), runningAgents.size());
-        MessageSendSetup mss = initMessageSend(params, context);
 
-        @Nullable String initialTaskId = mss.requestContext.getTaskId();
-        // For streaming, taskId can be null initially (will be set when Task event arrives)
-        // Use a temporary ID for queue creation if needed
-        String queueTaskId = initialTaskId != null ? initialTaskId : "temp-" + java.util.UUID.randomUUID();
+        // Generate temp taskId BEFORE initMessageSend if client didn't provide one
+        // This ensures TaskManager is created with a valid taskId for ResultAggregator
+        @Nullable String messageTaskId = params.message().taskId();
+        boolean isTempId = messageTaskId == null;
+        String queueTaskId = isTempId ? "temp-" + java.util.UUID.randomUUID() : messageTaskId;
+
+        MessageSendSetup mss = initMessageSend(params, context, queueTaskId, isTempId);
 
         final AtomicReference<@NonNull String> taskId = new AtomicReference<>(queueTaskId);
+        // Pass the actual tempId string (queueTaskId) if this is a temp ID, null otherwise
         @SuppressWarnings("NullAway")
-        EventQueue queue = queueManager.createOrTap(taskId.get());
+        EventQueue queue = queueManager.createOrTap(taskId.get(), isTempId ? queueTaskId : null);
         LOGGER.debug("Created/tapped queue for task {}: {}", taskId.get(), queue);
 
         // Store push notification config SYNCHRONOUSLY for new tasks before agent starts
@@ -753,23 +758,23 @@ public class DefaultRequestHandler implements RequestHandler {
                     processor(createTubeConfig(), results, ((errorConsumer, item) -> {
                 Event event = item.getEvent();
                 if (event instanceof Task createdTask) {
-                    if (!Objects.equals(taskId.get(), createdTask.id())) {
-                        errorConsumer.accept(new InternalError("Task ID mismatch in agent response"));
-                    }
-
                     // Switch from temporary ID to real task ID if they differ
                     String currentId = Objects.requireNonNull(taskId.get(), "taskId cannot be null");
                     if (!Objects.equals(currentId, createdTask.id())) {
                         try {
-                            queueManager.switchKey(currentId, createdTask.id());
+                            switchFromTempToRealTaskId(currentId, createdTask.id(), mss.taskManager);
                             taskId.set(createdTask.id());
-                            LOGGER.debug("Switched streaming queue from {} to real task ID {}",
-                                    currentId, createdTask.id());
-                        } catch (TaskQueueExistsException e) {
-                            errorConsumer.accept(new InternalError("Queue already exists for task " + createdTask.id()));
-                        } catch (IllegalStateException e) {
-                            errorConsumer.accept(new InternalError("Failed to switch queue key: " + e.getMessage()));
+                        } catch (TaskQueueExistsException | IllegalStateException e) {
+                            errorConsumer.accept(new InternalError("Failed to switch from temp ID " + currentId +
+                                    " to real task ID " + createdTask.id() + ": " + e.getMessage()));
+                            return true;  // Don't proceed to final check if switch failed
                         }
+                    }
+
+                    // Final verification AFTER switch attempt
+                    String finalTaskId = Objects.requireNonNull(taskId.get(), "taskId cannot be null");
+                    if (!finalTaskId.equals(createdTask.id())) {
+                        errorConsumer.accept(new InternalError("Task ID mismatch in agent response"));
                     }
                 }
                 return true;
@@ -918,7 +923,7 @@ public class DefaultRequestHandler implements RequestHandler {
             throw new TaskNotFoundError();
         }
 
-        TaskManager taskManager = new TaskManager(task.id(), task.contextId(), taskStore, null);
+        TaskManager taskManager = new TaskManager(task.id(), task.contextId(), taskStore, null, false); // Not a temp ID - task already exists
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null, executor, eventConsumerExecutor);
         EventQueue queue = queueManager.tap(task.id());
         LOGGER.debug("onResubscribeToTask - tapped queue: {}", queue != null ? System.identityHashCode(queue) : "null");
@@ -1064,12 +1069,59 @@ public class DefaultRequestHandler implements RequestHandler {
         });
     }
 
-    private MessageSendSetup initMessageSend(MessageSendParams params, ServerCallContext context) {
+    /**
+     * Switches all internal state from a temporary task ID to the real task ID.
+     * Called when a Task event arrives with the real task.id after we generated a temp-UUID.
+     * Updates:
+     * - QueueManager map
+     * - pendingFinalizations map
+     * - runningAgents map
+     * - TaskManager's taskId
+     *
+     * @param tempId the temporary UUID we generated
+     * @param realId the real task.id from the Task event
+     * @param taskManager the TaskManager to update
+     * @throws TaskQueueExistsException if queue already exists for realId
+     * @throws IllegalStateException if queue not found for tempId
+     */
+    private void switchFromTempToRealTaskId(String tempId, String realId, TaskManager taskManager) {
+        LOGGER.debug("Switching from temp ID {} to real task ID {}", tempId, realId);
+
+        // 1. Switch queue key
+        queueManager.switchKey(tempId, realId);
+
+        // 2. Move pendingFinalizations entry if exists
+        CountDownLatch latch = pendingFinalizations.remove(tempId);
+        if (latch != null) {
+            pendingFinalizations.put(realId, latch);
+            LOGGER.debug("Moved pendingFinalizations from {} to {}", tempId, realId);
+        }
+
+        // 3. Move runningAgents entry if exists
+        CompletableFuture<Void> agentFuture = runningAgents.remove(tempId);
+        if (agentFuture != null) {
+            runningAgents.put(realId, agentFuture);
+            LOGGER.debug("Moved runningAgents from {} to {}", tempId, realId);
+        }
+
+        // 4. Switch push notification configs (if configured)
+        if (pushConfigStore != null) {
+            pushConfigStore.switchKey(tempId, realId);
+        }
+
+        // 5. Update TaskManager's taskId
+        taskManager.setTaskId(realId);
+
+        LOGGER.debug("Completed switch from temp ID {} to real task ID {}", tempId, realId);
+    }
+
+    private MessageSendSetup initMessageSend(MessageSendParams params, ServerCallContext context, String taskId, boolean isTempId) {
         TaskManager taskManager = new TaskManager(
-                params.message().taskId(),
+                taskId,
                 params.message().contextId(),
                 taskStore,
-                params.message());
+                params.message(),
+                isTempId);
 
         Task task = taskManager.getTask();
         if (task != null) {
@@ -1082,9 +1134,11 @@ public class DefaultRequestHandler implements RequestHandler {
             }
         }
 
+        // For RequestContext, pass null as taskId when using temp ID to avoid validation error
+        // The temp UUID is only for queue management, not for the RequestContext
         RequestContext requestContext = requestContextBuilder.get()
                 .setParams(params)
-                .setTaskId(task == null ? params.message().taskId() : task.id())
+                .setTaskId(isTempId ? null : taskId)
                 .setContextId(params.message().contextId())
                 .setTask(task)
                 .setServerCallContext(context)

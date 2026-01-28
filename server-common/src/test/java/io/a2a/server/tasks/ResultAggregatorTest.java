@@ -245,11 +245,10 @@ public class ResultAggregatorTest {
         // Create an event queue using QueueManager (which has access to builder)
         MainEventBus mainEventBus = new MainEventBus();
         InMemoryTaskStore taskStore = new InMemoryTaskStore();
-        MainEventBusProcessor processor = new MainEventBusProcessor(mainEventBus, taskStore, task -> {});
-        EventQueueUtil.start(processor);
-
         InMemoryQueueManager queueManager =
             new InMemoryQueueManager(new MockTaskStateProvider(), mainEventBus);
+        MainEventBusProcessor processor = new MainEventBusProcessor(mainEventBus, taskStore, task -> {}, queueManager);
+        EventQueueUtil.start(processor);
 
         EventQueue queue = queueManager.getEventQueueBuilder(taskId).build().tap();
 

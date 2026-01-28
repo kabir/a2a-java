@@ -14,6 +14,7 @@ import io.a2a.server.tasks.TaskStore;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
 import io.a2a.spec.InternalError;
+import io.a2a.spec.Message;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
@@ -63,14 +64,17 @@ public class MainEventBusProcessor implements Runnable {
 
     private final PushNotificationSender pushSender;
 
+    private final QueueManager queueManager;
+
     private volatile boolean running = true;
     private @Nullable Thread processorThread;
 
     @Inject
-    public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore, PushNotificationSender pushSender) {
+    public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore, PushNotificationSender pushSender, QueueManager queueManager) {
         this.eventBus = eventBus;
         this.taskStore = taskStore;
         this.pushSender = pushSender;
+        this.queueManager = queueManager;
     }
 
     /**
@@ -165,10 +169,17 @@ public class MainEventBusProcessor implements Runnable {
     private void processEvent(MainEventBusContext context) {
         String taskId = context.taskId();
         Event event = context.eventQueueItem().getEvent();
-        EventQueue eventQueue = context.eventQueue();
+        // MainEventBus.submit() guarantees this is always a MainQueue
+        EventQueue.MainQueue mainQueue = (EventQueue.MainQueue) context.eventQueue();
 
-        LOGGER.debug("MainEventBusProcessor: Processing event for task {}: {} (queue type: {})",
-                    taskId, event.getClass().getSimpleName(), eventQueue.getClass().getSimpleName());
+        // Determine if this is a temp ID scenario
+        // If MainQueue was created with a tempId, then isTempId is true ONLY for events
+        // BEFORE the queue key is switched. After switching, mainQueue.taskId != tempId,
+        // so isTempId should be false for subsequent events.
+        String tempId = mainQueue.getTempId();
+        boolean isTempId = (tempId != null && mainQueue.getTaskId().equals(tempId));
+        LOGGER.debug("MainEventBusProcessor: Processing event for task {} (tempId={}, isTempId={}): {}",
+                    taskId, tempId, isTempId, event.getClass().getSimpleName());
 
         Event eventToDistribute = null;
         try {
@@ -176,8 +187,17 @@ public class MainEventBusProcessor implements Runnable {
             // If this throws, we distribute an error to ensure "persist before client visibility"
 
             try {
-                updateTaskStore(taskId, event);
+                updateTaskStore(taskId, event, isTempId, mainQueue);
+
                 eventToDistribute = event; // Success - distribute original event
+
+                // Trigger replication AFTER successful persistence (moved from MainQueue.enqueueEvent)
+                // This ensures replicated events have real task IDs, not temp-UUIDs
+                EventEnqueueHook hook = mainQueue.getEnqueueHook();
+                if (hook != null) {
+                    LOGGER.debug("Triggering replication hook for task {} after successful persistence", taskId);
+                    hook.onEnqueue(context.eventQueueItem());
+                }
             } catch (InternalError e) {
                 // Persistence failed - create error event to distribute instead
                 LOGGER.error("Failed to persist event for task {}, distributing error to clients", taskId, e);
@@ -208,19 +228,14 @@ public class MainEventBusProcessor implements Runnable {
                 eventToDistribute = new InternalError("Internal error: event processing failed");
             }
 
-            if (eventQueue instanceof EventQueue.MainQueue mainQueue) {
-                int childCount = mainQueue.getChildCount();
-                LOGGER.debug("MainEventBusProcessor: Distributing {} to {} children for task {}",
-                            eventToDistribute.getClass().getSimpleName(), childCount, taskId);
-                // Create new EventQueueItem with the event to distribute (original or error)
-                EventQueueItem itemToDistribute = new LocalEventQueueItem(eventToDistribute);
-                mainQueue.distributeToChildren(itemToDistribute);
-                LOGGER.debug("MainEventBusProcessor: Distributed {} to {} children for task {}",
-                            eventToDistribute.getClass().getSimpleName(), childCount, taskId);
-            } else {
-                LOGGER.warn("MainEventBusProcessor: Expected MainQueue but got {} for task {}",
-                        eventQueue.getClass().getSimpleName(), taskId);
-            }
+            int childCount = mainQueue.getChildCount();
+            LOGGER.debug("MainEventBusProcessor: Distributing {} to {} children for task {}",
+                        eventToDistribute.getClass().getSimpleName(), childCount, taskId);
+            // Create new EventQueueItem with the event to distribute (original or error)
+            EventQueueItem itemToDistribute = new LocalEventQueueItem(eventToDistribute);
+            mainQueue.distributeToChildren(itemToDistribute);
+            LOGGER.debug("MainEventBusProcessor: Distributed {} to {} children for task {}",
+                        eventToDistribute.getClass().getSimpleName(), childCount, taskId);
 
             LOGGER.debug("MainEventBusProcessor: Completed processing event for task {}", taskId);
 
@@ -240,9 +255,7 @@ public class MainEventBusProcessor implements Runnable {
             } finally {
                  // ALWAYS release semaphore, even if processing fails
                 // Balances the acquire() in MainQueue.enqueueEvent()
-                if (eventQueue instanceof EventQueue.MainQueue mainQueue) {
-                    mainQueue.releaseSemaphore();
-                }
+                mainQueue.releaseSemaphore();
             }
         }
     }
@@ -260,20 +273,46 @@ public class MainEventBusProcessor implements Runnable {
      * See Gemini's comment: https://github.com/a2aproject/a2a-java/pull/515#discussion_r2604621833
      * </p>
      *
+     * @param taskId the task ID (may be temporary)
+     * @param event the event to persist
+     * @param isTempId whether the task ID is temporary (from MainQueue.tempId)
+     * @param mainQueue the main queue (for updating taskId after ID switch)
      * @throws InternalError if persistence fails
      */
-    private void updateTaskStore(String taskId, Event event) throws InternalError {
+    private void updateTaskStore(String taskId, Event event, boolean isTempId, EventQueue.MainQueue mainQueue) throws InternalError {
         try {
             // Extract contextId from event (all relevant events have it)
             String contextId = extractContextId(event);
 
+            String eventTaskId = null;
+            if (isTempId) {
+                eventTaskId = extractTaskId(event);
+                LOGGER.debug("Temp ID scenario: taskId={}, event={}", taskId, eventTaskId);
+            }
+
+            // For temp ID scenarios (before switch), use the MainQueue's current taskId (temp ID) for TaskManager.
+            // This ensures duplicate detection works when switching from temp to real ID.
+            // After switch (isTempId=false), use the submission taskId (real ID).
+            String taskIdForManager = isTempId ? mainQueue.getTaskId() : taskId;
+
             // Create temporary TaskManager instance for this event
-            TaskManager taskManager = new TaskManager(taskId, contextId, taskStore, null);
+            // Use taskIdForManager (temp ID if switching, real ID otherwise)
+            // isTempId allows TaskManager.checkIdsAndUpdateIfNecessary() to switch to real ID
+            TaskManager taskManager = new TaskManager(taskIdForManager, contextId, taskStore, null, isTempId);
 
             // Use TaskManager.process() - handles all event types with existing logic
             taskManager.process(event);
             LOGGER.debug("TaskStore updated via TaskManager.process() for task {}: {}",
                         taskId, event.getClass().getSimpleName());
+
+            // If this was a temp ID scenario and the event had a different task ID,
+            // then TaskManager switched from temp to real ID. Update the queue key and MainQueue taskId.
+            if (isTempId && eventTaskId != null && !eventTaskId.equals(taskIdForManager)) {
+                LOGGER.debug("Switching queue key from temp {} to real {}", taskIdForManager, eventTaskId);
+                queueManager.switchKey(taskIdForManager, eventTaskId);
+                // Also update the MainQueue's taskId so subsequent events use the real ID
+                mainQueue.setTaskId(eventTaskId);
+            }
         } catch (InternalError e) {
             LOGGER.error("Error updating TaskStore via TaskManager for task {}", taskId, e);
             // Rethrow to prevent distributing unpersisted event to clients
@@ -347,6 +386,25 @@ public class MainEventBusProcessor implements Runnable {
             return artifactUpdate.contextId();
         }
         // Message and other events don't have contextId
+        return null;
+    }
+
+    /**
+     * Extracts taskId from an event.
+     * Returns null if the event type doesn't have a taskId (e.g., Throwable).
+     */
+    @Nullable
+    private String extractTaskId(Event event) {
+        if (event instanceof Task task) {
+            return task.id();
+        } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
+            return statusUpdate.taskId();
+        } else if (event instanceof TaskArtifactUpdateEvent artifactUpdate) {
+            return artifactUpdate.taskId();
+        } else if (event instanceof Message message) {
+            return message.taskId();
+        }
+        // Other events (Throwable, etc.) don't have taskId
         return null;
     }
 

@@ -35,10 +35,9 @@ public class InMemoryQueueManagerTest {
         taskStateProvider = new MockTaskStateProvider();
         taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
-        EventQueueUtil.start(mainEventBusProcessor);
-
         queueManager = new InMemoryQueueManager(taskStateProvider, mainEventBus);
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER, queueManager);
+        EventQueueUtil.start(mainEventBusProcessor);
     }
 
     @AfterEach

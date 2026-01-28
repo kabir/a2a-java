@@ -16,6 +16,7 @@ import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.events.MainEventBus;
 import io.a2a.server.events.QueueManager;
 import io.a2a.server.tasks.TaskStateProvider;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +86,12 @@ public class ReplicatedQueueManager implements QueueManager {
 
     @Override
     public EventQueue createOrTap(String taskId) {
-        EventQueue queue = delegate.createOrTap(taskId);
+        return createOrTap(taskId, null);
+    }
+
+    @Override
+    public EventQueue createOrTap(String taskId, @Nullable String tempId) {
+        EventQueue queue = delegate.createOrTap(taskId, tempId);
         return queue;
     }
 
@@ -106,7 +112,9 @@ public class ReplicatedQueueManager implements QueueManager {
         }
 
         // Get or create a ChildQueue for this task (creates MainQueue if it doesn't exist)
-        EventQueue childQueue = delegate.createOrTap(replicatedEvent.getTaskId());
+        // Replicated events should always have real task IDs (not temp IDs) because
+        // replication now happens AFTER TaskStore persistence in MainEventBusProcessor
+        EventQueue childQueue = delegate.createOrTap(replicatedEvent.getTaskId(), null);
 
         try {
             // Get the MainQueue to enqueue the replicated event item

@@ -17,9 +17,9 @@ public class MainEventBus {
         this.queue = new LinkedBlockingDeque<>();
     }
 
-    public void submit(String taskId, EventQueue eventQueue, EventQueueItem item) {
+    void submit(String taskId, EventQueue.MainQueue mainQueue, EventQueueItem item) {
         try {
-            queue.put(new MainEventBusContext(taskId, eventQueue, item));
+            queue.put(new MainEventBusContext(taskId, mainQueue, item));
             LOGGER.debug("Submitted event for task {} to MainEventBus (queue size: {})",
                         taskId, queue.size());
         } catch (InterruptedException e) {
@@ -28,7 +28,7 @@ public class MainEventBus {
         }
     }
 
-    public MainEventBusContext take() throws InterruptedException {
+    MainEventBusContext take() throws InterruptedException {
         LOGGER.debug("MainEventBus: Waiting to take event (current queue size: {})...", queue.size());
         MainEventBusContext context = queue.take();
         LOGGER.debug("MainEventBus: Took event for task {} (remaining queue size: {})",

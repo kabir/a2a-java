@@ -28,6 +28,7 @@ import io.a2a.server.tasks.InMemoryTaskStore;
 import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.TaskUpdater;
 import io.a2a.spec.A2AError;
+import io.a2a.spec.Event;
 import io.a2a.spec.ListTaskPushNotificationConfigParams;
 import io.a2a.spec.ListTaskPushNotificationConfigResult;
 import io.a2a.spec.Message;
@@ -37,6 +38,7 @@ import io.a2a.spec.PushNotificationConfig;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
+import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,11 +70,10 @@ public class DefaultRequestHandlerTest {
 
         // Create MainEventBus and MainEventBusProcessor (production code path)
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
-        EventQueueUtil.start(mainEventBusProcessor);
-
         // Pass taskStore as TaskStateProvider to queueManager for task-aware queue management
         queueManager = new InMemoryQueueManager(taskStore, mainEventBus);
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER, queueManager);
+        EventQueueUtil.start(mainEventBusProcessor);
 
         agentExecutor = new TestAgentExecutor();
 
@@ -995,6 +996,187 @@ public class DefaultRequestHandlerTest {
         PushNotificationConfig storedConfig = storedConfigs.configs().get(0).pushNotificationConfig();
         assertEquals("config-existing-1", storedConfig.id());
         assertEquals("https://example.com/existing-webhook", storedConfig.url());
+    }
+
+    /**
+     * Test that sending a message WITHOUT taskId works correctly (like TCK).
+     * Agent emits Task with the same ID it receives from context.getTaskId().
+     */
+    @Test
+    @Timeout(10)
+    void testMessageSendWithoutTaskIdCreatesTask() throws Exception {
+        String contextId = "temp-id-ctx";
+
+        // Agent does same as TCK: emit SUBMITTED task with received taskId, then WORKING (fire-and-forget)
+        agentExecutor.setExecuteCallback((context, queue) -> {
+            Task task = context.getTask();
+            if (task == null) {
+                // First message: create SUBMITTED task using context's taskId
+                // (RequestContext generates a real UUID when message.taskId is null)
+                task = Task.builder()
+                    .id(context.getTaskId())
+                    .contextId(context.getContextId())
+                    .status(new TaskStatus(TaskState.SUBMITTED))
+                    .history(List.of(context.getMessage()))
+                    .build();
+                queue.enqueueEvent(task);
+            }
+            // Set to WORKING (fire-and-forget like TCK)
+            TaskUpdater updater = new TaskUpdater(context, queue);
+            updater.startWork();
+            // Don't complete - just return (fire-and-forget)
+        });
+
+        // Send message WITHOUT taskId (null) in blocking mode
+        Message message = Message.builder()
+            .messageId("msg-no-taskid")
+            .role(Message.Role.USER)
+            .parts(new TextPart("message without taskId"))
+            .taskId(null)  // No taskId!
+            .contextId(contextId)
+            .build();
+
+        MessageSendConfiguration config = MessageSendConfiguration.builder()
+            .blocking(true)
+            .build();
+
+        MessageSendParams params = new MessageSendParams(message, config, null, "");
+
+        // Call blocking onMessageSend
+        Object result = requestHandler.onMessageSend(params, serverCallContext);
+
+        // Verify result is a Task
+        assertTrue(result instanceof Task, "Result should be a Task");
+        Task resultTask = (Task) result;
+
+        // Task should have an ID (auto-generated)
+        assertNotNull(resultTask.id(), "Task should have an ID");
+
+        // ID should NOT start with "temp-" (that's just the queue key, not the task.id)
+        assertTrue(!resultTask.id().startsWith("temp-"),
+            "Task ID should not start with 'temp-', got: " + resultTask.id());
+
+        assertEquals(contextId, resultTask.contextId());
+        assertEquals(TaskState.WORKING, resultTask.status().state());
+
+        // Verify task is persisted in TaskStore
+        Task storedTask = taskStore.get(resultTask.id());
+        assertNotNull(storedTask, "Task should be stored");
+        assertEquals(resultTask.id(), storedTask.id());
+    }
+
+    /**
+     * Test message send without taskId using streaming.
+     * This tests the same scenario as testMessageSendWithoutTaskIdCreatesTask but with streaming.
+     * TCK streaming tests were failing with similar temp-to-real ID switching issues.
+     */
+    @Test
+    @Timeout(10)
+    void testMessageSendStreamWithoutTaskIdCreatesTask() throws Exception {
+        String contextId = "temp-id-ctx-stream";
+
+        // Agent does same as TCK: emit SUBMITTED task with received taskId, then WORKING (fire-and-forget)
+        agentExecutor.setExecuteCallback((context, queue) -> {
+            Task task = context.getTask();
+            if (task == null) {
+                // First message: create SUBMITTED task using context's taskId
+                // (RequestContext generates a real UUID when message.taskId is null)
+                task = Task.builder()
+                    .id(context.getTaskId())
+                    .contextId(context.getContextId())
+                    .status(new TaskStatus(TaskState.SUBMITTED))
+                    .history(List.of(context.getMessage()))
+                    .build();
+                queue.enqueueEvent(task);
+            }
+            // Set to WORKING (fire-and-forget like TCK)
+            TaskUpdater updater = new TaskUpdater(context, queue);
+            updater.startWork();
+            // Don't complete - just return (fire-and-forget)
+        });
+
+        // Send message WITHOUT taskId (null) in streaming mode
+        Message message = Message.builder()
+            .messageId("msg-no-taskid-stream")
+            .role(Message.Role.USER)
+            .parts(new TextPart("message without taskId streaming"))
+            .taskId(null)  // No taskId!
+            .contextId(contextId)
+            .build();
+
+        MessageSendParams params = new MessageSendParams(message, null, null, "");
+
+        // Call streaming onMessageSendStream
+        var publisher = requestHandler.onMessageSendStream(params, serverCallContext);
+
+        // Collect events from stream
+        List<Event> events = new java.util.ArrayList<>();
+        CountDownLatch completionLatch = new CountDownLatch(1);
+        AtomicBoolean hasError = new AtomicBoolean(false);
+        final Throwable[] error = new Throwable[1];
+
+        publisher.subscribe(new java.util.concurrent.Flow.Subscriber<Event>() {
+            private java.util.concurrent.Flow.Subscription subscription;
+
+            @Override
+            public void onSubscribe(java.util.concurrent.Flow.Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(Long.MAX_VALUE); // Request all events
+            }
+
+            @Override
+            public void onNext(Event event) {
+                events.add(event);
+                subscription.request(1);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                hasError.set(true);
+                error[0] = throwable;
+                throwable.printStackTrace();
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                completionLatch.countDown();
+            }
+        });
+
+        // Wait for stream to complete
+        assertTrue(completionLatch.await(5, TimeUnit.SECONDS), "Stream should complete");
+        if (hasError.get()) {
+            fail("Stream had error: " + error[0], error[0]);
+        }
+
+        // Should have received at least 2 events: Task (SUBMITTED) and TaskStatusUpdateEvent (WORKING)
+        assertTrue(events.size() >= 2, "Should have at least 2 events, got: " + events.size());
+
+        // First event should be Task with SUBMITTED state
+        Event firstEvent = events.get(0);
+        assertTrue(firstEvent instanceof Task, "First event should be Task");
+        Task firstTask = (Task) firstEvent;
+
+        assertNotNull(firstTask.id(), "Task should have an ID");
+        assertTrue(!firstTask.id().startsWith("temp-"),
+            "Task ID should not start with 'temp-', got: " + firstTask.id());
+        assertEquals(contextId, firstTask.contextId());
+        assertEquals(TaskState.SUBMITTED, firstTask.status().state());
+
+        // Second event should be TaskStatusUpdateEvent with WORKING state
+        Event secondEvent = events.get(1);
+        assertTrue(secondEvent instanceof TaskStatusUpdateEvent,
+            "Second event should be TaskStatusUpdateEvent, got: " + secondEvent.getClass().getSimpleName());
+        TaskStatusUpdateEvent statusUpdate = (TaskStatusUpdateEvent) secondEvent;
+        assertEquals(firstTask.id(), statusUpdate.taskId(), "Status update should have same task ID");
+        assertEquals(TaskState.WORKING, statusUpdate.status().state());
+
+        // Verify task is persisted in TaskStore with WORKING state
+        Task storedTask = taskStore.get(firstTask.id());
+        assertNotNull(storedTask, "Task should be stored");
+        assertEquals(firstTask.id(), storedTask.id());
+        assertEquals(TaskState.WORKING, storedTask.status().state(), "Stored task should have WORKING state");
     }
 
     /**

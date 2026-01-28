@@ -16,6 +16,7 @@ import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
 import io.a2a.server.events.EventQueueItem;
 import io.a2a.server.events.EventQueueUtil;
+import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.events.MainEventBus;
 import io.a2a.server.events.MainEventBusProcessor;
 import io.a2a.spec.Event;
@@ -56,7 +57,8 @@ public class TaskUpdaterTest {
         // Set up MainEventBus and processor for production-like test environment
         InMemoryTaskStore taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
-        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER);
+        InMemoryQueueManager queueManager = new InMemoryQueueManager(taskStore, mainEventBus);
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, NOOP_PUSHNOTIFICATION_SENDER, queueManager);
         EventQueueUtil.start(mainEventBusProcessor);
 
         eventQueue = EventQueueUtil.getEventQueueBuilder(mainEventBus)
