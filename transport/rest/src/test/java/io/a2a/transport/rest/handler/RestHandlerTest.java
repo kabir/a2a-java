@@ -30,7 +30,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testGetTaskSuccess() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         RestHandler.HTTPRestResponse response = handler.getTask(MINIMAL_TASK.id(), 0, "", callContext);
 
@@ -59,7 +59,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testListTasksStatusWireString() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         RestHandler.HTTPRestResponse response = handler.listTasks(null, "submitted", null, null,
                 null, null, null, "", callContext);
@@ -162,7 +162,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testCancelTaskSuccess() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         agentExecutorCancel = (context, eventQueue) -> {
             // We need to cancel the task or the EventConsumer never finds a 'final' event.
@@ -246,7 +246,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testPushNotificationConfigSuccess() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         String requestBody = """
             {
@@ -293,7 +293,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testGetPushNotificationConfig() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         // First, create a push notification config
         String createRequestBody = """
@@ -322,7 +322,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testDeletePushNotificationConfig() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
         RestHandler.HTTPRestResponse response = handler.deleteTaskPushNotificationConfiguration(MINIMAL_TASK.id(), "default-config-id", "", callContext);
         Assertions.assertEquals(204, response.getStatusCode());
     }
@@ -330,7 +330,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testListPushNotificationConfigs() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         RestHandler.HTTPRestResponse response = handler.listTaskPushNotificationConfigurations(MINIMAL_TASK.id(), 0, "", "", callContext);
 
@@ -894,7 +894,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testListTasksUnixMillisecondsTimestamp() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         // Unix milliseconds timestamp should be accepted
         String timestampMillis = String.valueOf(System.currentTimeMillis() - 10000);
@@ -909,7 +909,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testListTasksProtobufEnumStatus() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         // Protobuf enum format (TASK_STATE_SUBMITTED) should be accepted
         RestHandler.HTTPRestResponse response = handler.listTasks(null, "TASK_STATE_SUBMITTED", null, null,
@@ -923,7 +923,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testListTasksEnumConstantStatus() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        taskStore.save(MINIMAL_TASK);
+        taskStore.save(MINIMAL_TASK, false);
 
         // Enum constant format (SUBMITTED) should be accepted
         RestHandler.HTTPRestResponse response = handler.listTasks(null, "SUBMITTED", null, null,

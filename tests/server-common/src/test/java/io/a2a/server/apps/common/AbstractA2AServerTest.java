@@ -656,7 +656,20 @@ public abstract class AbstractA2AServerTest {
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
             // Create consumer to handle resubscribed events
+            AtomicBoolean receivedInitialTask = new AtomicBoolean(false);
             BiConsumer<ClientEvent, AgentCard> consumer = (event, agentCard) -> {
+                // Per A2A spec 3.1.6: ENFORCE that first event is TaskEvent
+                if (!receivedInitialTask.get()) {
+                    if (event instanceof TaskEvent) {
+                        receivedInitialTask.set(true);
+                        // Don't count down latch for initial Task
+                        return;
+                    } else {
+                        fail("First event on resubscribe MUST be TaskEvent, but was: " + event.getClass().getSimpleName());
+                    }
+                }
+
+                // Process subsequent events
                 if (event instanceof TaskUpdateEvent taskUpdateEvent) {
                     if (taskUpdateEvent.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifactEvent) {
                         artifactUpdateEvent.set(artifactEvent);
@@ -755,12 +768,25 @@ public abstract class AbstractA2AServerTest {
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
             // Create consumer to handle resubscribed events
+            AtomicBoolean receivedInitialTask = new AtomicBoolean(false);
 
             AgentCard agentCard = createTestAgentCard();
             ClientConfig clientConfig = createClientConfig(true);
             ClientBuilder clientBuilder = Client
                     .builder(agentCard)
                     .addConsumer((evt, agentCard1) -> {
+                        // Per A2A spec 3.1.6: ENFORCE that first event is TaskEvent
+                        if (!receivedInitialTask.get()) {
+                            if (evt instanceof TaskEvent) {
+                                receivedInitialTask.set(true);
+                                // Don't count down latch for initial Task
+                                return;
+                            } else {
+                                fail("First event on resubscribe MUST be TaskEvent, but was: " + evt.getClass().getSimpleName());
+                            }
+                        }
+
+                        // Process subsequent events
                         if (evt instanceof TaskUpdateEvent taskUpdateEvent) {
                             if (taskUpdateEvent.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifactEvent) {
                                 artifactUpdateEvent.set(artifactEvent);
@@ -918,8 +944,20 @@ public abstract class AbstractA2AServerTest {
             AtomicReference<TaskArtifactUpdateEvent> firstConsumerEvent = new AtomicReference<>();
             AtomicBoolean firstUnexpectedEvent = new AtomicBoolean(false);
             AtomicReference<Throwable> firstErrorRef = new AtomicReference<>();
+            AtomicBoolean firstReceivedInitialTask = new AtomicBoolean(false);
 
             BiConsumer<ClientEvent, AgentCard> firstConsumer = (event, agentCard) -> {
+                // Per A2A spec 3.1.6: ENFORCE that first event is TaskEvent
+                if (!firstReceivedInitialTask.get()) {
+                    if (event instanceof TaskEvent) {
+                        firstReceivedInitialTask.set(true);
+                        return;
+                    } else {
+                        fail("First event on resubscribe MUST be TaskEvent, but was: " + event.getClass().getSimpleName());
+                    }
+                }
+
+                // Process subsequent events
                 if (event instanceof TaskUpdateEvent tue && tue.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifact) {
                     firstConsumerEvent.set(artifact);
                     firstConsumerLatch.countDown();
@@ -975,8 +1013,20 @@ public abstract class AbstractA2AServerTest {
             AtomicReference<TaskArtifactUpdateEvent> secondConsumerEvent = new AtomicReference<>();
             AtomicBoolean secondUnexpectedEvent = new AtomicBoolean(false);
             AtomicReference<Throwable> secondErrorRef = new AtomicReference<>();
+            AtomicBoolean secondReceivedInitialTask = new AtomicBoolean(false);
 
             BiConsumer<ClientEvent, AgentCard> secondConsumer = (event, agentCard) -> {
+                // Per A2A spec 3.1.6: ENFORCE that first event is TaskEvent
+                if (!secondReceivedInitialTask.get()) {
+                    if (event instanceof TaskEvent) {
+                        secondReceivedInitialTask.set(true);
+                        return;
+                    } else {
+                        fail("First event on resubscribe MUST be TaskEvent, but was: " + event.getClass().getSimpleName());
+                    }
+                }
+
+                // Process subsequent events
                 if (event instanceof TaskUpdateEvent tue && tue.getUpdateEvent() instanceof TaskArtifactUpdateEvent artifact) {
                     secondConsumerEvent.set(artifact);
                     secondConsumerLatch.countDown();
@@ -1316,8 +1366,20 @@ public abstract class AbstractA2AServerTest {
         List<io.a2a.spec.UpdateEvent> resubReceivedEvents = new CopyOnWriteArrayList<>();
         AtomicBoolean resubUnexpectedEvent = new AtomicBoolean(false);
         AtomicReference<Throwable> resubErrorRef = new AtomicReference<>();
+        AtomicBoolean resubReceivedInitialTask = new AtomicBoolean(false);
 
         BiConsumer<ClientEvent, AgentCard> resubConsumer = (event, agentCard) -> {
+            // Per A2A spec 3.1.6: ENFORCE that first event is TaskEvent
+            if (!resubReceivedInitialTask.get()) {
+                if (event instanceof TaskEvent) {
+                    resubReceivedInitialTask.set(true);
+                    return;
+                } else {
+                    fail("First event on resubscribe MUST be TaskEvent, but was: " + event.getClass().getSimpleName());
+                }
+            }
+
+            // Process subsequent events
             if (event instanceof TaskUpdateEvent tue) {
                 resubReceivedEvents.add(tue.getUpdateEvent());
                 resubEventLatch.countDown();
@@ -1355,6 +1417,7 @@ public abstract class AbstractA2AServerTest {
         AtomicBoolean streamUnexpectedEvent = new AtomicBoolean(false);
 
         BiConsumer<ClientEvent, AgentCard> streamConsumer = (event, agentCard) -> {
+            // This consumer is for sendMessage() (not resubscribe), so it doesn't get initial TaskEvent
             if (event instanceof TaskUpdateEvent tue) {
                 streamReceivedEvents.add(tue.getUpdateEvent());
                 streamEventLatch.countDown();

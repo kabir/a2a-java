@@ -10,6 +10,9 @@ import io.a2a.client.transport.rest.RestErrorMapper;
 import io.a2a.grpc.StreamResponse;
 import io.a2a.grpc.utils.ProtoUtils;
 import io.a2a.spec.StreamingEventKind;
+import io.a2a.spec.Task;
+import io.a2a.spec.TaskState;
+import io.a2a.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
 
 public class RestSSEEventListener {
@@ -29,7 +32,7 @@ public class RestSSEEventListener {
             log.fine("Streaming message received: " + message);
             io.a2a.grpc.StreamResponse.Builder builder = io.a2a.grpc.StreamResponse.newBuilder();
             JsonFormat.parser().merge(message, builder);
-            handleMessage(builder.build());
+            handleMessage(builder.build(), completableFuture);
         } catch (InvalidProtocolBufferException e) {
             errorHandler.accept(RestErrorMapper.mapRestError(message, 500));
         }
@@ -44,7 +47,7 @@ public class RestSSEEventListener {
         }
     }
 
-    private void handleMessage(StreamResponse response) {
+    private void handleMessage(StreamResponse response, @Nullable Future<Void> future) {
         StreamingEventKind event;
         switch (response.getPayloadCase()) {
             case MESSAGE ->
@@ -62,6 +65,23 @@ public class RestSSEEventListener {
             }
         }
         eventHandler.accept(event);
+
+        // Client-side auto-close on final events to prevent connection leaks
+        // Handles both TaskStatusUpdateEvent and Task objects with final states
+        // This covers late subscriptions to completed tasks and ensures no connection leaks
+        boolean shouldClose = false;
+        if (event instanceof TaskStatusUpdateEvent tue && tue.isFinal()) {
+            shouldClose = true;
+        } else if (event instanceof Task task) {
+            TaskState state = task.status().state();
+            if (state.isFinal()) {
+                shouldClose = true;
+            }
+        }
+
+        if (shouldClose && future != null) {
+            future.cancel(true); // close SSE channel
+        }
     }
 
 }
