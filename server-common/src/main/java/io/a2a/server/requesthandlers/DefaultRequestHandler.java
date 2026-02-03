@@ -481,13 +481,13 @@ public class DefaultRequestHandler implements RequestHandler {
             }
 
             if (blocking && interruptedOrNonBlocking) {
-                // For blocking calls: ensure all events are persisted to TaskStore before returning
+                // For blocking calls: ensure all consumed events are persisted to TaskStore before returning
                 // Order of operations is critical to avoid circular dependency and race conditions:
-                // 1. Wait for agent to finish enqueueing events
+                // 1. Wait for agent to finish enqueueing events (or timeout)
                 // 2. Close the queue to signal consumption can complete
                 // 3. Wait for consumption to finish processing events
-                // 4. Wait for MainEventBusProcessor to persist final state to TaskStore
-                // 5. Fetch final task state from TaskStore (now guaranteed persisted)
+                // 4. (Implicit) MainEventBusProcessor persistence guarantee via consumption completion
+                // 5. Fetch current task state from TaskStore (includes all consumed & persisted events)
                 LOGGER.debug("DefaultRequestHandler: Entering blocking fire-and-forget handling for task {}", taskId.get());
 
                 try {
@@ -550,7 +550,7 @@ public class DefaultRequestHandler implements RequestHandler {
                 Task updatedTask = taskStore.get(nonNullTaskId);
                 if (updatedTask != null) {
                     kind = updatedTask;
-                    LOGGER.debug("DefaultRequestHandler: Step 5 - Fetched final task for {} with state {} and {} artifacts",
+                    LOGGER.debug("DefaultRequestHandler: Step 5 - Fetched current task for {} with state {} and {} artifacts",
                         taskId.get(), updatedTask.status().state(),
                         updatedTask.artifacts().size());
                 } else {
