@@ -308,12 +308,15 @@ class ReplicatedQueueManagerTest {
         int numThreads = 10;
         int eventsPerThread = 5;
         int expectedEventCount = (numThreads / 2) * eventsPerThread; // Only normal enqueues
+        int totalEventCount = numThreads * eventsPerThread; // All events (normal + replicated)
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(numThreads);
 
-        // Set up callback to wait for all events to be processed by MainEventBusProcessor
-        CountDownLatch processingLatch = new CountDownLatch(expectedEventCount);
+        // Set up callback to wait for ALL events to be processed by MainEventBusProcessor
+        // Must wait for all 50 events (25 normal + 25 replicated) to ensure all normal events
+        // have triggered replication before we check the count
+        CountDownLatch processingLatch = new CountDownLatch(totalEventCount);
         mainEventBusProcessor.setCallback(new io.a2a.server.events.MainEventBusProcessorCallback() {
             @Override
             public void onEventProcessed(String tid, io.a2a.spec.Event event) {
