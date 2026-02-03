@@ -23,7 +23,7 @@ import io.a2a.jsonrpc.common.json.JsonProcessingException;
 import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
-import io.a2a.server.events.EventQueue;
+import io.a2a.server.tasks.AgentEmitter;
 import io.a2a.server.events.EventQueueItem;
 import io.a2a.server.events.EventQueueUtil;
 import io.a2a.server.events.InMemoryQueueManager;
@@ -86,16 +86,16 @@ public class AbstractA2ARequestHandlerTest {
     public void init() {
         executor = new AgentExecutor() {
             @Override
-            public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
+            public void execute(RequestContext context, AgentEmitter agentEmitter) throws A2AError {
                 if (agentExecutorExecute != null) {
-                    agentExecutorExecute.invoke(context, eventQueue);
+                    agentExecutorExecute.invoke(context, agentEmitter);
                 }
             }
 
             @Override
-            public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
+            public void cancel(RequestContext context, AgentEmitter agentEmitter) throws A2AError {
                 if (agentExecutorCancel != null) {
-                    agentExecutorCancel.invoke(context, eventQueue);
+                    agentExecutorCancel.invoke(context, agentEmitter);
                 }
             }
         };
@@ -165,7 +165,7 @@ public class AbstractA2ARequestHandlerTest {
     }
 
     protected interface AgentExecutorMethod {
-        void invoke(RequestContext context, EventQueue eventQueue) throws A2AError;
+        void invoke(RequestContext context, AgentEmitter agentEmitter) throws A2AError;
     }
 
     /**

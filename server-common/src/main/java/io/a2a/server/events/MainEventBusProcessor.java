@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.TaskManager;
 import io.a2a.server.tasks.TaskStore;
+import io.a2a.spec.A2AError;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
 import io.a2a.spec.InternalError;
@@ -381,7 +382,7 @@ public class MainEventBusProcessor implements Runnable {
      * Checks if an event represents a final task state.
      *
      * @param event the event to check
-     * @return true if the event represents a final state (COMPLETED, FAILED, CANCELED, REJECTED, UNKNOWN)
+     * @return true if the event represents a final state (COMPLETED, FAILED, CANCELED, REJECTED, UNKNOWN, or A2AError)
      */
     private boolean isFinalEvent(Event event) {
         if (event instanceof Task task) {
@@ -389,6 +390,9 @@ public class MainEventBusProcessor implements Runnable {
                     && task.status().state().isFinal();
         } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
             return statusUpdate.isFinal();
+        } else if (event instanceof A2AError) {
+            // A2AError events are terminal - they trigger FAILED state transition
+            return true;
         }
         return false;
     }

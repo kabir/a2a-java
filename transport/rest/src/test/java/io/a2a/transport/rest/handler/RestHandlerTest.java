@@ -15,7 +15,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
 import io.a2a.server.requesthandlers.AbstractA2ARequestHandlerTest;
-import io.a2a.server.tasks.TaskUpdater;
+import io.a2a.server.tasks.AgentEmitter;
 import io.a2a.spec.AgentCapabilities;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentExtension;
@@ -87,8 +87,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testSendMessage() throws InvalidProtocolBufferException {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
         String requestBody = """
             {
@@ -167,13 +167,12 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
 
-        agentExecutorCancel = (context, eventQueue) -> {
+        agentExecutorCancel = (context, agentEmitter) -> {
             // We need to cancel the task or the EventConsumer never finds a 'final' event.
             // Looking at the Python implementation, they typically use AgentExecutors that
             // don't support cancellation. So my theory is the Agent updates the task to the CANCEL status
             Task task = context.getTask();
-            TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
-            taskUpdater.cancel();
+            agentEmitter.cancel();
         };
 
         RestHandler.HTTPRestResponse response = handler.cancelTask(MINIMAL_TASK.id(), "", callContext);
@@ -197,8 +196,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testSendStreamingMessageSuccess() {
         RestHandler handler = new RestHandler(CARD, requestHandler, internalExecutor);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
         String requestBody = """
             {
@@ -357,14 +356,14 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AtomicBoolean eventReceived = new AtomicBoolean(false);
         CountDownLatch streamStarted = new CountDownLatch(1);
         CountDownLatch eventProcessed = new CountDownLatch(1);
-        agentExecutorExecute = (context, eventQueue) -> {
+        agentExecutorExecute = (context, agentEmitter) -> {
             // Wait a bit to ensure the main thread continues
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            eventQueue.enqueueEvent(context.getMessage());
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         String requestBody = """
@@ -602,8 +601,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
                 requestedExtensions
         );
 
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         String requestBody = """
@@ -796,8 +795,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
                 "1.1"  // Compatible version (same major version)
         );
 
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         String requestBody = """
@@ -844,8 +843,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         RestHandler handler = new RestHandler(agentCard, requestHandler, internalExecutor);
 
         // Use default callContext (no version - should default to 1.0)
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         String requestBody = """

@@ -1,5 +1,6 @@
 package io.a2a.server.tasks;
 
+import static io.a2a.spec.TaskState.FAILED;
 import static io.a2a.spec.TaskState.SUBMITTED;
 import static io.a2a.util.Assert.checkNotNullParam;
 import static io.a2a.util.Utils.appendArtifactToTask;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.a2a.spec.A2AError;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
 import io.a2a.spec.InternalError;
@@ -112,6 +114,42 @@ public class TaskManager {
             isFinal = saveTaskEvent(taskStatusUpdateEvent, isReplicated);
         } else if (event instanceof TaskArtifactUpdateEvent taskArtifactUpdateEvent) {
             isFinal = saveTaskEvent(taskArtifactUpdateEvent, isReplicated);
+        } else if (event instanceof A2AError) {
+            // A2AError events trigger automatic transition to FAILED state
+            // Error details are NOT persisted in TaskStore (client-specific)
+            // Only the FAILED status is persisted and replicated across nodes
+
+            // A2AError events don't have taskId/contextId fields, so we need to ensure
+            // we have these from the existing task or TaskManager state
+            if (taskId == null) {
+                // No task context - A2AError event will be distributed to clients but no state update
+                LOGGER.debug("A2AError event without task context - skipping state update");
+                return true;  // Return true (is final) to stop event consumption
+            }
+
+            // Ensure we have contextId - get from existing task if not set
+            String errorContextId = contextId;
+            if (errorContextId == null) {
+                Task existingTask = getTask();
+                if (existingTask != null) {
+                    errorContextId = existingTask.contextId();
+                }
+            }
+
+            // Only create status update if we have contextId
+            if (errorContextId != null) {
+                LOGGER.debug("A2AError event detected, transitioning task {} to FAILED", taskId);
+                TaskStatusUpdateEvent failedEvent = TaskStatusUpdateEvent.builder()
+                        .taskId(taskId)
+                        .contextId(errorContextId)
+                        .status(new TaskStatus(FAILED))
+                        .build();
+                isFinal = saveTaskEvent(failedEvent, isReplicated);
+            } else {
+                // Can't update status without contextId, but error is still terminal
+                LOGGER.debug("A2AError event for task {} without contextId - skipping state update", taskId);
+                isFinal = true;
+            }
         }
         return isFinal;
     }

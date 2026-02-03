@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <h2>Common Usage Patterns</h2>
  * <pre>{@code
- * public void execute(RequestContext context, EventQueue queue) {
+ * public void execute(RequestContext context, AgentEmitter emitter) {
  *     // Check if this is a new conversation or continuation
  *     Task existingTask = context.getTask();
  *     if (existingTask == null) {

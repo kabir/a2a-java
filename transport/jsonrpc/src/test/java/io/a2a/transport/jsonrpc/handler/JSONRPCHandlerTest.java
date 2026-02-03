@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.a2a.jsonrpc.common.wrappers.CancelTaskRequest;
 import io.a2a.jsonrpc.common.wrappers.CancelTaskResponse;
+import io.a2a.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigRequest;
+import io.a2a.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigResponse;
 import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
 import io.a2a.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigResponse;
 import io.a2a.jsonrpc.common.wrappers.GetExtendedAgentCardRequest;
@@ -39,8 +41,6 @@ import io.a2a.jsonrpc.common.wrappers.SendMessageRequest;
 import io.a2a.jsonrpc.common.wrappers.SendMessageResponse;
 import io.a2a.jsonrpc.common.wrappers.SendStreamingMessageRequest;
 import io.a2a.jsonrpc.common.wrappers.SendStreamingMessageResponse;
-import io.a2a.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigRequest;
-import io.a2a.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigResponse;
 import io.a2a.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import io.a2a.server.ServerCallContext;
 import io.a2a.server.auth.UnauthenticatedUser;
@@ -48,7 +48,6 @@ import io.a2a.server.events.EventConsumer;
 import io.a2a.server.requesthandlers.AbstractA2ARequestHandlerTest;
 import io.a2a.server.requesthandlers.DefaultRequestHandler;
 import io.a2a.server.tasks.ResultAggregator;
-import io.a2a.server.tasks.TaskUpdater;
 import io.a2a.spec.AgentCapabilities;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentExtension;
@@ -119,13 +118,12 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
 
-        agentExecutorCancel = (context, eventQueue) -> {
+        agentExecutorCancel = (context, agentEmitter) -> {
             // We need to cancel the task or the EventConsumer never finds a 'final' event.
             // Looking at the Python implementation, they typically use AgentExecutors that
             // don't support cancellation. So my theory is the Agent updates the task to the CANCEL status
             Task task = context.getTask();
-            TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
-            taskUpdater.cancel();
+            agentEmitter.cancel();
         };
 
         CancelTaskRequest request = new CancelTaskRequest("111", new TaskIdParams(MINIMAL_TASK.id()));
@@ -144,7 +142,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
 
-        agentExecutorCancel = (context, eventQueue) -> {
+        agentExecutorCancel = (context, agentEmitter) -> {
             throw new UnsupportedOperationError();
         };
 
@@ -168,8 +166,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testOnMessageNewMessageSuccess() {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
         Message message = Message.builder(MESSAGE)
                 .taskId(MINIMAL_TASK.id())
@@ -185,8 +183,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     public void testOnMessageNewMessageWithExistingTaskSuccess() {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
         Message message = Message.builder(MESSAGE)
                 .taskId(MINIMAL_TASK.id())
@@ -203,8 +201,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         // See testMessageOnErrorMocks() for a test more similar to the Python implementation, using mocks for
         // EventConsumer.consumeAll()
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(new UnsupportedOperationError());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.fail(new UnsupportedOperationError());
         };
         Message message = Message.builder(MESSAGE)
                 .taskId(MINIMAL_TASK.id())
@@ -242,8 +240,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testOnMessageStreamNewMessageSuccess() throws InterruptedException {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         Message message = Message.builder(MESSAGE)
@@ -323,13 +321,13 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .build();
 
         // Configure the agent executor to enqueue multiple events
-        agentExecutorExecute = (context, eventQueue) -> {
+        agentExecutorExecute = (context, agentEmitter) -> {
             // Enqueue the task with WORKING state
-            eventQueue.enqueueEvent(taskEvent);
+            agentEmitter.emitEvent(taskEvent);
             // Enqueue an artifact update event
-            eventQueue.enqueueEvent(artifactEvent);
+            agentEmitter.emitEvent(artifactEvent);
             // Enqueue a status update event to complete the task (this is the "final" event)
-            eventQueue.enqueueEvent(statusEvent);
+            agentEmitter.emitEvent(statusEvent);
         };
 
         Message message = Message.builder(MESSAGE)
@@ -490,8 +488,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testOnMessageStreamNewMessageExistingTaskSuccess() throws Exception {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         Task task = Task.builder(MINIMAL_TASK)
@@ -664,8 +662,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     public void testGetPushNotificationConfigSuccess() {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         TaskPushNotificationConfig taskPushConfig
@@ -716,10 +714,11 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                             .status(new TaskStatus(TaskState.COMPLETED))
                             .build());
 
-            agentExecutorExecute = (context, eventQueue) -> {
+
+            agentExecutorExecute = (context, agentEmitter) -> {
                 // Hardcode the events to send here
                 for (Event event : events) {
-                    eventQueue.enqueueEvent(event);
+                    agentEmitter.emitEvent(event);
                 }
             };
 
@@ -809,10 +808,10 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         taskStore.save(MINIMAL_TASK, false);
         queueManager.createOrTap(MINIMAL_TASK.id());
 
-        agentExecutorExecute = (context, eventQueue) -> {
+        agentExecutorExecute = (context, agentEmitter) -> {
             // The only thing hitting the agent is the onMessageSend() and we should use the message
-            eventQueue.enqueueEvent(context.getMessage());
-            //eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+            agentEmitter.sendMessage(context.getMessage());
+            //agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         SubscribeToTaskRequest request = new SubscribeToTaskRequest("1", new TaskIdParams(MINIMAL_TASK.id()));
@@ -1265,8 +1264,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
 
-        agentExecutorExecute = ((context, eventQueue) -> {
-            eventQueue.enqueueEvent(MINIMAL_TASK);
+        agentExecutorExecute = ((context, agentEmitter) -> {
+            agentEmitter.emitEvent(MINIMAL_TASK);
         });
         SendMessageRequest request = new SendMessageRequest("1",
                 new MessageSendParams(MESSAGE, null, null));
@@ -1281,8 +1280,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
             taskStore.save(MINIMAL_TASK, false);
 
-            agentExecutorExecute = ((context, eventQueue) -> {
-                eventQueue.enqueueEvent(MINIMAL_TASK);
+            agentExecutorExecute = ((context, agentEmitter) -> {
+                agentEmitter.emitEvent(MINIMAL_TASK);
             });
 
             SendStreamingMessageRequest request = new SendStreamingMessageRequest("1", new MessageSendParams(MESSAGE, null, null));
@@ -1332,8 +1331,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     public void testListPushNotificationConfig() {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         TaskPushNotificationConfig taskPushConfig
@@ -1363,8 +1362,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard card = createAgentCard(true, false);
         JSONRPCHandler handler = new JSONRPCHandler(card, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         TaskPushNotificationConfig taskPushConfig
@@ -1391,8 +1390,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         DefaultRequestHandler requestHandler = DefaultRequestHandler.create(executor, taskStore, queueManager, null, mainEventBusProcessor, internalExecutor, internalExecutor);
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         ListTaskPushNotificationConfigRequest listRequest
@@ -1408,8 +1407,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     @Test
     public void testListPushNotificationConfigTaskNotFound() {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         ListTaskPushNotificationConfigRequest listRequest
@@ -1426,8 +1425,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     public void testDeletePushNotificationConfig() {
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         TaskPushNotificationConfig taskPushConfig
@@ -1454,8 +1453,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard card = createAgentCard(true, false);
         JSONRPCHandler handler = new JSONRPCHandler(card, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         TaskPushNotificationConfig taskPushConfig
@@ -1483,8 +1482,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 DefaultRequestHandler.create(executor, taskStore, queueManager, null, mainEventBusProcessor, internalExecutor, internalExecutor);
         JSONRPCHandler handler = new JSONRPCHandler(CARD, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getTask() != null ? context.getTask() : context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.emitEvent(context.getTask() != null ? context.getTask() : context.getMessage());
         };
 
         TaskPushNotificationConfig taskPushConfig
@@ -1526,14 +1525,14 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         CountDownLatch streamStarted = new CountDownLatch(1);
         CountDownLatch eventProcessed = new CountDownLatch(1);
 
-        agentExecutorExecute = (context, eventQueue) -> {
+        agentExecutorExecute = (context, agentEmitter) -> {
             // Wait a bit to ensure the main thread continues
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            eventQueue.enqueueEvent(context.getMessage());
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         Message message = Message.builder(MESSAGE)
@@ -1734,8 +1733,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 requestedExtensions
         );
 
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         Message message = Message.builder(MESSAGE)
@@ -1892,8 +1891,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 "1.1"  // Compatible version (same major version)
         );
 
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         Message message = Message.builder(MESSAGE)
@@ -1928,8 +1927,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         JSONRPCHandler handler = new JSONRPCHandler(agentCard, requestHandler, internalExecutor);
 
         // Use default callContext (no version - should default to 1.0)
-        agentExecutorExecute = (context, eventQueue) -> {
-            eventQueue.enqueueEvent(context.getMessage());
+        agentExecutorExecute = (context, agentEmitter) -> {
+            agentEmitter.sendMessage(context.getMessage());
         };
 
         Message message = Message.builder(MESSAGE)
