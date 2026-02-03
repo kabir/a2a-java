@@ -143,7 +143,7 @@ public class WeatherAgentCardProducer {
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
 import io.a2a.server.events.EventQueue;
-import io.a2a.server.tasks.TaskUpdater;
+import io.a2a.server.tasks.AgentEmitter;
 import io.a2a.spec.JSONRPCError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Part;
@@ -173,14 +173,12 @@ public class WeatherAgentExecutorProducer {
         }
 
         @Override
-        public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
-            TaskUpdater updater = new TaskUpdater(context, eventQueue);
-
+        public void execute(RequestContext context, AgentEmitter agentEmitter) throws JSONRPCError {
             // mark the task as submitted and start working on it
             if (context.getTask() == null) {
-                updater.submit();
+                agentEmitter.submit();
             }
-            updater.startWork();
+            agentEmitter.startWork();
 
             // extract the text from the message
             String userMessage = extractTextFromMessage(context.getMessage());
@@ -189,16 +187,16 @@ public class WeatherAgentExecutorProducer {
             String response = weatherAgent.chat(userMessage);
 
             // create the response part
-            TextPart responsePart = new TextPart(response, null);
+            TextPart responsePart = new TextPart(response);
             List<Part<?>> parts = List.of(responsePart);
 
             // add the response as an artifact and complete the task
-            updater.addArtifact(parts, null, null, null);
-            updater.complete();
+            agentEmitter.addArtifact(parts);
+            agentEmitter.complete();
         }
 
         @Override
-        public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+        public void cancel(RequestContext context, AgentEmitter agentEmitter) throws JSONRPCError {
             Task task = context.getTask();
 
             if (task.getStatus().state() == TaskState.CANCELED) {
@@ -212,8 +210,7 @@ public class WeatherAgentExecutorProducer {
             }
 
             // cancel the task
-            TaskUpdater updater = new TaskUpdater(context, eventQueue);
-            updater.cancel();
+            agentEmitter.cancel();
         }
 
         private String extractTextFromMessage(Message message) {

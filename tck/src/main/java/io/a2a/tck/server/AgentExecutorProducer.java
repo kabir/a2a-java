@@ -1,20 +1,20 @@
 package io.a2a.tck.server;
 
+import java.util.List;
+
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.agentexecution.RequestContext;
-import io.a2a.server.events.EventQueue;
-import io.a2a.server.tasks.TaskUpdater;
+import io.a2a.server.tasks.AgentEmitter;
 import io.a2a.spec.A2AError;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskNotCancelableError;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
-import java.util.List;
 
 @ApplicationScoped
 public class AgentExecutorProducer {
@@ -27,7 +27,7 @@ public class AgentExecutorProducer {
     private static class FireAndForgetAgentExecutor implements AgentExecutor {
 
         @Override
-        public void execute(RequestContext context, EventQueue eventQueue) throws A2AError {
+        public void execute(RequestContext context, AgentEmitter agentEmitter) throws A2AError {
             Task task = context.getTask();
 
             if (task == null) {
@@ -46,7 +46,7 @@ public class AgentExecutorProducer {
                         .status(new TaskStatus(TaskState.SUBMITTED))
                         .history(List.of(context.getMessage()))
                         .build();
-                eventQueue.enqueueEvent(task);
+                agentEmitter.addTask(task);
             }
 
             // Sleep to allow task state persistence before TCK subscribe test
@@ -59,10 +59,9 @@ public class AgentExecutorProducer {
                     Thread.currentThread().interrupt();
                 }
             }
-            TaskUpdater updater = new TaskUpdater(context, eventQueue);
 
             // Immediately set to WORKING state
-            updater.startWork();
+            agentEmitter.startWork();
             System.out.println("====> task set to WORKING, starting background execution");
 
             // Method returns immediately - task continues in background
@@ -70,7 +69,7 @@ public class AgentExecutorProducer {
         }
 
         @Override
-        public void cancel(RequestContext context, EventQueue eventQueue) throws A2AError {
+        public void cancel(RequestContext context, AgentEmitter agentEmitter) throws A2AError {
             System.out.println("====> task cancel request received");
             Task task = context.getTask();
             if (task == null) {
@@ -87,15 +86,7 @@ public class AgentExecutorProducer {
                 throw new TaskNotCancelableError();
             }
 
-            TaskUpdater updater = new TaskUpdater(context, eventQueue);
-            updater.cancel();
-            eventQueue.enqueueEvent(new TaskStatusUpdateEvent(
-                    task.id(),
-                    new TaskStatus(TaskState.CANCELED),
-                    task.contextId(),
-                    true,  // isFinal - TaskState.CANCELED is a final state
-                    null));
-
+            agentEmitter.cancel();
             System.out.println("====> task canceled");
         }
 

@@ -36,6 +36,7 @@ import io.a2a.server.events.EventQueue;
 import io.a2a.server.events.EventQueueItem;
 import io.a2a.server.events.MainEventBusProcessor;
 import io.a2a.server.events.QueueManager;
+import io.a2a.server.tasks.AgentEmitter;
 import io.a2a.server.tasks.PushNotificationConfigStore;
 import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.ResultAggregator;
@@ -98,7 +99,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Transport calls {@link #onMessageSend(MessageSendParams, ServerCallContext)}</li>
  *   <li>Initialize {@link TaskManager} and {@link RequestContext}</li>
  *   <li>Create or tap {@link EventQueue} via {@link QueueManager}</li>
- *   <li>Execute {@link AgentExecutor#execute(RequestContext, EventQueue)} asynchronously in background thread pool</li>
+ *   <li>Execute {@link AgentExecutor#execute(RequestContext, AgentEmitter)} asynchronously in background thread pool</li>
  *   <li>Consume events from queue on Vert.x worker thread via {@link EventConsumer}</li>
  *   <li>For blocking=true: wait for agent completion and full event consumption</li>
  *   <li>Return {@link Task} or {@link Message} to transport</li>
@@ -109,7 +110,7 @@ import org.slf4j.LoggerFactory;
  * <ol>
  *   <li>Transport calls {@link #onMessageSendStream(MessageSendParams, ServerCallContext)}</li>
  *   <li>Initialize components (same as blocking)</li>
- *   <li>Execute {@link AgentExecutor#execute(RequestContext, EventQueue)} asynchronously</li>
+ *   <li>Execute {@link AgentExecutor#execute(RequestContext, AgentEmitter)} asynchronously</li>
  *   <li>Return {@link java.util.concurrent.Flow.Publisher Flow.Publisher}&lt;StreamingEventKind&gt; immediately</li>
  *   <li>Events stream to client as they arrive in the queue</li>
  *   <li>On client disconnect: continue consumption in background (fire-and-forget)</li>
@@ -128,7 +129,7 @@ import org.slf4j.LoggerFactory;
  * <h2>Threading Model</h2>
  * <ul>
  *   <li><b>Vert.x worker threads:</b> Execute request handler methods (onMessageSend, etc.)</li>
- *   <li><b>Agent-executor pool (@Internal):</b> Execute {@link AgentExecutor#execute(RequestContext, EventQueue)}</li>
+ *   <li><b>Agent-executor pool (@Internal):</b> Execute {@link AgentExecutor#execute(RequestContext, AgentEmitter)}</li>
  *   <li><b>Background cleanup:</b> {@link java.util.concurrent.CompletableFuture CompletableFuture} async tasks</li>
  * </ul>
  * <p>
@@ -378,14 +379,14 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null, executor, eventConsumerExecutor);
 
         EventQueue queue = queueManager.createOrTap(task.id());
-        agentExecutor.cancel(
-                requestContextBuilder.get()
-                        .setTaskId(task.id())
-                        .setContextId(task.contextId())
-                        .setTask(task)
-                        .setServerCallContext(context)
-                        .build(),
-                queue);
+        RequestContext cancelRequestContext = requestContextBuilder.get()
+                .setTaskId(task.id())
+                .setContextId(task.contextId())
+                .setTask(task)
+                .setServerCallContext(context)
+                .build();
+        AgentEmitter emitter = new AgentEmitter(cancelRequestContext, queue);
+        agentExecutor.cancel(cancelRequestContext, emitter);
 
         Optional.ofNullable(runningAgents.get(task.id()))
                 .ifPresent(cf -> cf.cancel(true));
@@ -871,7 +872,8 @@ public class DefaultRequestHandler implements RequestHandler {
             @Override
             public void run() {
                 LOGGER.debug("Agent execution starting for task {}", taskId);
-                agentExecutor.execute(requestContext, queue);
+                AgentEmitter emitter = new AgentEmitter(requestContext, queue);
+                agentExecutor.execute(requestContext, emitter);
                 LOGGER.debug("Agent execution completed for task {}", taskId);
                 // The consumer (running on the Vert.x worker thread) handles queue lifecycle.
                 // This avoids blocking agent-executor threads waiting for worker threads.
