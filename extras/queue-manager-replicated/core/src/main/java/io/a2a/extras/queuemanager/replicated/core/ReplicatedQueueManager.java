@@ -113,21 +113,26 @@ public class ReplicatedQueueManager implements QueueManager {
         //
         // If MainQueue doesn't exist, create it. This handles late-arriving replicated events
         // for tasks that were created on another instance.
+        EventQueue childQueue = null;  // Track ChildQueue we might create
         EventQueue mainQueue = delegate.get(replicatedEvent.getTaskId());
-        if (mainQueue == null) {
-            // MainQueue doesn't exist - create it by calling createOrTap and then get the MainQueue
-            // Replicated events should always have real task IDs (not temp IDs) because
-            // replication now happens AFTER TaskStore persistence in MainEventBusProcessor
-            LOGGER.debug("Creating MainQueue for replicated event on task {}", replicatedEvent.getTaskId());
-            delegate.createOrTap(replicatedEvent.getTaskId());
-            mainQueue = delegate.get(replicatedEvent.getTaskId());
-        }
+        try {
+            if (mainQueue == null) {
+                LOGGER.debug("Creating MainQueue for replicated event on task {}", replicatedEvent.getTaskId());
+                childQueue = delegate.createOrTap(replicatedEvent.getTaskId());  // Creates MainQueue + returns ChildQueue
+                mainQueue = delegate.get(replicatedEvent.getTaskId());          // Get MainQueue from map
+            }
 
-        if (mainQueue != null) {
-            mainQueue.enqueueItem(replicatedEvent);
-        } else {
-            LOGGER.warn("MainQueue not found for task {}, cannot enqueue replicated event. This may happen if the queue was already cleaned up.",
-                replicatedEvent.getTaskId());
+            if (mainQueue != null) {
+                mainQueue.enqueueItem(replicatedEvent);
+            } else {
+                LOGGER.warn(
+                        "MainQueue not found for task {}, cannot enqueue replicated event. This may happen if the queue was already cleaned up.",
+                        replicatedEvent.getTaskId());
+            }
+        } finally {
+            if (childQueue != null) {
+                childQueue.close();  // Close the ChildQueue we created (not MainQueue!)
+            }
         }
     }
 
