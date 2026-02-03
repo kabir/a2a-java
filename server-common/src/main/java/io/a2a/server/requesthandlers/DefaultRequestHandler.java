@@ -515,12 +515,16 @@ public class DefaultRequestHandler implements RequestHandler {
                         LOGGER.debug("DefaultRequestHandler: Step 3 - Consumption completed for task {}", taskId.get());
                     }
 
-                    // NOTE: We do NOT wait for MainEventBusProcessor to finalize the task here.
-                    // This would require blocking, which breaks gRPC (Vert.x event loop).
-                    // In practice, events are processed within milliseconds, so the race
-                    // condition where TaskStore is not fully updated is minimal.
-                    // For platform-agnostic SDK design, we accept this minor race condition
-                    // rather than blocking event loop threads.
+                    // Step 4: Implicit guarantee of persistence via consumption completion
+                    // We do NOT add an explicit wait for MainEventBusProcessor here because:
+                    // 1. MainEventBusProcessor persists BEFORE distributing to ChildQueues
+                    // 2. Step 3 (consumption completion) already guarantees all consumed events are persisted
+                    // 3. Adding another explicit synchronization point would require exposing
+                    //    MainEventBusProcessor internals and blocking event loop threads
+                    //
+                    // Note: For fire-and-forget tasks, if the agent is still running after Step 1 timeout,
+                    // it may enqueue additional events. These will be persisted asynchronously but won't
+                    // be included in the task state returned to the client (already consumed in Step 3).
 
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -538,7 +542,10 @@ public class DefaultRequestHandler implements RequestHandler {
                     throw new InternalError(msg);
                 }
 
-                // Step 5: Fetch the final task state from TaskStore (now guaranteed persisted)
+                // Step 5: Fetch the current task state from TaskStore
+                // All events consumed in Step 3 are guaranteed persisted (MainEventBusProcessor
+                // ordering: persist → distribute → consume). This returns the persisted state
+                // including all consumed events and artifacts.
                 String nonNullTaskId = Objects.requireNonNull(taskId.get(), "taskId cannot be null");
                 Task updatedTask = taskStore.get(nonNullTaskId);
                 if (updatedTask != null) {
