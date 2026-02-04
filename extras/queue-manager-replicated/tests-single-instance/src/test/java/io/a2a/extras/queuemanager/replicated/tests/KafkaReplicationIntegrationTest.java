@@ -222,9 +222,21 @@ public class KafkaReplicationIntegrationTest {
         AtomicReference<TaskStatusUpdateEvent> receivedCompletedEvent = new AtomicReference<>();
         AtomicBoolean wasUnexpectedEvent = new AtomicBoolean(false);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        AtomicBoolean receivedInitialTask = new AtomicBoolean(false);
 
         // Create consumer to handle resubscribed events
         BiConsumer<ClientEvent, AgentCard> consumer = (event, agentCard) -> {
+            // Per A2A spec 3.1.6: ENFORCE that first event is TaskEvent
+            if (!receivedInitialTask.get()) {
+                if (event instanceof TaskEvent) {
+                    receivedInitialTask.set(true);
+                    return;
+                } else {
+                    throw new AssertionError("First event on resubscribe MUST be TaskEvent, but was: " + event.getClass().getSimpleName());
+                }
+            }
+
+            // Process subsequent events
             if (event instanceof TaskUpdateEvent taskUpdateEvent) {
                 if (taskUpdateEvent.getUpdateEvent() instanceof TaskStatusUpdateEvent statusEvent) {
                     if (statusEvent.status().state() == TaskState.COMPLETED) {

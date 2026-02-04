@@ -10,6 +10,8 @@ import io.a2a.grpc.utils.ProtoUtils;
 import io.a2a.jsonrpc.common.json.JsonProcessingException;
 import io.a2a.spec.A2AError;
 import io.a2a.spec.StreamingEventKind;
+import io.a2a.spec.Task;
+import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
 
@@ -64,10 +66,22 @@ public class SSEEventListener {
 
             StreamingEventKind event = ProtoUtils.FromProto.streamingEventKind(response);
             eventHandler.accept(event);
-            if (event instanceof TaskStatusUpdateEvent && ((TaskStatusUpdateEvent) event).isFinal()) {
-                if (future != null) {
-                    future.cancel(true); // close SSE channel
+
+            // Client-side auto-close on final events to prevent connection leaks
+            // Handles both TaskStatusUpdateEvent and Task objects with final states
+            // This covers late subscriptions to completed tasks and ensures no connection leaks
+            boolean shouldClose = false;
+            if (event instanceof TaskStatusUpdateEvent tue && tue.isFinal()) {
+                shouldClose = true;
+            } else if (event instanceof Task task) {
+                TaskState state = task.status().state();
+                if (state.isFinal()) {
+                    shouldClose = true;
                 }
+            }
+
+            if (shouldClose && future != null) {
+                future.cancel(true); // close SSE channel
             }
         } catch (A2AError error) {
             if (errorHandler != null) {

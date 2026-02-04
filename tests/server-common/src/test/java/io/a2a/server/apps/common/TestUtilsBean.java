@@ -31,7 +31,7 @@ public class TestUtilsBean {
     PushNotificationConfigStore pushNotificationConfigStore;
 
     public void saveTask(Task task) {
-        taskStore.save(task);
+        taskStore.save(task, false);
     }
 
     public Task getTask(String taskId) {
