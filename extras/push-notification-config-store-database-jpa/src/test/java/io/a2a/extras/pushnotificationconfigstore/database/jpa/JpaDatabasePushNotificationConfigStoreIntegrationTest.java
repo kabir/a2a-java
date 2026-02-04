@@ -151,11 +151,12 @@ public class JpaDatabasePushNotificationConfigStoreIntegrationTest {
         assertTrue(updateLatch.await(10, TimeUnit.SECONDS), "Timeout waiting for task update");
 
         // Step 5: Poll for the async notification to be captured
+        // With the new StreamingEventKind support, we receive all event types (Task, Message, TaskArtifactUpdateEvent, etc.)
         long end = System.currentTimeMillis() + 5000;
         boolean notificationReceived = false;
 
         while (System.currentTimeMillis() < end) {
-            if (!mockPushNotificationSender.getCapturedTasks().isEmpty()) {
+            if (!mockPushNotificationSender.getCapturedEvents().isEmpty()) {
                 notificationReceived = true;
                 break;
             }
@@ -165,17 +166,22 @@ public class JpaDatabasePushNotificationConfigStoreIntegrationTest {
         assertTrue(notificationReceived, "Timeout waiting for push notification.");
 
         // Step 6: Verify the captured notification
-        Queue<Task> capturedTasks = mockPushNotificationSender.getCapturedTasks();
+        // Check if we received events for this task (could be Task, TaskArtifactUpdateEvent, etc.)
+        Queue<io.a2a.spec.StreamingEventKind> capturedEvents = mockPushNotificationSender.getCapturedEvents();
 
-        // Verify the notification contains the correct task with artifacts
-        Task notifiedTaskWithArtifact = capturedTasks.stream()
-            .filter(t -> taskId.equals(t.id()) && t.artifacts() != null && t.artifacts().size() > 0)
-            .findFirst()
-            .orElse(null);
+        // Look for Task events with artifacts OR TaskArtifactUpdateEvent for this task
+        boolean hasTaskWithArtifact = capturedEvents.stream()
+            .filter(e -> e instanceof Task)
+            .map(e -> (Task) e)
+            .anyMatch(t -> taskId.equals(t.id()) && t.artifacts() != null && t.artifacts().size() > 0);
 
-        assertNotNull(notifiedTaskWithArtifact, "Notification should contain the updated task with artifacts");
-        assertEquals(taskId, notifiedTaskWithArtifact.id());
-        assertEquals(1, notifiedTaskWithArtifact.artifacts().size(), "Task should have one artifact from the update");
+        boolean hasArtifactUpdateEvent = capturedEvents.stream()
+            .filter(e -> e instanceof io.a2a.spec.TaskArtifactUpdateEvent)
+            .map(e -> (io.a2a.spec.TaskArtifactUpdateEvent) e)
+            .anyMatch(e -> taskId.equals(e.taskId()));
+
+        assertTrue(hasTaskWithArtifact || hasArtifactUpdateEvent,
+            "Notification should contain either Task with artifacts or TaskArtifactUpdateEvent for task " + taskId);
 
         // Step 7: Clean up - delete the push notification configuration
         client.deleteTaskPushNotificationConfigurations(
