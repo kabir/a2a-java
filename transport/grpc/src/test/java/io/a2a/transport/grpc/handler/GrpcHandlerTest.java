@@ -66,9 +66,11 @@ import mutiny.zero.ZeroPublisher;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
+@Timeout(value = 1, unit = TimeUnit.MINUTES)
 public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
     private static final Message GRPC_MESSAGE = Message.newBuilder()
