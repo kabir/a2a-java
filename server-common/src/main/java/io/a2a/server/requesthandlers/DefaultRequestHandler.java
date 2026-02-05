@@ -873,7 +873,12 @@ public class DefaultRequestHandler implements RequestHandler {
             public void run() {
                 LOGGER.debug("Agent execution starting for task {}", taskId);
                 AgentEmitter emitter = new AgentEmitter(requestContext, queue);
-                agentExecutor.execute(requestContext, emitter);
+                try {
+                    agentExecutor.execute(requestContext, emitter);
+                } catch (A2AError e) {
+                    LOGGER.debug("Agent execution failed for task {} {}", taskId, e);
+                    emitter.fail(e);
+                }
                 LOGGER.debug("Agent execution completed for task {}", taskId);
                 // The consumer (running on the Vert.x worker thread) handles queue lifecycle.
                 // This avoids blocking agent-executor threads waiting for worker threads.
