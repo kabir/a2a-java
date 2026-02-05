@@ -91,7 +91,6 @@ public interface PushNotificationSender {
      * Retrieve push notification URLs or messaging configurations from
      * {@link PushNotificationConfigStore} using the task ID extracted from the event.
      * </p>
-     * <p>
      * Supported event types:
      * <ul>
      *   <li>{@link Task} - wrapped in StreamResponse.task</li>
@@ -99,7 +98,6 @@ public interface PushNotificationSender {
      *   <li>{@link io.a2a.spec.TaskStatusUpdateEvent} - wrapped in StreamResponse.statusUpdate</li>
      *   <li>{@link io.a2a.spec.TaskArtifactUpdateEvent} - wrapped in StreamResponse.artifactUpdate</li>
      * </ul>
-     * </p>
      * <p>
      * <b>Error Handling:</b> Log errors but don't throw exceptions. Notifications are
      * best-effort and should not fail the primary request.

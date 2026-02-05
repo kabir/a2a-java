@@ -108,7 +108,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
      * @param event the streaming event
      * @return the task ID, or null if not available
      */
-    private @Nullable String extractTaskId(StreamingEventKind event) {
+    protected @Nullable String extractTaskId(StreamingEventKind event) {
         if (event instanceof Task task) {
             return task.id();
         } else if (event instanceof Message message) {
