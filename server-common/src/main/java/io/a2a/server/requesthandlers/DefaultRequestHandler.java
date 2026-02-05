@@ -440,15 +440,14 @@ public class DefaultRequestHandler implements RequestHandler {
 
         boolean interruptedOrNonBlocking = false;
 
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue);
+        // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
+        EventConsumer consumer = new EventConsumer(queue);
+
+        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
+
         ResultAggregator.EventTypeAndInterrupt etai = null;
         EventKind kind = null;  // Declare outside try block so it's in scope for return
         try {
-            EventConsumer consumer = new EventConsumer(queue);
-
-            // This callback must be added before we start consuming. Otherwise,
-            // any errors thrown by the producerRunnable are not picked up by the consumer
-            producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
 
             // Get agent future before consuming (for blocking calls to wait for agent completion)
             CompletableFuture<Void> agentFuture = runningAgents.get(queueTaskId);
@@ -622,11 +621,10 @@ public class DefaultRequestHandler implements RequestHandler {
 
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor);
 
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue);
-
-        // Move consumer creation and callback registration outside try block
+        // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
         EventConsumer consumer = new EventConsumer(queue);
-        producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
+
+        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
 
         // Store cancel callback in context for closeHandler to access
         // When client disconnects, closeHandler can call this to stop EventConsumer polling loop
@@ -864,8 +862,10 @@ public class DefaultRequestHandler implements RequestHandler {
      *
      * This design avoids blocking agent-executor threads waiting for consumer polling to start,
      * eliminating cascading delays when Vert.x worker threads are busy.
+     *
+     * @param doneCallback Callback to invoke when agent completes - MUST be added before starting CompletableFuture
      */
-    private EnhancedRunnable registerAndExecuteAgentAsync(String taskId, RequestContext requestContext, EventQueue queue) {
+    private EnhancedRunnable registerAndExecuteAgentAsync(String taskId, RequestContext requestContext, EventQueue queue, EnhancedRunnable.DoneCallback doneCallback) {
         LOGGER.debug("Registering agent execution for task {}, runningAgents.size() before: {}", taskId, runningAgents.size());
         logThreadStats("AGENT START");
         EnhancedRunnable runnable = new EnhancedRunnable() {
@@ -884,6 +884,10 @@ public class DefaultRequestHandler implements RequestHandler {
                 // This avoids blocking agent-executor threads waiting for worker threads.
             }
         };
+
+        // CRITICAL: Add callback BEFORE starting CompletableFuture to avoid race condition
+        // If agent completes very fast, whenComplete can fire before caller adds callbacks
+        runnable.addDoneCallback(doneCallback);
 
         CompletableFuture<Void> cf = CompletableFuture.runAsync(runnable, executor)
                 .whenComplete((v, err) -> {
