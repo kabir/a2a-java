@@ -97,8 +97,7 @@ public class AgentEmitter {
     private final EventQueue eventQueue;
     private final @Nullable String taskId;
     private final @Nullable String contextId;
-    private final AtomicBoolean terminalStateReached = new AtomicBoolean(false);
-    private final Object stateLock = new Object();
+    private volatile boolean terminalStateReached = false;
 
     /**
      * Creates a new AgentEmitter for the given request context and event queue.
@@ -133,25 +132,24 @@ public class AgentEmitter {
      * @param message optional message to include with the status update
      * @param isFinal whether this is a final status (prevents further updates)
      */
-    public void updateStatus(TaskState state, @Nullable Message message, boolean isFinal) {
-        synchronized (stateLock) {
-            // Check if we're already in a terminal state
-            if (terminalStateReached.get()) {
+    private void updateStatus(TaskState state, @Nullable Message message, boolean isFinal) {
+        if (isFinal) {
+            if (terminalStateReached) {
                 throw new IllegalStateException("Cannot update task status - terminal state already reached");
             }
-
-            // If this is a final state, set the flag
-            if (isFinal) {
-                terminalStateReached.set(true);
+            terminalStateReached = true;
+        } else {
+            if (terminalStateReached) {
+                throw new IllegalStateException("Cannot update task status - terminal state already reached");
             }
-
-            TaskStatusUpdateEvent event = TaskStatusUpdateEvent.builder()
-                    .taskId(taskId)
-                    .contextId(contextId)
-                    .status(new TaskStatus(state, message, null))
-                    .build();
-            eventQueue.enqueueEvent(event);
         }
+
+        TaskStatusUpdateEvent event = TaskStatusUpdateEvent.builder()
+                .taskId(taskId)
+                .contextId(contextId)
+                .status(new TaskStatus(state, message, null))
+                .build();
+        eventQueue.enqueueEvent(event);
     }
 
     /**

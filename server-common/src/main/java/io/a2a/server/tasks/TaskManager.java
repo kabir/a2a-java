@@ -142,7 +142,6 @@ public class TaskManager {
                 TaskStatusUpdateEvent failedEvent = TaskStatusUpdateEvent.builder()
                         .taskId(taskId)
                         .contextId(errorContextId)
-                        .isFinal(true)
                         .status(new TaskStatus(FAILED))
                         .build();
                 isFinal = saveTaskEvent(failedEvent, isReplicated);
