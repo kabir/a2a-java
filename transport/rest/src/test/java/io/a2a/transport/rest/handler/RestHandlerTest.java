@@ -22,7 +22,9 @@ import io.a2a.spec.AgentInterface;
 import io.a2a.spec.Task;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
+@Timeout(value = 1, unit = TimeUnit.MINUTES)
 public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
 
     private final ServerCallContext callContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
