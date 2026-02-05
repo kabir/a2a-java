@@ -258,15 +258,21 @@ public class AgentEmitter {
     }
 
     /**
-     * Enqueues an A2A error event and marks the task as FAILED.
+     * Enqueues an A2A error event which will automatically transition the task to FAILED.
      * <p>
      * Use this when you need to fail the task with a specific A2A error (such as
      * {@link io.a2a.spec.UnsupportedOperationError}, {@link io.a2a.spec.InvalidRequestError},
      * {@link io.a2a.spec.TaskNotFoundError}, etc.) that should be sent to the client.
      * </p>
      * <p>
-     * This is a convenience method that combines error enqueueing with status transition.
-     * It enqueues the error event first, then marks the task as FAILED.
+     * The error event is enqueued and the MainEventBusProcessor will automatically transition
+     * the task to FAILED state. This ensures thread-safe state transitions without race conditions,
+     * as the single-threaded MainEventBusProcessor handles all state updates.
+     * </p>
+     * <p>
+     * Error events are terminal (stop event consumption) and trigger automatic FAILED state transition.
+     * The error details are sent to the originating client only, while the FAILED status is replicated
+     * to all nodes in multi-instance deployments.
      * </p>
      * <p>Example usage:
      * <pre>{@code
@@ -284,7 +290,8 @@ public class AgentEmitter {
      */
     public void fail(A2AError error) {
         eventQueue.enqueueEvent(error);
-        updateStatus(TaskState.FAILED);
+        // Status transition happens automatically in MainEventBusProcessor
+        // This eliminates race conditions from concurrent terminal state updates
     }
 
     /**

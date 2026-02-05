@@ -166,7 +166,8 @@ public class ResultAggregator {
                     // Determine interrupt behavior
                     boolean shouldInterrupt = false;
                     boolean isFinalEvent = (event instanceof Task task && task.status().state().isFinal())
-                            || (event instanceof TaskStatusUpdateEvent tsue && tsue.isFinal());
+                            || (event instanceof TaskStatusUpdateEvent tsue && tsue.isFinal())
+                            || (event instanceof A2AError);  // A2AError events are terminal
                     boolean isAuthRequired = (event instanceof Task task && task.status().state() == TaskState.AUTH_REQUIRED)
                             || (event instanceof TaskStatusUpdateEvent tsue && tsue.status().state() == TaskState.AUTH_REQUIRED);
 
