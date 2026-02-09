@@ -58,16 +58,25 @@ public class MainEventBusProcessor implements Runnable {
      */
     private volatile @Nullable java.util.concurrent.Executor pushNotificationExecutor = null;
 
-    private final MainEventBus eventBus;
+    private MainEventBus eventBus;
 
-    private final TaskStore taskStore;
+    private TaskStore taskStore;
 
-    private final PushNotificationSender pushSender;
+    private PushNotificationSender pushSender;
 
-    private final QueueManager queueManager;
+    private QueueManager queueManager;
 
     private volatile boolean running = true;
     private @Nullable Thread processorThread;
+
+    /**
+     * No-arg constructor for CDI proxying.
+     * CDI requires this for @ApplicationScoped beans.
+     * Fields are initialized via the @Inject constructor.
+     */
+    @SuppressWarnings("NullAway")
+    protected MainEventBusProcessor() {
+    }
 
     @Inject
     public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore, PushNotificationSender pushSender, QueueManager queueManager) {
