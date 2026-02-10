@@ -1401,6 +1401,19 @@ public abstract class AbstractA2AServerTest {
 
         assertTrue(subscriptionLatch.await(15, TimeUnit.SECONDS));
 
+        // CRITICAL SYNCHRONIZATION: Wait for subscribeToTask's EventConsumer polling loop to start
+        //
+        // Race condition: awaitStreamingSubscription() only guarantees transport-level subscription
+        // (Flow.Subscriber.onSubscribe() called), but EventConsumer polling starts asynchronously
+        // on a separate thread. Without this check, the agent could emit events before any consumer
+        // is ready to receive them, causing events to be lost.
+        //
+        // This stability check waits for the child queue count to match expectedCount for 3
+        // consecutive checks (150ms), ensuring the EventConsumer is actively polling and won't
+        // miss events when the agent executes.
+        assertTrue(awaitChildQueueCountStable(taskId, 1, 15000),
+                "subscribeToTask child queue should be created and stable");
+
         // 3. Send second streaming message to same taskId
         Message message2 = Message.builder(MESSAGE)
                 .taskId(multiEventTaskId) // Same taskId
@@ -1435,8 +1448,8 @@ public abstract class AbstractA2AServerTest {
                 "Stream subscription should be established");
 
         // 4. Verify both consumers received artifact-2 and completion
-        assertTrue(resubEventLatch.await(10, TimeUnit.SECONDS));
-        assertTrue(streamEventLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(resubEventLatch.await(15, TimeUnit.SECONDS));
+        assertTrue(streamEventLatch.await(15, TimeUnit.SECONDS));
 
         assertFalse(resubUnexpectedEvent.get());
         assertFalse(streamUnexpectedEvent.get());
@@ -1490,6 +1503,34 @@ public abstract class AbstractA2AServerTest {
         } finally {
             deleteTaskInTaskStore(multiEventTaskId);
         }
+    }
+
+    /**
+     * Waits for the child queue count to stabilize at the expected value by calling the server's
+     * test endpoint. This ensures EventConsumer polling loops have started before proceeding.
+     *
+     * @param taskId the task ID whose child queues to monitor
+     * @param expectedCount the expected number of active child queues
+     * @param timeoutMs maximum time to wait in milliseconds
+     * @return true if the count stabilized at the expected value, false if timeout occurred
+     * @throws IOException if the HTTP request fails
+     * @throws InterruptedException if interrupted while waiting
+     */
+    private boolean awaitChildQueueCountStable(String taskId, int expectedCount, long timeoutMs) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_2)
+                .build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + serverPort + "/test/queue/awaitChildCountStable/" +
+                        taskId + "/" + expectedCount + "/" + timeoutMs))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 200) {
+            throw new RuntimeException(response.statusCode() + ": Awaiting child queue count failed! " + response.body());
+        }
+        return Boolean.parseBoolean(response.body());
     }
 
     @Test
