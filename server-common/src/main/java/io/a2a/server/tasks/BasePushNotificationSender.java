@@ -118,7 +118,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
         } else if (event instanceof TaskArtifactUpdateEvent artifactUpdate) {
             return artifactUpdate.taskId();
         }
-        return null;
+        throw new IllegalStateException("Unknown StreamingEventKind: " + event);
     }
 
     private CompletableFuture<Boolean> dispatch(StreamingEventKind event, PushNotificationConfig pushInfo) {
@@ -140,7 +140,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
             // (task/message/statusUpdate/artifactUpdate) per A2A spec section 4.3.3
             body = JsonUtil.toJson(event);
         } catch (Throwable throwable) {
-            LOGGER.debug("Error serializing StreamingEventKind to JSON: {}", throwable.getMessage(), throwable);
+            LOGGER.error("Error serializing StreamingEventKind to JSON: {}", throwable.getMessage(), throwable);
             return false;
         }
 
