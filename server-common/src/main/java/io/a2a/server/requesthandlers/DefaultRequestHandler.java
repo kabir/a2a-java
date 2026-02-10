@@ -386,7 +386,22 @@ public class DefaultRequestHandler implements RequestHandler {
                 .setServerCallContext(context)
                 .build();
         AgentEmitter emitter = new AgentEmitter(cancelRequestContext, queue);
-        agentExecutor.cancel(cancelRequestContext, emitter);
+        try {
+            agentExecutor.cancel(cancelRequestContext, emitter);
+        } catch (TaskNotCancelableError e) {
+            // Expected error - log at INFO level
+            LOGGER.info("Task {} is not cancelable", task.id());
+            throw e;
+        } catch (A2AError e) {
+            // Other A2A errors - log at WARN level with stack trace
+            LOGGER.warn("Agent cancellation threw A2AError for task {}: {} - {}", 
+                task.id(), e.getClass().getSimpleName(), e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            // Unexpected errors - log at ERROR level
+            LOGGER.error("Agent cancellation threw unexpected exception for task {}", task.id(), e);
+            throw new io.a2a.spec.InternalError("Agent cancellation failed: " + e.getMessage());
+        }
 
         Optional.ofNullable(runningAgents.get(task.id()))
                 .ifPresent(cf -> cf.cancel(true));
@@ -876,8 +891,20 @@ public class DefaultRequestHandler implements RequestHandler {
                 try {
                     agentExecutor.execute(requestContext, emitter);
                 } catch (A2AError e) {
-                    LOGGER.debug("Agent execution failed for task {} {}", taskId, e);
+                    // Log A2A errors at WARN level with full stack trace
+                    // These are expected business errors but should be tracked
+                    LOGGER.warn("Agent execution threw A2AError for task {}: {} - {}", 
+                        taskId, e.getClass().getSimpleName(), e.getMessage(), e);
                     emitter.fail(e);
+                } catch (RuntimeException e) {
+                    // Log unexpected runtime exceptions at ERROR level
+                    // These indicate bugs in agent implementation
+                    LOGGER.error("Agent execution threw unexpected RuntimeException for task {}", taskId, e);
+                    emitter.fail(new io.a2a.spec.InternalError("Agent execution failed: " + e.getMessage()));
+                } catch (Exception e) {
+                    // Log other exceptions at ERROR level
+                    LOGGER.error("Agent execution threw unexpected Exception for task {}", taskId, e);
+                    emitter.fail(new io.a2a.spec.InternalError("Agent execution failed: " + e.getMessage()));
                 }
                 LOGGER.debug("Agent execution completed for task {}", taskId);
                 // The consumer (running on the Vert.x worker thread) handles queue lifecycle.
@@ -888,6 +915,9 @@ public class DefaultRequestHandler implements RequestHandler {
         // CRITICAL: Add callback BEFORE starting CompletableFuture to avoid race condition
         // If agent completes very fast, whenComplete can fire before caller adds callbacks
         runnable.addDoneCallback(doneCallback);
+        
+        // Mark as started to prevent further callback additions (enforced by runtime check)
+        runnable.markStarted();
 
         CompletableFuture<Void> cf = CompletableFuture.runAsync(runnable, executor)
                 .whenComplete((v, err) -> {

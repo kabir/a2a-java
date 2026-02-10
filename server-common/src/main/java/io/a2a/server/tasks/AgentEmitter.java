@@ -97,7 +97,7 @@ public class AgentEmitter {
     private final EventQueue eventQueue;
     private final @Nullable String taskId;
     private final @Nullable String contextId;
-    private volatile boolean terminalStateReached = false;
+    private final AtomicBoolean terminalStateReached = new AtomicBoolean(false);
 
     /**
      * Creates a new AgentEmitter for the given request context and event queue.
@@ -133,13 +133,14 @@ public class AgentEmitter {
      * @param isFinal whether this is a final status (prevents further updates)
      */
     private void updateStatus(TaskState state, @Nullable Message message, boolean isFinal) {
+        // Check terminal state first (fail fast)
+        if (terminalStateReached.get()) {
+            throw new IllegalStateException("Cannot update task status - terminal state already reached");
+        }
+        
+        // For final states, atomically set the flag
         if (isFinal) {
-            if (terminalStateReached) {
-                throw new IllegalStateException("Cannot update task status - terminal state already reached");
-            }
-            terminalStateReached = true;
-        } else {
-            if (terminalStateReached) {
+            if (!terminalStateReached.compareAndSet(false, true)) {
                 throw new IllegalStateException("Cannot update task status - terminal state already reached");
             }
         }
@@ -287,9 +288,15 @@ public class AgentEmitter {
      * @since 1.0.0
      */
     public void fail(A2AError error) {
+        // Set terminal state flag BEFORE enqueueing error
+        // This prevents race conditions where agent calls fail(error) then complete()
+        if (!terminalStateReached.compareAndSet(false, true)) {
+            throw new IllegalStateException("Cannot update task status - terminal state already reached");
+        }
+        
         eventQueue.enqueueEvent(error);
         // Status transition happens automatically in MainEventBusProcessor
-        // This eliminates race conditions from concurrent terminal state updates
+        // The error event is terminal and will trigger FAILED state transition
     }
 
     /**
