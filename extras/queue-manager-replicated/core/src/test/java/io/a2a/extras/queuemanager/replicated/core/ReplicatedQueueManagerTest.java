@@ -149,7 +149,7 @@ class ReplicatedQueueManagerTest {
         String taskId = "test-task-2";
         EventQueue queue = queueManager.createOrTap(taskId);
 
-        ReplicatedEventQueueItem replicatedEvent = new ReplicatedEventQueueItem(taskId, testEvent);
+        ReplicatedEventQueueItem replicatedEvent = new ReplicatedEventQueueItem(taskId, getTaskStatusUpdateEventWithNewId(taskId));
         queueManager.onReplicatedEvent(replicatedEvent);
 
         assertEquals(0, strategy.getCallCount());
@@ -172,7 +172,7 @@ class ReplicatedQueueManagerTest {
         assertEquals(taskId, countingStrategy.getLastTaskId());
         assertEquals(event, countingStrategy.getLastEvent());
 
-        ReplicatedEventQueueItem replicatedEvent = new ReplicatedEventQueueItem(taskId, testEvent);
+        ReplicatedEventQueueItem replicatedEvent = new ReplicatedEventQueueItem(taskId, getTaskStatusUpdateEventWithNewId(taskId));
         queueManager.onReplicatedEvent(replicatedEvent);
 
         assertEquals(2, countingStrategy.getCallCount());
@@ -483,7 +483,7 @@ class ReplicatedQueueManagerTest {
 
         // Create queue and enqueue an event
         EventQueue queue = queueManager.createOrTap(taskId);
-        queue.enqueueEvent(testEvent);
+        queue.enqueueEvent(getTaskStatusUpdateEventWithNewId(taskId));
 
         // Dequeue to clear the queue
         try {
@@ -606,6 +606,11 @@ class ReplicatedQueueManagerTest {
         assertTrue(item2.getEvent() instanceof QueueClosedEvent,
                 "Second event should be QueueClosedEvent");
     }
+
+    private TaskStatusUpdateEvent getTaskStatusUpdateEventWithNewId(String taskId) {
+        return TaskStatusUpdateEvent.builder((TaskStatusUpdateEvent) testEvent).taskId(taskId).build();
+    }
+
 
     private static class NoOpReplicationStrategy implements ReplicationStrategy {
         @Override

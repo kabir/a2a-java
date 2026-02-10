@@ -36,6 +36,7 @@ import io.a2a.server.events.EventQueue;
 import io.a2a.server.events.EventQueueItem;
 import io.a2a.server.events.MainEventBusProcessor;
 import io.a2a.server.events.QueueManager;
+import io.a2a.server.tasks.AgentEmitter;
 import io.a2a.server.tasks.PushNotificationConfigStore;
 import io.a2a.server.tasks.PushNotificationSender;
 import io.a2a.server.tasks.ResultAggregator;
@@ -98,7 +99,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Transport calls {@link #onMessageSend(MessageSendParams, ServerCallContext)}</li>
  *   <li>Initialize {@link TaskManager} and {@link RequestContext}</li>
  *   <li>Create or tap {@link EventQueue} via {@link QueueManager}</li>
- *   <li>Execute {@link AgentExecutor#execute(RequestContext, EventQueue)} asynchronously in background thread pool</li>
+ *   <li>Execute {@link AgentExecutor#execute(RequestContext, AgentEmitter)} asynchronously in background thread pool</li>
  *   <li>Consume events from queue on Vert.x worker thread via {@link EventConsumer}</li>
  *   <li>For blocking=true: wait for agent completion and full event consumption</li>
  *   <li>Return {@link Task} or {@link Message} to transport</li>
@@ -109,7 +110,7 @@ import org.slf4j.LoggerFactory;
  * <ol>
  *   <li>Transport calls {@link #onMessageSendStream(MessageSendParams, ServerCallContext)}</li>
  *   <li>Initialize components (same as blocking)</li>
- *   <li>Execute {@link AgentExecutor#execute(RequestContext, EventQueue)} asynchronously</li>
+ *   <li>Execute {@link AgentExecutor#execute(RequestContext, AgentEmitter)} asynchronously</li>
  *   <li>Return {@link java.util.concurrent.Flow.Publisher Flow.Publisher}&lt;StreamingEventKind&gt; immediately</li>
  *   <li>Events stream to client as they arrive in the queue</li>
  *   <li>On client disconnect: continue consumption in background (fire-and-forget)</li>
@@ -128,7 +129,7 @@ import org.slf4j.LoggerFactory;
  * <h2>Threading Model</h2>
  * <ul>
  *   <li><b>Vert.x worker threads:</b> Execute request handler methods (onMessageSend, etc.)</li>
- *   <li><b>Agent-executor pool (@Internal):</b> Execute {@link AgentExecutor#execute(RequestContext, EventQueue)}</li>
+ *   <li><b>Agent-executor pool (@Internal):</b> Execute {@link AgentExecutor#execute(RequestContext, AgentEmitter)}</li>
  *   <li><b>Background cleanup:</b> {@link java.util.concurrent.CompletableFuture CompletableFuture} async tasks</li>
  * </ul>
  * <p>
@@ -378,14 +379,29 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null, executor, eventConsumerExecutor);
 
         EventQueue queue = queueManager.createOrTap(task.id());
-        agentExecutor.cancel(
-                requestContextBuilder.get()
-                        .setTaskId(task.id())
-                        .setContextId(task.contextId())
-                        .setTask(task)
-                        .setServerCallContext(context)
-                        .build(),
-                queue);
+        RequestContext cancelRequestContext = requestContextBuilder.get()
+                .setTaskId(task.id())
+                .setContextId(task.contextId())
+                .setTask(task)
+                .setServerCallContext(context)
+                .build();
+        AgentEmitter emitter = new AgentEmitter(cancelRequestContext, queue);
+        try {
+            agentExecutor.cancel(cancelRequestContext, emitter);
+        } catch (TaskNotCancelableError e) {
+            // Expected error - log at INFO level
+            LOGGER.info("Task {} is not cancelable", task.id());
+            throw e;
+        } catch (A2AError e) {
+            // Other A2A errors - log at WARN level with stack trace
+            LOGGER.warn("Agent cancellation threw A2AError for task {}: {} - {}", 
+                task.id(), e.getClass().getSimpleName(), e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            // Unexpected errors - log at ERROR level
+            LOGGER.error("Agent cancellation threw unexpected exception for task {}", task.id(), e);
+            throw new io.a2a.spec.InternalError("Agent cancellation failed: " + e.getMessage());
+        }
 
         Optional.ofNullable(runningAgents.get(task.id()))
                 .ifPresent(cf -> cf.cancel(true));
@@ -439,15 +455,14 @@ public class DefaultRequestHandler implements RequestHandler {
 
         boolean interruptedOrNonBlocking = false;
 
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue);
+        // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
+        EventConsumer consumer = new EventConsumer(queue);
+
+        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
+
         ResultAggregator.EventTypeAndInterrupt etai = null;
         EventKind kind = null;  // Declare outside try block so it's in scope for return
         try {
-            EventConsumer consumer = new EventConsumer(queue);
-
-            // This callback must be added before we start consuming. Otherwise,
-            // any errors thrown by the producerRunnable are not picked up by the consumer
-            producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
 
             // Get agent future before consuming (for blocking calls to wait for agent completion)
             CompletableFuture<Void> agentFuture = runningAgents.get(queueTaskId);
@@ -621,11 +636,10 @@ public class DefaultRequestHandler implements RequestHandler {
 
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor);
 
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue);
-
-        // Move consumer creation and callback registration outside try block
+        // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
         EventConsumer consumer = new EventConsumer(queue);
-        producerRunnable.addDoneCallback(consumer.createAgentRunnableDoneCallback());
+
+        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
 
         // Store cancel callback in context for closeHandler to access
         // When client disconnects, closeHandler can call this to stop EventConsumer polling loop
@@ -863,20 +877,47 @@ public class DefaultRequestHandler implements RequestHandler {
      *
      * This design avoids blocking agent-executor threads waiting for consumer polling to start,
      * eliminating cascading delays when Vert.x worker threads are busy.
+     *
+     * @param doneCallback Callback to invoke when agent completes - MUST be added before starting CompletableFuture
      */
-    private EnhancedRunnable registerAndExecuteAgentAsync(String taskId, RequestContext requestContext, EventQueue queue) {
+    private EnhancedRunnable registerAndExecuteAgentAsync(String taskId, RequestContext requestContext, EventQueue queue, EnhancedRunnable.DoneCallback doneCallback) {
         LOGGER.debug("Registering agent execution for task {}, runningAgents.size() before: {}", taskId, runningAgents.size());
         logThreadStats("AGENT START");
         EnhancedRunnable runnable = new EnhancedRunnable() {
             @Override
             public void run() {
                 LOGGER.debug("Agent execution starting for task {}", taskId);
-                agentExecutor.execute(requestContext, queue);
+                AgentEmitter emitter = new AgentEmitter(requestContext, queue);
+                try {
+                    agentExecutor.execute(requestContext, emitter);
+                } catch (A2AError e) {
+                    // Log A2A errors at WARN level with full stack trace
+                    // These are expected business errors but should be tracked
+                    LOGGER.warn("Agent execution threw A2AError for task {}: {} - {}", 
+                        taskId, e.getClass().getSimpleName(), e.getMessage(), e);
+                    emitter.fail(e);
+                } catch (RuntimeException e) {
+                    // Log unexpected runtime exceptions at ERROR level
+                    // These indicate bugs in agent implementation
+                    LOGGER.error("Agent execution threw unexpected RuntimeException for task {}", taskId, e);
+                    emitter.fail(new io.a2a.spec.InternalError("Agent execution failed: " + e.getMessage()));
+                } catch (Exception e) {
+                    // Log other exceptions at ERROR level
+                    LOGGER.error("Agent execution threw unexpected Exception for task {}", taskId, e);
+                    emitter.fail(new io.a2a.spec.InternalError("Agent execution failed: " + e.getMessage()));
+                }
                 LOGGER.debug("Agent execution completed for task {}", taskId);
                 // The consumer (running on the Vert.x worker thread) handles queue lifecycle.
                 // This avoids blocking agent-executor threads waiting for worker threads.
             }
         };
+
+        // CRITICAL: Add callback BEFORE starting CompletableFuture to avoid race condition
+        // If agent completes very fast, whenComplete can fire before caller adds callbacks
+        runnable.addDoneCallback(doneCallback);
+        
+        // Mark as started to prevent further callback additions (enforced by runtime check)
+        runnable.markStarted();
 
         CompletableFuture<Void> cf = CompletableFuture.runAsync(runnable, executor)
                 .whenComplete((v, err) -> {

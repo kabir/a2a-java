@@ -2,6 +2,7 @@ package io.a2a.server.events;
 
 import java.util.concurrent.Flow;
 
+import io.a2a.spec.A2AError;
 import io.a2a.spec.A2AServerException;
 import io.a2a.spec.Event;
 import io.a2a.spec.Message;
@@ -135,6 +136,10 @@ public class EventConsumer {
                             // Do NOT send to subscribers - just close the queue
                             LOGGER.debug("Received QueueClosedEvent for task {}, treating as final event",
                                 ((QueueClosedEvent) event).getTaskId());
+                            isFinalEvent = true;
+                        } else if (event instanceof A2AError) {
+                            // A2AError events are terminal - they trigger automatic FAILED state transition
+                            LOGGER.debug("Received A2AError event, treating as final event");
                             isFinalEvent = true;
                         }
 

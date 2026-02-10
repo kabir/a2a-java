@@ -30,7 +30,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TaskUpdaterTest {
+public class AgentEmitterTest {
     public static final String TEST_TASK_ID = "test-task-id";
     public static final String TEST_TASK_CONTEXT_ID = "test-task-context-id";
 
@@ -48,7 +48,7 @@ public class TaskUpdaterTest {
     EventQueue eventQueue;
     private MainEventBus mainEventBus;
     private MainEventBusProcessor mainEventBusProcessor;
-    private TaskUpdater taskUpdater;
+    private AgentEmitter agentEmitter;
 
 
 
@@ -69,7 +69,7 @@ public class TaskUpdaterTest {
                 .setTaskId(TEST_TASK_ID)
                 .setContextId(TEST_TASK_CONTEXT_ID)
                 .build();
-        taskUpdater = new TaskUpdater(context, eventQueue);
+        agentEmitter = new AgentEmitter(context, eventQueue);
     }
 
     @AfterEach
@@ -81,7 +81,7 @@ public class TaskUpdaterTest {
 
     @Test
     public void testAddArtifactWithCustomIdAndName() throws Exception {
-        taskUpdater.addArtifact(SAMPLE_PARTS, "custom-artifact-id", "Custom Artifact", null);
+        agentEmitter.addArtifact(SAMPLE_PARTS, "custom-artifact-id", "Custom Artifact", null);
         EventQueueItem item = eventQueue.dequeueEventItem(5000);
         assertNotNull(item);
         Event event = item.getEvent();
@@ -101,147 +101,147 @@ public class TaskUpdaterTest {
 
     @Test
     public void testCompleteWithoutMessage() throws Exception {
-        taskUpdater.complete();
+        agentEmitter.complete();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.COMPLETED, null);
     }
 
     @Test
     public void testCompleteWithMessage() throws Exception {
-        taskUpdater.complete(SAMPLE_MESSAGE);
+        agentEmitter.complete(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(true, TaskState.COMPLETED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testSubmitWithoutMessage() throws Exception {
-        taskUpdater.submit();
+        agentEmitter.submit();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.SUBMITTED, null);
     }
 
     @Test
     public void testSubmitWithMessage() throws Exception {
-        taskUpdater.submit(SAMPLE_MESSAGE);
+        agentEmitter.submit(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.SUBMITTED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testStartWorkWithoutMessage() throws Exception {
-        taskUpdater.startWork();
+        agentEmitter.startWork();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.WORKING, null);
     }
 
     @Test
     public void testStartWorkWithMessage() throws Exception {
-        taskUpdater.startWork(SAMPLE_MESSAGE);
+        agentEmitter.startWork(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.WORKING, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testFailedWithoutMessage() throws Exception {
-        taskUpdater.fail();
+        agentEmitter.fail();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.FAILED, null);
     }
 
     @Test
     public void testFailedWithMessage() throws Exception {
-        taskUpdater.fail(SAMPLE_MESSAGE);
+        agentEmitter.fail(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(true, TaskState.FAILED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testCanceledWithoutMessage() throws Exception {
-        taskUpdater.cancel();
+        agentEmitter.cancel();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.CANCELED, null);
     }
 
     @Test
     public void testCanceledWithMessage() throws Exception {
-        taskUpdater.cancel(SAMPLE_MESSAGE);
+        agentEmitter.cancel(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(true, TaskState.CANCELED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testRejectWithoutMessage() throws Exception {
-        taskUpdater.reject();
+        agentEmitter.reject();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.REJECTED, null);
     }
 
     @Test
     public void testRejectWithMessage() throws Exception {
-        taskUpdater.reject(SAMPLE_MESSAGE);
+        agentEmitter.reject(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(true, TaskState.REJECTED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testRequiresInputWithoutMessage() throws Exception {
-        taskUpdater.requiresInput();
+        agentEmitter.requiresInput();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.INPUT_REQUIRED, null);
     }
 
     @Test
     public void testRequiresInputWithMessage() throws Exception {
-        taskUpdater.requiresInput(SAMPLE_MESSAGE);
+        agentEmitter.requiresInput(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.INPUT_REQUIRED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testRequiresInputWithFinalTrue() throws Exception {
-        taskUpdater.requiresInput(true);
+        agentEmitter.requiresInput(true);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.INPUT_REQUIRED, null);
     }
 
     @Test
     public void testRequiresInputWithMessageAndFinalTrue() throws Exception {
-        taskUpdater.requiresInput(SAMPLE_MESSAGE, true);
+        agentEmitter.requiresInput(SAMPLE_MESSAGE, true);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.INPUT_REQUIRED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testRequiresAuthWithoutMessage() throws Exception {
-        taskUpdater.requiresAuth();
+        agentEmitter.requiresAuth();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.AUTH_REQUIRED, null);
     }
 
     @Test
     public void testRequiresAuthWithMessage() throws Exception {
-        taskUpdater.requiresAuth(SAMPLE_MESSAGE);
+        agentEmitter.requiresAuth(SAMPLE_MESSAGE);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.AUTH_REQUIRED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testRequiresAuthWithFinalTrue() throws Exception {
-        taskUpdater.requiresAuth(true);
+        agentEmitter.requiresAuth(true);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.AUTH_REQUIRED, null);
     }
 
     @Test
     public void testRequiresAuthWithMessageAndFinalTrue() throws Exception {
-        taskUpdater.requiresAuth(SAMPLE_MESSAGE, true);
+        agentEmitter.requiresAuth(SAMPLE_MESSAGE, true);
         checkTaskStatusUpdateEventOnQueue(false, TaskState.AUTH_REQUIRED, SAMPLE_MESSAGE);
     }
 
     @Test
     public void testNonTerminalStateUpdatesAllowed() throws Exception {
         // Non-terminal states should be allowed multiple times
-        taskUpdater.submit();
+        agentEmitter.submit();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.SUBMITTED, null);
 
-        taskUpdater.startWork();
+        agentEmitter.startWork();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.WORKING, null);
 
-        taskUpdater.requiresInput();
+        agentEmitter.requiresInput();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.INPUT_REQUIRED, null);
 
-        taskUpdater.requiresAuth();
+        agentEmitter.requiresAuth();
         checkTaskStatusUpdateEventOnQueue(false, TaskState.AUTH_REQUIRED, null);
 
         // Should still be able to complete
-        taskUpdater.complete();
+        agentEmitter.complete();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.COMPLETED, null);
     }
 
     @Test
     public void testNewAgentMessage() throws Exception {
-        Message message = taskUpdater.newAgentMessage(SAMPLE_PARTS, null);
+        Message message = agentEmitter.newAgentMessage(SAMPLE_PARTS, null);
 
         assertEquals(AGENT, message.role());
         assertEquals(TEST_TASK_ID, message.taskId());
@@ -254,7 +254,7 @@ public class TaskUpdaterTest {
     @Test
     public void testNewAgentMessageWithMetadata() throws Exception {
         Map<String, Object> metadata = Map.of("key", "value");
-        Message message = taskUpdater.newAgentMessage(SAMPLE_PARTS, metadata);
+        Message message = agentEmitter.newAgentMessage(SAMPLE_PARTS, metadata);
 
         assertEquals(AGENT, message.role());
         assertEquals(TEST_TASK_ID, message.taskId());
@@ -266,7 +266,7 @@ public class TaskUpdaterTest {
 
     @Test
     public void testAddArtifactWithAppendTrue() throws Exception {
-        taskUpdater.addArtifact(SAMPLE_PARTS, "artifact-id", "Test Artifact", null, true, null);
+        agentEmitter.addArtifact(SAMPLE_PARTS, "artifact-id", "Test Artifact", null, true, null);
         EventQueueItem item = eventQueue.dequeueEventItem(5000);
         assertNotNull(item);
         Event event = item.getEvent();
@@ -287,7 +287,7 @@ public class TaskUpdaterTest {
 
     @Test
     public void testAddArtifactWithLastChunkTrue() throws Exception {
-        taskUpdater.addArtifact(SAMPLE_PARTS, "artifact-id", "Test Artifact", null, null, true);
+        agentEmitter.addArtifact(SAMPLE_PARTS, "artifact-id", "Test Artifact", null, null, true);
         EventQueueItem item = eventQueue.dequeueEventItem(5000);
         assertNotNull(item);
         Event event = item.getEvent();
@@ -304,7 +304,7 @@ public class TaskUpdaterTest {
 
     @Test
     public void testAddArtifactWithAppendAndLastChunk() throws Exception {
-        taskUpdater.addArtifact(SAMPLE_PARTS, "artifact-id", "Test Artifact", null, true, false);
+        agentEmitter.addArtifact(SAMPLE_PARTS, "artifact-id", "Test Artifact", null, true, false);
         EventQueueItem item = eventQueue.dequeueEventItem(5000);
         assertNotNull(item);
         Event event = item.getEvent();
@@ -320,7 +320,7 @@ public class TaskUpdaterTest {
 
     @Test
     public void testAddArtifactGeneratesIdWhenNull() throws Exception {
-        taskUpdater.addArtifact(SAMPLE_PARTS, null, "Test Artifact", null);
+        agentEmitter.addArtifact(SAMPLE_PARTS, null, "Test Artifact", null);
         EventQueueItem item = eventQueue.dequeueEventItem(5000);
         assertNotNull(item);
         Event event = item.getEvent();
@@ -340,11 +340,11 @@ public class TaskUpdaterTest {
     @Test
     public void testTerminalStateProtectionAfterComplete() throws Exception {
         // Complete the task first
-        taskUpdater.complete();
+        agentEmitter.complete();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.COMPLETED, null);
 
         // Try to update status again - should throw RuntimeException
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> taskUpdater.startWork());
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> agentEmitter.startWork());
         assertEquals("Cannot update task status - terminal state already reached", exception.getMessage());
 
         // Verify no additional events were queued
@@ -354,11 +354,11 @@ public class TaskUpdaterTest {
     @Test
     public void testTerminalStateProtectionAfterFail() throws Exception {
         // Fail the task first
-        taskUpdater.fail();
+        agentEmitter.fail();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.FAILED, null);
 
         // Try to update status again - should throw RuntimeException
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> taskUpdater.complete());
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> agentEmitter.complete());
         assertEquals("Cannot update task status - terminal state already reached", exception.getMessage());
 
         // Verify no additional events were queued
@@ -368,11 +368,11 @@ public class TaskUpdaterTest {
     @Test
     public void testTerminalStateProtectionAfterReject() throws Exception {
         // Reject the task first
-        taskUpdater.reject();
+        agentEmitter.reject();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.REJECTED, null);
 
         // Try to update status again - should throw RuntimeException
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> taskUpdater.startWork());
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> agentEmitter.startWork());
         assertEquals("Cannot update task status - terminal state already reached", exception.getMessage());
 
         // Verify no additional events were queued
@@ -382,11 +382,11 @@ public class TaskUpdaterTest {
     @Test
     public void testTerminalStateProtectionAfterCancel() throws Exception {
         // Cancel the task first
-        taskUpdater.cancel();
+        agentEmitter.cancel();
         checkTaskStatusUpdateEventOnQueue(true, TaskState.CANCELED, null);
 
         // Try to update status again - should throw RuntimeException
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> taskUpdater.submit());
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> agentEmitter.submit());
         assertEquals("Cannot update task status - terminal state already reached", exception.getMessage());
 
         // Verify no additional events were queued
@@ -398,7 +398,7 @@ public class TaskUpdaterTest {
         // This test simulates race condition between multiple completion attempts
         Thread thread1 = new Thread(() -> {
             try {
-                taskUpdater.complete();
+                agentEmitter.complete();
             } catch (RuntimeException e) {
                 // Expected for one of the threads
             }
@@ -406,7 +406,7 @@ public class TaskUpdaterTest {
 
         Thread thread2 = new Thread(() -> {
             try {
-                taskUpdater.fail();
+                agentEmitter.fail();
             } catch (RuntimeException e) {
                 // Expected for one of the threads
             }

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.a2a.server.tasks.TaskStateProvider;
 import io.a2a.spec.Event;
 import io.a2a.spec.Task;
+import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -431,6 +432,9 @@ public abstract class EventQueue implements AutoCloseable {
             // We bypass the parent's closed check and enqueue directly
             Event event = item.getEvent();
 
+            // Validate event taskId matches queue taskId
+            validateEventIds(event);
+
             // Check if this is a final event BEFORE submitting to MainEventBus
             // If it is, notify all children to expect it (so they wait for MainEventBusProcessor)
             if (isFinalEvent(event)) {
@@ -456,6 +460,47 @@ public abstract class EventQueue implements AutoCloseable {
 
             // Submit event to MainEventBus with our taskId
             mainEventBus.submit(taskId, this, item);
+        }
+
+        /**
+         * Validates that events with taskId fields match this queue's taskId.
+         *
+         * <p>Validation Rules:
+         * <ul>
+         *   <li>Task, TaskStatusUpdateEvent, TaskArtifactUpdateEvent: MUST match queue taskId</li>
+         *   <li>Message: taskId is OPTIONAL, not validated (can exist without tasks)</li>
+         *   <li>Other events: no validation</li>
+         *   <li>Null queue taskId: skip validation (initialization phase)</li>
+         * </ul>
+         *
+         * @param event the event to validate
+         * @throws IllegalArgumentException if event has mismatched taskId
+         */
+        private void validateEventIds(Event event) {
+            if (taskId == null) {
+                return; // Allow any event during initialization
+            }
+
+            String eventTaskId = null;
+            String eventType = null;
+
+            if (event instanceof Task task) {
+                eventTaskId = task.id();
+                eventType = "Task";
+            } else if (event instanceof TaskStatusUpdateEvent statusEvent) {
+                eventTaskId = statusEvent.taskId();
+                eventType = "TaskStatusUpdateEvent";
+            } else if (event instanceof TaskArtifactUpdateEvent artifactEvent) {
+                eventTaskId = artifactEvent.taskId();
+                eventType = "TaskArtifactUpdateEvent";
+            }
+            // Note: Message.taskId is NOT validated - messages can exist independently
+
+            if (eventTaskId != null && !eventTaskId.equals(taskId)) {
+                throw new IllegalArgumentException(
+                    String.format("Event taskId mismatch: queue=%s, event=%s, eventType=%s",
+                        taskId, eventTaskId, eventType));
+            }
         }
 
         /**
