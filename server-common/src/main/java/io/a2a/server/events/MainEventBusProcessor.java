@@ -16,6 +16,7 @@ import io.a2a.spec.Event;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.Message;
 import io.a2a.spec.Task;
+import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.TaskArtifactUpdateEvent;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import org.slf4j.Logger;
@@ -220,24 +221,14 @@ public class MainEventBusProcessor implements Runnable {
 
             // Step 2: Send push notification AFTER successful persistence (only from active node)
             // Skip push notifications for replicated events to avoid duplicate notifications in multi-instance deployments
-            if (eventToDistribute == event && !isReplicated) {
-                // Capture task state immediately after persistence, before going async
-                // This ensures we send the task as it existed when THIS event was processed,
-                // not whatever state might exist later when the async callback executes
-                Task taskSnapshot = taskStore.get(taskId);
-                if (taskSnapshot != null) {
-                    sendPushNotification(taskId, taskSnapshot);
-                } else {
-                    LOGGER.warn("Task {} not found in TaskStore after successful persistence, skipping push notification", taskId);
-                }
+            // Push notifications are sent for all StreamingEventKind events (Task, Message, TaskStatusUpdateEvent, TaskArtifactUpdateEvent)
+            // per A2A spec section 4.3.3
+            if (!isReplicated && event instanceof StreamingEventKind streamingEvent) {
+                // Send the streaming event directly - it will be wrapped in StreamResponse format by PushNotificationSender
+                sendPushNotification(taskId, streamingEvent);
             }
 
             // Step 3: Then distribute to ChildQueues (clients see either event or error AFTER persistence attempt)
-            if (eventToDistribute == null) {
-                LOGGER.error("MainEventBusProcessor: eventToDistribute is NULL for task {} - this should never happen!", taskId);
-                eventToDistribute = new InternalError("Internal error: event processing failed");
-            }
-
             int childCount = mainQueue.getChildCount();
             LOGGER.debug("MainEventBusProcessor: Distributing {} to {} children for task {}",
                         eventToDistribute.getClass().getSimpleName(), childCount, taskId);
@@ -313,7 +304,7 @@ public class MainEventBusProcessor implements Runnable {
     }
 
     /**
-     * Sends push notification for the task AFTER persistence.
+     * Sends push notification for the streaming event AFTER persistence.
      * <p>
      * This is called after updateTaskStore() to ensure the notification contains
      * the latest persisted state, avoiding race conditions.
@@ -324,10 +315,15 @@ public class MainEventBusProcessor implements Runnable {
      * PushNotificationSender.sendNotification() was causing streaming delays.
      * </p>
      * <p>
-     * <b>IMPORTANT:</b> The task parameter is a snapshot captured immediately after
-     * persistence. This ensures we send the task state as it existed when THIS event
-     * was processed, not whatever state might exist in TaskStore when the async
-     * callback executes (subsequent events may have already updated the store).
+     * <b>IMPORTANT:</b> The event parameter is the actual event being processed.
+     * This ensures we send the event as it was when processed, not whatever state
+     * might exist in TaskStore when the async callback executes (subsequent events
+     * may have already updated the store).
+     * </p>
+     * <p>
+     * Supports all StreamingEventKind event types per A2A spec section 4.3.3:
+     * Task, Message, TaskStatusUpdateEvent, TaskArtifactUpdateEvent.
+     * The event will be automatically wrapped in StreamResponse format by JsonUtil.
      * </p>
      * <p>
      * <b>NOTE:</b> Tests can inject a synchronous executor via setPushNotificationExecutor()
@@ -335,16 +331,16 @@ public class MainEventBusProcessor implements Runnable {
      * </p>
      *
      * @param taskId the task ID
-     * @param task the task snapshot to send (captured immediately after persistence)
+     * @param event the streaming event to send (Task, Message, TaskStatusUpdateEvent, or TaskArtifactUpdateEvent)
      */
-    private void sendPushNotification(String taskId, Task task) {
+    private void sendPushNotification(String taskId, StreamingEventKind event) {
         Runnable pushTask = () -> {
             try {
-                if (task != null) {
+                if (event != null) {
                     LOGGER.debug("Sending push notification for task {}", taskId);
-                    pushSender.sendNotification(task);
+                    pushSender.sendNotification(event);
                 } else {
-                    LOGGER.debug("Skipping push notification - task snapshot is null for task {}", taskId);
+                    LOGGER.debug("Skipping push notification - event is null for task {}", taskId);
                 }
             } catch (Exception e) {
                 LOGGER.error("Error sending push notification for task {}", taskId, e);

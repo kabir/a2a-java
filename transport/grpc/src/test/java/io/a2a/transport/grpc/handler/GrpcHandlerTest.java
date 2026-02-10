@@ -461,29 +461,30 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
             Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
             Assertions.assertTrue(errors.isEmpty());
             Assertions.assertEquals(3, results.size());
-            Assertions.assertEquals(3, httpClient.tasks.size());
+            Assertions.assertEquals(3, httpClient.events.size());
 
-            io.a2a.spec.Task curr = httpClient.tasks.get(0);
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.id(), curr.id());
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.contextId(), curr.contextId());
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.status().state(), curr.status().state());
-            Assertions.assertEquals(0, curr.artifacts() == null ? 0 : curr.artifacts().size());
+            // Event 0: Task event
+            Assertions.assertTrue(httpClient.events.get(0) instanceof io.a2a.spec.Task, "First event should be Task");
+            io.a2a.spec.Task task1 = (io.a2a.spec.Task) httpClient.events.get(0);
+            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.id(), task1.id());
+            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.contextId(), task1.contextId());
+            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.status().state(), task1.status().state());
+            Assertions.assertEquals(0, task1.artifacts() == null ? 0 : task1.artifacts().size());
 
-            curr = httpClient.tasks.get(1);
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.id(), curr.id());
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.contextId(), curr.contextId());
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.status().state(), curr.status().state());
-            Assertions.assertEquals(1, curr.artifacts().size());
-            Assertions.assertEquals(1, curr.artifacts().get(0).parts().size());
-            Assertions.assertEquals("text", ((TextPart) curr.artifacts().get(0).parts().get(0)).text());
+            // Event 1: TaskArtifactUpdateEvent
+            Assertions.assertTrue(httpClient.events.get(1) instanceof TaskArtifactUpdateEvent, "Second event should be TaskArtifactUpdateEvent");
+            TaskArtifactUpdateEvent artifactUpdate = (TaskArtifactUpdateEvent) httpClient.events.get(1);
+            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.id(), artifactUpdate.taskId());
+            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.contextId(), artifactUpdate.contextId());
+            Assertions.assertEquals(1, artifactUpdate.artifact().parts().size());
+            Assertions.assertEquals("text", ((TextPart) artifactUpdate.artifact().parts().get(0)).text());
 
-            curr = httpClient.tasks.get(2);
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.id(), curr.id());
-            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.contextId(), curr.contextId());
-            Assertions.assertEquals(io.a2a.spec.TaskState.COMPLETED, curr.status().state());
-            Assertions.assertEquals(1, curr.artifacts().size());
-            Assertions.assertEquals(1, curr.artifacts().get(0).parts().size());
-            Assertions.assertEquals("text", ((TextPart) curr.artifacts().get(0).parts().get(0)).text());
+            // Event 2: TaskStatusUpdateEvent
+            Assertions.assertTrue(httpClient.events.get(2) instanceof TaskStatusUpdateEvent, "Third event should be TaskStatusUpdateEvent");
+            TaskStatusUpdateEvent statusUpdate = (TaskStatusUpdateEvent) httpClient.events.get(2);
+            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.id(), statusUpdate.taskId());
+            Assertions.assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.contextId(), statusUpdate.contextId());
+            Assertions.assertEquals(io.a2a.spec.TaskState.COMPLETED, statusUpdate.status().state());
         } finally {
             mainEventBusProcessor.setPushNotificationExecutor(null);
         }

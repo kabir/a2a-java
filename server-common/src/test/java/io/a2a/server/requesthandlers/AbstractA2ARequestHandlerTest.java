@@ -41,6 +41,7 @@ import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
 import io.a2a.spec.Event;
 import io.a2a.spec.Message;
+import io.a2a.spec.StreamingEventKind;
 import io.a2a.spec.Task;
 import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
@@ -189,7 +190,7 @@ public class AbstractA2ARequestHandlerTest {
     @Dependent
     @IfBuildProfile("test")
     protected static class TestHttpClient implements A2AHttpClient {
-        public final List<Task> tasks = Collections.synchronizedList(new ArrayList<>());
+        public final List<StreamingEventKind> events = Collections.synchronizedList(new ArrayList<>());
         public volatile CountDownLatch latch;
 
         @Override
@@ -218,8 +219,10 @@ public class AbstractA2ARequestHandlerTest {
             @Override
             public A2AHttpResponse post() throws IOException, InterruptedException {
                 try {
-                    Task task = JsonUtil.fromJson(body, Task.class);
-                    tasks.add(task);
+                    // Parse StreamResponse format to extract the streaming event
+                    // The body contains a wrapper with one of: task, message, statusUpdate, artifactUpdate
+                    StreamingEventKind event = JsonUtil.fromJson(body, StreamingEventKind.class);
+                    events.add(event);
                     return new A2AHttpResponse() {
                         @Override
                         public int status() {
@@ -237,7 +240,7 @@ public class AbstractA2ARequestHandlerTest {
                         }
                     };
                 } catch (JsonProcessingException e) {
-                    throw new IOException("Failed to parse task JSON", e);
+                    throw new IOException("Failed to parse StreamingEventKind JSON", e);
                 } finally {
                     if (latch != null) {
                         latch.countDown();

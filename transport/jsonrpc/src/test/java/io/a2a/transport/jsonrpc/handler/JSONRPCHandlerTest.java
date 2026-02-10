@@ -775,29 +775,31 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
 
             subscriptionRef.get().cancel();
             assertEquals(3, results.size());
-            assertEquals(3, httpClient.tasks.size());
+            // Push notifications now send the actual StreamingEventKind events, not Task snapshots
+            assertEquals(3, httpClient.events.size());
 
-            Task curr = httpClient.tasks.get(0);
-            assertEquals(MINIMAL_TASK.id(), curr.id());
-            assertEquals(MINIMAL_TASK.contextId(), curr.contextId());
-            assertEquals(MINIMAL_TASK.status().state(), curr.status().state());
-            assertEquals(0, curr.artifacts() == null ? 0 : curr.artifacts().size());
+            // Event 0: Task event
+            assertTrue(httpClient.events.get(0) instanceof Task, "First event should be Task");
+            Task task1 = (Task) httpClient.events.get(0);
+            assertEquals(MINIMAL_TASK.id(), task1.id());
+            assertEquals(MINIMAL_TASK.contextId(), task1.contextId());
+            assertEquals(MINIMAL_TASK.status().state(), task1.status().state());
+            assertEquals(0, task1.artifacts() == null ? 0 : task1.artifacts().size());
 
-            curr = httpClient.tasks.get(1);
-            assertEquals(MINIMAL_TASK.id(), curr.id());
-            assertEquals(MINIMAL_TASK.contextId(), curr.contextId());
-            assertEquals(MINIMAL_TASK.status().state(), curr.status().state());
-            assertEquals(1, curr.artifacts().size());
-            assertEquals(1, curr.artifacts().get(0).parts().size());
-            assertEquals("text", ((TextPart) curr.artifacts().get(0).parts().get(0)).text());
+            // Event 1: TaskArtifactUpdateEvent
+            assertTrue(httpClient.events.get(1) instanceof TaskArtifactUpdateEvent, "Second event should be TaskArtifactUpdateEvent");
+            TaskArtifactUpdateEvent artifactUpdate = (TaskArtifactUpdateEvent) httpClient.events.get(1);
+            assertEquals(MINIMAL_TASK.id(), artifactUpdate.taskId());
+            assertEquals(MINIMAL_TASK.contextId(), artifactUpdate.contextId());
+            assertEquals(1, artifactUpdate.artifact().parts().size());
+            assertEquals("text", ((TextPart) artifactUpdate.artifact().parts().get(0)).text());
 
-            curr = httpClient.tasks.get(2);
-            assertEquals(MINIMAL_TASK.id(), curr.id());
-            assertEquals(MINIMAL_TASK.contextId(), curr.contextId());
-            assertEquals(TaskState.COMPLETED, curr.status().state());
-            assertEquals(1, curr.artifacts().size());
-            assertEquals(1, curr.artifacts().get(0).parts().size());
-            assertEquals("text", ((TextPart) curr.artifacts().get(0).parts().get(0)).text());
+            // Event 2: TaskStatusUpdateEvent
+            assertTrue(httpClient.events.get(2) instanceof TaskStatusUpdateEvent, "Third event should be TaskStatusUpdateEvent");
+            TaskStatusUpdateEvent statusUpdate = (TaskStatusUpdateEvent) httpClient.events.get(2);
+            assertEquals(MINIMAL_TASK.id(), statusUpdate.taskId());
+            assertEquals(MINIMAL_TASK.contextId(), statusUpdate.contextId());
+            assertEquals(TaskState.COMPLETED, statusUpdate.status().state());
         } finally {
             mainEventBusProcessor.setPushNotificationExecutor(null);
         }
