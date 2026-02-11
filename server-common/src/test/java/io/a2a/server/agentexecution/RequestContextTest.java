@@ -354,4 +354,53 @@ public class RequestContextTest {
         assertEquals(providedTaskId, context.getTaskId());
         assertEquals(providedContextId, context.getContextId());
     }
+
+    @Test
+    public void testBuilderUpdatesMessageWithBuilderIds() {
+        // Regression test for Gemini review: ensure message gets updated when builder provides IDs
+        String builderTaskId = "builder-task-id";
+        String builderContextId = "builder-context-id";
+
+        // Message has no IDs, but builder provides them
+        var mockMessage = Message.builder().role(Message.Role.USER).parts(List.of(new TextPart(""))).build();
+        var mockParams = MessageSendParams.builder().message(mockMessage).configuration(defaultConfiguration()).build();
+
+        RequestContext context = new RequestContext.Builder()
+                .setParams(mockParams)
+                .setTaskId(builderTaskId)
+                .setContextId(builderContextId)
+                .build();
+
+        // Both context and message should have the builder IDs
+        assertEquals(builderTaskId, context.getTaskId());
+        assertEquals(builderContextId, context.getContextId());
+        assertEquals(builderTaskId, context.getMessage().taskId());  // KEY: message must be updated
+        assertEquals(builderContextId, context.getMessage().contextId());  // KEY: message must be updated
+    }
+
+    @Test
+    public void testMessageIdsTakePrecedenceWhenBothPresent() {
+        // When both builder and message provide IDs, they must match (or throw)
+        String sharedTaskId = "shared-task-id";
+        String sharedContextId = "shared-context-id";
+
+        var mockMessage = Message.builder()
+                .role(Message.Role.USER)
+                .parts(List.of(new TextPart("")))
+                .taskId(sharedTaskId)
+                .contextId(sharedContextId)
+                .build();
+        var mockParams = MessageSendParams.builder().message(mockMessage).configuration(defaultConfiguration()).build();
+
+        RequestContext context = new RequestContext.Builder()
+                .setParams(mockParams)
+                .setTaskId(sharedTaskId)  // Same as message
+                .setContextId(sharedContextId)  // Same as message
+                .build();
+
+        assertEquals(sharedTaskId, context.getTaskId());
+        assertEquals(sharedContextId, context.getContextId());
+        assertEquals(sharedTaskId, context.getMessage().taskId());
+        assertEquals(sharedContextId, context.getMessage().contextId());
+    }
 }

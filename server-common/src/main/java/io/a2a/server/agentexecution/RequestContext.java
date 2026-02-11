@@ -273,13 +273,13 @@ public class RequestContext {
      * Builder for creating {@link RequestContext} instances.
      * <p>
      * The builder handles ID generation and validation automatically:
+     * </p>
      * <ul>
      *   <li>TaskId and ContextId are auto-generated (UUID) if not provided</li>
      *   <li>IDs are validated against message parameters if both are present</li>
      *   <li>Message parameters are updated with generated IDs</li>
      *   <li>Related tasks list is initialized to empty list if null</li>
      * </ul>
-     * </p>
      */
     public static class Builder {
         private @Nullable MessageSendParams params;
@@ -353,66 +353,59 @@ public class RequestContext {
             // 1. Initialize relatedTasks to empty list if null
             List<Task> finalRelatedTasks = relatedTasks != null ? relatedTasks : new ArrayList<>();
 
-            // 2. Determine final IDs and params
+            // 2. Determine final IDs using coalesce pattern: builder → message → generate
             String finalTaskId = taskId;
             String finalContextId = contextId;
             MessageSendParams finalParams = params;
 
             if (params != null) {
-                // Validate IDs match message if both are present
-                if (finalTaskId != null && !finalTaskId.equals(params.message().taskId())) {
+                String messageTaskId = params.message().taskId();
+                String messageContextId = params.message().contextId();
+
+                // Validate: if both builder and message provide an ID, they must match
+                if (finalTaskId != null && messageTaskId != null && !finalTaskId.equals(messageTaskId)) {
                     throw new InvalidParamsError("bad task id");
                 }
-                if (finalContextId != null && !finalContextId.equals(params.message().contextId())) {
+                if (finalContextId != null && messageContextId != null && !finalContextId.equals(messageContextId)) {
                     throw new InvalidParamsError("bad context id");
                 }
 
-                // Determine what we need to do with IDs
-                String messageTaskId = params.message().taskId();
-                String messageContextId = params.message().contextId();
-                
-                boolean needGenerateTaskId = (finalTaskId == null && messageTaskId == null);
-                boolean needGenerateContextId = (finalContextId == null && messageContextId == null);
-                boolean needUpdateMessage = needGenerateTaskId || needGenerateContextId;
+                // Coalesce: prefer builder ID, fall back to message ID, generate if both null
+                if (finalTaskId == null) {
+                    finalTaskId = messageTaskId;
+                }
+                if (finalTaskId == null) {
+                    finalTaskId = UUID.randomUUID().toString();
+                }
 
-                if (needUpdateMessage) {
-                    // Need to generate IDs and update the message
-                    Message.Builder msgBuilder = Message.builder(params.message());
-                    
-                    if (needGenerateTaskId) {
-                        finalTaskId = UUID.randomUUID().toString();
-                        msgBuilder.taskId(finalTaskId);
-                    } else {
-                        // Use existing ID from builder or message
-                        finalTaskId = finalTaskId != null ? finalTaskId : messageTaskId;
-                    }
+                if (finalContextId == null) {
+                    finalContextId = messageContextId;
+                }
+                if (finalContextId == null) {
+                    finalContextId = UUID.randomUUID().toString();
+                }
 
-                    if (needGenerateContextId) {
-                        finalContextId = UUID.randomUUID().toString();
-                        msgBuilder.contextId(finalContextId);
-                    } else {
-                        // Use existing ID from builder or message
-                        finalContextId = finalContextId != null ? finalContextId : messageContextId;
-                    }
-
-                    finalParams = new MessageSendParams(msgBuilder.build(),
+                // Update message if final IDs differ from message IDs
+                // This ensures getMessage().taskId() matches getTaskId()
+                if (!finalTaskId.equals(messageTaskId) || !finalContextId.equals(messageContextId)) {
+                    Message updatedMessage = Message.builder(params.message())
+                            .taskId(finalTaskId)
+                            .contextId(finalContextId)
+                            .build();
+                    finalParams = new MessageSendParams(updatedMessage,
                             params.configuration(), params.metadata());
-                } else {
-                    // No generation needed - use existing IDs
-                    finalTaskId = finalTaskId != null ? finalTaskId : messageTaskId;
-                    finalContextId = finalContextId != null ? finalContextId : messageContextId;
+                }
+            } else {
+                // No params - generate IDs if not provided by builder
+                if (finalTaskId == null) {
+                    finalTaskId = UUID.randomUUID().toString();
+                }
+                if (finalContextId == null) {
+                    finalContextId = UUID.randomUUID().toString();
                 }
             }
-            
-            // 3. Final ID generation if still null (no params case or params didn't have IDs)
-            if (finalTaskId == null) {
-                finalTaskId = UUID.randomUUID().toString();
-            }
-            if (finalContextId == null) {
-                finalContextId = UUID.randomUUID().toString();
-            }
 
-            // 4. At this point, IDs are guaranteed non-null
+            // 3. At this point, IDs are guaranteed non-null and consistent
             // Call constructor with finalized values
             return new RequestContext(finalParams, finalTaskId, finalContextId,
                     task, finalRelatedTasks, serverCallContext);
