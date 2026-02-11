@@ -422,17 +422,11 @@ public class RequestContextTest {
                 .setTaskId(builderTaskId)  // Forces message update
                 .build();
 
-        // Tenant must be preserved in the updated params
+        // Verify the message was updated with builder's task ID
         assertNotNull(context.getMessage());
         assertEquals(builderTaskId, context.getMessage().taskId());
 
-        // Verify tenant wasn't lost during message update
-        MessageSendParams resultParams = new MessageSendParams(
-                context.getMessage(),
-                mockParams.configuration(),
-                mockParams.metadata(),
-                mockParams.tenant()
-        );
-        assertEquals(tenantId, mockParams.tenant());
+        // KEY: Verify tenant wasn't lost during message update
+        assertEquals(tenantId, context.getTenant());
     }
 }

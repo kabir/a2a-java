@@ -212,6 +212,19 @@ public class RequestContext {
     }
 
     /**
+     * Returns the tenant identifier from the request parameters.
+     * <p>
+     * The tenant is used in multi-tenant environments to identify which
+     * customer or organization the request belongs to.
+     * </p>
+     *
+     * @return the tenant identifier, or null if no params or tenant not set
+     */
+    public @Nullable String getTenant() {
+        return params != null ? params.tenant() : null;
+    }
+
+    /**
      * Extracts all text content from the message and joins with the specified delimiter.
      * <p>
      * This is a convenience method for getting text input from messages that may contain
