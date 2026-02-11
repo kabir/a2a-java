@@ -353,60 +353,40 @@ public class RequestContext {
             // 1. Initialize relatedTasks to empty list if null
             List<Task> finalRelatedTasks = relatedTasks != null ? relatedTasks : new ArrayList<>();
 
-            // 2. Determine final IDs using coalesce pattern: builder → message → generate
-            String finalTaskId = taskId;
-            String finalContextId = contextId;
-            MessageSendParams finalParams = params;
+            // 2. Extract message IDs upfront (or null if no params)
+            String messageTaskId = params != null ? params.message().taskId() : null;
+            String messageContextId = params != null ? params.message().contextId() : null;
 
-            if (params != null) {
-                String messageTaskId = params.message().taskId();
-                String messageContextId = params.message().contextId();
-
-                // Validate: if both builder and message provide an ID, they must match
-                if (finalTaskId != null && messageTaskId != null && !finalTaskId.equals(messageTaskId)) {
-                    throw new InvalidParamsError("bad task id");
-                }
-                if (finalContextId != null && messageContextId != null && !finalContextId.equals(messageContextId)) {
-                    throw new InvalidParamsError("bad context id");
-                }
-
-                // Coalesce: prefer builder ID, fall back to message ID, generate if both null
-                if (finalTaskId == null) {
-                    finalTaskId = messageTaskId;
-                }
-                if (finalTaskId == null) {
-                    finalTaskId = UUID.randomUUID().toString();
-                }
-
-                if (finalContextId == null) {
-                    finalContextId = messageContextId;
-                }
-                if (finalContextId == null) {
-                    finalContextId = UUID.randomUUID().toString();
-                }
-
-                // Update message if final IDs differ from message IDs
-                // This ensures getMessage().taskId() matches getTaskId()
-                if (!finalTaskId.equals(messageTaskId) || !finalContextId.equals(messageContextId)) {
-                    Message updatedMessage = Message.builder(params.message())
-                            .taskId(finalTaskId)
-                            .contextId(finalContextId)
-                            .build();
-                    finalParams = new MessageSendParams(updatedMessage,
-                            params.configuration(), params.metadata());
-                }
-            } else {
-                // No params - generate IDs if not provided by builder
-                if (finalTaskId == null) {
-                    finalTaskId = UUID.randomUUID().toString();
-                }
-                if (finalContextId == null) {
-                    finalContextId = UUID.randomUUID().toString();
-                }
+            // 3. Validate: if both builder and message provide an ID, they must match
+            if (taskId != null && messageTaskId != null && !taskId.equals(messageTaskId)) {
+                throw new InvalidParamsError("bad task id");
+            }
+            if (contextId != null && messageContextId != null && !contextId.equals(messageContextId)) {
+                throw new InvalidParamsError("bad context id");
             }
 
-            // 3. At this point, IDs are guaranteed non-null and consistent
-            // Call constructor with finalized values
+            // 4. Determine final IDs using coalesce pattern: builder → message → generate
+            String finalTaskId = taskId != null ? taskId :
+                                  messageTaskId != null ? messageTaskId :
+                                  UUID.randomUUID().toString();
+
+            String finalContextId = contextId != null ? contextId :
+                                    messageContextId != null ? messageContextId :
+                                    UUID.randomUUID().toString();
+
+            // 5. Update params if message needs to be updated with final IDs
+            MessageSendParams finalParams = params;
+            if (params != null && (!finalTaskId.equals(messageTaskId) || !finalContextId.equals(messageContextId))) {
+                Message updatedMessage = Message.builder(params.message())
+                        .taskId(finalTaskId)
+                        .contextId(finalContextId)
+                        .build();
+                // Preserve all original fields including tenant
+                finalParams = new MessageSendParams(updatedMessage,
+                        params.configuration(), params.metadata(), params.tenant());
+            }
+
+            // 6. Call constructor with finalized values (IDs guaranteed non-null)
             return new RequestContext(finalParams, finalTaskId, finalContextId,
                     task, finalRelatedTasks, serverCallContext);
         }

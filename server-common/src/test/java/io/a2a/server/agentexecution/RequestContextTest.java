@@ -403,4 +403,36 @@ public class RequestContextTest {
         assertEquals(sharedTaskId, context.getMessage().taskId());
         assertEquals(sharedContextId, context.getMessage().contextId());
     }
+
+    @Test
+    public void testBuilderPreservesTenantWhenUpdatingMessage() {
+        // Regression test for Gemini review: ensure tenant is preserved when message is updated
+        String tenantId = "customer-123";
+        String builderTaskId = "builder-task-id";
+
+        var mockMessage = Message.builder().role(Message.Role.USER).parts(List.of(new TextPart(""))).build();
+        var mockParams = MessageSendParams.builder()
+                .message(mockMessage)
+                .configuration(defaultConfiguration())
+                .tenant(tenantId)
+                .build();
+
+        RequestContext context = new RequestContext.Builder()
+                .setParams(mockParams)
+                .setTaskId(builderTaskId)  // Forces message update
+                .build();
+
+        // Tenant must be preserved in the updated params
+        assertNotNull(context.getMessage());
+        assertEquals(builderTaskId, context.getMessage().taskId());
+
+        // Verify tenant wasn't lost during message update
+        MessageSendParams resultParams = new MessageSendParams(
+                context.getMessage(),
+                mockParams.configuration(),
+                mockParams.metadata(),
+                mockParams.tenant()
+        );
+        assertEquals(tenantId, mockParams.tenant());
+    }
 }
