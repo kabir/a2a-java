@@ -108,7 +108,7 @@ public class AgentEmitter {
      */
     public AgentEmitter(RequestContext context, EventQueue eventQueue) {
         this.eventQueue = eventQueue;
-         this.taskId = Assert.checkNotNullParam("taskId",context.getTaskId());
+        this.taskId = Assert.checkNotNullParam("taskId",context.getTaskId());
         this.contextId = Assert.checkNotNullParam("contextId",context.getContextId());
     }
 
