@@ -18,7 +18,6 @@ import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
-import io.a2a.util.Assert;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -108,8 +107,8 @@ public class AgentEmitter {
      */
     public AgentEmitter(RequestContext context, EventQueue eventQueue) {
         this.eventQueue = eventQueue;
-         this.taskId = Assert.checkNotNullParam("taskId",context.getTaskId());
-        this.contextId = Assert.checkNotNullParam("contextId",context.getContextId());
+        this.taskId = context.getTaskId();
+        this.contextId = context.getContextId();
     }
 
     private void updateStatus(TaskState taskState) {

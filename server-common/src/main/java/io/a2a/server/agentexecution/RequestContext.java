@@ -74,50 +74,52 @@ import org.jspecify.annotations.Nullable;
  */
 public class RequestContext {
 
-    private @Nullable MessageSendParams params;
-    private @Nullable String taskId;
-    private @Nullable String contextId;
-    private @Nullable Task task;
-    private List<Task> relatedTasks;
+    private final @Nullable MessageSendParams params;
+    private final String taskId;
+    private final String contextId;
+    private final @Nullable Task task;
+    private final List<Task> relatedTasks;
     private final @Nullable ServerCallContext callContext;
 
-    public RequestContext(
+    /**
+     * Constructor with all fields already validated and initialized.
+     * <p>
+     * <b>Note:</b> Use {@link Builder} instead of calling this constructor directly.
+     * The builder handles ID generation and validation.
+     * </p>
+     *
+     * @param params the message send parameters (can be null for cancel operations)
+     * @param taskId the task identifier (must not be null)
+     * @param contextId the context identifier (must not be null)
+     * @param task the existing task state (null for new conversations)
+     * @param relatedTasks other tasks in the same context (must not be null, can be empty)
+     * @param callContext the server call context (can be null)
+     */
+    private RequestContext(
             @Nullable MessageSendParams params,
-            @Nullable String taskId,
-            @Nullable String contextId,
+            String taskId,
+            String contextId,
             @Nullable Task task,
-            @Nullable List<Task> relatedTasks,
-            @Nullable ServerCallContext callContext) throws InvalidParamsError {
+            List<Task> relatedTasks,
+            @Nullable ServerCallContext callContext) {
         this.params = params;
         this.taskId = taskId;
         this.contextId = contextId;
         this.task = task;
-        this.relatedTasks = relatedTasks == null ? new ArrayList<>() : relatedTasks;
+        this.relatedTasks = relatedTasks;
         this.callContext = callContext;
-
-        // If the taskId and contextId were specified, they must match the params
-        if (params != null) {
-            if (taskId != null && !taskId.equals(params.message().taskId())) {
-                throw new InvalidParamsError("bad task id");
-            }
-            this.taskId = checkOrGenerateTaskId();
-            if (contextId != null && !contextId.equals(params.message().contextId())) {
-                throw new InvalidParamsError("bad context id");
-            }
-            this.contextId = checkOrGenerateContextId();
-        }
     }
 
     /**
      * Returns the task identifier.
      * <p>
-     * This is auto-generated (UUID) if not provided by the client in the message parameters.
-     * It can be null if the context was not created from message parameters.
+     * This is auto-generated (UUID) by the builder if not provided by the client
+     * in the message parameters. This value is never null.
      * </p>
      *
-     * @return the task ID
+     * @return the task ID (never null)
      */
-    public @Nullable String getTaskId() {
+    public String getTaskId() {
         return taskId;
     }
 
@@ -125,13 +127,13 @@ public class RequestContext {
      * Returns the conversation context identifier.
      * <p>
      * Conversation contexts group related tasks together (e.g., multiple tasks
-     * in the same user session). This is auto-generated (UUID) if not provided by the client
-     * in the message parameters. It can be null if the context was not created from message parameters.
+     * in the same user session). This is auto-generated (UUID) by the builder if
+     * not provided by the client in the message parameters. This value is never null.
      * </p>
      *
-     * @return the context ID
+     * @return the context ID (never null)
      */
-    public @Nullable String getContextId() {
+    public String getContextId() {
         return contextId;
     }
 
@@ -210,6 +212,19 @@ public class RequestContext {
     }
 
     /**
+     * Returns the tenant identifier from the request parameters.
+     * <p>
+     * The tenant is used in multi-tenant environments to identify which
+     * customer or organization the request belongs to.
+     * </p>
+     *
+     * @return the tenant identifier, or null if no params or tenant not set
+     */
+    public @Nullable String getTenant() {
+        return params != null ? params.tenant() : null;
+    }
+
+    /**
      * Extracts all text content from the message and joins with the specified delimiter.
      * <p>
      * This is a convenience method for getting text input from messages that may contain
@@ -240,46 +255,18 @@ public class RequestContext {
         return getMessageText(params.message(), delimiter);
     }
 
+    /**
+     * Attaches a related task to this context.
+     * <p>
+     * This is primarily used by the framework to populate related tasks after
+     * construction. Agent implementations should use {@link #getRelatedTasks()}
+     * to access related tasks.
+     * </p>
+     *
+     * @param task the task to attach
+     */
     public void attachRelatedTask(Task task) {
         relatedTasks.add(task);
-    }
-
-    private @Nullable String checkOrGenerateTaskId() {
-        if (params == null) {
-            return taskId;
-        }
-        if (taskId == null && params.message().taskId() == null) {
-            // Message is immutable, create new one with generated taskId
-            String generatedTaskId = UUID.randomUUID().toString();
-            Message updatedMessage = Message.builder(params.message())
-                    .taskId(generatedTaskId)
-                    .build();
-            params = new MessageSendParams(updatedMessage, params.configuration(), params.metadata());
-            return generatedTaskId;
-        } 
-        if (params.message().taskId() != null) {
-            return params.message().taskId();
-        }
-        return taskId;
-    }
-
-    private @Nullable String checkOrGenerateContextId() {
-        if (params == null) {
-            return contextId;
-        }
-        if (contextId == null && params.message().contextId() == null) {
-            // Message is immutable, create new one with generated contextId
-            String generatedContextId = UUID.randomUUID().toString();
-            Message updatedMessage = Message.builder(params.message())
-                    .contextId(generatedContextId)
-                    .build();
-            params = new MessageSendParams(updatedMessage, params.configuration(), params.metadata());
-            return generatedContextId;
-        } 
-        if (params.message().contextId() != null) {
-            return params.message().contextId();
-        }
-        return contextId;
     }
 
     private String getMessageText(Message message, String delimiter) {
@@ -295,6 +282,18 @@ public class RequestContext {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Builder for creating {@link RequestContext} instances.
+     * <p>
+     * The builder handles ID generation and validation automatically:
+     * </p>
+     * <ul>
+     *   <li>TaskId and ContextId are auto-generated (UUID) if not provided</li>
+     *   <li>IDs are validated against message parameters if both are present</li>
+     *   <li>Message parameters are updated with generated IDs</li>
+     *   <li>Related tasks list is initialized to empty list if null</li>
+     * </ul>
+     */
     public static class Builder {
         private @Nullable MessageSendParams params;
         private @Nullable String taskId;
@@ -357,8 +356,56 @@ public class RequestContext {
             return serverCallContext;
         }
 
-        public RequestContext build() {
-            return new RequestContext(params, taskId, contextId, task, relatedTasks, serverCallContext);
+        /**
+         * Builds the RequestContext with ID generation and validation.
+         *
+         * @return the constructed RequestContext
+         * @throws InvalidParamsError if taskId or contextId don't match message parameters
+         */
+        public RequestContext build() throws InvalidParamsError {
+            // 1. Initialize relatedTasks to empty list if null
+            List<Task> finalRelatedTasks = relatedTasks != null ? relatedTasks : new ArrayList<>();
+
+            // 2. Extract message IDs upfront (or null if no params)
+            String messageTaskId = params != null ? params.message().taskId() : null;
+            String messageContextId = params != null ? params.message().contextId() : null;
+
+            // 3. Validate: if both builder and message provide an ID, they must match
+            if (taskId != null && messageTaskId != null && !taskId.equals(messageTaskId)) {
+                throw new InvalidParamsError("bad task id");
+            }
+            if (contextId != null && messageContextId != null && !contextId.equals(messageContextId)) {
+                throw new InvalidParamsError("bad context id");
+            }
+
+            // 4. Determine final IDs using coalesce pattern: builder → message → generate
+            String finalTaskId = taskId != null ? taskId :
+                                  messageTaskId != null ? messageTaskId :
+                                  UUID.randomUUID().toString();
+
+            String finalContextId = contextId != null ? contextId :
+                                    messageContextId != null ? messageContextId :
+                                    UUID.randomUUID().toString();
+
+            // 5. Update params if message needs to be updated with final IDs
+            MessageSendParams finalParams = params;
+            if (params != null && (!finalTaskId.equals(messageTaskId) || !finalContextId.equals(messageContextId))) {
+                Message updatedMessage = Message.builder(params.message())
+                        .taskId(finalTaskId)
+                        .contextId(finalContextId)
+                        .build();
+                // Preserve all original fields including tenant
+                finalParams = MessageSendParams.builder()
+                        .message(updatedMessage)
+                        .configuration(params.configuration())
+                        .metadata(params.metadata())
+                        .tenant(params.tenant())
+                        .build();
+            }
+
+            // 6. Call constructor with finalized values (IDs guaranteed non-null)
+            return new RequestContext(finalParams, finalTaskId, finalContextId,
+                    task, finalRelatedTasks, serverCallContext);
         }
     }
 
