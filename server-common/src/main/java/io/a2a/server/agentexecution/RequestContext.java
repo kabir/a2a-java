@@ -395,8 +395,12 @@ public class RequestContext {
                         .contextId(finalContextId)
                         .build();
                 // Preserve all original fields including tenant
-                finalParams = new MessageSendParams(updatedMessage,
-                        params.configuration(), params.metadata(), params.tenant());
+                finalParams = MessageSendParams.builder()
+                        .message(updatedMessage)
+                        .configuration(params.configuration())
+                        .metadata(params.metadata())
+                        .tenant(params.tenant())
+                        .build();
             }
 
             // 6. Call constructor with finalized values (IDs guaranteed non-null)
