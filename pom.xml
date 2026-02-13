@@ -9,6 +9,7 @@
     <version>1.0.0.Alpha2-SNAPSHOT</version>
 
     <packaging>pom</packaging>
+    <!-- Just to trigger CI -->
 
     <name>Java SDK A2A Parent</name>
     <description>Java SDK for the Agent2Agent Protocol (A2A)</description>
