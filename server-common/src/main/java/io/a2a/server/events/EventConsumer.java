@@ -31,12 +31,14 @@ public class EventConsumer {
     private static final int QUEUE_WAIT_MILLISECONDS = 500;
     // In replicated scenarios, events can arrive hundreds of milliseconds after local agent completes
     // Grace period allows Kafka replication to deliver late-arriving events
-    // 3 timeouts * 500ms = 1500ms grace period for replication delays
+    // Calculation: MAX_POLL_TIMEOUTS_AFTER_AGENT_COMPLETED * QUEUE_WAIT_MILLISECONDS = 1500ms
     private static final int MAX_POLL_TIMEOUTS_AFTER_AGENT_COMPLETED = 3;
     // Maximum time to wait for final event when awaitingFinalEvent is set
     // If event doesn't arrive after this many timeouts, assume it won't arrive
-    // 6 timeouts * 500ms = 3000ms maximum wait for final event arrival
-    private static final int MAX_POLL_TIMEOUTS_AWAITING_FINAL = 6;
+    // Calculation: MAX_POLL_TIMEOUTS_AWAITING_FINAL * QUEUE_WAIT_MILLISECONDS = 3000ms
+    private static final int MAX_AWAITING_FINAL_TIMEOUT_MS = 3000;
+    private static final int MAX_POLL_TIMEOUTS_AWAITING_FINAL = 
+        MAX_AWAITING_FINAL_TIMEOUT_MS / QUEUE_WAIT_MILLISECONDS;
 
     public EventConsumer(EventQueue queue) {
         this.queue = queue;
@@ -108,7 +110,14 @@ public class EventConsumer {
                             // proceed with normal timeout logic to prevent infinite waiting.
                             boolean isInterruptedState = lastSeenTaskState != null && lastSeenTaskState.isInterrupted();
 
-                            // Track how long we've been waiting for the final event
+                            // Track how long we've been waiting for the final event.
+                            // Three cases for the awaiting counter:
+                            //   awaitingFinal && queueSize == 0: final event enqueued in MainQueue but not yet
+                            //     distributed here — increment timeout counter and give up after MAX timeout.
+                            //   awaitingFinal && queueSize > 0: events are still in transit, do nothing —
+                            //     the counter is reset below once an event is successfully dequeued.
+                            //   !awaitingFinal: not waiting for anything — reset the counter (timeout case;
+                            //     the successful-dequeue reset happens below at the event-received path).
                             if (awaitingFinal && queueSize == 0) {
                                 pollTimeoutsWhileAwaitingFinal++;
                                 if (pollTimeoutsWhileAwaitingFinal >= MAX_POLL_TIMEOUTS_AWAITING_FINAL) {
@@ -118,8 +127,10 @@ public class EventConsumer {
                                     queue.clearAwaitingFinalEvent();
                                     awaitingFinal = false; // Also update local variable for this iteration
                                 }
-                            } else {
-                                pollTimeoutsWhileAwaitingFinal = 0; // Reset when event arrives or queue not awaiting
+                            } else if (!awaitingFinal) {
+                                // Poll timed out and we are not awaiting a final event: reset the counter.
+                                // (The successful-dequeue reset is handled separately below.)
+                                pollTimeoutsWhileAwaitingFinal = 0;
                             }
 
                             if (agentCompleted && queueSize == 0 && !isInterruptedState && !awaitingFinal) {
