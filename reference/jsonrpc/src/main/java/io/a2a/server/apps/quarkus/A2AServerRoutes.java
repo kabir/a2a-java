@@ -1,6 +1,5 @@
 package io.a2a.server.apps.quarkus;
 
-import static io.a2a.common.MediaType.APPLICATION_PROBLEM_JSON;
 import static io.a2a.server.ServerCallContext.TRANSPORT_KEY;
 import static io.a2a.transport.jsonrpc.context.JSONRPCContextKeys.HEADERS_KEY;
 import static io.a2a.transport.jsonrpc.context.JSONRPCContextKeys.METHOD_NAME_KEY;
@@ -109,7 +108,7 @@ import org.slf4j.LoggerFactory;
  *   <li>{@code listTasks} - List tasks with filtering</li>
  *   <li>{@code setTaskPushNotificationConfig} - Configure push notifications</li>
  *   <li>{@code getTaskPushNotificationConfig} - Get push notification config</li>
- *   <li>{@code listTaskPushNotificationConfig} - List push notification configs</li>
+ *   <li>{@code listTaskPushNotificationConfigs} - List push notification configs</li>
  *   <li>{@code deleteTaskPushNotificationConfig} - Delete push notification config</li>
  *   <li>{@code getExtendedAgentCard} - Get extended agent capabilities</li>
  * </ul>
@@ -172,6 +171,9 @@ public class A2AServerRoutes {
 
     @Inject
     JSONRPCHandler jsonRpcHandler;
+
+    @Inject
+    io.a2a.server.AgentCardCacheMetadata cacheMetadata;
 
     // Hook so testing can wait until the MultiSseSupport is subscribed.
     // Without this we get intermittent failures
@@ -245,7 +247,7 @@ public class A2AServerRoutes {
      *
      * <p><b>Processing Flow:</b>
      * <ol>
-     *   <li>Parse JSON-RPC request body using {@link JSONRPCUtils#parseRequestBody}</li>
+     *   <li>Parse JSON-RPC request body using {@link JSONRPCUtils#parseRequestBody(String, String)}</li>
      *   <li>Create {@link ServerCallContext} from routing context</li>
      *   <li>Route to streaming or non-streaming handler</li>
      *   <li>Handle errors with appropriate JSON-RPC error codes</li>
@@ -294,7 +296,7 @@ public class A2AServerRoutes {
             if (error != null) {
                 rc.response()
                         .setStatusCode(200)
-                        .putHeader(CONTENT_TYPE, APPLICATION_PROBLEM_JSON)
+                        .putHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .end(serializeResponse(error));
             } else if (streaming) {
                 final Multi<? extends A2AResponse<?>> finalStreamingResponse = streamingResponse;
@@ -310,7 +312,7 @@ public class A2AServerRoutes {
             } else {
                 rc.response()
                         .setStatusCode(200)
-                        .putHeader(CONTENT_TYPE, nonStreamingResponse.getError() != null ? APPLICATION_PROBLEM_JSON : APPLICATION_JSON)
+                        .putHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .end(serializeResponse(nonStreamingResponse));
             }
         }
@@ -322,6 +324,13 @@ public class A2AServerRoutes {
      * <p>Returns the agent's capabilities and metadata in JSON format according to the
      * A2A protocol specification. This endpoint is publicly accessible (no authentication).
      *
+     * <p>Includes HTTP caching headers per A2A specification section 8.6:
+     * <ul>
+     *   <li>{@code Cache-Control} - with max-age directive</li>
+     *   <li>{@code ETag} - content hash for validation</li>
+     *   <li>{@code Last-Modified} - timestamp when agent card was initialized</li>
+     * </ul>
+     *
      * <p><b>Request:</b>
      * <pre>{@code
      * GET /.well-known/agent-card.json
@@ -331,6 +340,9 @@ public class A2AServerRoutes {
      * <pre>{@code
      * HTTP/1.1 200 OK
      * Content-Type: application/json
+     * Cache-Control: public, max-age=3600
+     * ETag: "a1b2c3d4..."
+     * Last-Modified: Mon, 17 Mar 2025 10:00:00 GMT
      *
      * {
      *   "name": "My Agent",
@@ -343,12 +355,15 @@ public class A2AServerRoutes {
      * }
      * }</pre>
      *
+     * @param rc the Vert.x routing context
      * @return the agent card as a JSON string
      * @throws JsonProcessingException if serialization fails
      * @see JSONRPCHandler#getAgentCard()
      */
     @Route(path = "/.well-known/agent-card.json", methods = Route.HttpMethod.GET, produces = APPLICATION_JSON)
-    public String getAgentCard() throws JsonProcessingException {
+    public String getAgentCard(RoutingContext rc) throws JsonProcessingException {
+        // Add caching headers per A2A specification section 8.6
+        cacheMetadata.getHttpHeadersMap().forEach((k, v) -> rc.response().putHeader(k, v));
         return JsonUtil.toJson(jsonRpcHandler.getAgentCard());
     }
 
@@ -366,7 +381,7 @@ public class A2AServerRoutes {
      *   <li>{@link SendMessageRequest} → {@link JSONRPCHandler#onMessageSend}</li>
      *   <li>{@link CreateTaskPushNotificationConfigRequest} → {@link JSONRPCHandler#setPushNotificationConfig}</li>
      *   <li>{@link GetTaskPushNotificationConfigRequest} → {@link JSONRPCHandler#getPushNotificationConfig}</li>
-     *   <li>{@link ListTaskPushNotificationConfigRequest} → {@link JSONRPCHandler#listPushNotificationConfig}</li>
+     *   <li>{@link ListTaskPushNotificationConfigsRequest} → {@link JSONRPCHandler#listPushNotificationConfigs}</li>
      *   <li>{@link DeleteTaskPushNotificationConfigRequest} → {@link JSONRPCHandler#deletePushNotificationConfig}</li>
      *   <li>{@link GetExtendedAgentCardRequest} → {@link JSONRPCHandler#onGetExtendedCardRequest}</li>
      * </ul>
@@ -395,7 +410,7 @@ public class A2AServerRoutes {
             return jsonRpcHandler.onMessageSend(req, context);
         }
         if (request instanceof ListTaskPushNotificationConfigsRequest req) {
-            return jsonRpcHandler.listPushNotificationConfig(req, context);
+            return jsonRpcHandler.listPushNotificationConfigs(req, context);
         }
         if (request instanceof DeleteTaskPushNotificationConfigRequest req) {
             return jsonRpcHandler.deletePushNotificationConfig(req, context);
@@ -580,7 +595,7 @@ public class A2AServerRoutes {
      *   "error": {
      *     "code": -32602,
      *     "message": "Invalid params",
-     *     "data": { ... }
+     *     "details": { ... }
      *   }
      * }
      * }</pre>
@@ -618,7 +633,7 @@ public class A2AServerRoutes {
      *   <li>{@link ListTasksResponse} → ListTasksResult protobuf message</li>
      *   <li>{@link CreateTaskPushNotificationConfigResponse} → CreateTaskPushNotificationConfigResponse protobuf message</li>
      *   <li>{@link GetTaskPushNotificationConfigResponse} → GetTaskPushNotificationConfigResponse protobuf message</li>
-     *   <li>{@link ListTaskPushNotificationConfigResponse} → ListTaskPushNotificationConfigResponse protobuf message</li>
+     *   <li>{@link ListTaskPushNotificationConfigsResponse} → ListTaskPushNotificationConfigsResponse protobuf message</li>
      *   <li>{@link DeleteTaskPushNotificationConfigResponse} → Empty protobuf message</li>
      *   <li>{@link GetExtendedAgentCardResponse} → GetExtendedCardResponse protobuf message</li>
      *   <li>{@link SendStreamingMessageResponse} → TaskOrMessageStream protobuf message</li>
@@ -643,7 +658,7 @@ public class A2AServerRoutes {
         } else if (response instanceof GetTaskPushNotificationConfigResponse r) {
             return io.a2a.grpc.utils.ProtoUtils.ToProto.getTaskPushNotificationConfigResponse(r.getResult());
         } else if (response instanceof ListTaskPushNotificationConfigsResponse r) {
-            return io.a2a.grpc.utils.ProtoUtils.ToProto.listTaskPushNotificationConfigResponse(r.getResult());
+            return io.a2a.grpc.utils.ProtoUtils.ToProto.listTaskPushNotificationConfigsResponse(r.getResult());
         } else if (response instanceof DeleteTaskPushNotificationConfigResponse) {
             // DeleteTaskPushNotificationConfig has no result body, just return empty message
             return com.google.protobuf.Empty.getDefaultInstance();

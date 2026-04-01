@@ -52,8 +52,8 @@ import io.a2a.spec.EventKind;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
 import io.a2a.spec.InternalError;
 import io.a2a.spec.InvalidParamsError;
-import io.a2a.spec.ListTaskPushNotificationConfigParams;
-import io.a2a.spec.ListTaskPushNotificationConfigResult;
+import io.a2a.spec.ListTaskPushNotificationConfigsParams;
+import io.a2a.spec.ListTaskPushNotificationConfigsResult;
 import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.Message;
 import io.a2a.spec.MessageSendParams;
@@ -441,15 +441,16 @@ public class DefaultRequestHandler implements RequestHandler {
         final java.util.concurrent.atomic.AtomicReference<@NonNull String> taskId = new java.util.concurrent.atomic.AtomicReference<>(queueTaskId);
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor);
 
-        // Default to blocking=false per A2A spec (return after task creation)
-        boolean blocking = params.configuration() != null && Boolean.TRUE.equals(params.configuration().blocking());
+        // Default to blocking per A2A spec (returnImmediately defaults to false, meaning wait for completion)
+        boolean returnImmediately = params.configuration() != null && Boolean.TRUE.equals(params.configuration().returnImmediately());
+        boolean blocking = !returnImmediately;
 
-        // Log blocking behavior from client request
-        if (params.configuration() != null && params.configuration().blocking() != null) {
-            LOGGER.debug("DefaultRequestHandler: Client requested blocking={} for task {}",
-                params.configuration().blocking(), taskId.get());
+        // Log return behavior from client request
+        if (params.configuration() != null && params.configuration().returnImmediately() != null) {
+            LOGGER.debug("DefaultRequestHandler: Client requested returnImmediately={}, using blocking={} for task {}",
+                params.configuration().returnImmediately(), blocking, taskId.get());
         } else if (params.configuration() != null) {
-            LOGGER.debug("DefaultRequestHandler: Client sent configuration but blocking=null, using default blocking={} for task {}", blocking, taskId.get());
+            LOGGER.debug("DefaultRequestHandler: Client sent configuration but returnImmediately=null, using default blocking={} for task {}", blocking, taskId.get());
         } else {
             LOGGER.debug("DefaultRequestHandler: Client sent no configuration, using default blocking={} for task {}", blocking, taskId.get());
         }
@@ -793,16 +794,16 @@ public class DefaultRequestHandler implements RequestHandler {
             throw new TaskNotFoundError();
         }
 
-        ListTaskPushNotificationConfigResult listTaskPushNotificationConfigResult = pushConfigStore.getInfo(new ListTaskPushNotificationConfigParams(params.taskId()));
-        if (listTaskPushNotificationConfigResult == null || listTaskPushNotificationConfigResult.isEmpty()) {
+        ListTaskPushNotificationConfigsResult listTaskPushNotificationConfigsResult = pushConfigStore.getInfo(new ListTaskPushNotificationConfigsParams(params.taskId()));
+        if (listTaskPushNotificationConfigsResult == null || listTaskPushNotificationConfigsResult.isEmpty()) {
             throw new InternalError("No push notification config found");
         }
 
         String configId = params.id();
-        return getTaskPushNotificationConfig(listTaskPushNotificationConfigResult, configId);
+        return getTaskPushNotificationConfig(listTaskPushNotificationConfigsResult, configId);
     }
 
-    private TaskPushNotificationConfig getTaskPushNotificationConfig(ListTaskPushNotificationConfigResult notificationConfigList,
+    private TaskPushNotificationConfig getTaskPushNotificationConfig(ListTaskPushNotificationConfigsResult notificationConfigList,
             String configId) {
         for (TaskPushNotificationConfig notificationConfig : notificationConfigList.configs()) {
             if (configId.equals(notificationConfig.id())) {
@@ -850,8 +851,8 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @Override
-    public ListTaskPushNotificationConfigResult onListTaskPushNotificationConfig(
-            ListTaskPushNotificationConfigParams params, ServerCallContext context) throws A2AError {
+    public ListTaskPushNotificationConfigsResult onListTaskPushNotificationConfigs(
+            ListTaskPushNotificationConfigsParams params, ServerCallContext context) throws A2AError {
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -1000,7 +1001,7 @@ public class DefaultRequestHandler implements RequestHandler {
         });
     }
 
-    private MessageSendSetup initMessageSend(MessageSendParams params, ServerCallContext context) {
+    private MessageSendSetup initMessageSend(MessageSendParams params, ServerCallContext context) throws A2AError {
         // Build RequestContext FIRST to get the real taskId (auto-generated if not provided)
         // This eliminates the need for temporary IDs - we use the same UUID throughout
         RequestContext requestContext = requestContextBuilder.get()
@@ -1025,6 +1026,32 @@ public class DefaultRequestHandler implements RequestHandler {
 
         Task task = taskManager.getTask();
         if (task != null) {
+            // Reject messages to tasks that are in a terminal state (completed, canceled, rejected, failed).
+            // Per A2A spec section 3.1.1 (CORE-SEND-002): the SDK MUST return UnsupportedOperationError
+            // before forwarding the message to the AgentExecutor.
+            if (task.status().state().isFinal()) {
+                throw new UnsupportedOperationError(
+                        null,
+                        "Cannot send message to task " + task.id() +
+                        " - task is in a terminal state: " + task.status().state(),
+                        null);
+            }
+
+            // Validate contextId matches the existing task's contextId
+            String messageContextId = params.message().contextId();
+            if (messageContextId != null && !messageContextId.equals(task.contextId())) {
+                throw new InvalidParamsError(String.format(
+                        "Message has a mismatched context ID (Task %s has contextId %s but message has contextId %s)",
+                        task.id(), task.contextId(), messageContextId));
+            }
+
+            // Per spec CORE-SEND-002: Reject messages to tasks in terminal states
+            if (task.status().state().isFinal()) {
+                throw new UnsupportedOperationError(null, String.format(
+                        "Cannot send message to task %s: task is in terminal state %s and cannot accept further messages",
+                        task.id(), task.status().state()), null);
+            }
+
             LOGGER.debug("Found task updating with message {}", params.message());
             task = taskManager.updateWithMessage(params.message(), task);
 

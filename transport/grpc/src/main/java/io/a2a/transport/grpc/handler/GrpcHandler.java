@@ -21,6 +21,7 @@ import com.google.protobuf.Empty;
 import io.a2a.common.A2AErrorMessages;
 import io.a2a.grpc.A2AServiceGrpc;
 import io.a2a.grpc.StreamResponse;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.jsonrpc.common.wrappers.ListTasksResult;
 import io.a2a.server.AgentCardValidator;
 import io.a2a.server.ServerCallContext;
@@ -43,8 +44,8 @@ import io.a2a.spec.InvalidAgentResponseError;
 import io.a2a.spec.InvalidParamsError;
 import io.a2a.spec.InvalidRequestError;
 import io.a2a.spec.JSONParseError;
-import io.a2a.spec.ListTaskPushNotificationConfigParams;
-import io.a2a.spec.ListTaskPushNotificationConfigResult;
+import io.a2a.spec.ListTaskPushNotificationConfigsParams;
+import io.a2a.spec.ListTaskPushNotificationConfigsResult;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.MethodNotFoundError;
 import io.a2a.spec.PushNotificationNotSupportedError;
@@ -56,12 +57,14 @@ import io.a2a.spec.TaskNotFoundError;
 import io.a2a.spec.TaskPushNotificationConfig;
 import io.a2a.spec.TaskQueryParams;
 import io.a2a.spec.TransportProtocol;
+import io.a2a.spec.A2AErrorCodes;
 import io.a2a.spec.UnsupportedOperationError;
 import io.a2a.spec.VersionNotSupportedError;
 import io.a2a.transport.grpc.context.GrpcContextKeys;
 import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Status;
+import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.jspecify.annotations.Nullable;
 
@@ -329,9 +332,9 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
 
         try {
             ServerCallContext context = createCallContext(responseObserver);
-            ListTaskPushNotificationConfigParams params = FromProto.listTaskPushNotificationConfigParams(request);
-            ListTaskPushNotificationConfigResult result = getRequestHandler().onListTaskPushNotificationConfig(params, context);
-            io.a2a.grpc.ListTaskPushNotificationConfigsResponse response = ToProto.listTaskPushNotificationConfigResponse(result);
+            ListTaskPushNotificationConfigsParams params = FromProto.listTaskPushNotificationConfigsParams(request);
+            ListTaskPushNotificationConfigsResult result = getRequestHandler().onListTaskPushNotificationConfigs(params, context);
+            io.a2a.grpc.ListTaskPushNotificationConfigsResponse response = ToProto.listTaskPushNotificationConfigsResponse(result);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (A2AError e) {
@@ -546,6 +549,10 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     public void getExtendedAgentCard(io.a2a.grpc.GetExtendedAgentCardRequest request,
                            StreamObserver<io.a2a.grpc.AgentCard> responseObserver) {
         try {
+            if (!getAgentCard().capabilities().extendedAgentCard()) {
+                handleError(responseObserver, new UnsupportedOperationError());
+                return;
+            }
             AgentCard extendedAgentCard = getExtendedAgentCard();
             if (extendedAgentCard != null) {
                 responseObserver.onNext(ToProto.agentCard(extendedAgentCard));
@@ -715,55 +722,26 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
      * @param error the A2A protocol error
      */
     private <V> void handleError(StreamObserver<V> responseObserver, A2AError error) {
-        Status status;
-        String description;
-        if (error instanceof InvalidRequestError) {
-            status = Status.INVALID_ARGUMENT;
-            description = "InvalidRequestError: " + error.getMessage();
-        } else if (error instanceof MethodNotFoundError) {
-            status = Status.NOT_FOUND;
-            description = "MethodNotFoundError: " + error.getMessage();
-        } else if (error instanceof InvalidParamsError) {
-            status = Status.INVALID_ARGUMENT;
-            description = "InvalidParamsError: " + error.getMessage();
-        } else if (error instanceof InternalError) {
-            status = Status.INTERNAL;
-            description = "InternalError: " + error.getMessage();
-        } else if (error instanceof TaskNotFoundError) {
-            status = Status.NOT_FOUND;
-            description = "TaskNotFoundError: " + error.getMessage();
-        } else if (error instanceof TaskNotCancelableError) {
-            status = Status.FAILED_PRECONDITION;
-            description = "TaskNotCancelableError: " + error.getMessage();
-        } else if (error instanceof PushNotificationNotSupportedError) {
-            status = Status.UNIMPLEMENTED;
-            description = "PushNotificationNotSupportedError: " + error.getMessage();
-        } else if (error instanceof UnsupportedOperationError) {
-            status = Status.UNIMPLEMENTED;
-            description = "UnsupportedOperationError: " + error.getMessage();
-        } else if (error instanceof JSONParseError) {
-            status = Status.INTERNAL;
-            description = "JSONParseError: " + error.getMessage();
-        } else if (error instanceof ContentTypeNotSupportedError) {
-            status = Status.INVALID_ARGUMENT;
-            description = "ContentTypeNotSupportedError: " + error.getMessage();
-        } else if (error instanceof InvalidAgentResponseError) {
-            status = Status.INTERNAL;
-            description = "InvalidAgentResponseError: " + error.getMessage();
-        } else if (error instanceof ExtendedAgentCardNotConfiguredError) {
-            status = Status.FAILED_PRECONDITION;
-            description = "ExtendedCardNotConfiguredError: " + error.getMessage();
-        } else if (error instanceof ExtensionSupportRequiredError) {
-            status = Status.FAILED_PRECONDITION;
-            description = "ExtensionSupportRequiredError: " + error.getMessage();
-        } else if (error instanceof VersionNotSupportedError) {
-            status = Status.UNIMPLEMENTED;
-            description = "VersionNotSupportedError: " + error.getMessage();
-        } else {
-            status = Status.UNKNOWN;
-            description = "Unknown error type: " + error.getMessage();
+        A2AErrorCodes errorCode = A2AErrorCodes.fromCode(error.getCode());
+        String grpcStatusName = errorCode != null ? errorCode.grpcStatus() : "UNKNOWN";
+        String reason = errorCode != null ? errorCode.name() : "UNKNOWN";
+        int grpcCode = Status.Code.valueOf(grpcStatusName).value();
+
+        com.google.rpc.ErrorInfo.Builder errorInfoBuilder = com.google.rpc.ErrorInfo.newBuilder()
+                .setReason(reason)
+                .setDomain("a2a-protocol.org");
+        if (!error.getDetails().isEmpty()) {
+            error.getDetails().forEach((k, v) ->
+                    errorInfoBuilder.putMetadata(k, v instanceof String s ? s : JsonUtil.OBJECT_MAPPER.toJson(v)));
         }
-        responseObserver.onError(status.withDescription(description).asRuntimeException());
+
+        com.google.rpc.Status rpcStatus = com.google.rpc.Status.newBuilder()
+                .setCode(grpcCode)
+                .setMessage(error.getMessage() != null ? error.getMessage() : "")
+                .addDetails(com.google.protobuf.Any.pack(errorInfoBuilder.build()))
+                .build();
+
+        responseObserver.onError(StatusProto.toStatusRuntimeException(rpcStatus));
     }
 
     /**

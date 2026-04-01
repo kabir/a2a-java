@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Java SDK for the [Agent2Agent (A2A) Protocol](https://a2a-protocol.org/). Multi-module Maven project (`io.github.a2asdk` group) providing client and server libraries for A2A agent communication over JSON-RPC, gRPC, and REST transports.
+Java SDK for the [Agent2Agent (A2A) Protocol](https://a2a-protocol.org/). Multi-module Maven project (`org.a2aproject.sdk` group) providing client and server libraries for A2A agent communication over JSON-RPC, gRPC, and REST transports.
 
 ## Build
 
@@ -67,11 +67,23 @@ mvn clean install
 
 ### Skills
 
-- [update-a2a-proto](skills/update-a2a-proto/SKILL.md) — Update the gRPC proto file `a2a.proto` from upstream and regenerate Java sources
+- [update-a2a-proto](.agents/skills/update-a2a-proto/SKILL.md) — Update the gRPC proto file `a2a.proto` from upstream and regenerate Java sources
 
 ### Commands
 
 - `mvn clean install` — Clean build of the project
+
+## Architecture Deep Dives
+
+For detailed architectural documentation:
+
+- **EventQueue & Event Processing**: `.claude/architecture/EVENTQUEUE.md`
+  - Quick reference with architecture diagram and core components
+  - **[Queue Lifecycle](.claude/architecture/eventqueue/LIFECYCLE.md)**: Two-level protection, fire-and-forget, late reconnections
+  - **[Request Flows](.claude/architecture/eventqueue/FLOWS.md)**: Non-streaming vs streaming, cleanup patterns
+  - **[Usage Scenarios](.claude/architecture/eventqueue/SCENARIOS.md)**: Real-world patterns and common pitfalls
+
+> 💡 Deep-dive docs are loaded on-demand when working in related areas.
 
 ## Contributing
 

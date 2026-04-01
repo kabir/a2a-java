@@ -1,5 +1,6 @@
 package io.a2a.server.rest.quarkus;
 
+import static io.a2a.common.MediaType.APPLICATION_JSON;
 import static io.a2a.spec.A2AMethods.CANCEL_TASK_METHOD;
 import static io.a2a.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 import static io.a2a.spec.A2AMethods.GET_TASK_METHOD;
@@ -18,6 +19,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +28,7 @@ import java.util.concurrent.Executor;
 import jakarta.enterprise.inject.Instance;
 
 import io.a2a.server.ServerCallContext;
+import io.a2a.spec.ContentTypeNotSupportedError;
 import io.a2a.transport.rest.handler.RestHandler;
 import io.a2a.transport.rest.handler.RestHandler.HTTPRestResponse;
 import io.vertx.core.Future;
@@ -80,6 +83,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.user()).thenReturn(null);
         when(mockRequest.headers()).thenReturn(mockHeaders);
         when(mockRequest.params()).thenReturn(mockParams);
+        when(mockRequest.getHeader(any(CharSequence.class))).thenReturn(APPLICATION_JSON);
         when(mockRoutingContext.body()).thenReturn(mockRequestBody);
         when(mockRequestBody.asString()).thenReturn("{}");
         when(mockResponse.setStatusCode(any(Integer.class))).thenReturn(mockResponse);
@@ -93,7 +97,7 @@ public class A2AServerRoutesTest {
         // Arrange
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.sendMessage(any(ServerCallContext.class), anyString(), anyString())).thenReturn(mockHttpResponse);
 
@@ -114,7 +118,7 @@ public class A2AServerRoutesTest {
         // Arrange
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.sendStreamingMessage(any(ServerCallContext.class), anyString(), anyString()))
                 .thenReturn(mockHttpResponse);
@@ -137,7 +141,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task123");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{test:value}");
         when(mockRestHandler.getTask(any(ServerCallContext.class), anyString(), anyString(), any())).thenReturn(mockHttpResponse);
 
@@ -159,7 +163,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task123");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.cancelTask(any(ServerCallContext.class), anyString(), anyString(), anyString())).thenReturn(mockHttpResponse);
 
@@ -181,7 +185,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task456");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{\"id\":\"task456\",\"status\":\"cancelled\"}");
 
         String requestBody = """
@@ -214,7 +218,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task789");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{\"id\":\"task789\"}");
 
         String requestBody = """
@@ -243,7 +247,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task999");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{\"id\":\"task999\"}");
 
         String requestBody = "{}";
@@ -268,7 +272,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task111");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{\"id\":\"task111\"}");
 
         ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
@@ -290,7 +294,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task222");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{\"id\":\"task222\"}");
 
         String requestBody = """
@@ -328,7 +332,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task123");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.subscribeToTask(any(ServerCallContext.class), anyString(), anyString()))
                 .thenReturn(mockHttpResponse);
@@ -351,14 +355,14 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task123");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.createTaskPushNotificationConfiguration(any(ServerCallContext.class), anyString(), anyString(), anyString())).thenReturn(mockHttpResponse);
 
         ArgumentCaptor<ServerCallContext> contextCaptor = ArgumentCaptor.forClass(ServerCallContext.class);
 
         // Act
-        routes.CreateTaskPushNotificationConfiguration("{}", mockRoutingContext);
+        routes.createTaskPushNotificationConfiguration("{}", mockRoutingContext);
 
         // Assert
         verify(mockRestHandler).createTaskPushNotificationConfiguration(contextCaptor.capture(), anyString(), eq("{}"), eq("task123"));
@@ -374,7 +378,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("configId")).thenReturn("config456");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.getTaskPushNotificationConfiguration(any(ServerCallContext.class), anyString(), anyString(), anyString())).thenReturn(mockHttpResponse);
 
@@ -397,7 +401,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("taskId")).thenReturn("task123");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.listTaskPushNotificationConfigurations(any(ServerCallContext.class), anyString(), anyString(), anyInt(), anyString()))
                 .thenReturn(mockHttpResponse);
@@ -421,7 +425,7 @@ public class A2AServerRoutesTest {
         when(mockRoutingContext.pathParam("configId")).thenReturn("config456");
         HTTPRestResponse mockHttpResponse = mock(HTTPRestResponse.class);
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
-        when(mockHttpResponse.getContentType()).thenReturn("application/json");
+        when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
         when(mockRestHandler.deleteTaskPushNotificationConfiguration(any(ServerCallContext.class), anyString(), anyString(), anyString())).thenReturn(mockHttpResponse);
 
@@ -436,6 +440,61 @@ public class A2AServerRoutesTest {
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
         assertEquals(DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
+    }
+
+    @Test
+    public void testSendMessage_UnsupportedContentType_ReturnsContentTypeNotSupportedError() {
+        // Arrange
+        HTTPRestResponse mockErrorResponse = mock(HTTPRestResponse.class);
+        when(mockErrorResponse.getStatusCode()).thenReturn(415);
+        when(mockErrorResponse.getContentType()).thenReturn(APPLICATION_JSON);
+        when(mockErrorResponse.getBody()).thenReturn("{\"error\":{\"code\":415,\"status\":\"INVALID_ARGUMENT\",\"message\":\"Incompatible content types\",\"details\":[{\"reason\":\"CONTENT_TYPE_NOT_SUPPORTED\",\"domain\":\"a2a-protocol.org\"}]}}");
+        when(mockRestHandler.createErrorResponse(any(ContentTypeNotSupportedError.class))).thenReturn(mockErrorResponse);
+        when(mockRequest.getHeader(any(CharSequence.class))).thenReturn("text/plain");
+
+        // Act
+        routes.sendMessage("{}", mockRoutingContext);
+
+        // Assert: createErrorResponse called with ContentTypeNotSupportedError, sendMessage NOT called
+        verify(mockRestHandler).createErrorResponse(any(ContentTypeNotSupportedError.class));
+        verify(mockRestHandler, never()).sendMessage(any(ServerCallContext.class), anyString(), anyString());
+    }
+
+    @Test
+    public void testSendMessageStreaming_UnsupportedContentType_ReturnsContentTypeNotSupportedError() {
+        // Arrange
+        HTTPRestResponse mockErrorResponse = mock(HTTPRestResponse.class);
+        when(mockErrorResponse.getStatusCode()).thenReturn(415);
+        when(mockErrorResponse.getContentType()).thenReturn(APPLICATION_JSON);
+        when(mockErrorResponse.getBody()).thenReturn("{\"error\":{\"code\":415,\"status\":\"INVALID_ARGUMENT\",\"message\":\"Incompatible content types\",\"details\":[{\"reason\":\"CONTENT_TYPE_NOT_SUPPORTED\",\"domain\":\"a2a-protocol.org\"}]}}");
+        when(mockRestHandler.createErrorResponse(any(ContentTypeNotSupportedError.class))).thenReturn(mockErrorResponse);
+        when(mockRequest.getHeader(any(CharSequence.class))).thenReturn("text/plain");
+
+        // Act
+        routes.sendMessageStreaming("{}", mockRoutingContext);
+
+        // Assert: createErrorResponse called with ContentTypeNotSupportedError, sendStreamingMessage NOT called
+        verify(mockRestHandler).createErrorResponse(any(ContentTypeNotSupportedError.class));
+        verify(mockRestHandler, never()).sendStreamingMessage(any(ServerCallContext.class), anyString(), anyString());
+    }
+
+    @Test
+    public void testSendMessage_UnsupportedProtocolVersion_ReturnsVersionNotSupportedError() {
+        // Arrange: content type is OK, but RestHandler returns a VersionNotSupportedError response
+        HTTPRestResponse mockErrorResponse = mock(HTTPRestResponse.class);
+        when(mockErrorResponse.getStatusCode()).thenReturn(400);
+        when(mockErrorResponse.getContentType()).thenReturn(APPLICATION_JSON);
+        when(mockErrorResponse.getBody()).thenReturn("{\"error\":{\"code\":400,\"status\":\"UNIMPLEMENTED\",\"message\":\"Protocol version not supported\",\"details\":[{\"reason\":\"VERSION_NOT_SUPPORTED\",\"domain\":\"a2a-protocol.org\"}]}}");
+        when(mockRequest.getHeader(any(CharSequence.class))).thenReturn(APPLICATION_JSON);
+        when(mockRestHandler.sendMessage(any(ServerCallContext.class), anyString(), anyString()))
+                .thenReturn(mockErrorResponse);
+
+        // Act
+        routes.sendMessage("{}", mockRoutingContext);
+
+        // Assert: sendMessage was called and error response forwarded
+        verify(mockRestHandler).sendMessage(any(ServerCallContext.class), anyString(), eq("{}"));
+        verify(mockResponse).setStatusCode(400);
     }
 
     /**

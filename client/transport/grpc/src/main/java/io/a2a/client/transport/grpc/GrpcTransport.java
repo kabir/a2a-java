@@ -38,8 +38,8 @@ import io.a2a.spec.DeleteTaskPushNotificationConfigParams;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.GetExtendedAgentCardParams;
 import io.a2a.spec.GetTaskPushNotificationConfigParams;
-import io.a2a.spec.ListTaskPushNotificationConfigParams;
-import io.a2a.spec.ListTaskPushNotificationConfigResult;
+import io.a2a.spec.ListTaskPushNotificationConfigsParams;
+import io.a2a.spec.ListTaskPushNotificationConfigsResult;
 import io.a2a.spec.ListTasksParams;
 import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.StreamingEventKind;
@@ -271,8 +271,8 @@ public class GrpcTransport implements ClientTransport {
     }
 
     @Override
-    public ListTaskPushNotificationConfigResult listTaskPushNotificationConfigurations(
-            ListTaskPushNotificationConfigParams request,
+    public ListTaskPushNotificationConfigsResult listTaskPushNotificationConfigurations(
+            ListTaskPushNotificationConfigsParams request,
             @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("request", request);
 
@@ -288,9 +288,9 @@ public class GrpcTransport implements ClientTransport {
         try {
             A2AServiceBlockingV2Stub stubWithMetadata = createBlockingStubWithMetadata(context, payloadAndHeaders);
             io.a2a.grpc.ListTaskPushNotificationConfigsResponse grpcResponse = stubWithMetadata.listTaskPushNotificationConfigs(grpcRequest);
-            return FromProto.listTaskPushNotificationConfigResult(grpcResponse);
+            return FromProto.listTaskPushNotificationConfigsResult(grpcResponse);
         } catch (StatusRuntimeException | StatusException e) {
-            throw GrpcErrorMapper.mapGrpcError(e, "Failed to list task push notification config: ");
+            throw GrpcErrorMapper.mapGrpcError(e, "Failed to list task push notification configs: ");
         }
     }
 
@@ -390,16 +390,17 @@ public class GrpcTransport implements ClientTransport {
         Metadata metadata = new Metadata();
 
         if (context != null && context.getHeaders() != null) {
-            // Set a2a-version header if present
-            String versionHeader = context.getHeaders().get(A2AHeaders.A2A_VERSION.toLowerCase());
-            if (versionHeader != null) {
-                metadata.put(VERSION_KEY, versionHeader);
-            }
-
-            // Set a2a-extensions header if present
-            String extensionsHeader = context.getHeaders().get(A2AHeaders.A2A_EXTENSIONS.toLowerCase());
-            if (extensionsHeader != null) {
-                metadata.put(EXTENSIONS_KEY, extensionsHeader);
+            // Set a2a-version and a2a-extensions headers if present, ignoring case
+            for (Map.Entry<String, String> header : context.getHeaders().entrySet()) {
+                if (A2AHeaders.A2A_VERSION.equalsIgnoreCase(header.getKey())) {
+                    if (header.getValue() != null) {
+                        metadata.put(VERSION_KEY, header.getValue());
+                    }
+                } else if (A2AHeaders.A2A_EXTENSIONS.equalsIgnoreCase(header.getKey())) {
+                    if (header.getValue() != null) {
+                        metadata.put(EXTENSIONS_KEY, header.getValue());
+                    }
+                }
             }
 
             // Add other headers as needed in the future
