@@ -992,6 +992,7 @@ public abstract class AbstractA2AServerTest {
             AtomicBoolean streamClosedPrematurely = new AtomicBoolean(false);
             AtomicReference<Throwable> subscribeErrorRef = new AtomicReference<>();
             CountDownLatch completionLatch = new CountDownLatch(1);
+            CountDownLatch initialTaskLatch = new CountDownLatch(1);
 
             // Consumer to track all events from subscription
             BiConsumer<ClientEvent, AgentCard> consumer = (event, agentCard) -> {
@@ -1002,6 +1003,7 @@ public abstract class AbstractA2AServerTest {
                         assertEquals(TaskState.TASK_STATE_INPUT_REQUIRED,
                             taskEvent.getTask().status().state(),
                             "Initial task should be in INPUT_REQUIRED state");
+                        initialTaskLatch.countDown();
                         return;
                     }
                 } else if (event instanceof TaskUpdateEvent taskUpdateEvent) {
@@ -1037,8 +1039,11 @@ public abstract class AbstractA2AServerTest {
             // Wait for subscription to be established
             assertTrue(subscriptionLatch.await(15, TimeUnit.SECONDS), "Subscription should be established");
 
+            // Wait for initial task to be received
+            assertTrue(initialTaskLatch.await(5, TimeUnit.SECONDS), "Should receive initial task snapshot");
+
             // Verify stream received initial task and is still open
-            assertTrue(receivedInitialTask.get(), "Should receive initial task snapshot");
+            assertTrue(receivedInitialTask.get(), "Should have received initial task snapshot");
             assertFalse(streamClosedPrematurely.get(),
                     "Stream should NOT close for INPUT_REQUIRED state (interrupted, not terminal)");
 
