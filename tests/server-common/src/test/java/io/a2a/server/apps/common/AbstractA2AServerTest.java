@@ -1639,6 +1639,7 @@ public abstract class AbstractA2AServerTest {
                 .build();
 
         CountDownLatch streamEventLatch = new CountDownLatch(2);  // artifact-2 + completion
+        CountDownLatch streamConsumerReadyLatch = new CountDownLatch(1);
         List<io.a2a.spec.UpdateEvent> streamReceivedEvents = new CopyOnWriteArrayList<>();
         AtomicBoolean streamUnexpectedEvent = new AtomicBoolean(false);
 
@@ -1647,6 +1648,7 @@ public abstract class AbstractA2AServerTest {
             if (event instanceof TaskUpdateEvent tue) {
                 streamReceivedEvents.add(tue.getUpdateEvent());
                 streamEventLatch.countDown();
+                streamConsumerReadyLatch.countDown();  // Signal that consumer is receiving events
             } else {
                 streamUnexpectedEvent.set(true);
             }
@@ -1663,6 +1665,10 @@ public abstract class AbstractA2AServerTest {
         // Ensure subscription is established before agent sends events
         assertTrue(streamSubscriptionLatch.await(15, TimeUnit.SECONDS),
                 "Stream subscription should be established");
+
+        // Wait for stream consumer to start receiving events
+        assertTrue(streamConsumerReadyLatch.await(5, TimeUnit.SECONDS),
+                "Stream consumer should start receiving events");
 
         // 4. Verify both consumers received artifact-2 and completion
         assertTrue(resubEventLatch.await(15, TimeUnit.SECONDS));
