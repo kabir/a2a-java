@@ -1,0 +1,104 @@
+name: Test Race Condition Fixes (Loop 100x)
+
+on:
+  push:
+    branches:
+      - fix-intermittent
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-loop:
+    name: Test Loop (${{ matrix.test-class }}, JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21', '25']
+        test-class:
+          # REST with different HTTP clients
+          - module: 'reference/rest'
+            class: 'io.a2a.server.rest.quarkus.QuarkusA2ARestJdkTest'
+          - module: 'reference/rest'
+            class: 'io.a2a.server.rest.quarkus.QuarkusA2ARestVertxTest'
+
+          # JSON-RPC with different HTTP clients
+          - module: 'reference/jsonrpc'
+            class: 'io.a2a.server.apps.quarkus.QuarkusA2AJSONRPCJdkTest'
+          - module: 'reference/jsonrpc'
+            class: 'io.a2a.server.apps.quarkus.QuarkusA2AJSONRPCVertxTest'
+
+          # gRPC
+          - module: 'reference/grpc'
+            class: 'io.a2a.server.grpc.quarkus.QuarkusA2AGrpcTest'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build project (skip tests)
+        run: mvn clean install -DskipTests -B -V
+
+      - name: Run intermittent tests in loop (100 iterations)
+        run: |
+          MODULE="${{ matrix.test-class.module }}"
+          TEST_CLASS="${{ matrix.test-class.class }}"
+
+          # The three tests we're fixing for race conditions:
+          # 1. testCancelTaskSuccess - Cancel race condition
+          # 2. testNonBlockingWithMultipleMessages - SSE streaming race
+          # 3. testSubscribeToTaskWithInterruptedStateKeepsStreamOpen - Subscribe race
+          TESTS="${TEST_CLASS}#testCancelTaskSuccess+testNonBlockingWithMultipleMessages+testSubscribeToTaskWithInterruptedStateKeepsStreamOpen"
+
+          echo "Module: ${MODULE}"
+          echo "Test class: ${TEST_CLASS}"
+          echo "Running tests: ${TESTS}"
+          echo ""
+
+          for i in {1..100}; do
+            echo "==================================================================="
+            echo "Iteration $i/100"
+            echo "==================================================================="
+
+            mvn test -pl "${MODULE}" -Dtest="${TESTS}" -B
+
+            if [ $? -ne 0 ]; then
+              echo ""
+              echo "❌ Test failed on iteration $i"
+              echo ""
+              exit 1
+            fi
+
+            echo "✅ Iteration $i passed"
+            echo ""
+          done
+
+          echo "==================================================================="
+          echo "✅ All 100 iterations passed for ${TEST_CLASS}!"
+          echo "==================================================================="
+
+      - name: Upload surefire reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.test-class.class }}-jdk${{ matrix.java }}
+          path: ${{ matrix.test-class.module }}/target/surefire-reports/
+          retention-days: 7
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ matrix.test-class.class }}-jdk${{ matrix.java }}
+          path: |
+            ${{ matrix.test-class.module }}/target/*.log
+            ${{ matrix.test-class.module }}/target/quarkus.log
+          retention-days: 7
+          if-no-files-found: ignore
