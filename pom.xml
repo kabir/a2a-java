@@ -454,6 +454,7 @@
         <module>extras/task-store-database-jpa</module>
         <module>extras/push-notification-config-store-database-jpa</module>
         <module>extras/queue-manager-replicated</module>
+        <module>extras/http-client-android</module>
         <module>http-client</module>
         <module>integrations/microprofile-config</module>
         <module>reference/common</module>
