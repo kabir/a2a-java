@@ -181,6 +181,7 @@ if ! kubectl get crd kafkas.kafka.strimzi.io > /dev/null 2>&1; then
     echo "Installing Strimzi operator (1.0.0)..."
     kubectl create -f '../strimzi-1.0.0/strimzi-cluster-operator-1.0.0.yaml' -n kafka
 
+
     echo "Waiting for Strimzi operator deployment to be created..."
     for i in {1..30}; do
         if kubectl get deployment strimzi-cluster-operator -n kafka > /dev/null 2>&1; then
@@ -213,6 +214,22 @@ echo ""
 echo "Deploying PostgreSQL..."
 kubectl apply -f ../k8s/01-postgres.yaml
 echo "Waiting for PostgreSQL to be ready..."
+
+# Wait for pod to be created (StatefulSet takes time to create pod)
+for i in {1..30}; do
+    if kubectl get pod -l app=postgres -n a2a-demo 2>/dev/null | grep -q postgres; then
+        echo "PostgreSQL pod found, waiting for ready state..."
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo -e "${RED}ERROR: PostgreSQL pod not created after 30 seconds${NC}"
+        kubectl get statefulset -n a2a-demo
+        exit 1
+    fi
+    sleep 1
+done
+
+# Now wait for pod to be ready
 kubectl wait --for=condition=Ready pod -l app=postgres -n a2a-demo --timeout=120s
 echo -e "${GREEN}✓ PostgreSQL deployed${NC}"
 
