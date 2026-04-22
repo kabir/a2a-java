@@ -37,7 +37,7 @@ public class Client extends AbstractClient {
 
     private final ClientConfig clientConfig;
     private final ClientTransport clientTransport;
-    private AgentCard agentCard;
+    private volatile AgentCard agentCard;
 
     Client(AgentCard agentCard, ClientConfig clientConfig, ClientTransport clientTransport,
                   List<BiConsumer<ClientEvent, AgentCard>> consumers, @Nullable Consumer<Throwable> streamingErrorHandler) {

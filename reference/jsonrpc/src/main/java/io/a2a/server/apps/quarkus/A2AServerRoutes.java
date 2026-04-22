@@ -93,12 +93,11 @@ public class A2AServerRoutes {
         JSONRPCErrorResponse error = null;
         Object requestId = null;
         try {
-            com.google.gson.JsonObject node;
-            try {
-                node = JsonParser.parseString(body).getAsJsonObject();
-            } catch (Exception e) {
-                throw new JSONParseError(e.getMessage());
+            com.google.gson.JsonElement element = JsonParser.parseString(body);
+            if (!element.isJsonObject()) {
+                throw new InvalidRequestError("Invalid JSON-RPC request: expected a JSON object");
             }
+            com.google.gson.JsonObject node = element.getAsJsonObject();
 
             // Extract id field early so error responses can include it
             com.google.gson.JsonElement idElement = node.get("id");
@@ -172,8 +171,13 @@ public class A2AServerRoutes {
      * @return the agent card
      */
     @Route(path = "/.well-known/agent-card.json", methods = Route.HttpMethod.GET, produces = APPLICATION_JSON)
-    public AgentCard getAgentCard() {
-        return jsonRpcHandler.getAgentCard();
+    public String getAgentCard() {
+        try {
+            return JsonUtil.toJson(jsonRpcHandler.getAgentCard());
+        } catch (Exception e) {
+            // This should never happen with a valid AgentCard, but handle it just in case
+            throw new RuntimeException("Failed to serialize agent card: " + e.getMessage(), e);
+        }
     }
 
     private NonStreamingJSONRPCRequest<?> deserializeNonStreamingRequest(String body, String methodName) {

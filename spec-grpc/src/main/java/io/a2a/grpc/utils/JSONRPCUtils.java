@@ -2,16 +2,14 @@ package io.a2a.grpc.utils;
 
 
 import io.a2a.json.JsonMappingException;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.Strictness;
 import com.google.gson.stream.JsonWriter;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.a2a.grpc.StreamResponse;
+import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;
 import io.a2a.spec.CancelTaskRequest;
 import io.a2a.spec.CancelTaskResponse;
 import io.a2a.spec.ContentTypeNotSupportedError;
@@ -58,6 +56,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
+import static io.a2a.spec.A2AErrorCodes.AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INTERNAL_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INVALID_AGENT_RESPONSE_ERROR_CODE;
@@ -130,7 +129,7 @@ import static io.a2a.spec.A2AErrorCodes.UNSUPPORTED_OPERATION_ERROR_CODE;
  *
  * <h2>Thread Safety</h2>
  * This class is thread-safe. All methods are stateless and use immutable shared resources
- * ({@link Gson} instance is thread-safe, proto builders are created per-invocation).
+ * ({@link io.a2a.json.JsonUtil#OBJECT_MAPPER} Gson instance is thread-safe, proto builders are created per-invocation).
  *
  * <h2>Usage Example</h2>
  * <pre>{@code
@@ -157,12 +156,13 @@ import static io.a2a.spec.A2AErrorCodes.UNSUPPORTED_OPERATION_ERROR_CODE;
 public class JSONRPCUtils {
 
     private static final Logger log = Logger.getLogger(JSONRPCUtils.class.getName());
-    private static final Gson GSON = new GsonBuilder()
-            .setStrictness(Strictness.STRICT)
-            .create();
 
     public static JSONRPCRequest<?> parseRequestBody(String body) throws JsonMappingException {
         JsonElement jelement = JsonParser.parseString(body);
+        if (!jelement.isJsonObject()) {
+            throw new JsonMappingException(
+                    "JSON-RPC request must be a JSON object, not an array or primitive value");
+        }
         JsonObject jsonRpc = jelement.getAsJsonObject();
         if (!jsonRpc.has("method")) {
             throw new IdJsonMappingException(
@@ -181,7 +181,7 @@ public class JSONRPCUtils {
         }
     }
 
-    private static JSONRPCRequest<?> parseMethodRequest(String version, Object id, String method, JsonElement paramsNode) throws InvalidParamsError, MethodNotFoundJsonMappingException {
+    private static JSONRPCRequest<?> parseMethodRequest(String version, @Nullable Object id, String method, JsonElement paramsNode) throws InvalidParamsError, MethodNotFoundJsonMappingException {
         switch (method) {
             case GetTaskRequest.METHOD -> {
                 io.a2a.grpc.GetTaskRequest.Builder builder = io.a2a.grpc.GetTaskRequest.newBuilder();
@@ -298,9 +298,10 @@ public class JSONRPCUtils {
             }
             case GetAuthenticatedExtendedCardRequest.METHOD -> {
                 try {
-                    AgentCard card = JsonUtil.fromJson(GSON.toJson(paramsNode), AgentCard.class);
+                    // Deserialize directly from JsonElement without double conversion
+                    AgentCard card = JsonUtil.OBJECT_MAPPER.fromJson(paramsNode, AgentCard.class);
                     return new GetAuthenticatedExtendedCardResponse(id, card);
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     throw new InvalidParamsError("Failed to parse agent card response: " + e.getMessage());
                 }
             }
@@ -309,7 +310,7 @@ public class JSONRPCUtils {
         }
     }
 
-    public static JSONRPCResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
+    public static JSONRPCResponse<?> parseError(JsonObject error, @Nullable Object id, String method) throws JsonMappingException {
         JSONRPCError rpcError = processError(error);
         switch (method) {
             case GetTaskRequest.METHOD -> {
@@ -341,7 +342,8 @@ public class JSONRPCUtils {
     private static JSONRPCError processError(JsonObject error) {
         String message = error.has("message") ? error.get("message").getAsString() : null;
         Integer code = error.has("code") ? error.get("code").getAsInt() : null;
-        String data = error.has("data") ? error.get("data").toString() : null;
+        // Deserialize data to preserve JSON structure, not double-encode with toString()
+        Object data = error.has("data") ? JsonUtil.OBJECT_MAPPER.fromJson(error.get("data"), Object.class) : null;
         if (code != null) {
             switch (code) {
                 case JSON_PARSE_ERROR_CODE:
@@ -366,6 +368,8 @@ public class JSONRPCUtils {
                     return new TaskNotCancelableError(code, message, data);
                 case TASK_NOT_FOUND_ERROR_CODE:
                     return new TaskNotFoundError(code, message, data);
+                case AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE:
+                    return new AuthenticatedExtendedCardNotConfiguredError(code, message, data);
                 default:
                     return new JSONRPCError(code, message, data);
             }
@@ -374,10 +378,14 @@ public class JSONRPCUtils {
     }
 
     protected static void parseRequestBody(JsonElement jsonRpc, com.google.protobuf.Message.Builder builder) throws JSONRPCError {
-        try (Writer writer = new StringWriter()) {
-            GSON.toJson(jsonRpc, writer);
-            parseJsonString(writer.toString(), builder);
-        } catch (IOException e) {
+        // JSON-RPC 2.0 spec: params field is optional, handle null/omitted gracefully
+        if (jsonRpc == null || jsonRpc.isJsonNull()) {
+            return;
+        }
+        try {
+            // Use toJson(Object) directly instead of inefficient serialize→parse roundtrip
+            parseJsonString(JsonUtil.OBJECT_MAPPER.toJson(jsonRpc), builder);
+        } catch (Exception e) {
             log.log(Level.SEVERE, "Failed to serialize JSON element to string during proto conversion. JSON: {0}", jsonRpc);
             log.log(Level.SEVERE, "Serialization error details", e);
             throw new InvalidParamsError(
@@ -440,7 +448,7 @@ public class JSONRPCUtils {
      * @param jsonRpc the json rpc JSON.
      * @return the request id if possible , "UNDETERMINED ID" otherwise.
      */
-    protected static Object getIdIfPossible(JsonObject jsonRpc) {
+    protected static @Nullable Object getIdIfPossible(JsonObject jsonRpc) {
         try {
             return getAndValidateId(jsonRpc);
         } catch (JsonMappingException e) {
@@ -449,28 +457,30 @@ public class JSONRPCUtils {
         }
     }
 
-    protected static Object getAndValidateId(JsonObject jsonRpc) throws JsonMappingException {
+    protected static @Nullable Object getAndValidateId(JsonObject jsonRpc) throws JsonMappingException {
         Object id = null;
         if (jsonRpc.has("id")) {
-            if (jsonRpc.get("id").isJsonPrimitive()) {
+            JsonElement idElement = jsonRpc.get("id");
+            // JSON-RPC 2.0 allows null id (though discouraged for requests)
+            if (idElement.isJsonNull()) {
+                id = null;
+            } else if (idElement.isJsonPrimitive()) {
                 try {
-                    id = jsonRpc.get("id").getAsInt();
+                    id = idElement.getAsLong();
                 } catch (UnsupportedOperationException | NumberFormatException | IllegalStateException e) {
-                    id = jsonRpc.get("id").getAsString();
+                    id = idElement.getAsString();
                 }
             } else {
-                throw new JsonMappingException(null,  "Invalid 'id' type: " + jsonRpc.get("id").getClass().getSimpleName() +
-                    ". ID must be a JSON string or number, not an object or array.");
+                throw new JsonMappingException(null,  "Invalid 'id' type: " + idElement.getClass().getSimpleName() +
+                    ". ID must be a JSON string, number, or null, not an object or array.");
             }
         }
-        if (id == null) {
-            throw new JsonMappingException(null, "Request 'id' cannot be null. Use a string or number identifier.");
-        }
+        // JSON-RPC 2.0 spec allows null id, so don't throw exception
         return id;
     }
 
     public static String toJsonRPCRequest(@Nullable String requestId, String method, com.google.protobuf.@Nullable MessageOrBuilder payload) {
-        try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
+        try (StringWriter result = new StringWriter(); JsonWriter output = JsonUtil.OBJECT_MAPPER.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
             String id = requestId;
@@ -494,17 +504,26 @@ public class JSONRPCUtils {
         }
     }
 
+    /**
+     * Writes the 'id' field to a JSON-RPC response.
+     * Per JSON-RPC 2.0 spec, the id field is REQUIRED in all responses, even if null.
+     */
+    private static void ensureId(JsonWriter output, @Nullable Object requestId) throws IOException {
+        output.name("id");
+        if (requestId == null) {
+            output.nullValue();
+        } else if (requestId instanceof String string) {
+            output.value(string);
+        } else if (requestId instanceof Number number) {
+            output.value(number.longValue());
+        }
+    }
+
     public static String toJsonRPCResultResponse(Object requestId, com.google.protobuf.MessageOrBuilder builder) {
-        try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
+        try (StringWriter result = new StringWriter(); JsonWriter output = JsonUtil.OBJECT_MAPPER.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
-            if (requestId != null) {
-                if (requestId instanceof String string) {
-                    output.name("id").value(string);
-                } else if (requestId instanceof Number number) {
-                    output.name("id").value(number.longValue());
-                }
-            }
+            ensureId(output, requestId);
             String resultValue = JsonFormat.printer().omittingInsignificantWhitespace().print(builder);
             output.name("result").jsonValue(resultValue);
             output.endObject();
@@ -517,22 +536,17 @@ public class JSONRPCUtils {
     }
 
     public static String toJsonRPCErrorResponse(Object requestId, JSONRPCError error) {
-        try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
+        try (StringWriter result = new StringWriter(); JsonWriter output = JsonUtil.OBJECT_MAPPER.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
-            if (requestId != null) {
-                if (requestId instanceof String string) {
-                    output.name("id").value(string);
-                } else if (requestId instanceof Number number) {
-                    output.name("id").value(number.longValue());
-                }
-            }
+            ensureId(output, requestId);
             output.name("error");
             output.beginObject();
             output.name("code").value(error.getCode());
             output.name("message").value(error.getMessage());
             if (error.getData() != null) {
-                output.name("data").value(error.getData().toString());
+                output.name("data");
+                JsonUtil.OBJECT_MAPPER.toJson(error.getData(), Object.class, output);
             }
             output.endObject();
             output.endObject();
