@@ -6,6 +6,7 @@ import static com.google.gson.stream.JsonToken.BOOLEAN;
 import static com.google.gson.stream.JsonToken.NULL;
 import static com.google.gson.stream.JsonToken.NUMBER;
 import static com.google.gson.stream.JsonToken.STRING;
+import static io.a2a.spec.A2AErrorCodes.AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INTERNAL_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INVALID_AGENT_RESPONSE_ERROR_CODE;
@@ -28,6 +29,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.a2a.spec.APIKeySecurityScheme;
+import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.JSONRPCResponse;
 import io.a2a.spec.ContentTypeNotSupportedError;
@@ -449,6 +451,8 @@ public class JsonUtil {
                             new ContentTypeNotSupportedError(code, message, data);
                         case INVALID_AGENT_RESPONSE_ERROR_CODE ->
                             new InvalidAgentResponseError(code, message, data);
+                        case AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE ->
+                            new AuthenticatedExtendedCardNotConfiguredError(code, message, data);
                         default ->
                             new JSONRPCError(code, message, data);
                     };

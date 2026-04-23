@@ -127,18 +127,8 @@ public class Client extends AbstractClient {
 
     @Override
     public AgentCard getAgentCard(@Nullable ClientCallContext context) throws A2AClientException {
-        // Fast path - avoid synchronization if already initialized
-        if (agentCard != null) {
-            return agentCard;
-        }
-
-        synchronized (this) {
-            // Double-check inside synchronized block
-            if (agentCard == null) {
-                agentCard = clientTransport.getAgentCard(context);
-            }
-            return agentCard;
-        }
+        agentCard = clientTransport.getAgentCard(context);
+        return agentCard;
     }
 
     @Override

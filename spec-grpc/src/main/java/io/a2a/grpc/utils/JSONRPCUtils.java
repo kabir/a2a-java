@@ -9,6 +9,7 @@ import com.google.gson.stream.JsonWriter;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.a2a.grpc.StreamResponse;
+import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;
 import io.a2a.spec.CancelTaskRequest;
 import io.a2a.spec.CancelTaskResponse;
 import io.a2a.spec.ContentTypeNotSupportedError;
@@ -55,6 +56,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
+import static io.a2a.spec.A2AErrorCodes.AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INTERNAL_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INVALID_AGENT_RESPONSE_ERROR_CODE;
@@ -366,6 +368,8 @@ public class JSONRPCUtils {
                     return new TaskNotCancelableError(code, message, data);
                 case TASK_NOT_FOUND_ERROR_CODE:
                     return new TaskNotFoundError(code, message, data);
+                case AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE:
+                    return new AuthenticatedExtendedCardNotConfiguredError(code, message, data);
                 default:
                     return new JSONRPCError(code, message, data);
             }
