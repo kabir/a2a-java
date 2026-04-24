@@ -30,15 +30,21 @@ public class JsonRpcPocEndpoint {
 
             if ("testNonStreaming".equals(method)) {
                 handleNonStreaming(rc, id);
+                return Uni.createFrom().voidItem();
+            } else if ("testStreaming".equals(method)) {
+                // For streaming, return a Uni that completes when streaming is done
+                return handleStreaming(rc, id);
             } else {
                 sendErrorResponse(rc, id, -32601, "Method not found: " + method);
+                return Uni.createFrom().voidItem();
             }
         } catch (JsonSyntaxException | IllegalStateException e) {
             sendErrorResponse(rc, null, -32700, "Parse error: " + e.getMessage());
+            return Uni.createFrom().voidItem();
         } catch (Exception e) {
             sendErrorResponse(rc, null, -32603, "Internal error: " + e.getMessage());
+            return Uni.createFrom().voidItem();
         }
-        return Uni.createFrom().voidItem();
     }
 
     private void handleNonStreaming(RoutingContext rc, Object id) {
@@ -53,6 +59,72 @@ public class JsonRpcPocEndpoint {
             .setStatusCode(200)
             .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
             .end(jsonResponse);
+    }
+
+    /**
+     * Handle streaming JSON-RPC method.
+     * Returns SSE stream with events arriving asynchronously.
+     *
+     * <p>This demonstrates:
+     * <ul>
+     *   <li>Setting SSE headers immediately</li>
+     *   <li>Returning control to caller (method exits)</li>
+     *   <li>Events arriving asynchronously via Vert.x timers</li>
+     * </ul>
+     */
+    private Uni<Void> handleStreaming(RoutingContext rc, Object id) {
+        io.vertx.core.http.HttpServerResponse response = rc.response();
+
+        // Set SSE headers immediately
+        response.putHeader("Content-Type", "text/event-stream");
+        response.putHeader("Cache-Control", "no-cache");
+        response.putHeader("X-Accel-Buffering", "no");
+        response.setChunked(true);
+
+        // Send initial comment to establish connection
+        response.write(": SSE stream started\n\n");
+
+        // Create a Uni that will complete when streaming is done
+        return Uni.createFrom().emitter(emitter -> {
+            // Schedule async event generation (3 events, 500ms apart)
+            final int totalEvents = 3;
+            final long[] eventCounter = {0};
+
+            io.vertx.core.Vertx vertx = rc.vertx();
+
+            long timerId = vertx.setPeriodic(500, timerId2 -> {
+                long eventNum = eventCounter[0]++;
+
+                // Create event result
+                JsonObject result = new JsonObject();
+                result.addProperty("event", eventNum + 1);
+                result.addProperty("timestamp", System.currentTimeMillis());
+
+                // Create JSON-RPC response for this event
+                JsonRpcResponse eventResponse = new JsonRpcResponse(id, result);
+                String jsonEvent = GSON.toJson(eventResponse);
+
+                // Format as SSE
+                String sseEvent = "id: " + eventNum + "\n" +
+                                 "data: " + jsonEvent + "\n\n";
+
+                // Write event
+                response.write(sseEvent);
+
+                // If this was the last event, close stream
+                if (eventNum + 1 >= totalEvents) {
+                    vertx.cancelTimer(timerId2);
+                    response.end();
+                    emitter.complete(null);
+                }
+            });
+
+            // Handle client disconnect - cancel timer
+            response.closeHandler(v -> {
+                vertx.cancelTimer(timerId);
+                emitter.complete(null);
+            });
+        });
     }
 
     private void sendErrorResponse(RoutingContext rc, Object id, int code, String message) {
