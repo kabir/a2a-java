@@ -28,6 +28,11 @@ public class JsonRpcPocEndpoint {
             Object id = jsonRequest.has("id") ? jsonRequest.get("id").getAsString() : null;
             String method = jsonRequest.has("method") ? jsonRequest.get("method").getAsString() : null;
 
+            if (method == null) {
+                sendErrorResponse(rc, id, -32600, "Invalid Request: missing method");
+                return Uni.createFrom().voidItem();
+            }
+
             if ("testNonStreaming".equals(method)) {
                 handleNonStreaming(rc, id);
                 return Uni.createFrom().voidItem();

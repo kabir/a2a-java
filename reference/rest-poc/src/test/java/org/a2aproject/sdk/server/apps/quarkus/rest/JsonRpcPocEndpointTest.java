@@ -127,7 +127,7 @@ class JsonRpcPocEndpointTest {
         .then()
             .statusCode(200)
             .contentType("application/json")
-            .body("error.code", equalTo(-32601))
-            .body("error.message", containsString("Method not found"));
+            .body("error.code", equalTo(-32600))
+            .body("error.message", containsString("Invalid Request"));
     }
 }
