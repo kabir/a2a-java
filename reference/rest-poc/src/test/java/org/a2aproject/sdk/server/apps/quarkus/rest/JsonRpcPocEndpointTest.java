@@ -8,6 +8,7 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,5 +84,50 @@ class JsonRpcPocEndpointTest {
         }
 
         assertTrue(eventCount >= 3, "Expected at least 3 events, got " + eventCount);
+    }
+
+    @Test
+    void testInvalidJson() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{invalid json}")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .contentType("application/json")
+            .body("jsonrpc", equalTo("2.0"))
+            .body("error.code", equalTo(-32700))
+            .body("error.message", containsString("Parse error"));
+    }
+
+    @Test
+    void testUnknownMethod() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"jsonrpc\":\"2.0\",\"method\":\"unknownMethod\",\"id\":\"test-1\"}")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .contentType("application/json")
+            .body("jsonrpc", equalTo("2.0"))
+            .body("id", equalTo("test-1"))
+            .body("error.code", equalTo(-32601))
+            .body("error.message", containsString("Method not found"));
+    }
+
+    @Test
+    void testMissingMethod() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"jsonrpc\":\"2.0\",\"id\":\"test-1\"}")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .contentType("application/json")
+            .body("error.code", equalTo(-32601))
+            .body("error.message", containsString("Method not found"));
     }
 }
