@@ -2,6 +2,7 @@ package org.a2aproject.sdk.server.apps.quarkus.rest;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -129,5 +130,30 @@ class JsonRpcPocEndpointTest {
             .contentType("application/json")
             .body("error.code", equalTo(-32600))
             .body("error.message", containsString("Invalid Request"));
+    }
+
+    @Test
+    void testGsonSerialization() {
+        // Send request with special Gson-friendly structure
+        String response = given()
+            .contentType(ContentType.JSON)
+            .body("{\"jsonrpc\":\"2.0\",\"method\":\"testNonStreaming\",\"id\":\"gson-test\"}")
+        .when()
+            .post("/")
+        .then()
+            .statusCode(200)
+            .contentType("application/json")
+            .extract()
+            .asString();
+
+        // Parse response and verify structure (Gson-specific behavior)
+        JsonObject parsed = JsonParser.parseString(response).getAsJsonObject();
+        assertTrue(parsed.has("jsonrpc"));
+        assertTrue(parsed.has("id"));
+        assertTrue(parsed.has("result"));
+
+        // Verify the response can be parsed by Gson
+        assertEquals("2.0", parsed.get("jsonrpc").getAsString());
+        assertEquals("gson-test", parsed.get("id").getAsString());
     }
 }
