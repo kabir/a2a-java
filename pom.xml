@@ -567,6 +567,7 @@
         <module>reference/grpc</module>
         <module>reference/jsonrpc</module>
         <module>reference/rest</module>
+        <module>reference/rest-poc</module>
         <module>server-common</module>
         <module>spec</module>
         <module>spec-grpc</module>
