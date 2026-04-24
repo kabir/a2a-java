@@ -6,12 +6,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.Strictness;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 @Path("/")
 public class JsonRpcPocEndpoint {
@@ -20,26 +22,26 @@ public class JsonRpcPocEndpoint {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response handleRequest(String body) {
+    public Uni<Void> handleRequest(String body, @Context RoutingContext rc) {
         try {
             JsonObject jsonRequest = JsonParser.parseString(body).getAsJsonObject();
             Object id = jsonRequest.has("id") ? jsonRequest.get("id").getAsString() : null;
             String method = jsonRequest.has("method") ? jsonRequest.get("method").getAsString() : null;
 
             if ("testNonStreaming".equals(method)) {
-                return handleNonStreaming(id);
+                handleNonStreaming(rc, id);
             } else {
-                return sendErrorResponse(id, -32601, "Method not found: " + method);
+                sendErrorResponse(rc, id, -32601, "Method not found: " + method);
             }
         } catch (JsonSyntaxException | IllegalStateException e) {
-            return sendErrorResponse(null, -32700, "Parse error: " + e.getMessage());
+            sendErrorResponse(rc, null, -32700, "Parse error: " + e.getMessage());
         } catch (Exception e) {
-            return sendErrorResponse(null, -32603, "Internal error: " + e.getMessage());
+            sendErrorResponse(rc, null, -32603, "Internal error: " + e.getMessage());
         }
+        return Uni.createFrom().voidItem();
     }
 
-    private Response handleNonStreaming(Object id) {
+    private void handleNonStreaming(RoutingContext rc, Object id) {
         JsonObject result = new JsonObject();
         result.addProperty("message", "Non-streaming response");
         result.addProperty("timestamp", System.currentTimeMillis());
@@ -47,13 +49,19 @@ public class JsonRpcPocEndpoint {
         JsonRpcResponse response = new JsonRpcResponse(id, result);
         String jsonResponse = GSON.toJson(response);
 
-        return Response.ok(jsonResponse, MediaType.APPLICATION_JSON).build();
+        rc.response()
+            .setStatusCode(200)
+            .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+            .end(jsonResponse);
     }
 
-    private Response sendErrorResponse(Object id, int code, String message) {
+    private void sendErrorResponse(RoutingContext rc, Object id, int code, String message) {
         JsonRpcErrorResponse errorResponse = new JsonRpcErrorResponse(id, code, message);
         String jsonError = GSON.toJson(errorResponse);
 
-        return Response.ok(jsonError, MediaType.APPLICATION_JSON).build();
+        rc.response()
+            .setStatusCode(200)
+            .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+            .end(jsonError);
     }
 }
