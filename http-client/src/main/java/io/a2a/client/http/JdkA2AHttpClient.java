@@ -91,6 +91,14 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             return builder;
         }
 
+        protected void checkAuthErrors(HttpResponse<String> response) throws IOException {
+            if (response.statusCode() == HTTP_UNAUTHORIZED) {
+                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+            } else if (response.statusCode() == HTTP_FORBIDDEN) {
+                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+            }
+        }
+
         protected CompletableFuture<Void> asyncRequest(
                 HttpRequest request,
                 Consumer<String> messageConsumer,
@@ -212,6 +220,7 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                     .build();
             HttpResponse<String> response =
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
+            checkAuthErrors(response);
             return new JdkHttpResponse(response);
         }
 
@@ -234,6 +243,7 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             HttpRequest request = super.createRequestBuilder().DELETE().build();
             HttpResponse<String> response =
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
+            checkAuthErrors(response);
             return new JdkHttpResponse(response);
         }
 
@@ -265,11 +275,7 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             HttpResponse<String> response =
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-            if (response.statusCode() == HTTP_UNAUTHORIZED) {
-                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
-            } else if (response.statusCode() == HTTP_FORBIDDEN) {
-                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
-            }
+            checkAuthErrors(response);
 
             return new JdkHttpResponse(response);
         }

@@ -2,7 +2,6 @@ package io.a2a.client.transport.rest;
 
 import io.a2a.client.http.A2AHttpClient;
 import io.a2a.client.http.A2AHttpClientFactory;
-import io.a2a.client.http.JdkA2AHttpClient;
 import io.a2a.client.transport.spi.ClientTransportConfigBuilder;
 import org.jspecify.annotations.Nullable;
 
