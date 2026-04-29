@@ -215,6 +215,13 @@ public class JdkA2AHttpClient_v0_3 implements A2AHttpClient_v0_3 {
                     .build();
             HttpResponse<String> response =
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            if (response.statusCode() == HTTP_UNAUTHORIZED) {
+                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+            } else if (response.statusCode() == HTTP_FORBIDDEN) {
+                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+            }
+
             return new JdkHttpResponse(response);
         }
 
@@ -237,6 +244,13 @@ public class JdkA2AHttpClient_v0_3 implements A2AHttpClient_v0_3 {
             HttpRequest request = super.createRequestBuilder().DELETE().build();
             HttpResponse<String> response =
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            if (response.statusCode() == HTTP_UNAUTHORIZED) {
+                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+            } else if (response.statusCode() == HTTP_FORBIDDEN) {
+                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+            }
+
             return new JdkHttpResponse(response);
         }
 
