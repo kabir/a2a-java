@@ -20,6 +20,7 @@ import jakarta.inject.Singleton;
 
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.smallrye.mutiny.Multi;
@@ -118,6 +119,7 @@ public class A2AServerRoutes_v0_3 {
             });
     }
 
+    @Authenticated
     public void invokeJSONRPCHandler(String body, RoutingContext rc) {
         boolean streaming = false;
         ServerCallContext context = createCallContext(rc);

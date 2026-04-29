@@ -23,8 +23,10 @@ import org.jspecify.annotations.Nullable;
 public class AuthInterceptor_v0_3 extends ClientCallInterceptor_v0_3 {
 
     private static final String BEARER_SCHEME = "bearer";
+    private static final String BASIC_SCHEME = "basic";
     public static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
+    private static final String BASIC = "Basic ";
     private final CredentialService_v0_3 credentialService;
 
     public AuthInterceptor_v0_3(final CredentialService_v0_3 credentialService) {
@@ -47,8 +49,12 @@ public class AuthInterceptor_v0_3 extends ClientCallInterceptor_v0_3 {
                         continue;
                     }
                     if (securityScheme instanceof HTTPAuthSecurityScheme_v0_3 httpAuthSecurityScheme) {
-                        if (httpAuthSecurityScheme.getScheme().toLowerCase(Locale.ROOT).equals(BEARER_SCHEME)) {
+                        String scheme = httpAuthSecurityScheme.getScheme().toLowerCase(Locale.ROOT);
+                        if (scheme.equals(BEARER_SCHEME)) {
                             updatedHeaders.put(AUTHORIZATION, getBearerValue(credential));
+                            return new PayloadAndHeaders_v0_3(payload, updatedHeaders);
+                        } else if (scheme.equals(BASIC_SCHEME)) {
+                            updatedHeaders.put(AUTHORIZATION, getBasicValue(credential));
                             return new PayloadAndHeaders_v0_3(payload, updatedHeaders);
                         }
                     } else if (securityScheme instanceof OAuth2SecurityScheme_v0_3
@@ -67,5 +73,9 @@ public class AuthInterceptor_v0_3 extends ClientCallInterceptor_v0_3 {
 
     private static String getBearerValue(String credential) {
         return BEARER + credential;
+    }
+
+    private static String getBasicValue(String credential) {
+        return BASIC + credential;
     }
 }

@@ -5,14 +5,18 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
-import org.a2aproject.sdk.compat03.spec.AgentCard_v0_3;
 import org.a2aproject.sdk.compat03.spec.AgentCapabilities_v0_3;
+import org.a2aproject.sdk.compat03.spec.AgentCard_v0_3;
+import org.a2aproject.sdk.compat03.spec.HTTPAuthSecurityScheme_v0_3;
 import org.a2aproject.sdk.server.PublicAgentCard;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.profile.IfBuildProfile;
@@ -27,6 +31,11 @@ public class AgentCardProducer_v0_3 {
 
     private static final String PREFERRED_TRANSPORT = "preferred-transport";
     private static final String PROPERTIES_FILE = "/compat-0.3-requesthandler-test.properties";
+    private static final String BASIC_AUTH_SCHEME_NAME = "basicAuth";
+
+    @Inject
+    @ConfigProperty(name = "test.agent.security.enabled", defaultValue = "false")
+    boolean securityEnabled;
 
     @Produces
     @PublicAgentCard
@@ -40,7 +49,7 @@ public class AgentCardProducer_v0_3 {
             ? "localhost:" + port
             : "http://localhost:" + port;
 
-        return new AgentCard_v0_3.Builder()
+        AgentCard_v0_3.Builder builder = new AgentCard_v0_3.Builder()
             .name("compat-0.3-test-agent")
             .description("Test agent for v0.3 compatibility layer")
             .url(url)
@@ -50,8 +59,19 @@ public class AgentCardProducer_v0_3 {
             .defaultInputModes(List.of("text"))
             .defaultOutputModes(List.of("text"))
             .skills(List.of())
-            .additionalInterfaces(new ArrayList<>())
-            .build();
+            .additionalInterfaces(new ArrayList<>());
+
+        if (securityEnabled) {
+            builder.securitySchemes(Map.of(
+                    BASIC_AUTH_SCHEME_NAME,
+                    new HTTPAuthSecurityScheme_v0_3.Builder()
+                            .scheme("basic")
+                            .description("HTTP Basic authentication")
+                            .build()))
+                   .security(List.of(Map.of(BASIC_AUTH_SCHEME_NAME, List.of())));
+        }
+
+        return builder.build();
     }
 
     private static String loadPreferredTransportFromProperties() {

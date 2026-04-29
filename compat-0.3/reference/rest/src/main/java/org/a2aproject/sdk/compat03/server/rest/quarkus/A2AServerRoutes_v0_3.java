@@ -20,6 +20,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.smallrye.mutiny.Multi;
@@ -150,6 +151,7 @@ public class A2AServerRoutes_v0_3 {
         };
     }
 
+    @Authenticated
     public void sendMessage(String body, RoutingContext rc) {
         ServerCallContext context = createCallContext(rc, SendMessageRequest_v0_3.METHOD);
         HTTPRestResponse response = null;
@@ -162,6 +164,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void sendMessageStreaming(String body, RoutingContext rc) {
         ServerCallContext context = createCallContext(rc, SendStreamingMessageRequest_v0_3.METHOD);
         HTTPRestStreamingResponse streamingResponse = null;
@@ -185,6 +188,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void getTask(RoutingContext rc) {
         String taskId = rc.pathParam("id");
         ServerCallContext context = createCallContext(rc, GetTaskRequest_v0_3.METHOD);
@@ -219,6 +223,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void cancelTask(RoutingContext rc) {
         String taskId = rc.pathParam("param0");
         ServerCallContext context = createCallContext(rc, CancelTaskRequest_v0_3.METHOD);
@@ -251,6 +256,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void resubscribeTask(RoutingContext rc) {
         String taskId = rc.pathParam("param0");
         ServerCallContext context = createCallContext(rc, TaskResubscriptionRequest_v0_3.METHOD);
@@ -279,6 +285,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void setTaskPushNotificationConfiguration(String body, RoutingContext rc) {
         String taskId = rc.pathParam("id");
         ServerCallContext context = createCallContext(rc, SetTaskPushNotificationConfigRequest_v0_3.METHOD);
@@ -296,6 +303,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void getTaskPushNotificationConfiguration(RoutingContext rc) {
         String taskId = rc.pathParam("id");
         String configId = rc.pathParam("configId");
@@ -314,6 +322,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void listTaskPushNotificationConfigurations(RoutingContext rc) {
         String taskId = rc.pathParam("id");
         ServerCallContext context = createCallContext(rc, ListTaskPushNotificationConfigRequest_v0_3.METHOD);
@@ -331,6 +340,7 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
+    @Authenticated
     public void deleteTaskPushNotificationConfiguration(RoutingContext rc) {
         String taskId = rc.pathParam("id");
         String configId = rc.pathParam("configId");
@@ -356,6 +366,7 @@ public class A2AServerRoutes_v0_3 {
         sendResponse(rc, response);
     }
 
+    @Authenticated
     public void getAuthenticatedExtendedCard(RoutingContext rc) {
         HTTPRestResponse response = jsonRestHandler.getAuthenticatedExtendedCard();
         sendResponse(rc, response);
