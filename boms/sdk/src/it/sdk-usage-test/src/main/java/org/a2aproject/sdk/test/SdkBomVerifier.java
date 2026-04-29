@@ -12,12 +12,13 @@ import java.util.Set;
 public class SdkBomVerifier extends DynamicBomVerifier {
 
     private static final Set<String> SDK_EXCLUSIONS = Set.of(
-        "boms/",            // BOM test modules themselves
-        "examples/",        // Example applications
-        "tck/",             // TCK test suite
-        "compat-0.3/tck/",  // Compat 0.3 TCK (not yet enabled)
-        "tests/",           // Integration tests
-        "test-utils-docker/" // Test utilities for Docker-based tests
+        "boms/",              // BOM test modules themselves
+        "examples/",          // Example applications
+        "tck/",               // TCK test suite
+        "compat-0.3/tck/",    // Compat 0.3 TCK (not yet enabled)
+        "compat-0.3/reference/", // Compat 0.3 reference implementations (in reference BOM)
+        "tests/",             // Integration tests
+        "test-utils-docker/"  // Test utilities for Docker-based tests
     );
 
     private static final Set<String> SDK_FORBIDDEN = Set.of(

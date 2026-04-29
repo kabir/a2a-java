@@ -59,6 +59,23 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- Compat 0.3 Reference modules -->
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-compat-0.3-reference-jsonrpc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-compat-0.3-reference-grpc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-compat-0.3-reference-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- TCK module for testing reference implementations -->
             <dependency>
                 <groupId>${project.groupId}</groupId>

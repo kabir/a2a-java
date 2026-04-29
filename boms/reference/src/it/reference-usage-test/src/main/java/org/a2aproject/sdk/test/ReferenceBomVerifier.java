@@ -12,13 +12,15 @@ import java.util.Set;
 public class ReferenceBomVerifier extends DynamicBomVerifier {
 
     private static final Set<String> REFERENCE_EXCLUSIONS = Set.of(
-        "boms/",            // BOM test modules themselves
-        "examples/",        // Example applications
-        "tck/",             // TCK test suite
-        "tests/",           // Integration tests
-        "test-utils-docker/", // Test utilities for Docker-based tests
-        "compat-0.3/"       // Compat 0.3 modules (part of SDK BOM, not reference BOM)
-        // Note: reference/ is NOT in this list - we want to verify those classes load
+        "boms/",               // BOM test modules themselves
+        "examples/",           // Example applications
+        "tck/",                // TCK test suite
+        "tests/",              // Integration tests
+        "test-utils-docker/",  // Test utilities for Docker-based tests
+        "compat-0.3/client/",  // Compat 0.3 client modules (part of SDK BOM)
+        "compat-0.3/http-client/", // Compat 0.3 HTTP client (part of SDK BOM)
+        "compat-0.3/tck/"      // Compat 0.3 TCK (not yet enabled)
+        // Note: reference/ and compat-0.3/reference/ are NOT excluded - we verify those classes load
     );
 
     private static final Set<String> REFERENCE_FORBIDDEN = Set.of(
