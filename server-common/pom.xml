@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.a2asdk</groupId>
         <artifactId>a2a-java-sdk-parent</artifactId>
-        <version>0.3.4.Beta1-SNAPSHOT</version>
+        <version>0.3.4-SNAPSHOT</version>
     </parent>
     <artifactId>a2a-java-sdk-server-common</artifactId>
 
@@ -28,14 +28,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>a2a-java-sdk-client-transport-jsonrpc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
