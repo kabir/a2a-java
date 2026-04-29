@@ -50,8 +50,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-routes</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>a2a-java-sdk-reference-common</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.enterprise</groupId>

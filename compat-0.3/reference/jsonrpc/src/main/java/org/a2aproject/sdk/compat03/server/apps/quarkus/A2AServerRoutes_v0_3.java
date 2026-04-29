@@ -10,28 +10,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import io.quarkus.security.Authenticated;
-import io.quarkus.vertx.web.Body;
-import io.quarkus.vertx.web.ReactiveRoutes;
-import io.quarkus.vertx.web.Route;
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.UnauthorizedException;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 import org.a2aproject.sdk.compat03.common.A2AHeaders_v0_3;
 import org.a2aproject.sdk.compat03.json.JsonProcessingException_v0_3;
 import org.a2aproject.sdk.compat03.json.JsonUtil_v0_3;
@@ -64,8 +63,11 @@ import org.a2aproject.sdk.compat03.util.Utils_v0_3;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
+import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
-import org.a2aproject.sdk.server.util.async.Internal;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class A2AServerRoutes_v0_3 {
@@ -75,18 +77,48 @@ public class A2AServerRoutes_v0_3 {
 
     // Hook so testing can wait until the MultiSseSupport is subscribed.
     // Without this we get intermittent failures
-    private static volatile Runnable streamingMultiSseSupportSubscribedRunnable;
-
-    @Inject
-    @Internal
-    Executor executor;
+    private static volatile @Nullable Runnable streamingMultiSseSupportSubscribedRunnable;
 
     @Inject
     Instance<CallContextFactory_v0_3> callContextFactory;
 
-    @Route(path = "/", methods = {Route.HttpMethod.POST}, consumes = {APPLICATION_JSON}, type = Route.HandlerType.BLOCKING)
-    @Authenticated
-    public void invokeJSONRPCHandler(@Body String body, RoutingContext rc) {
+    @Inject
+    VertxSecurityHelper vertxSecurityHelper;
+
+    void setupRoutes(@Observes Router router) {
+        // Main JSON-RPC endpoint: POST /
+        router.post("/")
+            .consumes(APPLICATION_JSON)
+            .handler(BodyHandler.create())
+            .blockingHandler(ctx -> {
+                try {
+                    vertxSecurityHelper.runInRequestContext(ctx, () -> {
+                        invokeJSONRPCHandler(ctx.body().asString(), ctx);
+                    });
+                } catch (UnauthorizedException | ForbiddenException e) {
+                    VertxSecurityHelper.handleAuthError(ctx, e);
+                } catch (Exception e) {
+                    VertxSecurityHelper.handleGenericError(ctx);
+                }
+            });
+
+        // Agent card endpoint: GET /.well-known/agent-card.json
+        router.get("/.well-known/agent-card.json")
+            .produces(APPLICATION_JSON)
+            .handler(ctx -> {
+                try {
+                    String agentCard = JsonUtil_v0_3.toJson(jsonRpcHandler.getAgentCard());
+                    ctx.response()
+                        .setStatusCode(200)
+                        .putHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .end(agentCard);
+                } catch (JsonProcessingException_v0_3 e) {
+                    ctx.response().setStatusCode(500).end("Internal Server Error");
+                }
+            });
+    }
+
+    public void invokeJSONRPCHandler(String body, RoutingContext rc) {
         boolean streaming = false;
         ServerCallContext context = createCallContext(rc);
         JSONRPCResponse_v0_3<?> nonStreamingResponse = null;
@@ -150,12 +182,10 @@ public class A2AServerRoutes_v0_3 {
                         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .end(Utils_v0_3.toJsonString(error));
             } else if (streaming) {
-                final Multi<? extends JSONRPCResponse_v0_3<?>> finalStreamingResponse = streamingResponse;
-                executor.execute(() -> {
-                    MultiSseSupport.subscribeObject(
-                            finalStreamingResponse.map(i -> (Object) i), rc);
-                });
-
+                AtomicLong eventIdCounter = new AtomicLong(0);
+                Multi<String> sseEvents = streamingResponse
+                        .map(response -> formatSseEvent(response, eventIdCounter.getAndIncrement()));
+                MultiSseSupport.writeSseStrings(sseEvents, rc, context);
             } else {
                 rc.response()
                         .setStatusCode(200)
@@ -165,17 +195,8 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
-    /**
-     * /**
-     * Handles incoming GET requests to the agent card endpoint.
-     * Returns the agent card in JSON format.
-     *
-     * @return the agent card
-     * @throws JsonProcessingException_v0_3 if serialization fails
-     */
-    @Route(path = "/.well-known/agent-card.json", methods = Route.HttpMethod.GET, produces = APPLICATION_JSON)
-    public String getAgentCard() throws JsonProcessingException_v0_3 {
-        return JsonUtil_v0_3.toJson(jsonRpcHandler.getAgentCard());
+    private static String formatSseEvent(Object data, long id) {
+        return "data: " + Utils_v0_3.toJsonString(data) + "\nid: " + id + "\n\n";
     }
 
     private NonStreamingJSONRPCRequest_v0_3<?> deserializeNonStreamingRequest(String body, String methodName) {
@@ -276,9 +297,6 @@ public class A2AServerRoutes_v0_3 {
                 };
             }
             Map<String, Object> state = new HashMap<>();
-            // TODO Python's impl has
-            //    state['auth'] = request.auth
-            //  in jsonrpc_app.py. Figure out what this maps to in what Vert.X gives us
 
             Map<String, String> headers = new HashMap<>();
             Set<String> headerNames = rc.request().headers().names();
@@ -296,40 +314,29 @@ public class A2AServerRoutes_v0_3 {
         }
     }
 
-    // Port of import io.quarkus.vertx.web.runtime.MultiSseSupport, which is considered internal API
     private static class MultiSseSupport {
+        private static final Logger logger = LoggerFactory.getLogger(MultiSseSupport.class);
 
         private MultiSseSupport() {
             // Avoid direct instantiation.
         }
 
-        private static void initialize(HttpServerResponse response) {
-            if (response.bytesWritten() == 0) {
-                MultiMap headers = response.headers();
-                if (headers.get(CONTENT_TYPE) == null) {
-                    headers.set(CONTENT_TYPE, SERVER_SENT_EVENTS);
-                }
-                response.setChunked(true);
-            }
-        }
-
-        private static void onWriteDone(Flow.Subscription subscription, AsyncResult<Void> ar, RoutingContext rc) {
-            if (ar.failed()) {
-                rc.fail(ar.cause());
-            } else {
-                subscription.request(1);
-            }
-        }
-
-        public static void write(Multi<Buffer> multi, RoutingContext rc) {
+        public static void writeSseStrings(Multi<String> sseStrings, RoutingContext rc, ServerCallContext context) {
             HttpServerResponse response = rc.response();
-            multi.subscribe().withSubscriber(new Flow.Subscriber<Buffer>() {
-                Flow.Subscription upstream;
+
+            sseStrings.subscribe().withSubscriber(new Flow.Subscriber<String>() {
+                Flow.@Nullable Subscription upstream;
 
                 @Override
                 public void onSubscribe(Flow.Subscription subscription) {
                     this.upstream = subscription;
                     this.upstream.request(1);
+
+                    response.closeHandler(v -> {
+                        logger.info("SSE connection closed by client, calling EventConsumer.cancel() to stop polling loop");
+                        context.invokeEventConsumerCancelCallback();
+                        subscription.cancel();
+                    });
 
                     // Notify tests that we are subscribed
                     Runnable runnable = streamingMultiSseSupportSubscribedRunnable;
@@ -339,52 +346,49 @@ public class A2AServerRoutes_v0_3 {
                 }
 
                 @Override
-                public void onNext(Buffer item) {
-                    initialize(response);
-                    response.write(item, new Handler<AsyncResult<Void>>() {
+                public void onNext(String sseEvent) {
+                    if (response.bytesWritten() == 0) {
+                        MultiMap headers = response.headers();
+                        if (headers.get(CONTENT_TYPE) == null) {
+                            headers.set(CONTENT_TYPE, SERVER_SENT_EVENTS);
+                        }
+                        headers.set("Cache-Control", "no-cache");
+                        headers.set("X-Accel-Buffering", "no");
+                        response.setChunked(true);
+                        response.setWriteQueueMaxSize(1);
+                        response.write(": SSE stream started\n\n");
+                    }
+
+                    response.write(Buffer.buffer(sseEvent), new Handler<AsyncResult<Void>>() {
                         @Override
                         public void handle(AsyncResult<Void> ar) {
-                            onWriteDone(upstream, ar, rc);
+                            if (ar.failed()) {
+                                java.util.Objects.requireNonNull(upstream).cancel();
+                                rc.fail(ar.cause());
+                            } else {
+                                java.util.Objects.requireNonNull(upstream).request(1);
+                            }
                         }
                     });
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
+                    java.util.Objects.requireNonNull(upstream).cancel();
                     rc.fail(throwable);
                 }
 
                 @Override
                 public void onComplete() {
-                    endOfStream(response);
+                    if (response.bytesWritten() == 0) {
+                        MultiMap headers = response.headers();
+                        if (headers.get(CONTENT_TYPE) == null) {
+                            headers.set(CONTENT_TYPE, SERVER_SENT_EVENTS);
+                        }
+                    }
+                    response.end();
                 }
             });
-        }
-
-        public static void subscribeObject(Multi<Object> multi, RoutingContext rc) {
-            AtomicLong count = new AtomicLong();
-            write(multi.map(new Function<Object, Buffer>() {
-                @Override
-                public Buffer apply(Object o) {
-                    if (o instanceof ReactiveRoutes.ServerSentEvent) {
-                        ReactiveRoutes.ServerSentEvent<?> ev = (ReactiveRoutes.ServerSentEvent<?>) o;
-                        long id = ev.id() != -1 ? ev.id() : count.getAndIncrement();
-                        String e = ev.event() == null ? "" : "event: " + ev.event() + "\n";
-                        return Buffer.buffer(e + "data: " + Utils_v0_3.toJsonString(ev.data()) + "\nid: " + id + "\n\n");
-                    }
-                    return Buffer.buffer("data: " + Utils_v0_3.toJsonString(o) + "\nid: " + count.getAndIncrement() + "\n\n");
-                }
-            }), rc);
-        }
-
-        private static void endOfStream(HttpServerResponse response) {
-            if (response.bytesWritten() == 0) { // No item
-                MultiMap headers = response.headers();
-                if (headers.get(CONTENT_TYPE) == null) {
-                    headers.set(CONTENT_TYPE, SERVER_SENT_EVENTS);
-                }
-            }
-            response.end();
         }
     }
 }
