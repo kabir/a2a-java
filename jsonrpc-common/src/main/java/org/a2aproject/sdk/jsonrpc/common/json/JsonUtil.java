@@ -149,6 +149,25 @@ public class JsonUtil {
     }
 
     /**
+     * Writes a JSON-RPC {@code id} field. Handles null, String, and Number values,
+     * preserving fractional precision for non-integer numeric IDs.
+     */
+    public static void writeJsonRpcId(JsonWriter out, @Nullable Object id) throws java.io.IOException {
+        out.name("id");
+        if (id == null) {
+            out.nullValue();
+        } else if (id instanceof Number n) {
+            if (id instanceof Long || id instanceof Integer || id instanceof Short || id instanceof Byte) {
+                out.value(n.longValue());
+            } else {
+                out.value(n);
+            }
+        } else {
+            out.value(id.toString());
+        }
+    }
+
+    /**
      * Gson TypeAdapter for serializing and deserializing {@link OffsetDateTime} to/from ISO-8601 format.
      * <p>
      * This adapter ensures that OffsetDateTime instances are serialized to ISO-8601 formatted strings

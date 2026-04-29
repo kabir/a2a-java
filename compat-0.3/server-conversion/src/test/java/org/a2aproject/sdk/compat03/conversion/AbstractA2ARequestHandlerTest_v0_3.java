@@ -143,8 +143,7 @@ public abstract class AbstractA2ARequestHandlerTest_v0_3 {
                         mainEventBusProcessor, internalExecutor, internalExecutor);
 
         // Wrap in v0.3 conversion handler
-        convert03To10Handler = new Convert_v0_3_To10RequestHandler();
-        convert03To10Handler.v10Handler = v10Handler;
+        convert03To10Handler = new Convert_v0_3_To10RequestHandler(v10Handler);
     }
 
     @AfterEach

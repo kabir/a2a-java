@@ -70,8 +70,12 @@ public class Convert_v0_3_To10RequestHandler {
     /**
      * The v1.0 {@link RequestHandler} to which all converted requests are delegated.
      */
+    private final RequestHandler v10Handler;
+
     @Inject
-    public RequestHandler v10Handler;
+    public Convert_v0_3_To10RequestHandler(org.a2aproject.sdk.server.requesthandlers.RequestHandler v10Handler) {
+        this.v10Handler = v10Handler;
+    }
 
     /**
      * Gets a task by ID.

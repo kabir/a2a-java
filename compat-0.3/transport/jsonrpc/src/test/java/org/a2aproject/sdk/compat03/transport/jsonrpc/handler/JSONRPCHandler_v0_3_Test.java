@@ -862,8 +862,7 @@ public class JSONRPCHandler_v0_3_Test extends AbstractA2ARequestHandlerTest_v0_3
                         internalExecutor, internalExecutor);
 
         // Wrap in v0.3 conversion handler
-        Convert_v0_3_To10RequestHandler handlerWithoutPushConfig = new Convert_v0_3_To10RequestHandler();
-        handlerWithoutPushConfig.v10Handler = v10Handler;
+        Convert_v0_3_To10RequestHandler handlerWithoutPushConfig = new Convert_v0_3_To10RequestHandler(v10Handler);
 
         AgentCard_v0_3 card = createAgentCard(false, true, false);
         JSONRPCHandler_v0_3 handler = new JSONRPCHandler_v0_3(card, internalExecutor, handlerWithoutPushConfig);
@@ -890,8 +889,7 @@ public class JSONRPCHandler_v0_3_Test extends AbstractA2ARequestHandlerTest_v0_3
                         internalExecutor, internalExecutor);
 
         // Wrap in v0.3 conversion handler
-        Convert_v0_3_To10RequestHandler handlerWithoutPushConfig = new Convert_v0_3_To10RequestHandler();
-        handlerWithoutPushConfig.v10Handler = v10Handler;
+        Convert_v0_3_To10RequestHandler handlerWithoutPushConfig = new Convert_v0_3_To10RequestHandler(v10Handler);
 
         AgentCard_v0_3 card = createAgentCard(false, true, false);
         JSONRPCHandler_v0_3 handler = new JSONRPCHandler_v0_3(card, internalExecutor, handlerWithoutPushConfig);
@@ -958,8 +956,7 @@ public class JSONRPCHandler_v0_3_Test extends AbstractA2ARequestHandlerTest_v0_3
                         internalExecutor, internalExecutor);
 
         // Wrap in v0.3 conversion handler
-        Convert_v0_3_To10RequestHandler handlerWithoutPushConfig = new Convert_v0_3_To10RequestHandler();
-        handlerWithoutPushConfig.v10Handler = v10Handler;
+        Convert_v0_3_To10RequestHandler handlerWithoutPushConfig = new Convert_v0_3_To10RequestHandler(v10Handler);
 
         JSONRPCHandler_v0_3 handler = new JSONRPCHandler_v0_3(CARD, internalExecutor, handlerWithoutPushConfig);
 
