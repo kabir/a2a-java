@@ -38,6 +38,7 @@ import org.a2aproject.sdk.compat03.spec.TaskPushNotificationConfig_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskQueryParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.UnsupportedOperationError_v0_3;
 import org.a2aproject.sdk.server.ServerCallContext;
+import org.a2aproject.sdk.common.A2AErrorMessages;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
 import org.a2aproject.sdk.spec.A2AError;
@@ -88,6 +89,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -110,6 +113,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -132,6 +137,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -155,6 +162,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -178,6 +187,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -206,6 +217,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -228,6 +241,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -250,6 +265,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -331,6 +348,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             handleError(responseObserver, ErrorConverter_v0_3.convertA2AError(e));
         } catch (JSONRPCError_v0_3 e) {
             handleError(responseObserver, e);
+        } catch (SecurityException e) {
+            handleSecurityException(responseObserver, e);
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
@@ -390,6 +409,30 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             status = Status.UNKNOWN;
             description = "Unknown error type: " + error.getMessage();
         }
+        responseObserver.onError(status.withDescription(description).asRuntimeException());
+    }
+
+    private <V> void handleSecurityException(StreamObserver<V> responseObserver, SecurityException e) {
+        Status status;
+        String description;
+
+        String exceptionClassName = e.getClass().getName();
+
+        if (exceptionClassName.contains("Unauthorized") ||
+            exceptionClassName.contains("Unauthenticated") ||
+            exceptionClassName.contains("Authentication")) {
+            status = Status.UNAUTHENTICATED;
+            description = A2AErrorMessages.AUTHENTICATION_FAILED;
+        } else if (exceptionClassName.contains("Forbidden") ||
+                 exceptionClassName.contains("AccessDenied") ||
+                 exceptionClassName.contains("Authorization")) {
+            status = Status.PERMISSION_DENIED;
+            description = A2AErrorMessages.AUTHORIZATION_FAILED;
+        } else {
+            status = Status.PERMISSION_DENIED;
+            description = "Authorization failed: " + (e.getMessage() != null ? e.getMessage() : "Access denied");
+        }
+
         responseObserver.onError(status.withDescription(description).asRuntimeException());
     }
 
