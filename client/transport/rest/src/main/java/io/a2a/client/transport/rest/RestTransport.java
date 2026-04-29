@@ -229,7 +229,7 @@ public class RestTransport implements ClientTransport {
     public List<TaskPushNotificationConfig> listTaskPushNotificationConfigurations(ListTaskPushNotificationConfigParams request, @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("request", request);
         ListTaskPushNotificationConfigRequest.Builder builder = ListTaskPushNotificationConfigRequest.newBuilder();
-        builder.setParent(String.format("/tasks/%1s/pushNotificationConfigs", request.id()));
+        builder.setParent(String.format("tasks/%1s/pushNotificationConfigs", request.id()));
         PayloadAndHeaders payloadAndHeaders = applyInterceptors(io.a2a.spec.ListTaskPushNotificationConfigRequest.METHOD, builder,
                 agentCard, context);
         try {

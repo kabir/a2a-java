@@ -6,6 +6,7 @@ import static com.google.gson.stream.JsonToken.BOOLEAN;
 import static com.google.gson.stream.JsonToken.NULL;
 import static com.google.gson.stream.JsonToken.NUMBER;
 import static com.google.gson.stream.JsonToken.STRING;
+import static io.a2a.spec.A2AErrorCodes.AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INTERNAL_ERROR_CODE;
 import static io.a2a.spec.A2AErrorCodes.INVALID_AGENT_RESPONSE_ERROR_CODE;
@@ -28,6 +29,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.a2a.spec.APIKeySecurityScheme;
+import io.a2a.spec.AuthenticatedExtendedCardNotConfiguredError;
 import io.a2a.spec.EventKind;
 import io.a2a.spec.JSONRPCResponse;
 import io.a2a.spec.ContentTypeNotSupportedError;
@@ -59,16 +61,15 @@ import io.a2a.spec.TaskState;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.spec.TextPart;
 import io.a2a.spec.UnsupportedOperationError;
-import java.io.StringReader;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import org.jspecify.annotations.Nullable;
 
-import static io.a2a.json.JsonUtil.JSONRPCErrorTypeAdapterFactory.THROWABLE_MARKER_FIELD;
-
 public class JsonUtil {
+
+    private static final String THROWABLE_MARKER_FIELD = "__throwable";
 
     private static GsonBuilder createBaseGsonBuilder() {
         return new GsonBuilder()
@@ -130,6 +131,25 @@ public class JsonUtil {
             return OBJECT_MAPPER.toJson(data);
         } catch (JsonSyntaxException e) {
             throw new JsonProcessingException("Failed to generate JSON", e);
+        }
+    }
+
+    /**
+     * Writes a JSON-RPC {@code id} field. Handles null, String, and Number values,
+     * preserving fractional precision for non-integer numeric IDs.
+     */
+    public static void writeJsonRpcId(JsonWriter out, @Nullable Object id) throws java.io.IOException {
+        out.name("id");
+        if (id == null) {
+            out.nullValue();
+        } else if (id instanceof Number n) {
+            if (id instanceof Long || id instanceof Integer || id instanceof Short || id instanceof Byte) {
+                out.value(n.longValue());
+            } else {
+                out.value(n);
+            }
+        } else {
+            out.value(id.toString());
         }
     }
 
@@ -198,7 +218,9 @@ public class JsonUtil {
         private static final java.util.Set<String> ALLOWED_THROWABLE_PACKAGES = java.util.Set.of(
             "java.lang.",
             "java.io.",
-            "io.a2a."
+            "io.a2a.spec.",
+            "io.a2a.json.",
+            "io.a2a.server."
         );
 
         private static final java.util.Set<String> ALLOWED_THROWABLE_CLASSES = java.util.Set.of(
@@ -307,8 +329,7 @@ public class JsonUtil {
      */
     static class JSONRPCErrorTypeAdapterFactory implements TypeAdapterFactory {
 
-        private static final ThrowableTypeAdapter THROWABLE_ADAPTER = new ThrowableTypeAdapter();
-        static final String THROWABLE_MARKER_FIELD = "__throwable";
+        static final ThrowableTypeAdapter THROWABLE_ADAPTER = new ThrowableTypeAdapter();
         private static final String CODE_FIELD = "code";
         private static final String DATA_FIELD = "data";
         private static final String MESSAGE_FIELD = "message";
@@ -321,141 +342,133 @@ public class JsonUtil {
             }
 
             @SuppressWarnings("unchecked")
-            TypeAdapter<T> adapter = (TypeAdapter<T>) new TypeAdapter<JSONRPCError>() {
-                @Override
-                public void write(JsonWriter out, JSONRPCError value) throws java.io.IOException {
-                    if (value == null) {
-                        out.nullValue();
-                        return;
-                    }
-                    out.beginObject();
-                    out.name(CODE_FIELD).value(value.getCode());
-                    out.name(MESSAGE_FIELD).value(value.getMessage());
-                    if (value.getData() != null) {
-                        out.name(DATA_FIELD);
-                        // If data is a Throwable, use ThrowableTypeAdapter to avoid reflection issues
-                        if (value.getData() instanceof Throwable throwable) {
-                            THROWABLE_ADAPTER.write(out, throwable);
-                        } else {
-                            // Use the Gson instance passed to this factory instead of OBJECT_MAPPER
-                            gson.toJson(value.getData(), Object.class, out);
-                        }
-                    }
-                    out.endObject();
-                }
-
-                @Override
-                public @Nullable
-                JSONRPCError read(JsonReader in) throws java.io.IOException {
-                    if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
-                        in.nextNull();
-                        return null;
-                    }
-
-                    Integer code = null;
-                    String message = null;
-                    Object data = null;
-
-                    in.beginObject();
-                    while (in.hasNext()) {
-                        String fieldName = in.nextName();
-                        switch (fieldName) {
-                            case CODE_FIELD ->
-                                code = in.nextInt();
-                            case MESSAGE_FIELD ->
-                                message = in.nextString();
-                            case DATA_FIELD -> {
-                                // Read data as a generic object (could be string, number, object, etc.)
-                                data = readDataValue(in, gson);
-                            }
-                            default ->
-                                in.skipValue();
-                        }
-                    }
-                    in.endObject();
-
-                    // Create the appropriate subclass based on the error code
-                    return createErrorInstance(code, message, data);
-                }
-
-                /**
-                 * Reads the data field value, which can be of any JSON type.
-                 */
-                private @Nullable
-                Object readDataValue(JsonReader in, Gson gson) throws java.io.IOException {
-                    return switch (in.peek()) {
-                        case STRING ->
-                            in.nextString();
-                        case NUMBER ->
-                            in.nextDouble();
-                        case BOOLEAN ->
-                            in.nextBoolean();
-                        case NULL -> {
-                            in.nextNull();
-                            yield null;
-                        }
-                        case BEGIN_OBJECT -> {
-                            // Parse as JsonElement to check if it's a Throwable
-                            com.google.gson.JsonElement element = com.google.gson.JsonParser.parseReader(in);
-                            if (element.isJsonObject()) {
-                                com.google.gson.JsonObject obj = element.getAsJsonObject();
-                                // Check if it has the structure of a serialized Throwable (type + message)
-                                if (obj.has(TYPE_FIELD) && obj.has(MESSAGE_FIELD) && obj.has(THROWABLE_MARKER_FIELD)) {
-                                    // Deserialize as Throwable using ThrowableTypeAdapter
-                                    yield THROWABLE_ADAPTER.fromJsonTree(element);
-                                }
-                            }
-                            // Otherwise, deserialize as generic object using the Gson instance
-                            yield gson.fromJson(element, Object.class);
-                        }
-                        case BEGIN_ARRAY ->
-                            // For arrays, read as raw JSON using the Gson instance
-                            gson.fromJson(in, Object.class);
-                        default -> {
-                            in.skipValue();
-                            yield null;
-                        }
-                    };
-                }
-
-                /**
-                 * Creates the appropriate JSONRPCError subclass based on the error code.
-                 */
-                private JSONRPCError createErrorInstance(@Nullable Integer code, @Nullable String message, @Nullable Object data) {
-                    if (code == null) {
-                        throw new JsonSyntaxException("JSONRPCError must have a code field");
-                    }
-
-                    return switch (code) {
-                        case JSON_PARSE_ERROR_CODE ->
-                            new JSONParseError(code, message, data);
-                        case INVALID_REQUEST_ERROR_CODE ->
-                            new InvalidRequestError(code, message, data);
-                        case METHOD_NOT_FOUND_ERROR_CODE ->
-                            new MethodNotFoundError(code, message, data);
-                        case INVALID_PARAMS_ERROR_CODE ->
-                            new InvalidParamsError(code, message, data);
-                        case INTERNAL_ERROR_CODE ->
-                            new io.a2a.spec.InternalError(code, message, data);
-                        case TASK_NOT_FOUND_ERROR_CODE ->
-                            new TaskNotFoundError(code, message, data);
-                        case TASK_NOT_CANCELABLE_ERROR_CODE ->
-                            new TaskNotCancelableError(code, message, data);
-                        case PUSH_NOTIFICATION_NOT_SUPPORTED_ERROR_CODE ->
-                            new PushNotificationNotSupportedError(code, message, data);
-                        case UNSUPPORTED_OPERATION_ERROR_CODE ->
-                            new UnsupportedOperationError(code, message, data);
-                        case CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE ->
-                            new ContentTypeNotSupportedError(code, message, data);
-                        case INVALID_AGENT_RESPONSE_ERROR_CODE ->
-                            new InvalidAgentResponseError(code, message, data);
-                        default ->
-                            new JSONRPCError(code, message, data);
-                    };
-                }
-            };
-
+            TypeAdapter<T> adapter = (TypeAdapter<T>) new JSONRPCErrorTypeAdapter(gson);
             return adapter;
+        }
+
+        private static class JSONRPCErrorTypeAdapter extends TypeAdapter<JSONRPCError> {
+
+            private final Gson gson;
+
+            JSONRPCErrorTypeAdapter(Gson gson) {
+                this.gson = gson;
+            }
+
+            @Override
+            public void write(JsonWriter out, JSONRPCError value) throws java.io.IOException {
+                if (value == null) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginObject();
+                out.name(CODE_FIELD).value(value.getCode());
+                out.name(MESSAGE_FIELD).value(value.getMessage());
+                if (value.getData() != null) {
+                    out.name(DATA_FIELD);
+                    if (value.getData() instanceof Throwable throwable) {
+                        THROWABLE_ADAPTER.write(out, throwable);
+                    } else {
+                        gson.toJson(value.getData(), Object.class, out);
+                    }
+                }
+                out.endObject();
+            }
+
+            @Override
+            public @Nullable JSONRPCError read(JsonReader in) throws java.io.IOException {
+                if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+                    in.nextNull();
+                    return null;
+                }
+
+                Integer code = null;
+                String message = null;
+                Object data = null;
+
+                in.beginObject();
+                while (in.hasNext()) {
+                    String fieldName = in.nextName();
+                    switch (fieldName) {
+                        case CODE_FIELD ->
+                            code = in.nextInt();
+                        case MESSAGE_FIELD ->
+                            message = in.nextString();
+                        case DATA_FIELD ->
+                            data = readDataValue(in);
+                        default ->
+                            in.skipValue();
+                    }
+                }
+                in.endObject();
+
+                return createErrorInstance(code, message, data);
+            }
+
+            private @Nullable Object readDataValue(JsonReader in) throws java.io.IOException {
+                return switch (in.peek()) {
+                    case STRING ->
+                        in.nextString();
+                    case NUMBER ->
+                        in.nextDouble();
+                    case BOOLEAN ->
+                        in.nextBoolean();
+                    case NULL -> {
+                        in.nextNull();
+                        yield null;
+                    }
+                    case BEGIN_OBJECT -> {
+                        com.google.gson.JsonElement element = com.google.gson.JsonParser.parseReader(in);
+                        if (element.isJsonObject()) {
+                            com.google.gson.JsonObject obj = element.getAsJsonObject();
+                            if (obj.has(TYPE_FIELD) && obj.has(MESSAGE_FIELD) && obj.has(THROWABLE_MARKER_FIELD)) {
+                                yield THROWABLE_ADAPTER.fromJsonTree(element);
+                            }
+                        }
+                        yield gson.fromJson(element, Object.class);
+                    }
+                    case BEGIN_ARRAY ->
+                        gson.fromJson(in, Object.class);
+                    default -> {
+                        in.skipValue();
+                        yield null;
+                    }
+                };
+            }
+
+            private static JSONRPCError createErrorInstance(@Nullable Integer code, @Nullable String message, @Nullable Object data) {
+                if (code == null) {
+                    throw new JsonSyntaxException("JSONRPCError must have a code field");
+                }
+
+                return switch (code) {
+                    case JSON_PARSE_ERROR_CODE ->
+                        new JSONParseError(code, message, data);
+                    case INVALID_REQUEST_ERROR_CODE ->
+                        new InvalidRequestError(code, message, data);
+                    case METHOD_NOT_FOUND_ERROR_CODE ->
+                        new MethodNotFoundError(code, message, data);
+                    case INVALID_PARAMS_ERROR_CODE ->
+                        new InvalidParamsError(code, message, data);
+                    case INTERNAL_ERROR_CODE ->
+                        new io.a2a.spec.InternalError(code, message, data);
+                    case TASK_NOT_FOUND_ERROR_CODE ->
+                        new TaskNotFoundError(code, message, data);
+                    case TASK_NOT_CANCELABLE_ERROR_CODE ->
+                        new TaskNotCancelableError(code, message, data);
+                    case PUSH_NOTIFICATION_NOT_SUPPORTED_ERROR_CODE ->
+                        new PushNotificationNotSupportedError(code, message, data);
+                    case UNSUPPORTED_OPERATION_ERROR_CODE ->
+                        new UnsupportedOperationError(code, message, data);
+                    case CONTENT_TYPE_NOT_SUPPORTED_ERROR_CODE ->
+                        new ContentTypeNotSupportedError(code, message, data);
+                    case INVALID_AGENT_RESPONSE_ERROR_CODE ->
+                        new InvalidAgentResponseError(code, message, data);
+                    case AUTHENTICATED_EXTENDED_CARD_NOT_CONFIGURED_ERROR_CODE ->
+                        new AuthenticatedExtendedCardNotConfiguredError(code, message, data);
+                    default ->
+                        new JSONRPCError(code, message, data);
+                };
+            }
         }
     }
 
@@ -994,22 +1007,7 @@ public class JsonUtil {
                     out.beginObject();
                     out.name("jsonrpc").value(response.getJsonrpc());
 
-                    Object id = response.getId();
-                    out.name("id");
-                    if (id == null) {
-                        out.nullValue();
-                    } else if (id instanceof Number n) {
-                        // Preserve precision for fractional IDs (e.g., 1.5 should remain 1.5, not become 1)
-                        // Check if the number is an integer type or has no fractional part
-                        if (id instanceof Long || id instanceof Integer || id instanceof Short || id instanceof Byte) {
-                            out.value(n.longValue());
-                        } else {
-                            // For Double, Float, or other number types, preserve full precision
-                            out.value(n);
-                        }
-                    } else {
-                        out.value(id.toString());
-                    }
+                    writeJsonRpcId(out, response.getId());
 
                     JSONRPCError error = response.getError();
                     if (error != null) {

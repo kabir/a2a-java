@@ -500,22 +500,11 @@ public class JSONRPCUtils {
         }
     }
 
-    /**
-     * Writes the 'id' field to a JSON-RPC response.
-     * Per JSON-RPC 2.0 spec, the id field is REQUIRED in all responses, even if null.
-     */
     private static void ensureId(JsonWriter output, @Nullable Object requestId) throws IOException {
-        output.name("id");
-        if (requestId == null) {
-            output.nullValue();
-        } else if (requestId instanceof String string) {
-            output.value(string);
-        } else if (requestId instanceof Number number) {
-            output.value(number.longValue());
-        }
+        JsonUtil.writeJsonRpcId(output, requestId);
     }
 
-    public static String toJsonRPCResultResponse(Object requestId, com.google.protobuf.MessageOrBuilder builder) {
+    public static String toJsonRPCResultResponse(@Nullable Object requestId, com.google.protobuf.MessageOrBuilder builder) {
         try (StringWriter result = new StringWriter(); JsonWriter output = JsonUtil.OBJECT_MAPPER.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
@@ -531,7 +520,7 @@ public class JSONRPCUtils {
         }
     }
 
-    public static String toJsonRPCErrorResponse(Object requestId, JSONRPCError error) {
+    public static String toJsonRPCErrorResponse(@Nullable Object requestId, JSONRPCError error) {
         try (StringWriter result = new StringWriter(); JsonWriter output = JsonUtil.OBJECT_MAPPER.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");

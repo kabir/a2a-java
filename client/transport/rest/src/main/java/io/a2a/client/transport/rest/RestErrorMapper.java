@@ -34,21 +34,8 @@ public class RestErrorMapper {
         try {
             if (body != null && !body.isBlank()) {
                 JsonObject node = JsonUtil.fromJson(body, JsonObject.class);
-                // Safely extract string fields, handling null and non-string types
-                String className = "";
-                if (node.has("error")) {
-                    JsonElement errorElement = node.get("error");
-                    if (errorElement != null && errorElement.isJsonPrimitive() && errorElement.getAsJsonPrimitive().isString()) {
-                        className = errorElement.getAsString();
-                    }
-                }
-                String errorMessage = "";
-                if (node.has("message")) {
-                    JsonElement messageElement = node.get("message");
-                    if (messageElement != null && messageElement.isJsonPrimitive() && messageElement.getAsJsonPrimitive().isString()) {
-                        errorMessage = messageElement.getAsString();
-                    }
-                }
+                String className = safeGetString(node, "error");
+                String errorMessage = safeGetString(node, "message");
                 return mapRestError(className, errorMessage, code);
             }
             return mapRestError("", "", code);
@@ -56,6 +43,16 @@ public class RestErrorMapper {
             Logger.getLogger(RestErrorMapper.class.getName()).log(Level.SEVERE, null, ex);
             return new A2AClientException("Failed to parse error response: " + ex.getMessage());
         }
+    }
+
+    private static String safeGetString(JsonObject obj, String fieldName) {
+        if (obj.has(fieldName)) {
+            JsonElement element = obj.get(fieldName);
+            if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                return element.getAsString();
+            }
+        }
+        return "";
     }
 
     public static A2AClientException mapRestError(String className, String errorMessage, int code) {
