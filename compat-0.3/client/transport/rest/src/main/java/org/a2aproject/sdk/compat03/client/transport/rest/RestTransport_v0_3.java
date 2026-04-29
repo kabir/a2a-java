@@ -238,7 +238,7 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
     public List<TaskPushNotificationConfig_v0_3> listTaskPushNotificationConfigurations(ListTaskPushNotificationConfigParams_v0_3 request, @Nullable ClientCallContext_v0_3 context) throws A2AClientException_v0_3 {
         checkNotNullParam("request", request);
         ListTaskPushNotificationConfigRequest.Builder builder = ListTaskPushNotificationConfigRequest.newBuilder();
-        builder.setParent(String.format("/tasks/%1s/pushNotificationConfigs", request.id()));
+        builder.setParent(String.format("tasks/%1s/pushNotificationConfigs", request.id()));
         PayloadAndHeaders_v0_3 payloadAndHeaders = applyInterceptors(ListTaskPushNotificationConfigRequest_v0_3.METHOD, builder,
                 agentCard, context);
         try {

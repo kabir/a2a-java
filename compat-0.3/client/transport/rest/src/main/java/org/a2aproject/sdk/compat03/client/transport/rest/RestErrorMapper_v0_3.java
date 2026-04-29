@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.compat03.client.transport.rest;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.a2aproject.sdk.compat03.json.JsonProcessingException_v0_3;
 import org.a2aproject.sdk.compat03.json.JsonUtil_v0_3;
@@ -33,8 +34,8 @@ public class RestErrorMapper_v0_3 {
         try {
             if (body != null && !body.isBlank()) {
                 JsonObject node = JsonUtil_v0_3.fromJson(body, JsonObject.class);
-                String className = node.has("error") ? node.get("error").getAsString() : "";
-                String errorMessage = node.has("message") ? node.get("message").getAsString() : "";
+                String className = safeGetString(node, "error");
+                String errorMessage = safeGetString(node, "message");
                 return mapRestError(className, errorMessage, code);
             }
             return mapRestError("", "", code);
@@ -42,6 +43,16 @@ public class RestErrorMapper_v0_3 {
             Logger.getLogger(RestErrorMapper_v0_3.class.getName()).log(Level.SEVERE, null, ex);
             return new A2AClientException_v0_3("Failed to parse error response: " + ex.getMessage());
         }
+    }
+
+    private static String safeGetString(JsonObject obj, String fieldName) {
+        if (obj.has(fieldName)) {
+            JsonElement element = obj.get(fieldName);
+            if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                return element.getAsString();
+            }
+        }
+        return "";
     }
 
     public static A2AClientException_v0_3 mapRestError(String className, String errorMessage, int code) {
