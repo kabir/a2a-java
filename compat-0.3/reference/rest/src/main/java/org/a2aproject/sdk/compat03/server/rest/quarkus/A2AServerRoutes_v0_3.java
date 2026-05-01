@@ -387,7 +387,7 @@ public class A2AServerRoutes_v0_3 {
         return "data: " + data + "\nid: " + id + "\n\n";
     }
 
-    static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
+    public static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
         streamingMultiSseSupportSubscribedRunnable = runnable;
     }
 

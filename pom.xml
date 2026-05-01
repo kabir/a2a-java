@@ -598,6 +598,8 @@
 
         <!-- Dual-version test modules -->
         <module>tests/reference/jsonrpc</module>
+        <module>tests/reference/rest</module>
+        <module>tests/reference/grpc</module>
 
         <!-- BOMs - build order automatically determined by reactor based on dependencies -->
         <module>boms/extras</module>
