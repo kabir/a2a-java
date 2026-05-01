@@ -61,11 +61,13 @@ import org.a2aproject.sdk.compat03.spec.TaskResubscriptionRequest_v0_3;
 import org.a2aproject.sdk.compat03.spec.UnsupportedOperationError_v0_3;
 import org.a2aproject.sdk.compat03.transport.jsonrpc.handler.JSONRPCHandler_v0_3;
 import org.a2aproject.sdk.compat03.util.Utils_v0_3;
+import org.a2aproject.sdk.server.PublicAgentCard;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
+import org.a2aproject.sdk.spec.AgentCard;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,20 +105,36 @@ public class A2AServerRoutes_v0_3 {
                 }
             });
 
-        // Agent card endpoint: GET /.well-known/agent-card.json
-        router.get("/.well-known/agent-card.json")
-            .produces(APPLICATION_JSON)
-            .handler(ctx -> {
-                try {
-                    String agentCard = JsonUtil_v0_3.toJson(jsonRpcHandler.getAgentCard());
-                    ctx.response()
-                        .setStatusCode(200)
-                        .putHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .end(agentCard);
-                } catch (JsonProcessingException_v0_3 e) {
-                    ctx.response().setStatusCode(500).end("Internal Server Error");
-                }
-            });
+        // Only register v0.3 agent card if no real v1.0 agent card producer exists.
+        // DefaultProducers provides a @DefaultBean AgentCard fallback that is always
+        // present, so we must exclude it and only check for non-default beans.
+        if (!hasNonDefaultV10AgentCard()) {
+            router.get("/.well-known/agent-card.json")
+                .produces(APPLICATION_JSON)
+                .handler(ctx -> {
+                    try {
+                        String agentCard = JsonUtil_v0_3.toJson(jsonRpcHandler.getAgentCard());
+                        ctx.response()
+                            .setStatusCode(200)
+                            .putHeader(CONTENT_TYPE, APPLICATION_JSON)
+                            .end(agentCard);
+                    } catch (JsonProcessingException_v0_3 e) {
+                        ctx.response().setStatusCode(500).end("Internal Server Error");
+                    }
+                });
+        }
+    }
+
+    private static boolean hasNonDefaultV10AgentCard() {
+        for (io.quarkus.arc.InstanceHandle<AgentCard> handle :
+                io.quarkus.arc.Arc.container()
+                        .select(AgentCard.class, PublicAgentCard.Literal.INSTANCE)
+                        .handles()) {
+            if (!handle.getBean().isDefaultBean()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Authenticated

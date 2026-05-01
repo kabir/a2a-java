@@ -48,11 +48,13 @@ import org.a2aproject.sdk.compat03.spec.TaskResubscriptionRequest_v0_3;
 import org.a2aproject.sdk.compat03.transport.rest.handler.RestHandler_v0_3;
 import org.a2aproject.sdk.compat03.transport.rest.handler.RestHandler_v0_3.HTTPRestResponse;
 import org.a2aproject.sdk.compat03.transport.rest.handler.RestHandler_v0_3.HTTPRestStreamingResponse;
+import org.a2aproject.sdk.server.PublicAgentCard;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
+import org.a2aproject.sdk.spec.AgentCard;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,11 +128,15 @@ public class A2AServerRoutes_v0_3 {
             .order(1)
             .blockingHandler(authenticated(this::deleteTaskPushNotificationConfiguration));
 
-        // GET /.well-known/agent-card.json - public
-        router.get("/.well-known/agent-card.json")
-            .order(1)
-            .produces(APPLICATION_JSON)
-            .handler(this::getAgentCard);
+        // Only register v0.3 agent card if no real v1.0 agent card producer exists.
+        // DefaultProducers provides a @DefaultBean AgentCard fallback that is always
+        // present, so we must exclude it and only check for non-default beans.
+        if (!hasNonDefaultV10AgentCard()) {
+            router.get("/.well-known/agent-card.json")
+                .order(1)
+                .produces(APPLICATION_JSON)
+                .handler(this::getAgentCard);
+        }
 
         // GET /v1/card - authenticated
         router.get("/v1/card")
@@ -427,6 +433,18 @@ public class A2AServerRoutes_v0_3 {
             CallContextFactory_v0_3 builder = callContextFactory.get();
             return builder.build(rc);
         }
+    }
+
+    private static boolean hasNonDefaultV10AgentCard() {
+        for (io.quarkus.arc.InstanceHandle<AgentCard> handle :
+                io.quarkus.arc.Arc.container()
+                        .select(AgentCard.class, PublicAgentCard.Literal.INSTANCE)
+                        .handles()) {
+            if (!handle.getBean().isDefaultBean()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static class MultiSseSupport {
