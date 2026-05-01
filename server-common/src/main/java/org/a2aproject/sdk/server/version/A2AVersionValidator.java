@@ -17,8 +17,8 @@ import org.a2aproject.sdk.spec.VersionNotSupportedError;
  *   <li>Minor versions are compatible (1.0 client can talk to 1.1 server and vice versa)</li>
  * </ul>
  *
- * <p>If the client does not specify a version, the current protocol version
- * ({@link AgentInterface#CURRENT_PROTOCOL_VERSION}) is assumed as the default.
+ * <p>Per A2A spec Section 3.6.2, if the client does not specify a version,
+ * version "0.3" is assumed for backward compatibility.
  */
 public class A2AVersionValidator {
 
@@ -34,9 +34,9 @@ public class A2AVersionValidator {
             throws VersionNotSupportedError {
         String requestedVersion = context.getRequestedProtocolVersion();
 
-        // If client didn't specify a version, default to current version
+        // Per spec Section 3.6.2: empty/missing A2A-Version defaults to 0.3
         if (requestedVersion == null || requestedVersion.trim().isEmpty()) {
-            requestedVersion = AgentInterface.CURRENT_PROTOCOL_VERSION;
+            requestedVersion = "0.3";
         }
 
         // Collect all unique protocol versions from all supported interfaces

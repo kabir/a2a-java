@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Timeout;
 @Timeout(value = 1, unit = TimeUnit.MINUTES)
 public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
 
-    private final ServerCallContext callContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
+    private final ServerCallContext callContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>(), "1.0");
 
     private static AgentCardCacheMetadata createCacheMetadata() {
         return createCacheMetadata(CARD);
@@ -722,7 +722,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         ServerCallContext contextWithExtension = new ServerCallContext(
                 UnauthenticatedUser.INSTANCE,
                 Map.of("foo", "bar"),
-                requestedExtensions
+                requestedExtensions,
+                "1.0"
         );
 
         agentExecutorExecute = (context, agentEmitter) -> {
@@ -955,8 +956,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
-    public void testNoVersionDefaultsToCurrentVersionSuccess() {
-        // Create AgentCard with protocol version 1.0 (current version)
+    public void testNoVersionDefaultsTo0_3_RejectedByV10OnlyServer() {
+        // Per spec Section 3.6.2: missing A2A-Version defaults to 0.3
         AgentCard agentCard = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with version 1.0")
@@ -973,10 +974,13 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
 
         RestHandler handler = new RestHandler(agentCard, createCacheMetadata(agentCard), requestHandler, internalExecutor);
 
-        // Use default callContext (no version - should default to 1.0)
         agentExecutorExecute = (context, agentEmitter) -> {
             agentEmitter.sendMessage(context.getMessage());
         };
+
+        // Context with no version — defaults to 0.3, incompatible with v1.0-only server
+        ServerCallContext noVersionContext = new ServerCallContext(
+                UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
 
         String requestBody = """
             {
@@ -994,12 +998,12 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
               }
             }""";
 
-        RestHandler.HTTPRestResponse response = handler.sendMessage(callContext, "", requestBody);
+        RestHandler.HTTPRestResponse response = handler.sendMessage(noVersionContext, "", requestBody);
 
-        // Should succeed without error (defaults to 1.0)
-        Assertions.assertEquals(200, response.getStatusCode());
-        Assertions.assertEquals(APPLICATION_JSON, response.getContentType());
-        Assertions.assertNotNull(response.getBody());
+        // Should return error (0.3 is not supported by v1.0-only server)
+        Assertions.assertEquals(400, response.getStatusCode());
+        Assertions.assertTrue(response.getBody().contains("0.3"));
+        Assertions.assertTrue(response.getBody().contains("not supported"));
     }
 
     @Test
