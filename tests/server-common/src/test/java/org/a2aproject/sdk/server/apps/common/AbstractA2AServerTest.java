@@ -38,6 +38,7 @@ import io.restassured.RestAssured;
 import io.restassured.config.ObjectMapperConfig;
 import io.restassured.specification.RequestSpecification;
 import org.a2aproject.sdk.client.Client;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.client.ClientBuilder;
 import org.a2aproject.sdk.client.ClientEvent;
 import org.a2aproject.sdk.client.MessageEvent;
@@ -130,6 +131,7 @@ public abstract class AbstractA2AServerTest {
 
     public static RequestSpecification given() {
     return RestAssured.given()
+        .header(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION)
         .config(RestAssured.config()
             .objectMapperConfig(new ObjectMapperConfig(A2AGsonObjectMapper.INSTANCE)));
 }
@@ -2340,7 +2342,8 @@ public abstract class AbstractA2AServerTest {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + serverPort + "/"))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
-                .header("Content-Type", APPLICATION_JSON);
+                .header("Content-Type", APPLICATION_JSON)
+                .header(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION);
         if (mediaType != null) {
             builder.header("Accept", mediaType);
         }

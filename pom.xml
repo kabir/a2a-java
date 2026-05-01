@@ -596,6 +596,9 @@
         <module>reference/multiversion-jsonrpc</module>
         <module>reference/multiversion-rest</module>
 
+        <!-- Dual-version test modules -->
+        <module>tests/reference/jsonrpc</module>
+
         <!-- BOMs - build order automatically determined by reactor based on dependencies -->
         <module>boms/extras</module>
         <module>boms/reference</module>

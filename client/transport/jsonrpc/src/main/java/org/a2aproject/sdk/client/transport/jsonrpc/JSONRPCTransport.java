@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import com.google.protobuf.MessageOrBuilder;
 
 import org.a2aproject.sdk.client.http.A2AHttpClient;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListener;
@@ -336,6 +337,7 @@ public class JSONRPCTransport implements ClientTransport {
         A2AHttpClient.PostBuilder postBuilder = httpClient.createPost()
                 .url(url)
                 .addHeader("Content-Type", "application/json")
+                .addHeader(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION)
                 .body(JSONRPCUtils.toJsonRPCRequest(null, method, (MessageOrBuilder) payloadAndHeaders.getPayload()));
 
         if (payloadAndHeaders.getHeaders() != null) {

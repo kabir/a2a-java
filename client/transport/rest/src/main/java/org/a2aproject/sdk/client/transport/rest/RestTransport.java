@@ -30,6 +30,7 @@ import com.google.protobuf.util.JsonFormat;
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.client.transport.rest.sse.SSEEventListener;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
@@ -143,11 +144,7 @@ public class RestTransport implements ClientTransport {
                 url.append(String.format("/tasks/%1s", taskQueryParams.id()));
             }
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url.toString());
-            if (payloadAndHeaders.getHeaders() != null) {
-                for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
-                    getBuilder.addHeader(entry.getKey(), entry.getValue());
-                }
-            }
+            addStandardHeaders(getBuilder, payloadAndHeaders);
             A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper.mapRestError(response);
@@ -218,11 +215,7 @@ public class RestTransport implements ClientTransport {
             }
 
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(urlBuilder.toString());
-            if (payloadAndHeaders.getHeaders() != null) {
-                for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
-                    getBuilder.addHeader(entry.getKey(), entry.getValue());
-                }
-            }
+            addStandardHeaders(getBuilder, payloadAndHeaders);
             A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper.mapRestError(response);
@@ -305,11 +298,7 @@ public class RestTransport implements ClientTransport {
                 agentCard, context);
         try {
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url.toString());
-            if (payloadAndHeaders.getHeaders() != null) {
-                for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
-                    getBuilder.addHeader(entry.getKey(), entry.getValue());
-                }
-            }
+            addStandardHeaders(getBuilder, payloadAndHeaders);
             A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper.mapRestError(response);
@@ -336,11 +325,7 @@ public class RestTransport implements ClientTransport {
         try {
             String url = Utils.buildBaseUrl(agentInterface, request.tenant()) + String.format("/tasks/%1s/pushNotificationConfigs", request.id());
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
-            if (payloadAndHeaders.getHeaders() != null) {
-                for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
-                    getBuilder.addHeader(entry.getKey(), entry.getValue());
-                }
-            }
+            addStandardHeaders(getBuilder, payloadAndHeaders);
             A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper.mapRestError(response);
@@ -365,11 +350,7 @@ public class RestTransport implements ClientTransport {
         try {
             String url = Utils.buildBaseUrl(agentInterface, request.tenant()) + String.format("/tasks/%1s/pushNotificationConfigs/%2s", request.taskId(), request.id());
             A2AHttpClient.DeleteBuilder deleteBuilder = httpClient.createDelete().url(url);
-            if (payloadAndHeaders.getHeaders() != null) {
-                for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
-                    deleteBuilder.addHeader(entry.getKey(), entry.getValue());
-                }
-            }
+            addStandardHeaders(deleteBuilder, payloadAndHeaders);
             A2AHttpResponse response = deleteBuilder.delete();
             if (!response.success()) {
                 throw RestErrorMapper.mapRestError(response);
@@ -415,9 +396,7 @@ public class RestTransport implements ClientTransport {
             PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_EXTENDED_AGENT_CARD_METHOD, null, agentCard, context);
             String url = Utils.buildBaseUrl(agentInterface, params.tenant()) + "/extendedAgentCard";
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
-            for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
-                    getBuilder.addHeader(entry.getKey(), entry.getValue());
-            }
+            addStandardHeaders(getBuilder, payloadAndHeaders);
             A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper.mapRestError(response);
@@ -463,6 +442,7 @@ public class RestTransport implements ClientTransport {
         A2AHttpClient.PostBuilder postBuilder = httpClient.createPost()
                 .url(url)
                 .addHeader("Content-Type", "application/json")
+                .addHeader(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION)
                 .body(JsonFormat.printer().print((MessageOrBuilder) payloadAndHeaders.getPayload()));
 
         if (payloadAndHeaders.getHeaders() != null) {
@@ -471,6 +451,15 @@ public class RestTransport implements ClientTransport {
             }
         }
         return postBuilder;
+    }
+
+    private static <T extends A2AHttpClient.Builder<T>> void addStandardHeaders(T builder, PayloadAndHeaders payloadAndHeaders) {
+        builder.addHeader(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION);
+        if (payloadAndHeaders.getHeaders() != null) {
+            for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     private Map<String, String> getHttpHeaders(@Nullable ClientCallContext context) {

@@ -293,7 +293,7 @@ public class A2AServerRoutes_v0_3 {
         return new JSONRPCErrorResponse_v0_3(request.getId(), error);
     }
 
-    static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
+    public static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
         streamingMultiSseSupportSubscribedRunnable = runnable;
     }
 
