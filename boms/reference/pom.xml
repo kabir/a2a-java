@@ -59,6 +59,18 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- Multiversion reference modules -->
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-reference-multiversion-jsonrpc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-reference-multiversion-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Compat 0.3 Reference modules -->
             <dependency>
                 <groupId>${project.groupId}</groupId>
