@@ -1,7 +1,9 @@
 package org.a2aproject.sdk.client.http;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -9,8 +11,8 @@ import java.util.stream.StreamSupport;
  *
  * <p>
  * This factory discovers available {@link A2AHttpClientProvider} implementations at runtime
- * and selects the one with the highest priority. If no providers are found, it falls back
- * to creating a {@link JdkA2AHttpClient}.
+ * and selects the one with the highest priority. If no providers are found, it throws
+ * an {@link IllegalStateException}.
  *
  * <h2>Usage</h2>
  * <pre>{@code
@@ -40,6 +42,13 @@ import java.util.stream.StreamSupport;
  */
 public final class A2AHttpClientFactory {
 
+    private static final List<A2AHttpClientProvider> PROVIDERS;
+
+    static {
+        PROVIDERS = StreamSupport.stream(ServiceLoader.load(A2AHttpClientProvider.class).spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
     private A2AHttpClientFactory() {
         // Utility class
     }
@@ -49,17 +58,16 @@ public final class A2AHttpClientFactory {
      *
      * <p>
      * This method uses the ServiceLoader mechanism to discover providers at runtime.
-     * If no providers are found, it falls back to creating a {@link JdkA2AHttpClient}.
+     * If no providers are found, it throws an {@link IllegalStateException}.
      *
      * @return a new A2AHttpClient instance
+     * @throws IllegalStateException if no providers are found
      */
     public static A2AHttpClient create() {
-        ServiceLoader<A2AHttpClientProvider> loader = ServiceLoader.load(A2AHttpClientProvider.class);
-
-        return StreamSupport.stream(loader.spliterator(), false)
+        return PROVIDERS.stream()
                 .max(Comparator.comparingInt(A2AHttpClientProvider::priority))
                 .map(A2AHttpClientProvider::create)
-                .orElseGet(JdkA2AHttpClient::new);
+                .orElseThrow(() -> new IllegalStateException("No A2AHttpClientProvider found"));
     }
 
     /**

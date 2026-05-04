@@ -122,6 +122,18 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-http-client</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>a2a-java-sdk-http-client-android</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>a2a-java-sdk-http-client-vertx</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -560,6 +572,7 @@
         <module>extras/push-notification-config-store-database-jpa</module>
         <module>extras/queue-manager-replicated</module>
         <module>extras/http-client-vertx</module>
+        <module>extras/http-client-android</module>
         <module>http-client</module>
         <module>jsonrpc-common</module>
         <module>integrations/microprofile-config</module>
