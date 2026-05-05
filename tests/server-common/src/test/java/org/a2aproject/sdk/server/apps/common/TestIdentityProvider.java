@@ -1,4 +1,4 @@
-package org.a2aproject.sdk.server.rest.quarkus;
+package org.a2aproject.sdk.server.apps.common;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

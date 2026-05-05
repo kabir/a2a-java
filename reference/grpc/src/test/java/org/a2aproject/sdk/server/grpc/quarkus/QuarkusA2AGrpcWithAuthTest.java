@@ -8,6 +8,7 @@ import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptor;
 import org.a2aproject.sdk.server.PublicAgentCard;
 import org.a2aproject.sdk.server.apps.common.AbstractA2AServerWithAuthTest;
+import org.a2aproject.sdk.server.apps.common.AuthTestProfile;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import io.grpc.ManagedChannel;

@@ -253,7 +253,7 @@ public class A2AServerRoutes {
             try {
                 vertxSecurityHelper.runInRequestContext(ctx, () -> action.accept(ctx));
             } catch (UnauthorizedException | ForbiddenException e) {
-                VertxSecurityHelper.handleAuthError(ctx, e);
+                vertxSecurityHelper.handleAuthError(ctx, e);
             } catch (Exception e) {
                 VertxSecurityHelper.handleGenericError(ctx);
             }

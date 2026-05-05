@@ -6,6 +6,7 @@ import org.a2aproject.sdk.client.transport.rest.RestTransport;
 import org.a2aproject.sdk.client.transport.rest.RestTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptor;
 import org.a2aproject.sdk.server.apps.common.AbstractA2AServerWithAuthTest;
+import org.a2aproject.sdk.server.apps.common.AuthTestProfile;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;

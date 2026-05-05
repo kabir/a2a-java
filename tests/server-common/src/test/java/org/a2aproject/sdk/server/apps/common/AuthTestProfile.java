@@ -1,4 +1,4 @@
-package org.a2aproject.sdk.server.apps.quarkus;
+package org.a2aproject.sdk.server.apps.common;
 
 import java.util.Map;
 
@@ -19,11 +19,17 @@ public class AuthTestProfile implements QuarkusTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
         return Map.ofEntries(
-                // Disable the TestIdentityProvider - we want real authentication
+                // Disable TestIdentityProvider auto-authentication
                 Map.entry("test.identity.auto-auth", "false"),
+
+                // Disable Quarkus test security
+                Map.entry("quarkus.test.security.auth.enabled", "false"),
 
                 // Enable security in AgentCard (server advertises Basic Auth support)
                 Map.entry("test.agent.security.enabled", "true"),
+
+                // Enable authorization so @Authenticated is enforced (used by gRPC)
+                Map.entry("test.authorization.enabled", "true"),
 
                 // Enable embedded user store
                 Map.entry("quarkus.security.users.embedded.enabled", "true"),

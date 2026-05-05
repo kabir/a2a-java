@@ -7,7 +7,9 @@ import jakarta.inject.Singleton;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
+import io.vertx.core.Context;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -48,7 +50,7 @@ import io.vertx.ext.web.RoutingContext;
  *                     myAuthenticatedMethod(); // Has @Authenticated annotation
  *                 });
  *             } catch (UnauthorizedException | ForbiddenException e) {
- *                 VertxSecurityHelper.handleAuthError(ctx, e);
+ *                 securityHelper.handleAuthError(ctx, e);
  *             } catch (Exception e) {
  *                 VertxSecurityHelper.handleGenericError(ctx);
  *             }
@@ -68,9 +70,8 @@ public final class VertxSecurityHelper {
     @Inject
     Instance<CurrentIdentityAssociation> currentIdentityAssociation;
 
-
     public VertxSecurityHelper() {
-        // Utility class - no instantiation
+        // CDI-managed constructor
     }
 
     /**
@@ -98,6 +99,10 @@ public final class VertxSecurityHelper {
      * @throws RuntimeException if the task throws an exception
      */
     public void runInRequestContext(RoutingContext ctx, Runnable task) {
+        if (Context.isOnEventLoopThread()) {
+            throw new IllegalStateException(
+                    "Cannot perform blocking authentication on event loop thread. Use blockingHandler().");
+        }
         ManagedContext requestContext = Arc.container().requestContext();
         boolean wasActive = requestContext.isActive();
         if (!wasActive) {
@@ -124,22 +129,31 @@ public final class VertxSecurityHelper {
      *
      * <ul>
      *   <li>{@code ForbiddenException} → HTTP 403 Forbidden</li>
-     *   <li>All other auth errors → HTTP 401 Unauthorized with {@code WWW-Authenticate: Basic} header</li>
+     *   <li>All other auth errors → delegates to {@link HttpAuthenticator#getChallenge} to obtain
+     *       the correct {@code WWW-Authenticate} header for the configured auth mechanism
+     *       (Basic, Bearer, etc.) and sends HTTP 401 with the challenge header</li>
      * </ul>
      *
      * @param ctx the routing context
      * @param e the authentication or authorization exception
      */
-    public static void handleAuthError(RoutingContext ctx, Exception e) {
+    public void handleAuthError(RoutingContext ctx, Exception e) {
         if (!ctx.response().ended()) {
             if (e instanceof io.quarkus.security.ForbiddenException) {
                 ctx.response()
                     .setStatusCode(403)
                     .end();
             } else {
+                int status = 401;
+                if (!httpAuthenticator.isUnsatisfied()) {
+                    ChallengeData challenge = httpAuthenticator.get().getChallenge(ctx).await().indefinitely();
+                    if (challenge != null) {
+                        status = challenge.status;
+                        ctx.response().putHeader(challenge.headerName, challenge.headerContent);
+                    }
+                }
                 ctx.response()
-                    .setStatusCode(401)
-                    .putHeader("WWW-Authenticate", "Basic realm=\"Quarkus\"")
+                    .setStatusCode(status)
                     .end();
             }
         }
