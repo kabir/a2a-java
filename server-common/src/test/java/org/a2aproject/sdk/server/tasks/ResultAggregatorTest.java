@@ -374,7 +374,6 @@ public class ResultAggregatorTest {
             taskId,
             new TaskStatus(TaskState.TASK_STATE_AUTH_REQUIRED),
             "ctx1",
-            false,  // isFinal=false for AUTH_REQUIRED
             null
         );
 

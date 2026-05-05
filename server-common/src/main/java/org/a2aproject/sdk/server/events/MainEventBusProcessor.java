@@ -14,10 +14,8 @@ import org.a2aproject.sdk.server.tasks.TaskPersistenceException;
 import org.a2aproject.sdk.server.tasks.TaskSerializationException;
 import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.spec.A2AError;
-import org.a2aproject.sdk.spec.A2AServerException;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.InternalError;
-import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
@@ -134,6 +132,7 @@ public class MainEventBusProcessor implements Runnable {
         this.pushNotificationExecutor = executor;
     }
 
+    @SuppressWarnings("NullAway.Init")
     @PostConstruct
     void start() {
         processorThread = new Thread(this, "MainEventBusProcessor");

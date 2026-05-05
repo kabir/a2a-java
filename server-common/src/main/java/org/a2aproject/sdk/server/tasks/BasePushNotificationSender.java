@@ -4,7 +4,6 @@ import static org.a2aproject.sdk.client.http.A2AHttpClient.APPLICATION_JSON;
 import static org.a2aproject.sdk.client.http.A2AHttpClient.CONTENT_TYPE;
 import static org.a2aproject.sdk.common.A2AHeaders.X_A2A_NOTIFICATION_TOKEN;
 
-import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,6 +24,7 @@ import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,6 +134,10 @@ public class BasePushNotificationSender implements PushNotificationSender {
         A2AHttpClient.PostBuilder postBuilder = httpClient.createPost();
         if (token != null && !token.isBlank()) {
             postBuilder.addHeader(X_A2A_NOTIFICATION_TOKEN, token);
+        }
+        if (pushInfo.authentication() != null && pushInfo.authentication().credentials() != null) {
+            postBuilder.addHeader("Authorization",
+                    pushInfo.authentication().scheme() + " " + pushInfo.authentication().credentials());
         }
 
         String body;

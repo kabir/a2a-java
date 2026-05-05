@@ -185,12 +185,10 @@ public class SSEEventListenerTest {
     @Test
     public void testFinalTaskStatusUpdateEventCancels() {
         TaskStatus completedStatus = new TaskStatus(TaskState.TASK_STATE_COMPLETED);
-        // Use constructor since Builder doesn't have isFinal method
         TaskStatusUpdateEvent tsue = new TaskStatusUpdateEvent(
                 "1234",
                 completedStatus,
                 "xyz",
-                completedStatus.state().isFinal(),  // Derive from state
                 null
         );
 

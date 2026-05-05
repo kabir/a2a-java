@@ -114,13 +114,11 @@ public class SSEEventListenerTest {
                 .build();
     }
 
-    private static TaskStatusUpdateEvent createTaskStatusUpdateEvent(TaskState state, boolean isFinal) {
-        // Use constructor since Builder doesn't have isFinal method
+    private static TaskStatusUpdateEvent createTaskStatusUpdateEvent(TaskState state) {
         return new TaskStatusUpdateEvent(
                 TEST_TASK_ID,
                 new TaskStatus(state),
                 TEST_CONTEXT_ID,
-                isFinal,
                 null
         );
     }
@@ -206,7 +204,7 @@ public class SSEEventListenerTest {
     @Test
     public void testShouldAutoCloseWithFinalTaskStatusUpdateEvent() {
         TestSSEEventListener listener = createBasicListener();
-        TaskStatusUpdateEvent finalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_COMPLETED, true);
+        TaskStatusUpdateEvent finalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_COMPLETED);
 
         assertTrue(listener.shouldAutoClose(finalEvent));
     }
@@ -214,7 +212,7 @@ public class SSEEventListenerTest {
     @Test
     public void testShouldAutoCloseWithNonFinalTaskStatusUpdateEvent() {
         TestSSEEventListener listener = createBasicListener();
-        TaskStatusUpdateEvent nonFinalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_WORKING, false);
+        TaskStatusUpdateEvent nonFinalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_WORKING);
 
         assertFalse(listener.shouldAutoClose(nonFinalEvent));
     }
@@ -252,7 +250,7 @@ public class SSEEventListenerTest {
         AtomicReference<StreamingEventKind> receivedEvent = new AtomicReference<>();
         TestSSEEventListener listener = createListenerWithEventCapture(receivedEvent);
 
-        TaskStatusUpdateEvent finalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_COMPLETED, true);
+        TaskStatusUpdateEvent finalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_COMPLETED);
         CancelCapturingFuture future = new CancelCapturingFuture();
 
         listener.setEventToHandle(finalEvent);
@@ -283,7 +281,7 @@ public class SSEEventListenerTest {
         AtomicReference<StreamingEventKind> receivedEvent = new AtomicReference<>();
         TestSSEEventListener listener = createListenerWithEventCapture(receivedEvent);
 
-        TaskStatusUpdateEvent finalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_COMPLETED, true);
+        TaskStatusUpdateEvent finalEvent = createTaskStatusUpdateEvent(TaskState.TASK_STATE_COMPLETED);
 
         // Should not throw with null future
         listener.setEventToHandle(finalEvent);

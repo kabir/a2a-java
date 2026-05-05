@@ -256,12 +256,10 @@ public class ToProtoTest {
     @Test
     public void convertTaskStatusUpdateEvent() {
         TaskStatus completedStatus = new TaskStatus(TaskState.TASK_STATE_COMPLETED);
-        // Use constructor since Builder doesn't have isFinal method
         TaskStatusUpdateEvent tsue = new TaskStatusUpdateEvent(
                 "1234",
                 completedStatus,
                 "xyz",
-                completedStatus.state().isFinal(),  // Derive from state
                 null
         );
         org.a2aproject.sdk.grpc.TaskStatusUpdateEvent result = ProtoUtils.ToProto.taskStatusUpdateEvent(tsue);

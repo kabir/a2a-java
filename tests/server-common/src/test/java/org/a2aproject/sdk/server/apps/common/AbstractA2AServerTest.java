@@ -69,6 +69,7 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.MessageSendConfiguration;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.MethodNotFoundError;
 import org.a2aproject.sdk.spec.Part;
@@ -3020,6 +3021,68 @@ public abstract class AbstractA2AServerTest {
                 .filter(part -> part instanceof TextPart)
                 .map(part -> ((TextPart) part).text())
                 .collect(Collectors.joining("\n"));
+    }
+
+    @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    public void testSendMessageWithHistoryLengthZero() throws Exception {
+        AtomicReference<String> taskIdRef = new AtomicReference<>();
+
+        try {
+            Message initialMessage = Message.builder(MESSAGE)
+                    .parts(new TextPart("input-required:Trigger INPUT_REQUIRED"))
+                    .build();
+
+            CountDownLatch initialLatch = new CountDownLatch(1);
+            getNonStreamingClient().sendMessage(initialMessage, List.of((event, agentCard) -> {
+                if (event instanceof TaskEvent te) {
+                    taskIdRef.set(te.getTask().id());
+                    initialLatch.countDown();
+                } else if (event instanceof TaskUpdateEvent tue) {
+                    if (tue.getUpdateEvent() instanceof TaskStatusUpdateEvent statusUpdate) {
+                        taskIdRef.set(statusUpdate.taskId());
+                    }
+                    initialLatch.countDown();
+                }
+            }), null);
+
+            assertTrue(initialLatch.await(15, TimeUnit.SECONDS), "Initial sendMessage should complete");
+            String taskId = taskIdRef.get();
+            assertNotNull(taskId, "Should have captured task ID");
+
+            Message followUp = Message.builder(MESSAGE)
+                    .taskId(taskId)
+                    .parts(new TextPart("input-required:User input"))
+                    .build();
+
+            MessageSendParams params = MessageSendParams.builder()
+                    .message(followUp)
+                    .configuration(MessageSendConfiguration.builder()
+                            .historyLength(0)
+                            .build())
+                    .build();
+
+            CountDownLatch followUpLatch = new CountDownLatch(1);
+            AtomicReference<Task> resultTaskRef = new AtomicReference<>();
+            getNonStreamingClient().sendMessage(params, List.of((BiConsumer<ClientEvent, AgentCard>) (event, agentCard) -> {
+                if (event instanceof TaskEvent te) {
+                    resultTaskRef.set(te.getTask());
+                    followUpLatch.countDown();
+                }
+            }), null, null);
+
+            assertTrue(followUpLatch.await(15, TimeUnit.SECONDS), "Follow-up sendMessage should complete");
+            Task resultTask = resultTaskRef.get();
+            assertNotNull(resultTask, "Should have received a Task response");
+            assertTrue(resultTask.history().isEmpty(),
+                    "historyLength=0 should return no history, but got " +
+                            resultTask.history().size() + " messages");
+        } finally {
+            String taskId = taskIdRef.get();
+            if (taskId != null) {
+                deleteTaskInTaskStore(taskId);
+            }
+        }
     }
 
 }
