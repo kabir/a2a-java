@@ -123,7 +123,7 @@ public class MultiVersionRestRoutes {
                     vertxSecurityHelper.runInRequestContext(ctx,
                         () -> v03Routes.getAuthenticatedExtendedCard(ctx));
                 } catch (UnauthorizedException | ForbiddenException e) {
-                    VertxSecurityHelper.handleAuthError(ctx, e);
+                    vertxSecurityHelper.handleAuthError(ctx, e);
                 } catch (Exception e) {
                     VertxSecurityHelper.handleGenericError(ctx);
                 }
@@ -167,7 +167,7 @@ public class MultiVersionRestRoutes {
                     }
                 });
             } catch (UnauthorizedException | ForbiddenException e) {
-                VertxSecurityHelper.handleAuthError(ctx, e);
+                vertxSecurityHelper.handleAuthError(ctx, e);
             } catch (A2AError e) {
                 sendA2AErrorResponse(ctx, e);
             } catch (Exception e) {
@@ -197,7 +197,7 @@ public class MultiVersionRestRoutes {
                     }
                 });
             } catch (UnauthorizedException | ForbiddenException e) {
-                VertxSecurityHelper.handleAuthError(ctx, e);
+                vertxSecurityHelper.handleAuthError(ctx, e);
             } catch (A2AError e) {
                 sendA2AErrorResponse(ctx, e);
             } catch (Exception e) {

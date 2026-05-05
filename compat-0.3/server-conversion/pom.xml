@@ -107,6 +107,20 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Quarkus Security for TestIdentityProvider_v0_3 -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Quarkus JUnit5 for AuthTestProfile_v0_3 (QuarkusTestProfile) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- REST-assured for test utilities -->
         <dependency>
             <groupId>io.rest-assured</groupId>

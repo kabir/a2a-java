@@ -150,7 +150,7 @@ public class A2AServerRoutes_v0_3 {
             try {
                 vertxSecurityHelper.runInRequestContext(ctx, () -> action.accept(ctx));
             } catch (UnauthorizedException | ForbiddenException e) {
-                VertxSecurityHelper.handleAuthError(ctx, e);
+                vertxSecurityHelper.handleAuthError(ctx, e);
             } catch (Exception e) {
                 VertxSecurityHelper.handleGenericError(ctx);
             }
@@ -253,10 +253,13 @@ public class A2AServerRoutes_v0_3 {
 
     private void sendResponse(RoutingContext rc, @Nullable HTTPRestResponse response) {
         if (response != null) {
-            rc.response()
+            var httpResponse = rc.response()
                     .setStatusCode(response.getStatusCode())
-                    .putHeader(CONTENT_TYPE, response.getContentType())
-                    .end(response.getBody());
+                    .putHeader(CONTENT_TYPE, response.getContentType());
+
+            response.getHeaders().forEach(httpResponse::putHeader);
+
+            httpResponse.end(response.getBody());
         } else {
             rc.response().end();
         }
@@ -466,7 +469,7 @@ public class A2AServerRoutes_v0_3 {
                     this.upstream.request(1);
 
                     response.closeHandler(v -> {
-                        logger.info("REST SSE connection closed by client, calling EventConsumer.cancel() to stop polling loop");
+                        logger.debug("REST SSE connection closed by client, calling EventConsumer.cancel() to stop polling loop");
                         context.invokeEventConsumerCancelCallback();
                         subscription.cancel();
                     });

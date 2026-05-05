@@ -53,8 +53,7 @@ public class MultiVersionJSONRPCRoutes {
                                 null);
                         }
                     });
-                } catch (UnauthorizedException | ForbiddenException e) {
-                    VertxSecurityHelper.handleAuthError(ctx, e);
+                } catch (UnauthorizedException | ForbiddenException e) {vertxSecurityHelper.handleAuthError(ctx, e);
                 } catch (A2AError e) {
                     ctx.response()
                         .setStatusCode(200)

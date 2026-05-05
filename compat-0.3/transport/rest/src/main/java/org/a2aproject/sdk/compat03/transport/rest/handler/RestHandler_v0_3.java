@@ -11,6 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Flow;
 
 import org.a2aproject.sdk.server.ExtendedAgentCard;
@@ -389,11 +390,17 @@ public class RestHandler_v0_3 {
         private final int statusCode;
         private final String contentType;
         private final String body;
+        private final Map<String, String> headers;
 
         public HTTPRestResponse(int statusCode, String contentType, String body) {
+            this(statusCode, contentType, body, Map.of());
+        }
+
+        public HTTPRestResponse(int statusCode, String contentType, String body, Map<String, String> headers) {
             this.statusCode = statusCode;
             this.contentType = contentType;
             this.body = body;
+            this.headers = Map.copyOf(headers);
         }
 
         public int getStatusCode() {
@@ -408,9 +415,13 @@ public class RestHandler_v0_3 {
             return body;
         }
 
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
         @Override
         public String toString() {
-            return "HTTPRestResponse{" + "statusCode=" + statusCode + ", contentType=" + contentType + ", body=" + body + '}';
+            return "HTTPRestResponse{" + "statusCode=" + statusCode + ", contentType=" + contentType + ", body=" + body + ", headers=" + headers + '}';
         }
     }
 

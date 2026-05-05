@@ -99,7 +99,7 @@ public class A2AServerRoutes_v0_3 {
                         invokeJSONRPCHandler(ctx.body().asString(), ctx);
                     });
                 } catch (UnauthorizedException | ForbiddenException e) {
-                    VertxSecurityHelper.handleAuthError(ctx, e);
+                    vertxSecurityHelper.handleAuthError(ctx, e);
                 } catch (Exception e) {
                     VertxSecurityHelper.handleGenericError(ctx);
                 }

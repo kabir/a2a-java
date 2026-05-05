@@ -1,4 +1,4 @@
-package org.a2aproject.sdk.compat03.server.apps.quarkus;
+package org.a2aproject.sdk.compat03.conversion;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

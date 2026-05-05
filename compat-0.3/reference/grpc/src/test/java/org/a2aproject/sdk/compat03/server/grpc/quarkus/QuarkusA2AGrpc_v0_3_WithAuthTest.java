@@ -7,6 +7,7 @@ import org.a2aproject.sdk.compat03.client.transport.grpc.GrpcTransport_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.grpc.GrpcTransportConfigBuilder_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.auth.AuthInterceptor_v0_3;
 import org.a2aproject.sdk.compat03.conversion.AbstractA2AServerWithAuthTest_v0_3;
+import org.a2aproject.sdk.compat03.conversion.AuthTestProfile_v0_3;
 import org.a2aproject.sdk.compat03.spec.TransportProtocol_v0_3;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
