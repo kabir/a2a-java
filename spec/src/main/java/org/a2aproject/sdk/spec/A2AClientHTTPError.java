@@ -62,7 +62,7 @@ public class A2AClientHTTPError extends A2AClientError {
         Assert.checkNotNullParam("message", message);
         this.code = code;
         this.message = message;
-        this.responseBody = data instanceof String s ? s : null;
+        this.responseBody = data instanceof String s ? s : "";
     }
 
     /**
