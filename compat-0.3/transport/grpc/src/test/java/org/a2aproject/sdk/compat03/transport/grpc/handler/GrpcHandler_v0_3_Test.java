@@ -65,7 +65,7 @@ public class GrpcHandler_v0_3_Test extends AbstractA2ARequestHandlerTest_v0_3 {
             .build();
 
     private final ServerCallContext callContext = new ServerCallContext(
-            UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
+            UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>(), "0.3");
 
     // ========================================
     // GetTask Tests

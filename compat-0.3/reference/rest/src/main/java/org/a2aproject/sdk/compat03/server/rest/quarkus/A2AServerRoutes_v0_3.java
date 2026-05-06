@@ -431,7 +431,7 @@ public class A2AServerRoutes_v0_3 {
             List<String> extensionHeaderValues = rc.request().headers().getAll(A2AHeaders_v0_3.X_A2A_EXTENSIONS);
             Set<String> requestedExtensions = A2AExtensions.getRequestedExtensions(extensionHeaderValues);
 
-            return new ServerCallContext(user, state, requestedExtensions);
+            return new ServerCallContext(user, state, requestedExtensions, "0.3");
         } else {
             CallContextFactory_v0_3 builder = callContextFactory.get();
             return builder.build(rc);

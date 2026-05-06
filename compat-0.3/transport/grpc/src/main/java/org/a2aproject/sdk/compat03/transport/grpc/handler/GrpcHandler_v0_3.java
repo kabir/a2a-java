@@ -363,7 +363,7 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
             Map<String, Object> state = new HashMap<>();
             state.put("grpc_response_observer", responseObserver);
             Set<String> requestedExtensions = new HashSet<>();
-            return new ServerCallContext(user, state, requestedExtensions);
+            return new ServerCallContext(user, state, requestedExtensions, "0.3");
         } else {
             return factory.create(responseObserver);
         }

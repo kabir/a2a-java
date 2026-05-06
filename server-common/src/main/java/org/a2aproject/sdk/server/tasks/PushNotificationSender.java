@@ -2,6 +2,7 @@ package org.a2aproject.sdk.server.tasks;
 
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Interface for delivering push notifications containing task state updates to external systems.
@@ -52,7 +53,7 @@ import org.a2aproject.sdk.spec.Task;
  *     KafkaProducer<String, StreamingEventKind> producer;
  *
  *     @Override
- *     public void sendNotification(StreamingEventKind event) {
+ *     public void sendNotification(StreamingEventKind event, Task taskSnapshot) {
  *         String taskId = extractTaskId(event);
  *         producer.send("task-updates", taskId, event);
  *     }
@@ -79,30 +80,5 @@ import org.a2aproject.sdk.spec.Task;
  */
 public interface PushNotificationSender {
 
-    /**
-     * Sends a push notification containing a streaming event.
-     * <p>
-     * Called after the event has been persisted to {@link TaskStore}. The event is wrapped
-     * in a StreamResponse format (per A2A spec section 4.3.3) with the appropriate oneof
-     * field set (task, message, statusUpdate, or artifactUpdate).
-     * </p>
-     * <p>
-     * Retrieve push notification URLs or messaging configurations from
-     * {@link PushNotificationConfigStore} using the task ID extracted from the event.
-     * </p>
-     * Supported event types:
-     * <ul>
-     *   <li>{@link Task} - wrapped in StreamResponse.task</li>
-     *   <li>{@link org.a2aproject.sdk.spec.Message} - wrapped in StreamResponse.message</li>
-     *   <li>{@link org.a2aproject.sdk.spec.TaskStatusUpdateEvent} - wrapped in StreamResponse.statusUpdate</li>
-     *   <li>{@link org.a2aproject.sdk.spec.TaskArtifactUpdateEvent} - wrapped in StreamResponse.artifactUpdate</li>
-     * </ul>
-     * <p>
-     * <b>Error Handling:</b> Log errors but don't throw exceptions. Notifications are
-     * best-effort and should not fail the primary request.
-     * </p>
-     *
-     * @param event the streaming event to send (Task, Message, TaskStatusUpdateEvent, or TaskArtifactUpdateEvent)
-     */
-    void sendNotification(StreamingEventKind event);
+    void sendNotification(StreamingEventKind event, @Nullable Task taskSnapshot);
 }

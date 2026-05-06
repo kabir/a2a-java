@@ -85,7 +85,7 @@ import org.a2aproject.sdk.compat03.spec.UnsupportedOperationError_v0_3;
 public class JSONRPCHandler_v0_3_Test extends AbstractA2ARequestHandlerTest_v0_3 {
 
     private final ServerCallContext callContext = new ServerCallContext(
-            UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
+            UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>(), "0.3");
 
     // ========================================
     // GetTask Tests
