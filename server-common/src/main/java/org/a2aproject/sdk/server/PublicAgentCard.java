@@ -9,10 +9,15 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 @Qualifier
 @Retention(RUNTIME)
 @Target({FIELD, TYPE, METHOD, PARAMETER})
 public @interface PublicAgentCard {
+
+    final class Literal extends AnnotationLiteral<PublicAgentCard> implements PublicAgentCard {
+        public static final Literal INSTANCE = new Literal();
+    }
 }

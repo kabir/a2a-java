@@ -81,6 +81,8 @@ import static org.a2aproject.sdk.spec.A2AMethods.SEND_MESSAGE_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 
+import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
+
 /**
  * Utilities for converting between JSON-RPC 2.0 messages and Protocol Buffer objects.
  * <p>
@@ -580,17 +582,11 @@ public class JSONRPCUtils {
         }
     }
 
-    public static String toJsonRPCResultResponse(Object requestId, com.google.protobuf.MessageOrBuilder builder) {
+    public static String toJsonRPCResultResponse(@Nullable Object requestId, com.google.protobuf.MessageOrBuilder builder) {
         try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
-            if (requestId != null) {
-                if (requestId instanceof String string) {
-                    output.name("id").value(string);
-                } else if (requestId instanceof Number number) {
-                    output.name("id").value(number.longValue());
-                }
-            }
+            JsonUtil.writeJsonRpcId(output, requestId);
             String resultValue = JsonFormat.printer().alwaysPrintFieldsWithNoPresence().omittingInsignificantWhitespace().print(builder);
             output.name("result").jsonValue(resultValue);
             output.endObject();
@@ -602,17 +598,11 @@ public class JSONRPCUtils {
         }
     }
 
-    public static String toJsonRPCErrorResponse(Object requestId, A2AError error) {
+    public static String toJsonRPCErrorResponse(@Nullable Object requestId, A2AError error) {
         try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
-            if (requestId != null) {
-                if (requestId instanceof String string) {
-                    output.name("id").value(string);
-                } else if (requestId instanceof Number number) {
-                    output.name("id").value(number.longValue());
-                }
-            }
+            JsonUtil.writeJsonRpcId(output, requestId);
             output.name("error");
             output.beginObject();
             output.name("code").value(error.getCode());

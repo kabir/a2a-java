@@ -50,22 +50,46 @@ public class A2AVersionValidatorTest {
     }
 
     @Test
-    public void testValidateProtocolVersion_NoVersionProvided_DefaultsTo1_0() {
-        // When no version is provided, should default to 1.0 and succeed
+    public void testValidateProtocolVersion_NoVersionProvided_DefaultsTo0_3() {
+        // Per spec Section 3.6.2: missing A2A-Version defaults to 0.3
+        // A v1.0-only server should reject this
         AgentCard agentCard = createAgentCard("1.0");
         ServerCallContext context = createContext(null);
 
-        // Should not throw - defaults to 1.0 which matches
+        VersionNotSupportedError error = assertThrows(VersionNotSupportedError.class,
+                () -> A2AVersionValidator.validateProtocolVersion(agentCard, context));
+        assertTrue(error.getMessage().contains("0.3"));
+        assertTrue(error.getMessage().contains("not supported"));
+    }
+
+    @Test
+    public void testValidateProtocolVersion_EmptyVersionProvided_DefaultsTo0_3() {
+        // Per spec Section 3.6.2: empty A2A-Version defaults to 0.3
+        // A v1.0-only server should reject this
+        AgentCard agentCard = createAgentCard("1.0");
+        ServerCallContext context = createContext("");
+
+        VersionNotSupportedError error = assertThrows(VersionNotSupportedError.class,
+                () -> A2AVersionValidator.validateProtocolVersion(agentCard, context));
+        assertTrue(error.getMessage().contains("0.3"));
+        assertTrue(error.getMessage().contains("not supported"));
+    }
+
+    @Test
+    public void testValidateProtocolVersion_NoVersionProvided_DualVersionServer() {
+        // A server supporting both 1.0 and 0.3 should accept missing version (defaults to 0.3)
+        AgentCard agentCard = createAgentCardWithVersions("1.0", "0.3");
+        ServerCallContext context = createContext(null);
+
         assertDoesNotThrow(() -> A2AVersionValidator.validateProtocolVersion(agentCard, context));
     }
 
     @Test
-    public void testValidateProtocolVersion_EmptyVersionProvided_DefaultsTo1_0() {
-        // When empty version is provided, should default to 1.0 and succeed
-        AgentCard agentCard = createAgentCard("1.0");
-        ServerCallContext context = createContext("");
+    public void testValidateProtocolVersion_NoVersionProvided_V03OnlyServer() {
+        // A v0.3-only server should accept missing version (defaults to 0.3)
+        AgentCard agentCard = createAgentCard("0.3");
+        ServerCallContext context = createContext(null);
 
-        // Should not throw - defaults to 1.0 which matches
         assertDoesNotThrow(() -> A2AVersionValidator.validateProtocolVersion(agentCard, context));
     }
 
@@ -141,10 +165,18 @@ public class A2AVersionValidatorTest {
     }
 
     private AgentCard createAgentCard(String protocolVersion) {
+        return createAgentCardWithVersions(protocolVersion);
+    }
+
+    private AgentCard createAgentCardWithVersions(String... protocolVersions) {
+        List<AgentInterface> interfaces = new java.util.ArrayList<>();
+        for (String version : protocolVersions) {
+            interfaces.add(new AgentInterface("GRPC", "http://localhost:9999", "", version));
+        }
         return AgentCard.builder()
                 .name("test-card")
                 .description("Test card")
-                .supportedInterfaces(List.of(new AgentInterface("GRPC", "http://localhost:9999", "", protocolVersion)))
+                .supportedInterfaces(interfaces)
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(false)

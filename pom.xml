@@ -589,6 +589,18 @@
         <module>transport/grpc</module>
         <module>transport/rest</module>
 
+        <!-- A2A Protocol v0.3 backward compatibility layer -->
+        <module>compat-0.3</module>
+
+        <!-- Multiversion reference modules (depend on both v1.0 and v0.3) -->
+        <module>reference/multiversion-jsonrpc</module>
+        <module>reference/multiversion-rest</module>
+
+        <!-- Dual-version test modules -->
+        <module>tests/reference/jsonrpc</module>
+        <module>tests/reference/rest</module>
+        <module>tests/reference/grpc</module>
+
         <!-- BOMs - build order automatically determined by reactor based on dependencies -->
         <module>boms/extras</module>
         <module>boms/reference</module>

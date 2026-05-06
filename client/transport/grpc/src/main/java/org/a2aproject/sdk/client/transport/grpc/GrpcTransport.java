@@ -33,6 +33,7 @@ import org.a2aproject.sdk.grpc.utils.ProtoUtils.ToProto;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.CancelTaskParams;
 import org.a2aproject.sdk.spec.DeleteTaskPushNotificationConfigParams;
 import org.a2aproject.sdk.spec.EventKind;
@@ -388,6 +389,7 @@ public class GrpcTransport implements ClientTransport {
      */
     private Metadata createGrpcMetadata(@Nullable ClientCallContext context, @Nullable PayloadAndHeaders payloadAndHeaders) {
         Metadata metadata = new Metadata();
+        metadata.put(VERSION_KEY, AgentInterface.CURRENT_PROTOCOL_VERSION);
 
         if (context != null && context.getHeaders() != null) {
             // Set a2a-version and a2a-extensions headers if present, ignoring case

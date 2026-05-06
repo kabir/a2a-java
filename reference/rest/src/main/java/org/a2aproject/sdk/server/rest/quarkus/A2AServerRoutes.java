@@ -836,7 +836,7 @@ public class A2AServerRoutes {
         sendResponse(rc, response);
     }
 
-    static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
+    public static void setStreamingMultiSseSupportSubscribedRunnable(Runnable runnable) {
         streamingMultiSseSupportSubscribedRunnable = runnable;
     }
 

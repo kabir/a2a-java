@@ -1,0 +1,39 @@
+package org.a2aproject.sdk.tests.multiversion.jsonrpc;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.a2aproject.sdk.compat03.client.ClientBuilder_v0_3;
+import org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransport_v0_3;
+import org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransportConfigBuilder_v0_3;
+import org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3;
+import org.a2aproject.sdk.compat03.spec.TransportProtocol_v0_3;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+@QuarkusTest
+public class MultiVersionJSONRPC_v0_3_Test extends AbstractA2AServerServerTest_v0_3 {
+
+    public MultiVersionJSONRPC_v0_3_Test() {
+        super(8081);
+    }
+
+    @Override
+    protected String getTransportProtocol() {
+        return TransportProtocol_v0_3.JSONRPC.asString();
+    }
+
+    @Override
+    protected String getTransportUrl() {
+        return "http://localhost:8081";
+    }
+
+    @Override
+    protected void configureTransport(ClientBuilder_v0_3 builder) {
+        builder.withTransport(JSONRPCTransport_v0_3.class, new JSONRPCTransportConfigBuilder_v0_3());
+    }
+
+    @Test
+    @Override
+    @Disabled("Agent card is v1.0 format in dual-version mode")
+    public void testGetAgentCard() {
+    }
+}

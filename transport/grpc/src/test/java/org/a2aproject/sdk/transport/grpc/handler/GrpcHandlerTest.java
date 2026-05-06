@@ -942,7 +942,8 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                         return new ServerCallContext(
                                 UnauthenticatedUser.INSTANCE,
                                 Map.of("grpc_response_observer", streamObserver),
-                                requestedExtensions
+                                requestedExtensions,
+                                "1.0"
                         );
                     }
                 };
@@ -1109,8 +1110,8 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
-    public void testNoVersionDefaultsToCurrentVersionSuccess() throws Exception {
-        // Create AgentCard with protocol version 1.0 (current version)
+    public void testNoVersionDefaultsTo0_3_RejectedByV10OnlyServer() throws Exception {
+        // Per spec Section 3.6.2: missing A2A-Version defaults to 0.3
         AgentCard agentCard = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with version 1.0")
@@ -1125,7 +1126,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .skills(List.of())
                 .build();
 
-        // Create handler that provides null version (should default to 1.0)
+        // Create handler that provides null version — defaults to 0.3, incompatible with v1.0-only
         GrpcHandler handler = new TestGrpcHandler(agentCard, requestHandler, internalExecutor) {
             @Override
             protected CallContextFactory getCallContextFactory() {
@@ -1136,7 +1137,7 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                                 UnauthenticatedUser.INSTANCE,
                                 Map.of("grpc_response_observer", streamObserver),
                                 new HashSet<>(),
-                                null // No version - should default to 1.0
+                                null
                         );
                     }
                 };
@@ -1155,9 +1156,9 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         handler.sendMessage(request, streamRecorder);
         streamRecorder.awaitCompletion(5, TimeUnit.SECONDS);
 
-        // Should succeed without error (defaults to 1.0)
-        Assertions.assertNull(streamRecorder.getError());
-        Assertions.assertFalse(streamRecorder.getValues().isEmpty());
+        // Should fail with VersionNotSupportedError (0.3 is not supported by v1.0-only server)
+        Assertions.assertNotNull(streamRecorder.getError());
+        Assertions.assertInstanceOf(io.grpc.StatusRuntimeException.class, streamRecorder.getError());
     }
 
     private StreamRecorder<SendMessageResponse> sendMessageRequest(GrpcHandler handler) throws Exception {
@@ -1308,7 +1309,17 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
 
         @Override
         protected CallContextFactory getCallContextFactory() {
-            return null;
+            return new CallContextFactory() {
+                @Override
+                public <V> ServerCallContext create(StreamObserver<V> streamObserver) {
+                    return new ServerCallContext(
+                            UnauthenticatedUser.INSTANCE,
+                            Map.of("grpc_response_observer", streamObserver),
+                            new HashSet<>(),
+                            "1.0"
+                    );
+                }
+            };
         }
 
         @Override
