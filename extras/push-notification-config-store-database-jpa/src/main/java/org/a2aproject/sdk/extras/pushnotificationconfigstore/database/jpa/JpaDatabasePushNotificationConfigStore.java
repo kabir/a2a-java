@@ -181,4 +181,19 @@ public class JpaDatabasePushNotificationConfigStore implements PushNotificationC
         return jpaConfig != null ? jpaConfig.getProtocolVersion() : null;
     }
 
+    @Transactional
+    @Override
+    public java.util.Map<String, String> getProtocolVersions(String taskId) {
+        List<Object[]> results = em.createQuery(
+                "SELECT c.id.configId, c.protocolVersion FROM JpaPushNotificationConfig c " +
+                "WHERE c.id.taskId = :taskId AND c.protocolVersion IS NOT NULL", Object[].class)
+                .setParameter("taskId", taskId)
+                .getResultList();
+        java.util.Map<String, String> versions = new java.util.HashMap<>();
+        for (Object[] row : results) {
+            versions.put((String) row[0], (String) row[1]);
+        }
+        return versions;
+    }
+
 }

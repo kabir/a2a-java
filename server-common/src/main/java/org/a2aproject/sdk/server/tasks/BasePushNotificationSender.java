@@ -110,20 +110,11 @@ public class BasePushNotificationSender implements PushNotificationSender {
           nextPageToken = pageResult.nextPageToken();
         } while (nextPageToken != null);
 
-        Map<String, String> versionsByConfigKey = new HashMap<>();
-        for (TaskPushNotificationConfig config : configs) {
-            String configTaskId = config.taskId();
-            if (configTaskId != null) {
-                String version = configStore.getProtocolVersion(configTaskId, config.id());
-                if (version != null) {
-                    versionsByConfigKey.put(configTaskId + ":" + config.id(), version);
-                }
-            }
-        }
+        Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
 
         List<CompletableFuture<Boolean>> dispatchResults = configs
                 .stream()
-                .map(pushConfig -> dispatch(event, taskSnapshot, pushConfig, versionsByConfigKey))
+                .map(pushConfig -> dispatch(event, taskSnapshot, pushConfig, versionsByConfigId))
                 .toList();
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(dispatchResults.toArray(new CompletableFuture[0]));
         CompletableFuture<Boolean> dispatchResult = allFutures.thenApply(v -> dispatchResults.stream()
@@ -163,19 +154,18 @@ public class BasePushNotificationSender implements PushNotificationSender {
     private CompletableFuture<Boolean> dispatch(StreamingEventKind event,
                                                  @Nullable Task taskSnapshot,
                                                  TaskPushNotificationConfig pushInfo,
-                                                 Map<String, String> versionsByConfigKey) {
-        return CompletableFuture.supplyAsync(() -> dispatchNotification(event, taskSnapshot, pushInfo, versionsByConfigKey));
+                                                 Map<String, String> versionsByConfigId) {
+        return CompletableFuture.supplyAsync(() -> dispatchNotification(event, taskSnapshot, pushInfo, versionsByConfigId));
     }
 
     private boolean dispatchNotification(StreamingEventKind event,
                                           @Nullable Task taskSnapshot,
                                           TaskPushNotificationConfig pushInfo,
-                                          Map<String, String> versionsByConfigKey) {
+                                          Map<String, String> versionsByConfigId) {
         String url = pushInfo.url();
         String token = pushInfo.token();
 
-        String taskId = pushInfo.taskId();
-        String version = taskId != null ? versionsByConfigKey.get(taskId + ":" + pushInfo.id()) : null;
+        String version = versionsByConfigId.get(pushInfo.id());
         PushNotificationPayloadFormatter formatter = version != null
                 ? formattersByVersion.get(version) : null;
 

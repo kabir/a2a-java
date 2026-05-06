@@ -154,4 +154,14 @@ public interface PushNotificationConfigStore {
         return null;
     }
 
+    /**
+     * Gets all protocol versions for a task's push notification configurations in a single call.
+     *
+     * @param taskId the task ID
+     * @return a map of config ID to protocol version (only includes configs with a version set)
+     */
+    default java.util.Map<String, String> getProtocolVersions(String taskId) {
+        return java.util.Map.of();
+    }
+
 }

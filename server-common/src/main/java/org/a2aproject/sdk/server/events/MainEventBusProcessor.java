@@ -242,7 +242,7 @@ public class MainEventBusProcessor implements Runnable {
             // Skip push notifications for replicated events to avoid duplicate notifications in multi-instance deployments
             // Push notifications are sent for all StreamingEventKind events (Task, Message, TaskStatusUpdateEvent, TaskArtifactUpdateEvent)
             // per A2A spec section 4.3.3
-            if (!isReplicated && event instanceof StreamingEventKind streamingEvent) {
+            if (!isReplicated && eventToDistribute == event && event instanceof StreamingEventKind streamingEvent) {
                 // Send the streaming event directly - it will be wrapped in StreamResponse format by PushNotificationSender
                 sendPushNotification(taskId, streamingEvent, updateResult != null ? updateResult.taskSnapshot() : null);
             }

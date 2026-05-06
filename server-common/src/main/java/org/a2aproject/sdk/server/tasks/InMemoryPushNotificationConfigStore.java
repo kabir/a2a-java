@@ -125,4 +125,16 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
     public @Nullable String getProtocolVersion(String taskId, String configId) {
         return protocolVersions.get(taskId + ":" + configId);
     }
+
+    @Override
+    public Map<String, String> getProtocolVersions(String taskId) {
+        String prefix = taskId + ":";
+        Map<String, String> result = new HashMap<>();
+        protocolVersions.forEach((key, version) -> {
+            if (key.startsWith(prefix)) {
+                result.put(key.substring(prefix.length()), version);
+            }
+        });
+        return result;
+    }
 }
