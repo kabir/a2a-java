@@ -2,6 +2,7 @@ package org.a2aproject.sdk.transport.jsonrpc.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -91,7 +92,7 @@ import org.mockito.Mockito;
 @Timeout(value = 1, unit = TimeUnit.MINUTES)
 public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
 
-    private final ServerCallContext callContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
+    private final ServerCallContext callContext = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>(), "1.0");
 
     private static MessageSendConfiguration defaultConfiguration() {
         return MessageSendConfiguration.builder()
@@ -998,7 +999,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 TaskNotFoundError.class,
                 () -> handler.onSubscribeToTask(request, callContext));
 
-        Assertions.assertNotNull(thrown);
+        assertNotNull(thrown);
     }
 
     @Test
@@ -1135,7 +1136,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                         MINIMAL_TASK.id(),"c295ea44-7543-4f78-b524-7a38915ad6e4"));
         GetTaskPushNotificationConfigResponse response = handler.getPushNotificationConfig(request, callContext);
 
-        Assertions.assertNotNull(response.getError());
+        assertNotNull(response.getError());
         assertInstanceOf(UnsupportedOperationError.class, response.getError());
         assertEquals("This operation is not supported", response.getError().getMessage());
     }
@@ -1742,7 +1743,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         ServerCallContext contextWithExtension = new ServerCallContext(
                 UnauthenticatedUser.INSTANCE,
                 Map.of("foo", "bar"),
-                requestedExtensions
+                requestedExtensions,
+                "1.0"
         );
 
         agentExecutorExecute = (context, agentEmitter) -> {
@@ -1921,8 +1923,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
-    public void testNoVersionDefaultsToCurrentVersionSuccess() {
-        // Create AgentCard with protocol version 1.0 (current version)
+    public void testNoVersionDefaultsTo0_3_RejectedByV10OnlyServer() {
+        // Per spec Section 3.6.2: missing A2A-Version defaults to 0.3
         AgentCard agentCard = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with version 1.0")
@@ -1940,21 +1942,25 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         JSONRPCHandler handler = new JSONRPCHandler(agentCard, requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
 
-        // Use default callContext (no version - should default to 1.0)
         agentExecutorExecute = (context, agentEmitter) -> {
             agentEmitter.sendMessage(context.getMessage());
         };
+
+        // Context with no version — defaults to 0.3, which is incompatible with v1.0-only server
+        ServerCallContext noVersionContext = new ServerCallContext(
+                UnauthenticatedUser.INSTANCE, Map.of("foo", "bar"), new HashSet<>());
 
         Message message = Message.builder(MESSAGE)
                 .taskId(MINIMAL_TASK.id())
                 .contextId(MINIMAL_TASK.contextId())
                 .build();
         SendMessageRequest request = new SendMessageRequest("1", new MessageSendParams(message, null, null));
-        SendMessageResponse response = handler.onMessageSend(request, callContext);
+        SendMessageResponse response = handler.onMessageSend(request, noVersionContext);
 
-        // Should succeed without error (defaults to 1.0)
-        assertNull(response.getError());
-        Assertions.assertSame(message, response.getResult());
+        // Should return VersionNotSupportedError
+        assertNotNull(response.getError());
+        assertInstanceOf(VersionNotSupportedError.class, response.getError());
+        assertTrue(response.getError().getMessage().contains("0.3"));
     }
 
     @Test
@@ -1972,8 +1978,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         // Should return success with all fields present (not null)
         assertNull(response.getError());
         ListTasksResult result = response.getResult();
-        Assertions.assertNotNull(result);
-        Assertions.assertNotNull(result.tasks(), "tasks field should not be null");
+        assertNotNull(result);
+        assertNotNull(result.tasks(), "tasks field should not be null");
         assertEquals(0, result.tasks().size(), "tasks should be empty list");
         assertEquals(0, result.totalSize(), "totalSize should be 0");
         assertEquals(0, result.pageSize(), "pageSize should be 0");

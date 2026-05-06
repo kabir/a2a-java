@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import com.google.protobuf.MessageOrBuilder;
 
 import org.a2aproject.sdk.client.http.A2AHttpClient;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListener;
@@ -46,6 +47,7 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigResponse;
 import org.a2aproject.sdk.spec.A2AClientError;
 import org.a2aproject.sdk.spec.A2AClientException;
+import org.a2aproject.sdk.spec.A2AClientHTTPError;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
@@ -321,10 +323,12 @@ public class JSONRPCTransport implements ClientTransport {
     }
 
     private String sendPostRequest(String url, PayloadAndHeaders payloadAndHeaders, String method) throws IOException, InterruptedException, JsonProcessingException {
-        A2AHttpClient.PostBuilder builder = createPostBuilder(url, payloadAndHeaders,method);
+        A2AHttpClient.PostBuilder builder = createPostBuilder(url, payloadAndHeaders, method);
         A2AHttpResponse response = builder.post();
         if (!response.success()) {
-            throw new IOException("Request failed " + response.status());
+            int status = response.status();
+            String message = "Request failed with HTTP " + status;
+            throw new A2AClientException(message, new A2AClientHTTPError(status, message, response.body()));
         }
         return response.body();
     }
@@ -333,6 +337,7 @@ public class JSONRPCTransport implements ClientTransport {
         A2AHttpClient.PostBuilder postBuilder = httpClient.createPost()
                 .url(url)
                 .addHeader("Content-Type", "application/json")
+                .addHeader(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION)
                 .body(JSONRPCUtils.toJsonRPCRequest(null, method, (MessageOrBuilder) payloadAndHeaders.getPayload()));
 
         if (payloadAndHeaders.getHeaders() != null) {
