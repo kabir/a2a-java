@@ -743,25 +743,21 @@ gRPC and REST transports are also available:
 - `a2a-java-sdk-compat-0.3-client-transport-grpc`
 - `a2a-java-sdk-compat-0.3-client-transport-rest`
 
-#### 3. Check the agent card and choose the right client
+#### 3. Create the v0.3 client
 
 ```java
 AgentCard card = new A2ACardResolver("http://localhost:1234").getAgentCard();
 
-for (AgentInterface iface : card.supportedInterfaces()) {
-    if ("0.3".equals(iface.protocolVersion())) {
-        // Use the v0.3 compatibility client
-        Client_v0_3 client = ClientBuilder_v0_3.forUrl(iface.url())
-                .transport("JSONRPC")
-                .build();
-        // client exposes only v0.3-compatible operations
-    } else if ("1.0".equals(iface.protocolVersion())) {
-        // Use the standard v1.0 client
-        Client client = Client.builder(card)
-                .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfig())
-                .build();
-    }
-}
+// Find the v0.3 interface from the agent card
+AgentInterface v03Interface = card.supportedInterfaces().stream()
+        .filter(iface -> "0.3".equals(iface.protocolVersion()))
+        .findFirst()
+        .orElseThrow();
+
+// Create the v0.3 compatibility client
+Client_v0_3 client = ClientBuilder_v0_3.forUrl(v03Interface.url())
+        .withTransport(JSONRPCTransport_v0_3.class, new JSONRPCTransportConfigBuilder_v0_3())
+        .build();
 ```
 
 **Note:** `Client_v0_3` exposes only operations available in protocol v0.3. For example, `listTasks()` is not available (it was added in v1.0). Return types use v0.3 domain objects from the `org.a2aproject.sdk.compat03.spec` package.

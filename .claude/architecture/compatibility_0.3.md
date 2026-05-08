@@ -424,27 +424,22 @@ The `server-conversion` module produces a test-jar containing shared test infras
 </dependency>
 ```
 
-**2. Check the agent card and choose the right client:**
+**2. Find the v0.3 interface and create the client:**
 
 ```java
 AgentCard card = // ... fetch agent card from /.well-known/agent-card.json
 
-for (AgentInterface iface : card.supportedInterfaces()) {
-    if ("0.3".equals(iface.protocolVersion())) {
-        // Use the compat client for v0.3 agents
-        Client_v0_3 client = ClientBuilder_v0_3.forUrl(iface.url())
-                .transport("JSONRPC")
-                .build();
-    } else if ("1.0".equals(iface.protocolVersion())) {
-        // Use the standard client for v1.0 agents
-        Client client = ClientBuilder.forUrl(iface.url())
-                .transport("JSONRPC")
-                .build();
-    }
-}
-```
+// Find the v0.3 interface from the agent card
+AgentInterface v03Interface = card.supportedInterfaces().stream()
+        .filter(iface -> "0.3".equals(iface.protocolVersion()))
+        .findFirst()
+        .orElseThrow();
 
-**3. Use the v0.3 client API:**
+// Create the v0.3 compatibility client
+Client_v0_3 client = ClientBuilder_v0_3.forUrl(v03Interface.url())
+        .withTransport(JSONRPCTransport_v0_3.class, new JSONRPCTransportConfigBuilder_v0_3())
+        .build();
+```
 
 `Client_v0_3` exposes only operations available in v0.3. Return types are v0.3 `org.a2aproject.sdk.compat03.spec` domain objects.
 
