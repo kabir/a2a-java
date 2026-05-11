@@ -183,7 +183,7 @@ public abstract class AbstractA2ARequestHandlerTest_v0_3 {
                 .defaultOutputModes(new ArrayList<>())
                 .preferredTransport("jsonrpc")
                 .skills(new ArrayList<>())
-                .protocolVersion("0.3")
+                .protocolVersion(A2AProtocol_v0_3.PROTOCOL_VERSION)
                 .build();
     }
 

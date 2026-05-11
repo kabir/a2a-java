@@ -122,8 +122,9 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
     }
 
     @Override
-    public @Nullable String getProtocolVersion(String taskId, String configId) {
-        return protocolVersions.get(taskId + ":" + configId);
+    public String getProtocolVersion(String taskId, String configId) {
+        String version = protocolVersions.get(taskId + ":" + configId);
+        return PushNotificationConfigStore.resolveProtocolVersion(version);
     }
 
     @Override

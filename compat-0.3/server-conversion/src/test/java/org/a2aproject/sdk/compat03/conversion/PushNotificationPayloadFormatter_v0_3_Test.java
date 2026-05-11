@@ -25,7 +25,7 @@ class PushNotificationPayloadFormatter_v0_3_Test {
 
     @Test
     void targetVersionIs03() {
-        assertEquals("0.3", formatter.targetVersion());
+        assertEquals(A2AProtocol_v0_3.PROTOCOL_VERSION, formatter.targetVersion());
     }
 
     @Test

@@ -9,6 +9,7 @@ import jakarta.persistence.Transient;
 
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
+import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.jspecify.annotations.Nullable;
 
@@ -84,8 +85,8 @@ public class JpaPushNotificationConfig {
       this.createdAt = createdAt;
     }
 
-    public @Nullable String getProtocolVersion() {
-        return protocolVersion;
+    public String getProtocolVersion() {
+        return PushNotificationConfigStore.resolveProtocolVersion(protocolVersion);
     }
 
     public void setProtocolVersion(String protocolVersion) {

@@ -148,10 +148,10 @@ public interface PushNotificationConfigStore {
      *
      * @param taskId the task ID
      * @param configId the push notification configuration ID
-     * @return the protocol version string, or null if not set
+     * @return the protocol version string, defaults to the current protocol version if not set
      */
-    default @Nullable String getProtocolVersion(String taskId, String configId) {
-        return null;
+    default String getProtocolVersion(String taskId, String configId) {
+        return resolveProtocolVersion(null);
     }
 
     /**

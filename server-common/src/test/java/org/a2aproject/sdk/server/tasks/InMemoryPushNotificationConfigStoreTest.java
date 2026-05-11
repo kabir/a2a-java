@@ -16,6 +16,7 @@ import java.util.List;
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.common.A2AHeaders;
+import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.Task;
@@ -601,7 +602,7 @@ class InMemoryPushNotificationConfigStoreTest {
                 .id(configId).taskId(taskId).url("http://example.com/hook").build();
         configStore.setInfo(config);
 
-        assertNull(configStore.getProtocolVersion(taskId, configId));
+        assertEquals(AgentInterface.CURRENT_PROTOCOL_VERSION, configStore.getProtocolVersion(taskId, configId));
 
         configStore.setInfo(config, "0.3");
         assertEquals("0.3", configStore.getProtocolVersion(taskId, configId));
@@ -618,12 +619,12 @@ class InMemoryPushNotificationConfigStoreTest {
         assertEquals("0.3", configStore.getProtocolVersion(taskId, configId));
 
         configStore.deleteInfo(taskId, configId);
-        assertNull(configStore.getProtocolVersion(taskId, configId));
+        assertEquals(AgentInterface.CURRENT_PROTOCOL_VERSION, configStore.getProtocolVersion(taskId, configId));
     }
 
     @Test
-    public void testGetProtocolVersionReturnsNullForUnknownConfig() {
-        assertNull(configStore.getProtocolVersion("nonexistent", "nonexistent"));
+    public void testGetProtocolVersionReturnsDefaultForUnknownConfig() {
+        assertEquals(AgentInterface.CURRENT_PROTOCOL_VERSION, configStore.getProtocolVersion("nonexistent", "nonexistent"));
     }
 
     @Test

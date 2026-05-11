@@ -21,7 +21,7 @@ public class PushNotificationPayloadFormatter_v0_3 implements PushNotificationPa
 
     @Override
     public String targetVersion() {
-        return "0.3";
+        return A2AProtocol_v0_3.PROTOCOL_VERSION;
     }
 
     @Override

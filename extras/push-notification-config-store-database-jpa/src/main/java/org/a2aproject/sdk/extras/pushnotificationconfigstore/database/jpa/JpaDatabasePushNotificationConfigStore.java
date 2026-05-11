@@ -175,10 +175,10 @@ public class JpaDatabasePushNotificationConfigStore implements PushNotificationC
 
     @Transactional
     @Override
-    public @Nullable String getProtocolVersion(String taskId, String configId) {
+    public String getProtocolVersion(String taskId, String configId) {
         JpaPushNotificationConfig jpaConfig = em.find(JpaPushNotificationConfig.class,
                 new TaskConfigId(taskId, configId));
-        return jpaConfig != null ? jpaConfig.getProtocolVersion() : null;
+        return jpaConfig != null ? jpaConfig.getProtocolVersion() : PushNotificationConfigStore.resolveProtocolVersion(null);
     }
 
     @Transactional
