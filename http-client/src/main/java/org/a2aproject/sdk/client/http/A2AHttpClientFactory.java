@@ -45,7 +45,7 @@ public final class A2AHttpClientFactory {
     private static final List<A2AHttpClientProvider> PROVIDERS;
 
     static {
-        PROVIDERS = StreamSupport.stream(ServiceLoader.load(A2AHttpClientProvider.class).spliterator(), false)
+        PROVIDERS = StreamSupport.stream(ServiceLoader.load(A2AHttpClientProvider.class, A2AHttpClientProvider.class.getClassLoader()).spliterator(), false)
                 .collect(Collectors.toList());
     }
 
@@ -85,7 +85,8 @@ public final class A2AHttpClientFactory {
             throw new IllegalArgumentException("Provider name must not be null or empty");
         }
 
-        ServiceLoader<A2AHttpClientProvider> loader = ServiceLoader.load(A2AHttpClientProvider.class);
+        ServiceLoader<A2AHttpClientProvider> loader =
+                ServiceLoader.load(A2AHttpClientProvider.class, A2AHttpClientProvider.class.getClassLoader());
 
         return StreamSupport.stream(loader.spliterator(), false)
                 .filter(provider -> providerName.equals(provider.name()))
