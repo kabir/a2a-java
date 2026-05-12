@@ -120,13 +120,6 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- Compat 0.3 HTTP Client -->
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>a2a-java-sdk-compat-0.3-http-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
             <!-- Compat 0.3 Client modules -->
             <dependency>
                 <groupId>${project.groupId}</groupId>

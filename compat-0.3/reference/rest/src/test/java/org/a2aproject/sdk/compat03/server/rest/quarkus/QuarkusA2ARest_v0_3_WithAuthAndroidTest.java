@@ -1,11 +1,11 @@
 package org.a2aproject.sdk.compat03.server.rest.quarkus;
 
+import org.a2aproject.sdk.client.http.AndroidA2AHttpClient;
 import org.a2aproject.sdk.compat03.client.ClientBuilder_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.rest.RestTransport_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.rest.RestTransportConfigBuilder_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.auth.AuthInterceptor_v0_3;
 import org.a2aproject.sdk.compat03.conversion.AbstractA2AServerWithAuthTest_v0_3;
-import org.a2aproject.sdk.compat03.conversion.AndroidA2AHttpClient_v0_3;
 import org.a2aproject.sdk.compat03.conversion.AuthTestProfile_v0_3;
 import org.a2aproject.sdk.compat03.spec.TransportProtocol_v0_3;
 import io.quarkus.test.junit.QuarkusTest;
@@ -38,14 +38,14 @@ public class QuarkusA2ARest_v0_3_WithAuthAndroidTest extends AbstractA2AServerWi
 
         builder.withTransport(RestTransport_v0_3.class,
                 new RestTransportConfigBuilder_v0_3()
-                        .httpClient(new AndroidA2AHttpClient_v0_3())
+                        .httpClient(new AndroidA2AHttpClient())
                         .addInterceptor(authInterceptor));
     }
 
     @Override
     protected void configureTransport(ClientBuilder_v0_3 builder) {
         builder.withTransport(RestTransport_v0_3.class,
-                new RestTransportConfigBuilder_v0_3().httpClient(new AndroidA2AHttpClient_v0_3()));
+                new RestTransportConfigBuilder_v0_3().httpClient(new AndroidA2AHttpClient()));
     }
 
     @Test

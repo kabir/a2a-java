@@ -6,10 +6,11 @@ import org.a2aproject.sdk.compat03.json.JsonProcessingException_v0_3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
+import org.a2aproject.sdk.client.http.A2AHttpClient;
+import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
+import org.a2aproject.sdk.client.http.A2AHttpResponse;
+import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.compat03.client.http.A2ACardResolver_v0_3;
-import org.a2aproject.sdk.compat03.client.http.A2AHttpClient_v0_3;
-import org.a2aproject.sdk.compat03.client.http.A2AHttpResponse_v0_3;
-import org.a2aproject.sdk.compat03.client.http.JdkA2AHttpClient_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.rest.sse.RestSSEEventListener_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.ClientTransport_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallContext_v0_3;
@@ -58,7 +59,7 @@ import org.jspecify.annotations.Nullable;
 public class RestTransport_v0_3 implements ClientTransport_v0_3 {
 
     private static final Logger log = Logger.getLogger(RestTransport_v0_3.class.getName());
-    private final A2AHttpClient_v0_3 httpClient;
+    private final A2AHttpClient httpClient;
     private final String agentUrl;
     private @Nullable final List<ClientCallInterceptor_v0_3> interceptors;
     private AgentCard_v0_3 agentCard;
@@ -68,9 +69,9 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
         this(null, agentCard, agentCard.url(), null);
     }
 
-    public RestTransport_v0_3(@Nullable A2AHttpClient_v0_3 httpClient, AgentCard_v0_3 agentCard,
+    public RestTransport_v0_3(@Nullable A2AHttpClient httpClient, AgentCard_v0_3 agentCard,
                               String agentUrl, @Nullable List<ClientCallInterceptor_v0_3> interceptors) {
-        this.httpClient = httpClient == null ? new JdkA2AHttpClient_v0_3() : httpClient;
+        this.httpClient = httpClient == null ? A2AHttpClientFactory.create() : httpClient;
         this.agentCard = agentCard;
         this.agentUrl = agentUrl.endsWith("/") ? agentUrl.substring(0, agentUrl.length() - 1) : agentUrl;
         this.interceptors = interceptors;
@@ -110,9 +111,9 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
         AtomicReference<CompletableFuture<Void>> ref = new AtomicReference<>();
         RestSSEEventListener_v0_3 sseEventListener = new RestSSEEventListener_v0_3(eventConsumer, errorConsumer);
         try {
-            A2AHttpClient_v0_3.PostBuilder postBuilder = createPostBuilder(agentUrl + "/v1/message:stream", payloadAndHeaders);
+            A2AHttpClient.PostBuilder postBuilder = createPostBuilder(agentUrl + "/v1/message:stream", payloadAndHeaders);
             ref.set(postBuilder.postAsyncSSE(
-                    msg -> sseEventListener.onMessage(msg, ref.get()),
+                    event -> sseEventListener.onMessage(event.data(), ref.get()),
                     throwable -> sseEventListener.onError(throwable, ref.get()),
                     () -> {
                         // We don't need to do anything special on completion
@@ -140,13 +141,13 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
             } else {
                 url = agentUrl + String.format("/v1/tasks/%1s", taskQueryParams.id());
             }
-            A2AHttpClient_v0_3.GetBuilder getBuilder = httpClient.createGet().url(url);
+            A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
             if (payloadAndHeaders.getHeaders() != null) {
                 for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
                     getBuilder.addHeader(entry.getKey(), entry.getValue());
                 }
             }
-            A2AHttpResponse_v0_3 response = getBuilder.get();
+            A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper_v0_3.mapRestError(response);
             }
@@ -213,13 +214,13 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
                 agentCard, context);
         try {
             String url = agentUrl + String.format("/v1/tasks/%1s/pushNotificationConfigs/%2s", request.id(), configId);
-            A2AHttpClient_v0_3.GetBuilder getBuilder = httpClient.createGet().url(url);
+            A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
             if (payloadAndHeaders.getHeaders() != null) {
                 for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
                     getBuilder.addHeader(entry.getKey(), entry.getValue());
                 }
             }
-            A2AHttpResponse_v0_3 response = getBuilder.get();
+            A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper_v0_3.mapRestError(response);
             }
@@ -243,13 +244,13 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
                 agentCard, context);
         try {
             String url = agentUrl + String.format("/v1/tasks/%1s/pushNotificationConfigs", request.id());
-            A2AHttpClient_v0_3.GetBuilder getBuilder = httpClient.createGet().url(url);
+            A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
             if (payloadAndHeaders.getHeaders() != null) {
                 for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
                     getBuilder.addHeader(entry.getKey(), entry.getValue());
                 }
             }
-            A2AHttpResponse_v0_3 response = getBuilder.get();
+            A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper_v0_3.mapRestError(response);
             }
@@ -272,13 +273,13 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
                 agentCard, context);
         try {
             String url = agentUrl + String.format("/v1/tasks/%1s/pushNotificationConfigs/%2s", request.id(), request.pushNotificationConfigId());
-            A2AHttpClient_v0_3.DeleteBuilder deleteBuilder = httpClient.createDelete().url(url);
+            A2AHttpClient.DeleteBuilder deleteBuilder = httpClient.createDelete().url(url);
             if (payloadAndHeaders.getHeaders() != null) {
                 for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
                     deleteBuilder.addHeader(entry.getKey(), entry.getValue());
                 }
             }
-            A2AHttpResponse_v0_3 response = deleteBuilder.delete();
+            A2AHttpResponse response = deleteBuilder.delete();
             if (!response.success()) {
                 throw RestErrorMapper_v0_3.mapRestError(response);
             }
@@ -301,9 +302,9 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
         RestSSEEventListener_v0_3 sseEventListener = new RestSSEEventListener_v0_3(eventConsumer, errorConsumer);
         try {
             String url = agentUrl + String.format("/v1/tasks/%1s:subscribe", request.id());
-            A2AHttpClient_v0_3.PostBuilder postBuilder = createPostBuilder(url, payloadAndHeaders);
+            A2AHttpClient.PostBuilder postBuilder = createPostBuilder(url, payloadAndHeaders);
             ref.set(postBuilder.postAsyncSSE(
-                    msg -> sseEventListener.onMessage(msg, ref.get()),
+                    event -> sseEventListener.onMessage(event.data(), ref.get()),
                     throwable -> sseEventListener.onError(throwable, ref.get()),
                     () -> {
                         // We don't need to do anything special on completion
@@ -332,13 +333,13 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
             PayloadAndHeaders_v0_3 payloadAndHeaders = applyInterceptors(GetAuthenticatedExtendedCardRequest_v0_3.METHOD, null,
                     agentCard, context);
             String url = agentUrl + String.format("/v1/card");
-            A2AHttpClient_v0_3.GetBuilder getBuilder = httpClient.createGet().url(url);
+            A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
             if (payloadAndHeaders.getHeaders() != null) {
                 for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
                     getBuilder.addHeader(entry.getKey(), entry.getValue());
                 }
             }
-            A2AHttpResponse_v0_3 response = getBuilder.get();
+            A2AHttpResponse response = getBuilder.get();
             if (!response.success()) {
                 throw RestErrorMapper_v0_3.mapRestError(response);
             }
@@ -371,8 +372,8 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
     }
 
     private String sendPostRequest(String url, PayloadAndHeaders_v0_3 payloadAndHeaders) throws IOException, InterruptedException, JsonProcessingException_v0_3 {
-        A2AHttpClient_v0_3.PostBuilder builder = createPostBuilder(url, payloadAndHeaders);
-        A2AHttpResponse_v0_3 response = builder.post();
+        A2AHttpClient.PostBuilder builder = createPostBuilder(url, payloadAndHeaders);
+        A2AHttpResponse response = builder.post();
         if (!response.success()) {
             log.fine("Error on POST processing " + JsonFormat.printer().print((MessageOrBuilder) payloadAndHeaders.getPayload()));
             throw RestErrorMapper_v0_3.mapRestError(response);
@@ -380,9 +381,9 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
         return response.body();
     }
 
-    private A2AHttpClient_v0_3.PostBuilder createPostBuilder(String url, PayloadAndHeaders_v0_3 payloadAndHeaders) throws JsonProcessingException_v0_3, InvalidProtocolBufferException {
+    private A2AHttpClient.PostBuilder createPostBuilder(String url, PayloadAndHeaders_v0_3 payloadAndHeaders) throws JsonProcessingException_v0_3, InvalidProtocolBufferException {
         log.fine(JsonFormat.printer().print((MessageOrBuilder) payloadAndHeaders.getPayload()));
-        A2AHttpClient_v0_3.PostBuilder postBuilder = httpClient.createPost()
+        A2AHttpClient.PostBuilder postBuilder = httpClient.createPost()
                 .url(url)
                 .addHeader("Content-Type", "application/json")
                 .body(JsonFormat.printer().print((MessageOrBuilder) payloadAndHeaders.getPayload()));

@@ -10,13 +10,14 @@ import java.util.function.Consumer;
 import org.a2aproject.sdk.compat03.json.JsonProcessingException_v0_3;
 import org.a2aproject.sdk.compat03.json.JsonUtil_v0_3;
 
+import org.a2aproject.sdk.client.http.A2AHttpClient;
+import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
+import org.a2aproject.sdk.client.http.A2AHttpResponse;
+import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.compat03.client.http.A2ACardResolver_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallContext_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallInterceptor_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.PayloadAndHeaders_v0_3;
-import org.a2aproject.sdk.compat03.client.http.A2AHttpClient_v0_3;
-import org.a2aproject.sdk.compat03.client.http.A2AHttpResponse_v0_3;
-import org.a2aproject.sdk.compat03.client.http.JdkA2AHttpClient_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.ClientTransport_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AClientError_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
@@ -69,7 +70,7 @@ public class JSONRPCTransport_v0_3 implements ClientTransport_v0_3 {
     private static final Class<DeleteTaskPushNotificationConfigResponse_v0_3> DELETE_TASK_PUSH_NOTIFICATION_CONFIG_RESPONSE_REFERENCE = DeleteTaskPushNotificationConfigResponse_v0_3.class;
     private static final Class<GetAuthenticatedExtendedCardResponse_v0_3> GET_AUTHENTICATED_EXTENDED_CARD_RESPONSE_REFERENCE = GetAuthenticatedExtendedCardResponse_v0_3.class;
 
-    private final A2AHttpClient_v0_3 httpClient;
+    private final A2AHttpClient httpClient;
     private final String agentUrl;
     private final List<ClientCallInterceptor_v0_3> interceptors;
     private AgentCard_v0_3 agentCard;
@@ -83,9 +84,9 @@ public class JSONRPCTransport_v0_3 implements ClientTransport_v0_3 {
         this(null, agentCard, agentCard.url(), null);
     }
 
-    public JSONRPCTransport_v0_3(A2AHttpClient_v0_3 httpClient, AgentCard_v0_3 agentCard,
+    public JSONRPCTransport_v0_3(A2AHttpClient httpClient, AgentCard_v0_3 agentCard,
                                  String agentUrl, List<ClientCallInterceptor_v0_3> interceptors) {
-        this.httpClient = httpClient == null ? new JdkA2AHttpClient_v0_3() : httpClient;
+        this.httpClient = httpClient == null ? A2AHttpClientFactory.create() : httpClient;
         this.agentCard = agentCard;
         this.agentUrl = agentUrl;
         this.interceptors = interceptors;
@@ -133,9 +134,9 @@ public class JSONRPCTransport_v0_3 implements ClientTransport_v0_3 {
         SSEEventListener_v0_3 sseEventListener = new SSEEventListener_v0_3(eventConsumer, errorConsumer);
 
         try {
-            A2AHttpClient_v0_3.PostBuilder builder = createPostBuilder(payloadAndHeaders);
+            A2AHttpClient.PostBuilder builder = createPostBuilder(payloadAndHeaders);
             ref.set(builder.postAsyncSSE(
-                    msg -> sseEventListener.onMessage(msg, ref.get()),
+                    event -> sseEventListener.onMessage(event.data(), ref.get()),
                     throwable -> sseEventListener.onError(throwable, ref.get()),
                     () -> {
                         // Signal normal stream completion to error handler (null error means success)
@@ -314,9 +315,9 @@ public class JSONRPCTransport_v0_3 implements ClientTransport_v0_3 {
         SSEEventListener_v0_3 sseEventListener = new SSEEventListener_v0_3(eventConsumer, errorConsumer);
 
         try {
-            A2AHttpClient_v0_3.PostBuilder builder = createPostBuilder(payloadAndHeaders);
+            A2AHttpClient.PostBuilder builder = createPostBuilder(payloadAndHeaders);
             ref.set(builder.postAsyncSSE(
-                    msg -> sseEventListener.onMessage(msg, ref.get()),
+                    event -> sseEventListener.onMessage(event.data(), ref.get()),
                     throwable -> sseEventListener.onError(throwable, ref.get()),
                     () -> {
                         // Signal normal stream completion to error handler (null error means success)
@@ -385,16 +386,16 @@ public class JSONRPCTransport_v0_3 implements ClientTransport_v0_3 {
     }
 
     private String sendPostRequest(PayloadAndHeaders_v0_3 payloadAndHeaders) throws IOException, InterruptedException, JsonProcessingException_v0_3 {
-        A2AHttpClient_v0_3.PostBuilder builder = createPostBuilder(payloadAndHeaders);
-        A2AHttpResponse_v0_3 response = builder.post();
+        A2AHttpClient.PostBuilder builder = createPostBuilder(payloadAndHeaders);
+        A2AHttpResponse response = builder.post();
         if (!response.success()) {
             throw new IOException("Request failed " + response.status());
         }
         return response.body();
     }
 
-    private A2AHttpClient_v0_3.PostBuilder createPostBuilder(PayloadAndHeaders_v0_3 payloadAndHeaders) throws JsonProcessingException_v0_3 {
-        A2AHttpClient_v0_3.PostBuilder postBuilder = httpClient.createPost()
+    private A2AHttpClient.PostBuilder createPostBuilder(PayloadAndHeaders_v0_3 payloadAndHeaders) throws JsonProcessingException_v0_3 {
+        A2AHttpClient.PostBuilder postBuilder = httpClient.createPost()
                 .url(agentUrl)
                 .addHeader("Content-Type", "application/json")
                 .body(JsonUtil_v0_3.toJson(payloadAndHeaders.getPayload()));

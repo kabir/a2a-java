@@ -1,7 +1,7 @@
 package org.a2aproject.sdk.compat03.server.rest.quarkus;
 
+import org.a2aproject.sdk.client.http.JdkA2AHttpClient;
 import org.a2aproject.sdk.compat03.client.ClientBuilder_v0_3;
-import org.a2aproject.sdk.compat03.client.http.JdkA2AHttpClient_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.rest.RestTransport_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.rest.RestTransportConfigBuilder_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.auth.AuthInterceptor_v0_3;
@@ -38,14 +38,14 @@ public class QuarkusA2ARest_v0_3_WithAuthTest extends AbstractA2AServerWithAuthT
 
         builder.withTransport(RestTransport_v0_3.class,
                 new RestTransportConfigBuilder_v0_3()
-                        .httpClient(new JdkA2AHttpClient_v0_3())
+                        .httpClient(new JdkA2AHttpClient())
                         .addInterceptor(authInterceptor));
     }
 
     @Override
     protected void configureTransport(ClientBuilder_v0_3 builder) {
         builder.withTransport(RestTransport_v0_3.class,
-                new RestTransportConfigBuilder_v0_3().httpClient(new JdkA2AHttpClient_v0_3()));
+                new RestTransportConfigBuilder_v0_3().httpClient(new JdkA2AHttpClient()));
     }
 
     @Test

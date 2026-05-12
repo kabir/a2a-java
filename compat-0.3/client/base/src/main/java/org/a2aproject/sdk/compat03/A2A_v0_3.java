@@ -4,9 +4,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.a2aproject.sdk.client.http.A2AHttpClient;
+import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
 import org.a2aproject.sdk.compat03.client.http.A2ACardResolver_v0_3;
-import org.a2aproject.sdk.compat03.client.http.A2AHttpClient_v0_3;
-import org.a2aproject.sdk.compat03.client.http.JdkA2AHttpClient_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AClientError_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AClientJSONError_v0_3;
 import org.a2aproject.sdk.compat03.spec.AgentCard_v0_3;
@@ -138,7 +138,7 @@ public class A2A_v0_3 {
      * @throws A2AClientJSONError_v0_3 If the response body cannot be decoded as JSON or validated against the AgentCard schema
      */
     public static AgentCard_v0_3 getAgentCard(String agentUrl) throws A2AClientError_v0_3, A2AClientJSONError_v0_3 {
-        return getAgentCard(new JdkA2AHttpClient_v0_3(), agentUrl);
+        return getAgentCard(A2AHttpClientFactory.create(), agentUrl);
     }
 
     /**
@@ -150,7 +150,7 @@ public class A2A_v0_3 {
      * @throws A2AClientError_v0_3 If an HTTP error occurs fetching the card
      * @throws A2AClientJSONError_v0_3 If the response body cannot be decoded as JSON or validated against the AgentCard schema
      */
-    public static AgentCard_v0_3 getAgentCard(A2AHttpClient_v0_3 httpClient, String agentUrl) throws A2AClientError_v0_3, A2AClientJSONError_v0_3 {
+    public static AgentCard_v0_3 getAgentCard(A2AHttpClient httpClient, String agentUrl) throws A2AClientError_v0_3, A2AClientJSONError_v0_3 {
         return getAgentCard(httpClient, agentUrl, null, null);
     }
 
@@ -166,7 +166,7 @@ public class A2A_v0_3 {
      * @throws A2AClientJSONError_v0_3 If the response body cannot be decoded as JSON or validated against the AgentCard schema
      */
     public static AgentCard_v0_3 getAgentCard(String agentUrl, String relativeCardPath, Map<String, String> authHeaders) throws A2AClientError_v0_3, A2AClientJSONError_v0_3 {
-        return getAgentCard(new JdkA2AHttpClient_v0_3(), agentUrl, relativeCardPath, authHeaders);
+        return getAgentCard(A2AHttpClientFactory.create(), agentUrl, relativeCardPath, authHeaders);
     }
 
     /**
@@ -181,7 +181,7 @@ public class A2A_v0_3 {
      * @throws A2AClientError_v0_3 If an HTTP error occurs fetching the card
      * @throws A2AClientJSONError_v0_3 If the response body cannot be decoded as JSON or validated against the AgentCard schema
      */
-    public static AgentCard_v0_3 getAgentCard(A2AHttpClient_v0_3 httpClient, String agentUrl, String relativeCardPath, Map<String, String> authHeaders) throws A2AClientError_v0_3, A2AClientJSONError_v0_3 {
+    public static AgentCard_v0_3 getAgentCard(A2AHttpClient httpClient, String agentUrl, String relativeCardPath, Map<String, String> authHeaders) throws A2AClientError_v0_3, A2AClientJSONError_v0_3 {
         A2ACardResolver_v0_3 resolver = new A2ACardResolver_v0_3(httpClient, agentUrl, relativeCardPath, authHeaders);
         return resolver.getAgentCard();
     }
