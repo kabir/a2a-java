@@ -5,14 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import org.a2aproject.sdk.client.http.A2AHttpClient;
+import org.a2aproject.sdk.client.http.A2AHttpResponse;
+import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.compat03.json.JsonUtil_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AClientError_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AClientJSONError_v0_3;
 import org.a2aproject.sdk.compat03.spec.AgentCard_v0_3;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class A2ACardResolver_v0_3_Test {
@@ -109,7 +112,7 @@ public class A2ACardResolver_v0_3_Test {
         assertTrue(msg.contains("503"));
     }
 
-    private static class TestHttpClient implements A2AHttpClient_v0_3 {
+    private static class TestHttpClient implements A2AHttpClient {
         int status = 200;
         String body;
         String url;
@@ -129,11 +132,11 @@ public class A2ACardResolver_v0_3_Test {
             return null;
         }
 
-        class TestGetBuilder implements A2AHttpClient_v0_3.GetBuilder {
+        class TestGetBuilder implements A2AHttpClient.GetBuilder {
 
             @Override
-            public A2AHttpResponse_v0_3 get() throws IOException, InterruptedException {
-                return new A2AHttpResponse_v0_3() {
+            public A2AHttpResponse get() throws IOException, InterruptedException {
+                return new A2AHttpResponse() {
                     @Override
                     public int status() {
                         return status;
@@ -152,7 +155,7 @@ public class A2ACardResolver_v0_3_Test {
             }
 
             @Override
-            public CompletableFuture<Void> getAsyncSSE(Consumer<String> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable) throws IOException, InterruptedException {
+            public CompletableFuture<Void> getAsyncSSE(Consumer<ServerSentEvent> messageConsumer, Consumer<Throwable> errorConsumer, Runnable completeRunnable) throws IOException, InterruptedException {
                 return null;
             }
 

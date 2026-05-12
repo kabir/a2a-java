@@ -1,7 +1,7 @@
 package org.a2aproject.sdk.compat03.client;
 
 import org.a2aproject.sdk.compat03.client.config.ClientConfig_v0_3;
-import org.a2aproject.sdk.compat03.client.http.JdkA2AHttpClient_v0_3;
+import org.a2aproject.sdk.client.http.JdkA2AHttpClient;
 import org.a2aproject.sdk.compat03.client.transport.grpc.GrpcTransport_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.grpc.GrpcTransportConfigBuilder_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransport_v0_3;
@@ -88,7 +88,7 @@ public class ClientBuilder_v0_3_Test {
         Client_v0_3 client = Client_v0_3
                 .builder(card)
                 .withTransport(JSONRPCTransport_v0_3.class, new JSONRPCTransportConfigBuilder_v0_3())
-                .withTransport(JSONRPCTransport_v0_3.class, new JSONRPCTransportConfig_v0_3(new JdkA2AHttpClient_v0_3()))
+                .withTransport(JSONRPCTransport_v0_3.class, new JSONRPCTransportConfig_v0_3(new JdkA2AHttpClient()))
                 .build();
 
         Assertions.assertNotNull(client);

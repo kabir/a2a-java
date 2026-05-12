@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.a2aproject.sdk.compat03.json.JsonProcessingException_v0_3;
 import org.a2aproject.sdk.compat03.json.JsonUtil_v0_3;
-import org.a2aproject.sdk.compat03.client.http.A2AHttpResponse_v0_3;
+import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
 import org.a2aproject.sdk.compat03.spec.AuthenticatedExtendedCardNotConfiguredError_v0_3;
 import org.a2aproject.sdk.compat03.spec.ContentTypeNotSupportedError_v0_3;
@@ -26,7 +26,7 @@ import java.util.logging.Logger;
  */
 public class RestErrorMapper_v0_3 {
 
-    public static A2AClientException_v0_3 mapRestError(A2AHttpResponse_v0_3 response) {
+    public static A2AClientException_v0_3 mapRestError(A2AHttpResponse response) {
         return RestErrorMapper_v0_3.mapRestError(response.body(), response.status());
     }
 

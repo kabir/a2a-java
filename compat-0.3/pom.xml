@@ -31,11 +31,6 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>a2a-java-sdk-compat-0.3-http-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
                 <artifactId>a2a-java-sdk-compat-0.3-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -117,9 +112,6 @@
         <!-- Spec modules -->
         <module>spec</module>
         <module>spec-grpc</module>
-
-        <!-- HTTP Client -->
-        <module>http-client</module>
 
         <!-- Server conversion (0.3 to 1.0 translation layer) -->
         <module>server-conversion</module>
