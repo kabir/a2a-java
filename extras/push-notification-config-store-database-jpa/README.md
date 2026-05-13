@@ -4,6 +4,14 @@ This module provides a JPA-based implementation of the `PushNotificationConfigSt
 
 The persistence is done with the Jakarta Persistence API, so this should be suitable for any JPA 3.0+ provider and Jakarta EE application server.
 
+> **NOTE:**
+> 
+> The `PushNotificationConfig` instances stored in the JPA Database `PushNotificationConfigStore` are simply serialized to JSON before storing in the database, and serialized from JSON when loading from the database. This is done according to the current A2A specification version's format of `PushNotificationConfig`.
+> 
+> Future versions of the specification might use a different format. This is not intended to be a long-term store; its usage is meant to be for the lifetime of the associated `Task` in order to have access to the `PushNotificationConfig` when running in a load-balanced environment.
+> 
+> If you wish to keep the `PushNotificationConfig` instances stored between protocol versions, you might have to implement some migration of the stored data.   
+
 ## Quick Start
 
 ### 1. Add Dependency
