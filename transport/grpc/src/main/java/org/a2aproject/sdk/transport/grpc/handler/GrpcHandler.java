@@ -56,6 +56,7 @@ import org.a2aproject.sdk.spec.TaskNotCancelableError;
 import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
+import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.spec.A2AErrorCodes;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
@@ -686,7 +687,11 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             }
             
             // Extract requested protocol version from gRPC context (set by interceptor)
+            // Default to current version since gRPC only handles 1.0 protocol
             String requestedVersion = getVersionFromContext();
+            if (requestedVersion == null) {
+                requestedVersion = AgentInterface.CURRENT_PROTOCOL_VERSION;
+            }
 
             // Extract requested extensions from gRPC context (set by interceptor)
             Set<String> requestedExtensions = new HashSet<>();
