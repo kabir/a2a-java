@@ -24,6 +24,20 @@ public class QuarkusGrpcHandler_v0_3 extends GrpcHandler_v0_3 {
     private final Instance<CallContextFactory_v0_3> callContextFactoryInstance;
     private final Executor executor;
 
+    @SuppressWarnings("NullAway.Init")
+    public QuarkusGrpcHandler_v0_3() {
+        // No-args constructor needed for spec-compliant CDI environments
+        this.agentCard = null;
+        this.callContextFactoryInstance = null;
+        this.executor = null;
+    }
+
+    public QuarkusGrpcHandler_v0_3(AgentCard_v0_3 agentCard, Instance<CallContextFactory_v0_3> callContextFactoryInstance, Executor executor) {
+        this.agentCard = agentCard;
+        this.callContextFactoryInstance = callContextFactoryInstance;
+        this.executor = executor;
+    }
+
     @Inject
     public QuarkusGrpcHandler_v0_3(@PublicAgentCard AgentCard_v0_3 agentCard,
                                    Convert_v0_3_To10RequestHandler requestHandler,

@@ -4,67 +4,38 @@ import com.google.gson.annotations.SerializedName;
 import java.util.Map;
 
 import org.a2aproject.sdk.util.Assert;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An event sent by the agent to notify the client of a change in a task's status.
  * This is typically used in streaming or subscription models.
  */
-public final class TaskStatusUpdateEvent_v0_3 implements EventKind_v0_3, StreamingEventKind_v0_3, UpdateEvent_v0_3 {
+public record TaskStatusUpdateEvent_v0_3(
+        String taskId,
+        TaskStatus_v0_3 status,
+        String contextId,
+        @SerializedName("final") boolean isFinal,
+        @Nullable Map<String, Object> metadata,
+        String kind
+) implements EventKind_v0_3, StreamingEventKind_v0_3, UpdateEvent_v0_3 {
 
-    public static final String STATUS_UPDATE = "status-update";
-    private final String taskId;
-    private final TaskStatus_v0_3 status;
-    private final String contextId;
-    @SerializedName("final")
-    private final boolean isFinal;
-    private final Map<String, Object> metadata;
-    private final String kind;
+    public static final String KIND = "status-update";
 
-
-    public TaskStatusUpdateEvent_v0_3(String taskId, TaskStatus_v0_3 status, String contextId, boolean isFinal,
-                                      Map<String, Object> metadata) {
-        this(taskId, status, contextId, isFinal, metadata, STATUS_UPDATE);
-    }
-
-    public TaskStatusUpdateEvent_v0_3(String taskId, TaskStatus_v0_3 status, String contextId, boolean isFinal, Map<String, Object> metadata, String kind) {
+    public TaskStatusUpdateEvent_v0_3 {
         Assert.checkNotNullParam("taskId", taskId);
         Assert.checkNotNullParam("status", status);
         Assert.checkNotNullParam("contextId", contextId);
-        Assert.checkNotNullParam("kind", kind);
-        if (! kind.equals(STATUS_UPDATE)) {
+        if (kind == null) {
+            kind = KIND;
+        }
+        if (!kind.equals(KIND)) {
             throw new IllegalArgumentException("Invalid TaskStatusUpdateEvent");
         }
-        this.taskId = taskId;
-        this.status = status;
-        this.contextId = contextId;
-        this.isFinal = isFinal;
-        this.metadata = metadata;
-        this.kind = kind;
     }
 
-    public String getTaskId() {
-        return taskId;
-    }
-
-    public TaskStatus_v0_3 getStatus() {
-        return status;
-    }
-
-    public String getContextId() {
-        return contextId;
-    }
-
-    public boolean isFinal() {
-        return isFinal;
-    }
-
-    public Map<String, Object> getMetadata() {
-        return metadata;
-    }
-
-    @Override
-    public String getKind() {
-        return kind;
+    public TaskStatusUpdateEvent_v0_3(String taskId, TaskStatus_v0_3 status, String contextId, boolean isFinal,
+                                      @Nullable Map<String, Object> metadata) {
+        this(taskId, status, contextId, isFinal, metadata, KIND);
     }
 
     public static class Builder {
@@ -77,13 +48,14 @@ public final class TaskStatusUpdateEvent_v0_3 implements EventKind_v0_3, Streami
         public Builder() {
         }
 
-        public Builder(TaskStatusUpdateEvent_v0_3 existingTaskStatusUpdateEvent) {
-            this.taskId = existingTaskStatusUpdateEvent.taskId;
-            this.status = existingTaskStatusUpdateEvent.status;
-            this.contextId = existingTaskStatusUpdateEvent.contextId;
-            this.isFinal = existingTaskStatusUpdateEvent.isFinal;
-            this.metadata = existingTaskStatusUpdateEvent.metadata;
+        public Builder(TaskStatusUpdateEvent_v0_3 existing) {
+            this.taskId = existing.taskId;
+            this.status = existing.status;
+            this.contextId = existing.contextId;
+            this.isFinal = existing.isFinal;
+            this.metadata = existing.metadata;
         }
+
         public Builder taskId(String id) {
             this.taskId = id;
             return this;

@@ -97,11 +97,11 @@ public class Utils_v0_3 {
      */
     public static Task_v0_3 appendArtifactToTask(Task_v0_3 task, TaskArtifactUpdateEvent_v0_3 event, String taskId) {
         // Append artifacts
-        List<Artifact_v0_3> artifacts = task.getArtifacts() == null ? new ArrayList<>() : new ArrayList<>(task.getArtifacts());
+        List<Artifact_v0_3> artifacts = new ArrayList<>(task.artifacts());
 
-        Artifact_v0_3 newArtifact = event.getArtifact();
+        Artifact_v0_3 newArtifact = event.artifact();
         String artifactId = newArtifact.artifactId();
-        boolean appendParts = event.isAppend() != null && event.isAppend();
+        boolean appendParts = event.append() != null && event.append();
 
         Artifact_v0_3 existingArtifact = null;
         int existingArtifactIndex = -1;
