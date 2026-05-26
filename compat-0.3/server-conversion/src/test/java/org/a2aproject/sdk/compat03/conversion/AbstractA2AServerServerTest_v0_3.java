@@ -302,6 +302,44 @@ public abstract class AbstractA2AServerServerTest_v0_3 {
     }
 
     @Test
+    public void testRequestScopedBeanAvailableOnAgentExecutorThread() throws Exception {
+        Message_v0_3 message = new Message_v0_3.Builder()
+                .messageId("request-scoped-test")
+                .role(Message_v0_3.Role.USER)
+                .parts(new TextPart_v0_3("request-scoped:test"))
+                .build();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Task_v0_3> receivedTask = new AtomicReference<>();
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+        getNonStreamingClient().sendMessage(message, List.of((event, agentCard) -> {
+            if (event instanceof TaskEvent_v0_3 te) {
+                receivedTask.set(te.getTask());
+                if (te.getTask().getStatus().state() == TaskState_v0_3.COMPLETED) {
+                    latch.countDown();
+                }
+            }
+        }), error -> {
+            errorRef.set(error);
+            latch.countDown();
+        });
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS), "Request should complete within timeout");
+        assertNull(errorRef.get(), "Should not have received an error");
+
+        Task_v0_3 task = receivedTask.get();
+        assertNotNull(task, "Should have received a task");
+        assertEquals(TaskState_v0_3.COMPLETED, task.getStatus().state());
+        assertNotNull(task.getArtifacts());
+        assertFalse(task.getArtifacts().isEmpty());
+
+        Part_v0_3<?> part = task.getArtifacts().get(0).parts().get(0);
+        assertEquals(Part_v0_3.Kind.TEXT, part.getKind());
+        assertEquals("request-scoped:request-scoped-value", ((TextPart_v0_3) part).getText());
+    }
+
+    @Test
     public void testSendMessageExistingTaskSuccess() throws Exception {
         saveTaskInTaskStore(MINIMAL_TASK);
         try {

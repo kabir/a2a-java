@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
@@ -17,6 +18,9 @@ import io.quarkus.arc.profile.IfBuildProfile;
 @IfBuildProfile("test")
 public class AgentExecutorProducer_v0_3 {
 
+    @Inject
+    RequestScopedBean_v0_3 requestScopedBean;
+
     @Produces
     public AgentExecutor agentExecutor() {
         return new AgentExecutor() {
@@ -24,6 +28,15 @@ public class AgentExecutorProducer_v0_3 {
             public void execute(RequestContext context, AgentEmitter agentEmitter) throws A2AError {
                 String taskId = context.getTaskId();
                 String input = context.getMessage() != null ? extractTextFromMessage(context.getMessage()) : "";
+
+                // Request-scoped bean test: verify CDI request context propagation
+                if (input.startsWith("request-scoped:")) {
+                    agentEmitter.startWork();
+                    String value = requestScopedBean.getValue();
+                    agentEmitter.addArtifact(List.of(new TextPart("request-scoped:" + value)));
+                    agentEmitter.complete();
+                    return;
+                }
 
                 // Special handling for multi-event test (routed by message content)
                 if (input.startsWith("multi-event:first")) {
