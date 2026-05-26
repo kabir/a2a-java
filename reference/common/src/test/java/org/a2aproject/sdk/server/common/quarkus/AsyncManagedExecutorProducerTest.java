@@ -1,9 +1,18 @@
-package org.a2aproject.sdk.extras.opentelemetry;
+package org.a2aproject.sdk.server.common.quarkus;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.util.concurrent.Executor;
+
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -39,7 +48,6 @@ class AsyncManagedExecutorProducerTest {
         void init_withNullManagedExecutor_logsWarning() {
             producer.managedExecutor = null;
 
-            // Should not throw, just log warning
             assertDoesNotThrow(() -> producer.init());
             assertNull(producer.managedExecutor);
         }
@@ -88,21 +96,18 @@ class AsyncManagedExecutorProducerTest {
     class CDIIntegrationTests {
         @Test
         void producer_hasCorrectAnnotations() {
-            // Verify class has @ApplicationScoped
             assertTrue(
                 AsyncManagedExecutorProducer.class.isAnnotationPresent(
                     jakarta.enterprise.context.ApplicationScoped.class
                 )
             );
 
-            // Verify class has @Alternative
             assertTrue(
                 AsyncManagedExecutorProducer.class.isAnnotationPresent(
                     jakarta.enterprise.inject.Alternative.class
                 )
             );
 
-            // Verify class has @Priority with value 20
             assertTrue(
                 AsyncManagedExecutorProducer.class.isAnnotationPresent(
                     jakarta.annotation.Priority.class
@@ -120,12 +125,10 @@ class AsyncManagedExecutorProducerTest {
         void produceMethod_hasCorrectAnnotations() throws NoSuchMethodException {
             var method = AsyncManagedExecutorProducer.class.getMethod("produce");
 
-            // Verify method has @Produces
             assertTrue(
                 method.isAnnotationPresent(jakarta.enterprise.inject.Produces.class)
             );
 
-            // Verify method has @Internal
             assertTrue(
                 method.isAnnotationPresent(org.a2aproject.sdk.server.util.async.Internal.class)
             );
