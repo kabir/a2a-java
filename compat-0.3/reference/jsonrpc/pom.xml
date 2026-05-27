@@ -40,7 +40,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>a2a-java-sdk-compat-0.3-tests-server-common</artifactId>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <!-- Client for testing -->
