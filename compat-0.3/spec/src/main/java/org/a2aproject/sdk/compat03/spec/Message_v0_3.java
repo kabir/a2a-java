@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.compat03.spec;
 
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,22 +25,26 @@ public record Message_v0_3(
 
     public static final String KIND = "message";
 
-    public Message_v0_3 {
+    public Message_v0_3(Role role, List<Part_v0_3<?>> parts, String messageId, @Nullable String contextId,
+                        @Nullable String taskId, @Nullable List<String> referenceTaskIds,
+                        @Nullable Map<String, Object> metadata, @Nullable List<String> extensions, String kind) {
         Assert.checkNotNullParam("role", role);
         Assert.checkNotNullParam("parts", parts);
-        parts = List.copyOf(parts);
+        this.role = role;
         if (parts.isEmpty()) {
             throw new IllegalArgumentException("Parts cannot be empty");
         }
-        if (messageId == null) {
-            messageId = UUID.randomUUID().toString();
-        }
-        if (kind == null) {
-            kind = KIND;
-        }
-        if (!kind.equals(KIND)) {
+        this.parts = List.copyOf(parts);
+        this.messageId = messageId == null ? UUID.randomUUID().toString() : messageId;
+        this.kind = kind != null ? kind : KIND;
+        if (!this.kind.equals(KIND)) {
             throw new IllegalArgumentException("Invalid Message");
         }
+        this.contextId = contextId;
+        this.taskId = taskId;
+        this.referenceTaskIds = referenceTaskIds != null ? List.copyOf(referenceTaskIds) : null;
+        this.metadata = metadata != null ? Map.copyOf(metadata) : null;
+        this.extensions = extensions != null ? List.copyOf(extensions) : null;
     }
 
     public Message_v0_3(Role role, List<Part_v0_3<?>> parts, String messageId, @Nullable String contextId,

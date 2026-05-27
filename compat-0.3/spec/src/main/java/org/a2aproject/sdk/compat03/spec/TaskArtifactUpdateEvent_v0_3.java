@@ -15,22 +15,27 @@ public record TaskArtifactUpdateEvent_v0_3(
         @Nullable Boolean lastChunk,
         Artifact_v0_3 artifact,
         String contextId,
-        @Nullable Map<String, Object> metadata,
+        Map<String, Object> metadata,
         String kind
 ) implements EventKind_v0_3, StreamingEventKind_v0_3, UpdateEvent_v0_3 {
 
     public static final String KIND = "artifact-update";
 
-    public TaskArtifactUpdateEvent_v0_3 {
+    public TaskArtifactUpdateEvent_v0_3 (String taskId, @Nullable Boolean append, @Nullable Boolean lastChunk,
+                                         Artifact_v0_3 artifact, String contextId,@Nullable Map<String, Object> metadata, String kind){
         Assert.checkNotNullParam("taskId", taskId);
         Assert.checkNotNullParam("artifact", artifact);
         Assert.checkNotNullParam("contextId", contextId);
-        if (kind == null) {
-            kind = KIND;
-        }
-        if (!kind.equals(KIND)) {
+        this.kind = kind != null ? kind : KIND;
+        if (!KIND.equals(this.kind)) {
             throw new IllegalArgumentException("Invalid TaskArtifactUpdateEvent");
         }
+        this.taskId = taskId;
+        this.append = append;
+        this.lastChunk = lastChunk;
+        this.artifact = artifact;
+        this.contextId = contextId;
+        this.metadata = metadata != null ? Map.copyOf(metadata) : null;
     }
 
     public TaskArtifactUpdateEvent_v0_3(String taskId, Artifact_v0_3 artifact, String contextId,

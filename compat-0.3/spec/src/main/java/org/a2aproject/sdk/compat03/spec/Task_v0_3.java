@@ -21,18 +21,21 @@ public record Task_v0_3(
 
     public static final String KIND = "task";
 
-    public Task_v0_3 {
+    public Task_v0_3 (String id, String contextId, TaskStatus_v0_3 status, List<Artifact_v0_3> artifacts,
+                     List<Message_v0_3> history, @Nullable Map<String, Object> metadata, String kind){
         Assert.checkNotNullParam("id", id);
         Assert.checkNotNullParam("contextId", contextId);
         Assert.checkNotNullParam("status", status);
-        if (kind == null) {
-            kind = KIND;
-        }
-        if (!kind.equals(KIND)) {
+        this.kind = kind != null ? kind : KIND;
+        if (!KIND.equals(this.kind)) {
             throw new IllegalArgumentException("Invalid Task");
         }
-        artifacts = artifacts != null ? List.copyOf(artifacts) : List.of();
-        history = history != null ? List.copyOf(history) : List.of();
+        this.id = id;
+        this.contextId = contextId;
+        this.status = status;
+        this.artifacts = artifacts != null ? List.copyOf(artifacts) : List.of();
+        this.history = history != null ? List.copyOf(history) : List.of();
+        this.metadata = metadata != null ? Map.copyOf(metadata) : null;
     }
 
     public Task_v0_3(String id, String contextId, TaskStatus_v0_3 status, List<Artifact_v0_3> artifacts,

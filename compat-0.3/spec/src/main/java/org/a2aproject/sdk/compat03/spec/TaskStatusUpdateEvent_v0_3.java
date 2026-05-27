@@ -15,22 +15,26 @@ public record TaskStatusUpdateEvent_v0_3(
         TaskStatus_v0_3 status,
         String contextId,
         @SerializedName("final") boolean isFinal,
-        @Nullable Map<String, Object> metadata,
+        Map<String, Object> metadata,
         String kind
 ) implements EventKind_v0_3, StreamingEventKind_v0_3, UpdateEvent_v0_3 {
 
     public static final String KIND = "status-update";
 
-    public TaskStatusUpdateEvent_v0_3 {
+    public TaskStatusUpdateEvent_v0_3 (String taskId, TaskStatus_v0_3 status, String contextId, boolean isFinal,
+                                      @Nullable Map<String, Object> metadata, String kind) {
         Assert.checkNotNullParam("taskId", taskId);
         Assert.checkNotNullParam("status", status);
         Assert.checkNotNullParam("contextId", contextId);
-        if (kind == null) {
-            kind = KIND;
-        }
-        if (!kind.equals(KIND)) {
+        this.kind = kind != null ? kind : KIND;
+        if (!KIND.equals(this.kind)) {
             throw new IllegalArgumentException("Invalid TaskStatusUpdateEvent");
         }
+        this.taskId = taskId;
+        this.status = status;
+        this.contextId = contextId;
+        this.isFinal = isFinal;
+        this.metadata = metadata != null ? Map.copyOf(metadata) : null;
     }
 
     public TaskStatusUpdateEvent_v0_3(String taskId, TaskStatus_v0_3 status, String contextId, boolean isFinal,
