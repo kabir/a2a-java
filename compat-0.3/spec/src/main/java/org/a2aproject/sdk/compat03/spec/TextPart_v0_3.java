@@ -8,18 +8,18 @@ import org.jspecify.annotations.Nullable;
 /**
  * Represents a text segment within a message or artifact.
  */
-public record TextPart_v0_3(String text, @Nullable Map<String, Object> metadata, Kind kind) implements Part_v0_3<String> {
+public record TextPart_v0_3(String text, Map<String, Object> metadata, Kind kind) implements Part_v0_3<String> {
 
     public static final String TEXT = "text";
 
-    public TextPart_v0_3 {
+    public TextPart_v0_3 (String text, @Nullable Map<String, Object> metadata, Kind kind){
         Assert.checkNotNullParam("text", text);
-        if (kind == null) {
-            kind = Kind.TEXT;
-        }
         if (kind != Kind.TEXT) {
             throw new IllegalArgumentException("Invalid TextPart kind: " + kind);
         }
+        this.text = text;
+        this.metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
+        this.kind = kind;
     }
 
     public TextPart_v0_3(String text) {
