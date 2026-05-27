@@ -44,15 +44,16 @@ public record APIKeySecurityScheme_v0_3(String in, String name, @Nullable String
         }
     }
 
-    public APIKeySecurityScheme_v0_3 {
+    public APIKeySecurityScheme_v0_3(String in, String name, @Nullable String description, @Nullable String type) {
         Assert.checkNotNullParam("in", in);
         Assert.checkNotNullParam("name", name);
-        if (type == null) {
-            type = TYPE;
-        }
-        if (!type.equals(TYPE)) {
+        if (type != null && !type.equals(TYPE)) {
             throw new IllegalArgumentException("Invalid type for APIKeySecurityScheme");
         }
+        this.in = in;
+        this.name = name;
+        this.description = description;
+        this.type = TYPE;
     }
 
     public APIKeySecurityScheme_v0_3(String in, String name, @Nullable String description) {

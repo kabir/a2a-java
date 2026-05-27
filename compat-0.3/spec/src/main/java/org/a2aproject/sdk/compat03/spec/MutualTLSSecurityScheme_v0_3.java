@@ -9,13 +9,12 @@ public record MutualTLSSecurityScheme_v0_3(@Nullable String description, String 
 
     public static final String TYPE = "mutualTLS";
 
-    public MutualTLSSecurityScheme_v0_3 {
-        if (type == null) {
-            type = TYPE;
-        }
-        if (!type.equals(TYPE)) {
+    public MutualTLSSecurityScheme_v0_3(@Nullable String description, @Nullable String type) {
+        if (type != null && !type.equals(TYPE)) {
             throw new IllegalArgumentException("Invalid type for MutualTLSSecurityScheme");
         }
+        this.description = description;
+        this.type = TYPE;
     }
 
     public MutualTLSSecurityScheme_v0_3(@Nullable String description) {

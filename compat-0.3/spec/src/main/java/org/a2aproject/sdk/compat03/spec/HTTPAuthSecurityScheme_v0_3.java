@@ -15,14 +15,15 @@ public record HTTPAuthSecurityScheme_v0_3(
 
     public static final String TYPE = "http";
 
-    public HTTPAuthSecurityScheme_v0_3 {
+    public HTTPAuthSecurityScheme_v0_3(@Nullable String bearerFormat, String scheme, @Nullable String description, @Nullable String type) {
         Assert.checkNotNullParam("scheme", scheme);
-        if (type == null) {
-            type = TYPE;
-        }
-        if (!TYPE.equals(type)) {
+        if (type != null && !TYPE.equals(type)) {
             throw new IllegalArgumentException("Invalid type for HTTPAuthSecurityScheme");
         }
+        this.bearerFormat = bearerFormat;
+        this.scheme = scheme;
+        this.description = description;
+        this.type = TYPE;
     }
 
     public HTTPAuthSecurityScheme_v0_3(@Nullable String bearerFormat, String scheme, @Nullable String description) {

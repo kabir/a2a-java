@@ -15,14 +15,15 @@ public record OAuth2SecurityScheme_v0_3(
 
     public static final String TYPE = "oauth2";
 
-    public OAuth2SecurityScheme_v0_3 {
+    public OAuth2SecurityScheme_v0_3(OAuthFlows_v0_3 flows, @Nullable String description, @Nullable String oauth2MetadataUrl, @Nullable String type) {
         Assert.checkNotNullParam("flows", flows);
-        if (type == null) {
-            type = TYPE;
-        }
-        if (!type.equals(TYPE)) {
+        if (type != null && !type.equals(TYPE)) {
             throw new IllegalArgumentException("Invalid type for OAuth2SecurityScheme");
         }
+        this.flows = flows;
+        this.description = description;
+        this.oauth2MetadataUrl = oauth2MetadataUrl;
+        this.type = TYPE;
     }
 
     public OAuth2SecurityScheme_v0_3(OAuthFlows_v0_3 flows, @Nullable String description, @Nullable String oauth2MetadataUrl) {
