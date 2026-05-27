@@ -59,10 +59,10 @@ public class QuarkusA2ARest_v0_3_WithAuthVertxTest extends AbstractA2AServerWith
         saveTaskInTaskStore(MINIMAL_TASK);
 
         givenAuthenticated()
-                .get("/v1/tasks/" + MINIMAL_TASK.getId())
+                .get("/v1/tasks/" + MINIMAL_TASK.id())
                 .then()
                 .statusCode(200);
 
-        deleteTaskInTaskStore(MINIMAL_TASK.getId());
+        deleteTaskInTaskStore(MINIMAL_TASK.id());
     }
 }

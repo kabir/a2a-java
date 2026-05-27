@@ -52,10 +52,10 @@ public class ClientTaskManager_v0_3 {
 
     public Task_v0_3 saveTaskEvent(TaskStatusUpdateEvent_v0_3 taskStatusUpdateEvent) throws A2AClientError_v0_3 {
         if (taskId == null) {
-            taskId = taskStatusUpdateEvent.getTaskId();
+            taskId = taskStatusUpdateEvent.taskId();
         }
         if (contextId == null) {
-            contextId = taskStatusUpdateEvent.getContextId();
+            contextId = taskStatusUpdateEvent.contextId();
         }
         Task_v0_3 task = currentTask;
         if (task == null) {
@@ -67,31 +67,27 @@ public class ClientTaskManager_v0_3 {
         }
 
         Task_v0_3.Builder taskBuilder = new Task_v0_3.Builder(task);
-        if (taskStatusUpdateEvent.getStatus().message() != null) {
-            if (task.getHistory() == null) {
-                taskBuilder.history(taskStatusUpdateEvent.getStatus().message());
-            } else {
-                List<Message_v0_3> history = new ArrayList<>(task.getHistory());
-                history.add(taskStatusUpdateEvent.getStatus().message());
-                taskBuilder.history(history);
-            }
+        if (taskStatusUpdateEvent.status().message() != null) {
+            List<Message_v0_3> history = new ArrayList<>(task.history());
+            history.add(taskStatusUpdateEvent.status().message());
+            taskBuilder.history(history);
         }
-        if (taskStatusUpdateEvent.getMetadata() != null) {
-            Map<String, Object> newMetadata = task.getMetadata() != null ? new HashMap<>(task.getMetadata()) : new HashMap<>();
-            newMetadata.putAll(taskStatusUpdateEvent.getMetadata());
+        if (taskStatusUpdateEvent.metadata() != null) {
+            Map<String, Object> newMetadata = task.metadata() != null ? new HashMap<>(task.metadata()) : new HashMap<>();
+            newMetadata.putAll(taskStatusUpdateEvent.metadata());
             taskBuilder.metadata(newMetadata);
         }
-        taskBuilder.status(taskStatusUpdateEvent.getStatus());
+        taskBuilder.status(taskStatusUpdateEvent.status());
         currentTask = taskBuilder.build();
         return currentTask;
     }
 
     public Task_v0_3 saveTaskEvent(TaskArtifactUpdateEvent_v0_3 taskArtifactUpdateEvent) {
         if (taskId == null) {
-            taskId = taskArtifactUpdateEvent.getTaskId();
+            taskId = taskArtifactUpdateEvent.taskId();
         }
         if (contextId == null) {
-            contextId = taskArtifactUpdateEvent.getContextId();
+            contextId = taskArtifactUpdateEvent.contextId();
         }
         Task_v0_3 task = currentTask;
         if (task == null) {
@@ -115,13 +111,10 @@ public class ClientTaskManager_v0_3 {
      */
     public Task_v0_3 updateWithMessage(Message_v0_3 message, Task_v0_3 task) {
         Task_v0_3.Builder taskBuilder = new Task_v0_3.Builder(task);
-        List<Message_v0_3> history = task.getHistory();
-        if (history == null) {
-            history = new ArrayList<>();
-        }
-        if (task.getStatus().message() != null) {
-            history.add(task.getStatus().message());
-            taskBuilder.status(new TaskStatus_v0_3(task.getStatus().state(), null, task.getStatus().timestamp()));
+        List<Message_v0_3> history = new ArrayList<>(task.history());
+        if (task.status().message() != null) {
+            history.add(task.status().message());
+            taskBuilder.status(new TaskStatus_v0_3(task.status().state(), null, task.status().timestamp()));
         }
         history.add(message);
         taskBuilder.history(history);
@@ -132,8 +125,8 @@ public class ClientTaskManager_v0_3 {
     private void saveTask(Task_v0_3 task) {
         currentTask = task;
         if (taskId == null) {
-            taskId = currentTask.getId();
-            contextId = currentTask.getContextId();
+            taskId = currentTask.id();
+            contextId = currentTask.contextId();
         }
     }
 }
