@@ -19,7 +19,8 @@ public class ReferenceBomVerifier extends DynamicBomVerifier {
         "test-utils-docker/",  // Test utilities for Docker-based tests
         "compat-0.3/client/",  // Compat 0.3 client modules (part of SDK BOM)
         "compat-0.3/http-client/", // Compat 0.3 HTTP client (part of SDK BOM)
-        "compat-0.3/tck/"      // Compat 0.3 TCK (not yet enabled)
+        "compat-0.3/tck/",      // Compat 0.3 TCK (not yet enabled)
+        "compat-0.3/tests/"     // Compat 0.3 test utilities
         // Note: reference/ and compat-0.3/reference/ are NOT excluded - we verify those classes load
     );
 
