@@ -35,7 +35,6 @@ import org.a2aproject.sdk.compat03.spec.FileWithUri_v0_3;
 import org.a2aproject.sdk.compat03.spec.GetTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.HTTPAuthSecurityScheme_v0_3;
 import org.a2aproject.sdk.compat03.spec.ImplicitOAuthFlow_v0_3;
-import org.a2aproject.sdk.compat03.spec.InvalidParamsError_v0_3;
 import org.a2aproject.sdk.compat03.spec.InvalidRequestError_v0_3;
 import org.a2aproject.sdk.compat03.spec.ListTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.Message_v0_3;
@@ -151,7 +150,9 @@ public class ProtoUtils_v0_3 {
 
         public static org.a2aproject.sdk.compat03.grpc.Message message(Message_v0_3 message) {
             org.a2aproject.sdk.compat03.grpc.Message.Builder builder = org.a2aproject.sdk.compat03.grpc.Message.newBuilder();
-            builder.setMessageId(message.messageId());
+            if (message.messageId() != null) {
+                builder.setMessageId(message.messageId());
+            }
             if (message.contextId() != null) {
                 builder.setContextId(message.contextId());
             }
@@ -863,10 +864,6 @@ public class ProtoUtils_v0_3 {
         }
 
         public static Message_v0_3 message(org.a2aproject.sdk.compat03.grpc.MessageOrBuilder message) {
-            if (message.getMessageId().isEmpty()) {
-                throw new InvalidParamsError_v0_3();
-            }
-
             return new Message_v0_3(
                     role(message.getRole()),
                     message.getContentList().stream().map(item -> part(item)).collect(Collectors.toList()),

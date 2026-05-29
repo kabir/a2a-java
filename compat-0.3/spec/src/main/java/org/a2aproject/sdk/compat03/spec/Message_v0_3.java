@@ -1,6 +1,5 @@
 package org.a2aproject.sdk.compat03.spec;
 
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 public record Message_v0_3(
         Role role,
         List<Part_v0_3<?>> parts,
-        String messageId,
+        @Nullable String messageId,
         @Nullable String contextId,
         @Nullable String taskId,
         @Nullable List<String> referenceTaskIds,
@@ -25,7 +24,7 @@ public record Message_v0_3(
 
     public static final String KIND = "message";
 
-    public Message_v0_3(Role role, List<Part_v0_3<?>> parts, String messageId, @Nullable String contextId,
+    public Message_v0_3(Role role, List<Part_v0_3<?>> parts, @Nullable String messageId, @Nullable String contextId,
                         @Nullable String taskId, @Nullable List<String> referenceTaskIds,
                         @Nullable Map<String, Object> metadata, @Nullable List<String> extensions, String kind) {
         Assert.checkNotNullParam("role", role);
@@ -35,7 +34,7 @@ public record Message_v0_3(
             throw new IllegalArgumentException("Parts cannot be empty");
         }
         this.parts = List.copyOf(parts);
-        this.messageId = messageId == null ? UUID.randomUUID().toString() : messageId;
+        this.messageId = messageId;
         this.kind = kind != null ? kind : KIND;
         if (!this.kind.equals(KIND)) {
             throw new IllegalArgumentException("Invalid Message");
@@ -47,7 +46,7 @@ public record Message_v0_3(
         this.extensions = extensions != null ? List.copyOf(extensions) : null;
     }
 
-    public Message_v0_3(Role role, List<Part_v0_3<?>> parts, String messageId, @Nullable String contextId,
+    public Message_v0_3(Role role, List<Part_v0_3<?>> parts, @Nullable String messageId, @Nullable String contextId,
                         @Nullable String taskId, @Nullable List<String> referenceTaskIds,
                         @Nullable Map<String, Object> metadata, @Nullable List<String> extensions) {
         this(role, parts, messageId, contextId, taskId, referenceTaskIds, metadata, extensions, KIND);

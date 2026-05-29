@@ -599,6 +599,7 @@ class TaskSerialization_v0_3_Test {
               },
               "history": [
                 {
+                  "messageId": "msg-001",
                   "role": "user",
                   "parts": [
                     {
@@ -608,6 +609,7 @@ class TaskSerialization_v0_3_Test {
                   ]
                 },
                 {
+                  "messageId": "msg-002",
                   "role": "agent",
                   "parts": [
                     {
