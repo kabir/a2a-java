@@ -11,9 +11,15 @@ import java.util.List;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.TextPart;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class A2ATest {
+
+    @Test
+    public void temporaryCheck() {
+        Assertions.fail();
+    }
 
     @Test
     public void testToUserMessage() {
