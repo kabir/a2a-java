@@ -790,6 +790,9 @@ public abstract class AbstractA2AServerTest {
                 eventLatch.countDown();
             };
 
+            // Capture child queue count before subscribing (ensureQueueForTask creates one)
+            int childCountBefore = getChildQueueCount(MINIMAL_TASK.id());
+
             // Count down when the streaming subscription is established
             CountDownLatch subscriptionLatch = new CountDownLatch(1);
             awaitStreamingSubscription()
@@ -800,6 +803,11 @@ public abstract class AbstractA2AServerTest {
 
             // Wait for subscription to be established
             assertTrue(subscriptionLatch.await(15, TimeUnit.SECONDS));
+
+            // Wait for EventConsumer polling loop to start (transport-level subscription
+            // does not guarantee the consumer is ready to receive events)
+            assertTrue(waitForChildQueueCountToBe(MINIMAL_TASK.id(), childCountBefore + 1, 15000),
+                    "subscribeToTask child queue should be created");
 
             // Enqueue events on the server
             List<Event> events = List.of(
@@ -908,6 +916,9 @@ public abstract class AbstractA2AServerTest {
 
             Client clientWithConsumer = clientBuilder.build();
 
+            // Capture child queue count before subscribing (ensureQueueForTask creates one)
+            int childCountBefore = getChildQueueCount(MINIMAL_TASK.id());
+
             // Count down when the streaming subscription is established
             CountDownLatch subscriptionLatch = new CountDownLatch(1);
             awaitStreamingSubscription()
@@ -918,6 +929,11 @@ public abstract class AbstractA2AServerTest {
 
             // Wait for subscription to be established
             assertTrue(subscriptionLatch.await(15, TimeUnit.SECONDS));
+
+            // Wait for EventConsumer polling loop to start (transport-level subscription
+            // does not guarantee the consumer is ready to receive events)
+            assertTrue(waitForChildQueueCountToBe(MINIMAL_TASK.id(), childCountBefore + 1, 15000),
+                    "subscribeToTask child queue should be created");
 
             // Enqueue events on the server
             List<Event> events = List.of(
