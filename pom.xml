@@ -668,7 +668,7 @@
                 <file>
                     <!--
                         Only enable this for modules that have tests.
-                        The `<excludedGroups>flaky<excluded>` entry below needs junit-jupiter-api on the classpath
+                        The `<excludedGroups>flaky<excludedGroups>` entry below needs junit-jupiter-api on the classpath
                         and we don't want to add that where not needed
                     -->
                     <exists>src/test/java</exists>
