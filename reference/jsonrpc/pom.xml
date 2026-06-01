@@ -17,6 +17,11 @@
     <name>Java A2A Reference Server: JSONRPC</name>
     <description>Java SDK for the Agent2Agent Protocol (A2A) - A2A JSONRPC Reference Server (based on Quarkus)</description>
 
+    <properties>
+        <!-- Trigger the "flaky-test-retry" profle defined in the root pom to retry flaky tests -->
+        <contains.flaky.tests>true</contains.flaky.tests>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
