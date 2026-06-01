@@ -189,12 +189,12 @@ public final class VertxSecurityHelper {
                 currentIdentityAssociation.get().setIdentity(identity);
             }
             task.run();
-        } catch (Exception e) {
+        } catch (Throwable t) {
             // Destroy bean instances immediately on error. The subsequent deactivate() in the
             // finally block is still needed to detach the (now-empty) context from the worker
             // thread. destroy(state) only destroys beans — it does not deactivate the context.
             cleanup.run();
-            throw e;
+            throw t;
         } finally {
             requestContext.deactivate();
         }
