@@ -665,14 +665,14 @@
         <profile>
             <id>flaky-test-retry</id>
             <activation>
-                <file>
+                <property>
                     <!--
-                        Only enable this for modules that have tests.
-                        The `<excludedGroups>flaky<excludedGroups>` entry below needs junit-jupiter-api on the classpath
-                        and we don't want to add that where not needed
+                        Set this property in modules that have tests annotated with `@Tag("flaky")` in order to
+                        trigger the retry mechanism.
                     -->
-                    <exists>src/test/java</exists>
-                </file>
+                    <name>contains.flaky.tests</name>
+                    <value>true</value>
+                </property>
             </activation>
             <build>
                 <plugins>
