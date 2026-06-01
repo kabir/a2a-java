@@ -572,7 +572,9 @@ public abstract class AbstractA2AServerTest {
                 }
             }
         }), error -> {
-            errorRef.set(error);
+            if (!isStreamClosedError(error)) {
+                errorRef.set(error);
+            }
             latch.countDown();
         });
 
@@ -2456,16 +2458,17 @@ public abstract class AbstractA2AServerTest {
     }
 
     protected boolean isStreamClosedError(Throwable throwable) {
-        // Unwrap the CompletionException
         Throwable cause = throwable;
 
         while (cause != null) {
             if (cause instanceof EOFException) {
                 return true;
             }
+            if (cause instanceof java.util.concurrent.CancellationException) {
+                return true;
+            }
             if (cause instanceof IOException && cause.getMessage() != null
                     && cause.getMessage().contains("cancelled")) {
-                // stream is closed upon cancellation
                 return true;
             }
             cause = cause.getCause();
