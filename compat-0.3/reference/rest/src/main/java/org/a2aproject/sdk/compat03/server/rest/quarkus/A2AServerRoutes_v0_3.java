@@ -87,7 +87,7 @@ public class A2AServerRoutes_v0_3 {
         // POST /v1/message:stream
         router.postWithRegex("^\\/v1\\/message:stream$")
             .handler(BodyHandler.create())
-            .blockingHandler(authenticated(ctx -> {
+            .blockingHandler(authenticatedStreaming(ctx -> {
                 sendMessageStreaming(extractBody(ctx), ctx);
             }));
 
@@ -104,7 +104,7 @@ public class A2AServerRoutes_v0_3 {
         // POST /v1/tasks/{id}:subscribe
         router.postWithRegex("^\\/v1\\/tasks\\/([^/]+):subscribe$")
             .order(1)
-            .blockingHandler(authenticated(this::resubscribeTask));
+            .blockingHandler(authenticatedStreaming(this::resubscribeTask));
 
         // POST /v1/tasks/:id/pushNotificationConfigs
         router.post("/v1/tasks/:id/pushNotificationConfigs")
@@ -150,6 +150,18 @@ public class A2AServerRoutes_v0_3 {
         return ctx -> {
             try {
                 vertxSecurityHelper.runInRequestContext(ctx, () -> action.accept(ctx));
+            } catch (UnauthorizedException | ForbiddenException e) {
+                vertxSecurityHelper.handleAuthError(ctx, e);
+            } catch (Exception e) {
+                VertxSecurityHelper.handleGenericError(ctx);
+            }
+        };
+    }
+
+    private Handler<RoutingContext> authenticatedStreaming(Consumer<RoutingContext> action) {
+        return ctx -> {
+            try {
+                vertxSecurityHelper.runInRequestContextDeferred(ctx, () -> action.accept(ctx));
             } catch (UnauthorizedException | ForbiddenException e) {
                 vertxSecurityHelper.handleAuthError(ctx, e);
             } catch (Exception e) {

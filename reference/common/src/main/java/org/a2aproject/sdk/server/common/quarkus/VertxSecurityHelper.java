@@ -1,17 +1,20 @@
 package org.a2aproject.sdk.server.common.quarkus;
 
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.core.Context;
 import io.vertx.ext.web.RoutingContext;
-import java.util.Map;
 
 /**
  * CDI helper for integrating Quarkus security with Vert.x Web routes.
@@ -119,6 +122,81 @@ public final class VertxSecurityHelper {
             if (!wasActive) {
                 requestContext.terminate();
             }
+        }
+    }
+
+    /**
+     * Authenticates the request and executes a task, deferring CDI context destruction to the HTTP
+     * response lifecycle.
+     *
+     * <p>Unlike {@link #runInRequestContext}, this method does <b>not</b> terminate the CDI request
+     * context when the task completes. Instead, it:
+     * <ol>
+     *   <li>Activates the CDI request context and captures its {@link InjectableContext.ContextState}</li>
+     *   <li>Triggers HTTP authentication</li>
+     *   <li>Executes the task</li>
+     *   <li><b>Deactivates</b> the context (detaches from the worker thread without destroying beans)</li>
+     *   <li>Destroys the context state when the HTTP response ends or the connection closes</li>
+     * </ol>
+     *
+     * <p>This is required for streaming (SSE) requests where the task dispatches work to a background
+     * thread (via {@code CompletableFuture.runAsync} with a {@code ManagedExecutor}) and returns
+     * immediately. The {@code ManagedExecutor} captures the CDI context at submit time and propagates
+     * it to the agent thread — but only if the context hasn't been destroyed yet. By deferring
+     * destruction to the response lifecycle, the agent thread can access all {@code @RequestScoped}
+     * beans (including OIDC token credentials for token propagation).
+     *
+     * <p>This method is also safe for non-streaming requests: {@code response.end()} is called
+     * synchronously inside the task, and the {@code endHandler} fires the cleanup shortly after.
+     *
+     * @param ctx the Vert.x routing context containing the HTTP request
+     * @param task the code to execute within the authenticated request context
+     * @throws io.quarkus.security.UnauthorizedException if authentication fails
+     * @throws io.quarkus.security.ForbiddenException if authorization fails
+     * @throws RuntimeException if the task throws an exception
+     */
+    public void runInRequestContextDeferred(RoutingContext ctx, Runnable task) {
+        if (Context.isOnEventLoopThread()) {
+            throw new IllegalStateException(
+                    "Cannot perform blocking authentication on event loop thread. Use blockingHandler().");
+        }
+        ManagedContext requestContext = Arc.container().requestContext();
+        boolean wasActive = requestContext.isActive();
+        if (wasActive) {
+            if (!httpAuthenticator.isUnsatisfied()) {
+                var identity = httpAuthenticator.get().attemptAuthentication(ctx).await().indefinitely();
+                currentIdentityAssociation.get().setIdentity(identity);
+            }
+            task.run();
+            return;
+        }
+
+        InjectableContext.ContextState state = requestContext.activate();
+
+        AtomicBoolean destroyed = new AtomicBoolean(false);
+        Runnable cleanup = () -> {
+            if (destroyed.compareAndSet(false, true)) {
+                requestContext.destroy(state);
+            }
+        };
+
+        ctx.response().endHandler(v -> cleanup.run());
+        ctx.response().closeHandler(v -> cleanup.run());
+
+        try {
+            if (!httpAuthenticator.isUnsatisfied()) {
+                var identity = httpAuthenticator.get().attemptAuthentication(ctx).await().indefinitely();
+                currentIdentityAssociation.get().setIdentity(identity);
+            }
+            task.run();
+        } catch (Exception e) {
+            // Destroy bean instances immediately on error. The subsequent deactivate() in the
+            // finally block is still needed to detach the (now-empty) context from the worker
+            // thread. destroy(state) only destroys beans — it does not deactivate the context.
+            cleanup.run();
+            throw e;
+        } finally {
+            requestContext.deactivate();
         }
     }
 

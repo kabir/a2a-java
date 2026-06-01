@@ -96,7 +96,7 @@ public class A2AServerRoutes_v0_3 {
             .handler(BodyHandler.create())
             .blockingHandler(ctx -> {
                 try {
-                    vertxSecurityHelper.runInRequestContext(ctx, () -> {
+                    vertxSecurityHelper.runInRequestContextDeferred(ctx, () -> {
                         invokeJSONRPCHandler(ctx.body().asString(), ctx);
                     });
                 } catch (UnauthorizedException | ForbiddenException e) {

@@ -548,6 +548,49 @@ public abstract class AbstractA2AServerTest {
     }
 
     @Test
+    public void testRequestScopedBeanAvailableOnAgentExecutorThreadStreaming() throws Exception {
+        Message message = Message.builder()
+                .messageId("request-scoped-streaming-test")
+                .role(Message.Role.ROLE_USER)
+                .parts(new TextPart("request-scoped:test"))
+                .build();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Task> receivedTask = new AtomicReference<>();
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+        getClient().sendMessage(message, List.of((event, agentCard) -> {
+            if (event instanceof TaskEvent te) {
+                receivedTask.set(te.getTask());
+                if (te.getTask().status().state() == TaskState.TASK_STATE_COMPLETED) {
+                    latch.countDown();
+                }
+            } else if (event instanceof TaskUpdateEvent tue) {
+                receivedTask.set(tue.getTask());
+                if (tue.getTask().status().state() == TaskState.TASK_STATE_COMPLETED) {
+                    latch.countDown();
+                }
+            }
+        }), error -> {
+            errorRef.set(error);
+            latch.countDown();
+        });
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS), "Request should complete within timeout");
+        assertNull(errorRef.get(), "Should not have received an error");
+
+        Task task = receivedTask.get();
+        assertNotNull(task, "Should have received a task");
+        assertEquals(TaskState.TASK_STATE_COMPLETED, task.status().state());
+        assertNotNull(task.artifacts());
+        assertFalse(task.artifacts().isEmpty());
+
+        Part<?> part = task.artifacts().get(0).parts().get(0);
+        assertInstanceOf(TextPart.class, part);
+        assertEquals("request-scoped:request-scoped-value", ((TextPart) part).text());
+    }
+
+    @Test
     public void testSendMessageExistingTaskSuccess() throws Exception {
         saveTaskInTaskStore(MINIMAL_TASK);
         try {
