@@ -932,8 +932,8 @@ public abstract class AbstractA2AServerTest {
 
             // Wait for EventConsumer polling loop to start (transport-level subscription
             // does not guarantee the consumer is ready to receive events)
-            assertTrue(waitForChildQueueCountToBe(MINIMAL_TASK.id(), childCountBefore + 1, 15000),
-                    "subscribeToTask child queue should be created");
+            assertTrue(awaitChildQueueCountStable(MINIMAL_TASK.id(), childCountBefore + 1, 15000),
+                    "subscribeToTask child queue should be created and stable");
 
             // Enqueue events on the server
             List<Event> events = List.of(
