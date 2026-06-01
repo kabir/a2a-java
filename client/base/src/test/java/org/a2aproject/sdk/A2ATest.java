@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -11,9 +14,27 @@ import java.util.List;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.TextPart;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class A2ATest {
+
+    @Tag("flaky")
+    @Test
+    public void temporaryCheck() throws IOException {
+        Path counterFile = Path.of(System.getProperty("java.io.tmpdir"), "a2a-flaky-test-counter");
+        int count = 0;
+        if (Files.exists(counterFile)) {
+            count = Integer.parseInt(Files.readString(counterFile).trim());
+        }
+        count++;
+        Files.writeString(counterFile, String.valueOf(count));
+        if (count < 3) {
+            Assertions.fail("Simulated flaky failure, attempt " + count);
+        }
+        Files.deleteIfExists(counterFile);
+    }
 
     @Test
     public void testToUserMessage() {
