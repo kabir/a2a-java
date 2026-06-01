@@ -665,14 +665,13 @@
         <profile>
             <id>flaky-test-retry</id>
             <activation>
-                <property>
+                <file>
                     <!--
-                        Set this property in modules that have tests annotated with `@Tag("flaky")` in order to
-                        trigger the retry mechanism.
+                        Activated per-module: only modules containing a .flaky-tests-marker file
+                        get the two-phase surefire execution that retries @Tag("flaky") tests if they fail.
                     -->
-                    <name>contains.flaky.tests</name>
-                    <value>true</value>
-                </property>
+                    <exists>.flaky-tests-marker</exists>
+                </file>
             </activation>
             <build>
                 <plugins>
