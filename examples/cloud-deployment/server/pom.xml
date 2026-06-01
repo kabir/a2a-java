@@ -83,6 +83,16 @@
             <artifactId>a2a-java-sdk-client</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+            Although we don't have JUnit tests, the A2ACloudExampleClient lives in src/test/main,
+            which enables the `flaky-test-retry` profile from the root POM.
+            That in turn uses `<excludedGroups>flaky<excluded>` which requires junit-jupiter-api
+        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

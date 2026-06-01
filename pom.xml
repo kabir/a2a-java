@@ -662,6 +662,44 @@
                 <quarkus.jvm.args></quarkus.jvm.args>
             </properties>
         </profile>
+        <profile>
+            <id>flaky-test-retry</id>
+            <activation>
+                <file>
+                    <!--
+                        Only enable this for modules that have tests.
+                        The `<excludedGroups>flaky<excluded>` entry below needs junit-jupiter-api on the classpath
+                        and we don't want to add that where not needed
+                    -->
+                    <exists>src/test/java</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-test</id>
+                                <configuration>
+                                    <excludedGroups>flaky</excludedGroups>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>flaky-tests</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <groups>flaky</groups>
+                                    <rerunFailingTestsCount>3</rerunFailingTestsCount>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>
