@@ -17,11 +17,6 @@
     <name>Java A2A SDK Tests Multi-Version gRPC</name>
     <description>Tests for multi-version v1.0/v0.3 gRPC deployment</description>
 
-    <properties>
-        <!-- Trigger the "flaky-test-retry" profle defined in the root pom to retry flaky tests -->
-        <contains.flaky.tests>true</contains.flaky.tests>
-    </properties>
-
     <dependencies>
         <!-- v1.0 gRPC reference server -->
         <dependency>
