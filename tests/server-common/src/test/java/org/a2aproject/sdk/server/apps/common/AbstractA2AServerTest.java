@@ -88,6 +88,7 @@ import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.spec.UpdateEvent;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -737,6 +738,7 @@ public abstract class AbstractA2AServerTest {
     }
 
     @Test
+    @Tag("flaky")
     @Timeout(value = 3, unit = TimeUnit.MINUTES)
     public void testSubscribeExistingTaskSuccess() throws Exception {
         saveTaskInTaskStore(MINIMAL_TASK);
@@ -1666,6 +1668,7 @@ public abstract class AbstractA2AServerTest {
     }
 
     @Test
+    @Tag("flaky")
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     public void testNonBlockingWithMultipleMessages() throws Exception {
         AtomicReference<String> generatedTaskIdRef = new AtomicReference<>();
@@ -3030,6 +3033,7 @@ public abstract class AbstractA2AServerTest {
      * </ul>
      */
     @Test
+    @Tag("flaky")
     public void testAgentToAgentLocalHandling() throws Exception {
         // No taskId - server generates one; routing is by message content prefix "a2a-local:"
         Message localMessage = Message.builder()
