@@ -833,9 +833,8 @@ The following list contains community contributed integrations with various Java
 
 To contribute an integration, please see [CONTRIBUTING_INTEGRATIONS.md](CONTRIBUTING_INTEGRATIONS.md).
 
-* [reference/jsonrpc/README.md](reference/jsonrpc/README.md) - JSON-RPC 2.0 Reference implementation, based on Quarkus.
-* [reference/grpc/README.md](reference/grpc/README.md) - gRPC Reference implementation, based on Quarkus.
-* https://github.com/wildfly-extras/a2a-java-sdk-server-jakarta - This integration is based on Jakarta EE, and should work in all runtimes supporting the [Jakarta EE Web Profile](https://jakarta.ee/specifications/webprofile/).
+* This project contains integration with Quarkus and has the reference implementations for the JSON-RPC, gRPC, and HTTP+JSON (REST) transports.
+* https://github.com/wildfly-extras/a2a-jakarta - This integration is based on Jakarta EE, and should work in all runtimes supporting the [Jakarta EE Web Profile](https://jakarta.ee/specifications/webprofile/).
 
 # Extras
 See the [`extras`](./extras/README.md) folder for extra functionality not provided by the SDK itself!
