@@ -91,7 +91,7 @@ Events that cause polling loop exit:
 **Purpose**: Consumes events from EventQueue and exposes as reactive stream
 
 **Key Methods**:
-- `consumeOne()` → Returns single `Event` (blocking)
+- `consumeOne()` → Returns single `Event` (non-blocking, throws if queue is empty)
 - `consumeAll()` → Returns `Flow.Publisher<EventQueueItem>` (reactive)
 - Polls queue with 500ms timeout
 - Closes queue on final event
