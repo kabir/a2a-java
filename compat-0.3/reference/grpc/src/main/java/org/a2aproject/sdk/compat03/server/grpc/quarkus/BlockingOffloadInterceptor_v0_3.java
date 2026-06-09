@@ -51,6 +51,8 @@ public class BlockingOffloadInterceptor_v0_3 implements ServerInterceptor {
                         Context previous = grpcContext.attach();
                         try {
                             super.onHalfClose();
+                        } catch (Exception e) {
+                            call.close(Status.INTERNAL.withDescription("Error during execution: " + e.getMessage()), new Metadata());
                         } finally {
                             grpcContext.detach(previous);
                         }
