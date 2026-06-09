@@ -17,12 +17,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 /** Android-specific implementation of {@link A2AHttpClient} using {@link HttpURLConnection}. */
 public class AndroidA2AHttpClient implements A2AHttpClient {
@@ -136,7 +141,8 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
         body = readStreamWithLimit(is);
       }
 
-      return new AndroidHttpResponse(status, body);
+      A2AHttpHeaders headers = fromConnectionHeaders(connection.getHeaderFields());
+      return new AndroidHttpResponse(status, body, headers);
     }
 
     protected void processSSEResponse(
@@ -305,10 +311,52 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
     }
   }
 
-  private record AndroidHttpResponse(int status, String body) implements A2AHttpResponse {
+  private static A2AHttpHeaders fromConnectionHeaders(@Nullable Map<String, List<String>> headerFields) {
+    Map<String, List<String>> filtered = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    if (headerFields != null) {
+      for (Map.Entry<String, List<String>> entry : headerFields.entrySet()) {
+        if (entry.getKey() != null && entry.getValue() != null) {
+          filtered.put(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
+        }
+      }
+    }
+    Map<String, List<String>> immutable = Collections.unmodifiableMap(filtered);
+
+    return new A2AHttpHeaders() {
+      @Override
+      public @Nullable String firstValue(String name) {
+        if (name == null) {
+          return null;
+        }
+        List<String> values = immutable.get(name);
+        return (values != null && !values.isEmpty()) ? values.get(0) : null;
+      }
+
+      @Override
+      public List<String> allValues(String name) {
+        if (name == null) {
+          return List.of();
+        }
+        List<String> values = immutable.get(name);
+        return values != null ? values : List.of();
+      }
+
+      @Override
+      public Map<String, List<String>> toMap() {
+        return immutable;
+      }
+    };
+  }
+
+  private record AndroidHttpResponse(int status, String body, A2AHttpHeaders headers) implements A2AHttpResponse {
     @Override
     public boolean success() {
       return status >= HTTP_OK && status < HTTP_MULT_CHOICE;
+    }
+
+    @Override
+    public A2AHttpHeaders headers() {
+      return headers;
     }
   }
 }

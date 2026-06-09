@@ -16,9 +16,11 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpResponse.BodySubscribers;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -378,6 +380,35 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         @Override
         public String body() {
             return response.body();
+        }
+
+        @Override
+        public A2AHttpHeaders headers() {
+            java.net.http.HttpHeaders jdkHeaders = response.headers();
+            return new A2AHttpHeaders() {
+                @Override
+                public @Nullable String firstValue(String name) {
+                    if (name == null) {
+                        return null;
+                    }
+                    return jdkHeaders.firstValue(name).orElse(null);
+                }
+
+                @Override
+                public List<String> allValues(String name) {
+                    if (name == null) {
+                        return List.of();
+                    }
+                    return jdkHeaders.allValues(name);
+                }
+
+                @Override
+                public Map<String, List<String>> toMap() {
+                    Map<String, List<String>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                    map.putAll(jdkHeaders.map());
+                    return Collections.unmodifiableMap(map);
+                }
+            };
         }
     }
 }
