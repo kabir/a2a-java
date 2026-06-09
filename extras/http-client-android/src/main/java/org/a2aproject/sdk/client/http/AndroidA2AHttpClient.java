@@ -325,12 +325,18 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
     return new A2AHttpHeaders() {
       @Override
       public @Nullable String firstValue(String name) {
+        if (name == null) {
+          return null;
+        }
         List<String> values = immutable.get(name);
         return (values != null && !values.isEmpty()) ? values.get(0) : null;
       }
 
       @Override
       public List<String> allValues(String name) {
+        if (name == null) {
+          return List.of();
+        }
         List<String> values = immutable.get(name);
         return values != null ? values : List.of();
       }

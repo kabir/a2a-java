@@ -652,11 +652,17 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
         return new A2AHttpHeaders() {
             @Override
             public @Nullable String firstValue(String name) {
+                if (name == null) {
+                    return null;
+                }
                 return headers.get(name);
             }
 
             @Override
             public List<String> allValues(String name) {
+                if (name == null) {
+                    return List.of();
+                }
                 List<String> values = headers.getAll(name);
                 return values != null ? Collections.unmodifiableList(values) : List.of();
             }

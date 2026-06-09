@@ -388,11 +388,17 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             return new A2AHttpHeaders() {
                 @Override
                 public @Nullable String firstValue(String name) {
+                    if (name == null) {
+                        return null;
+                    }
                     return jdkHeaders.firstValue(name).orElse(null);
                 }
 
                 @Override
                 public List<String> allValues(String name) {
+                    if (name == null) {
+                        return List.of();
+                    }
                     return jdkHeaders.allValues(name);
                 }
 
