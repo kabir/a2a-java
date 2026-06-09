@@ -50,6 +50,7 @@ import io.grpc.stub.StreamObserver;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 /**
  * Abstract gRPC handler for v0.3 protocol with translation layer to v1.0.
@@ -236,16 +237,7 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
 
         try {
             ServerCallContext context = createCallContext(responseObserver);
-            Context forked = Context.current().fork();
-            context.getState().put(ServerCallContext.EXECUTION_WRAPPER_KEY,
-                    (java.util.function.UnaryOperator<Runnable>) (runnable -> () -> {
-                        Context prev = forked.attach();
-                        try {
-                            runnable.run();
-                        } finally {
-                            forked.detach(prev);
-                        }
-                    }));
+            installForkedContextWrapper(context);
             MessageSendParams_v0_3 params = FromProto.messageSendParams(request);
             Flow.Publisher<StreamingEventKind_v0_3> publisher = requestHandler.onMessageSendStream(params, context);
             convertToStreamResponse(publisher, responseObserver);
@@ -270,16 +262,7 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
 
         try {
             ServerCallContext context = createCallContext(responseObserver);
-            Context forkedSub = Context.current().fork();
-            context.getState().put(ServerCallContext.EXECUTION_WRAPPER_KEY,
-                    (java.util.function.UnaryOperator<Runnable>) (runnable -> () -> {
-                        Context prev = forkedSub.attach();
-                        try {
-                            runnable.run();
-                        } finally {
-                            forkedSub.detach(prev);
-                        }
-                    }));
+            installForkedContextWrapper(context);
             TaskIdParams_v0_3 params = FromProto.taskIdParams(request);
             Flow.Publisher<StreamingEventKind_v0_3> publisher = requestHandler.onResubscribeToTask(params, context);
             convertToStreamResponse(publisher, responseObserver);
@@ -292,6 +275,19 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
         } catch (Throwable t) {
             handleInternalError(responseObserver, t);
         }
+    }
+
+    private void installForkedContextWrapper(ServerCallContext context) {
+        Context forked = Context.current().fork();
+        context.getState().put(ServerCallContext.EXECUTION_WRAPPER_KEY,
+                (UnaryOperator<Runnable>) (runnable -> () -> {
+                    Context prev = forked.attach();
+                    try {
+                        runnable.run();
+                    } finally {
+                        forked.detach(prev);
+                    }
+                }));
     }
 
     private void convertToStreamResponse(Flow.Publisher<StreamingEventKind_v0_3> publisher,
