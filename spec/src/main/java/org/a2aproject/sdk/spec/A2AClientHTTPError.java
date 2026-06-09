@@ -85,7 +85,9 @@ public class A2AClientHTTPError extends A2AClientError {
      * @param code the HTTP status code (e.g. 401, 503)
      * @param message the error message
      * @param responseBody the raw HTTP response body, may be {@code null}
+     * @deprecated Use {@link #A2AClientHTTPError(int, String, String, Map)} instead to preserve the response headers.
      */
+    @Deprecated(since = "1.0.0.Beta1", forRemoval = true)
     public A2AClientHTTPError(int code, String message, @Nullable String responseBody) {
         Assert.checkNotNullParam("message", message);
         this.code = code;
