@@ -7,8 +7,11 @@ import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -335,7 +338,8 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
                 case HTTP_FORBIDDEN -> errorRef.set(new IOException(A2AErrorMessages.AUTHORIZATION_FAILED));
                 default -> {
                     String body = response.bodyAsString();
-                    responseRef.set(new VertxHttpResponse(status, body != null ? body : ""));
+                    A2AHttpHeaders headers = fromVertxHeaders(response.headers());
+                    responseRef.set(new VertxHttpResponse(status, body != null ? body : "", headers));
                 }
             }
         } else {
@@ -644,7 +648,31 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
         }
     }
 
-    private record VertxHttpResponse(int status, String body) implements A2AHttpResponse {
+    private static A2AHttpHeaders fromVertxHeaders(io.vertx.core.MultiMap headers) {
+        return new A2AHttpHeaders() {
+            @Override
+            public @Nullable String firstValue(String name) {
+                return headers.get(name);
+            }
+
+            @Override
+            public List<String> allValues(String name) {
+                List<String> values = headers.getAll(name);
+                return values != null ? Collections.unmodifiableList(values) : List.of();
+            }
+
+            @Override
+            public Map<String, List<String>> toMap() {
+                Map<String, List<String>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                for (String name : headers.names()) {
+                    map.put(name, Collections.unmodifiableList(headers.getAll(name)));
+                }
+                return Collections.unmodifiableMap(map);
+            }
+        };
+    }
+
+    private record VertxHttpResponse(int status, String body, A2AHttpHeaders headers) implements A2AHttpResponse {
 
         @Override
         public int status() {
@@ -659,6 +687,11 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
         @Override
         public String body() {
             return body;
+        }
+
+        @Override
+        public A2AHttpHeaders headers() {
+            return headers;
         }
     }
 }

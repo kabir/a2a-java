@@ -379,6 +379,27 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         public String body() {
             return response.body();
         }
+
+        @Override
+        public A2AHttpHeaders headers() {
+            java.net.http.HttpHeaders jdkHeaders = response.headers();
+            return new A2AHttpHeaders() {
+                @Override
+                public @Nullable String firstValue(String name) {
+                    return jdkHeaders.firstValue(name).orElse(null);
+                }
+
+                @Override
+                public List<String> allValues(String name) {
+                    return jdkHeaders.allValues(name);
+                }
+
+                @Override
+                public Map<String, List<String>> toMap() {
+                    return jdkHeaders.map();
+                }
+            };
+        }
     }
 }
 
