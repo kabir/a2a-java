@@ -104,10 +104,6 @@ public class RestErrorMapper {
         }
     }
 
-    public static A2AClientException mapRestError(String className, String errorMessage, int code) {
-        return mapRestErrorByClassName(className, errorMessage, code);
-    }
-
     /**
      * Extracts the "reason" and "metadata" fields from the first entry in the "details" array.
      */

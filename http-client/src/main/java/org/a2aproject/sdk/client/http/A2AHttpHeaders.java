@@ -1,10 +1,9 @@
 package org.a2aproject.sdk.client.http;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
+import org.a2aproject.sdk.util.HttpHeaderUtils;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -90,13 +89,7 @@ public interface A2AHttpHeaders {
      * @return an immutable, case-insensitive {@link A2AHttpHeaders} view
      */
     static A2AHttpHeaders of(Map<String, List<String>> headers) {
-        TreeMap<String, List<String>> copy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-            if (entry.getKey() != null && entry.getValue() != null) {
-                copy.put(entry.getKey(), List.copyOf(entry.getValue()));
-            }
-        }
-        Map<String, List<String>> immutable = Collections.unmodifiableMap(copy);
+        Map<String, List<String>> immutable = HttpHeaderUtils.copyOfCaseInsensitive(headers);
         return new A2AHttpHeaders() {
             @Override
             public @Nullable String firstValue(String name) {

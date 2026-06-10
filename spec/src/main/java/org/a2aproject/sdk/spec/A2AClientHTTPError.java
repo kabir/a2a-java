@@ -1,11 +1,10 @@
 package org.a2aproject.sdk.spec;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.a2aproject.sdk.util.Assert;
+import org.a2aproject.sdk.util.HttpHeaderUtils;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -111,13 +110,7 @@ public class A2AClientHTTPError extends A2AClientError {
         this.code = code;
         this.message = message;
         this.responseBody = responseBody;
-        TreeMap<String, List<String>> copy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, List<String>> entry : responseHeaders.entrySet()) {
-            if (entry.getKey() != null && entry.getValue() != null) {
-                copy.put(entry.getKey(), List.copyOf(entry.getValue()));
-            }
-        }
-        this.responseHeaders = Collections.unmodifiableMap(copy);
+        this.responseHeaders = HttpHeaderUtils.copyOfCaseInsensitive(responseHeaders);
     }
 
     /**
