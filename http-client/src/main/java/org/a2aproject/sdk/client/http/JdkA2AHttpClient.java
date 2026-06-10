@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 
 import org.a2aproject.sdk.common.A2AErrorMessages;
+import org.a2aproject.sdk.spec.A2AClientHTTPError;
 
 /**
  * Default HTTP client implementation using JDK 11+ {@link HttpClient}.
@@ -205,17 +206,17 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             BodyHandler<Void> bodyHandler = responseInfo -> {
                 // Check for authentication/authorization errors only
                 if (responseInfo.statusCode() == HTTP_UNAUTHORIZED || responseInfo.statusCode() == HTTP_FORBIDDEN) {
-                    final String errorMessage;
-                    if (responseInfo.statusCode() == HTTP_UNAUTHORIZED) {
-                        errorMessage = A2AErrorMessages.AUTHENTICATION_FAILED;
-                    } else {
-                        errorMessage = A2AErrorMessages.AUTHORIZATION_FAILED;
-                    }
+                    final int statusCode = responseInfo.statusCode();
+                    final String errorMessage = statusCode == HTTP_UNAUTHORIZED
+                            ? A2AErrorMessages.AUTHENTICATION_FAILED
+                            : A2AErrorMessages.AUTHORIZATION_FAILED;
+                    final A2AClientHTTPError httpError = new A2AClientHTTPError(
+                            statusCode, errorMessage, null, responseInfo.headers().map());
                     // Return a body subscriber that immediately signals error
                     return BodySubscribers.fromSubscriber(new Flow.Subscriber<List<ByteBuffer>>() {
                         @Override
                         public void onSubscribe(Flow.Subscription subscription) {
-                            subscriber.onError(new IOException(errorMessage));
+                            subscriber.onError(new IOException(errorMessage, httpError));
                         }
 
                         @Override
@@ -275,9 +276,13 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             if (response.statusCode() == HTTP_UNAUTHORIZED) {
-                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED,
+                        new A2AClientHTTPError(HTTP_UNAUTHORIZED, A2AErrorMessages.AUTHENTICATION_FAILED,
+                                null, response.headers().map()));
             } else if (response.statusCode() == HTTP_FORBIDDEN) {
-                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED,
+                        new A2AClientHTTPError(HTTP_FORBIDDEN, A2AErrorMessages.AUTHORIZATION_FAILED,
+                                null, response.headers().map()));
             }
 
             return new JdkHttpResponse(response);
@@ -304,9 +309,13 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             if (response.statusCode() == HTTP_UNAUTHORIZED) {
-                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED,
+                        new A2AClientHTTPError(HTTP_UNAUTHORIZED, A2AErrorMessages.AUTHENTICATION_FAILED,
+                                null, response.headers().map()));
             } else if (response.statusCode() == HTTP_FORBIDDEN) {
-                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED,
+                        new A2AClientHTTPError(HTTP_FORBIDDEN, A2AErrorMessages.AUTHORIZATION_FAILED,
+                                null, response.headers().map()));
             }
 
             return new JdkHttpResponse(response);
@@ -340,9 +349,13 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                     httpClient.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             if (response.statusCode() == HTTP_UNAUTHORIZED) {
-                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+                throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED,
+                        new A2AClientHTTPError(HTTP_UNAUTHORIZED, A2AErrorMessages.AUTHENTICATION_FAILED,
+                                null, response.headers().map()));
             } else if (response.statusCode() == HTTP_FORBIDDEN) {
-                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+                throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED,
+                        new A2AClientHTTPError(HTTP_FORBIDDEN, A2AErrorMessages.AUTHORIZATION_FAILED,
+                                null, response.headers().map()));
             }
 
             return new JdkHttpResponse(response);
@@ -378,6 +391,11 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         @Override
         public String body() {
             return response.body();
+        }
+
+        @Override
+        public A2AHttpHeaders headers() {
+            return A2AHttpHeaders.of(response.headers().map());
         }
     }
 }
