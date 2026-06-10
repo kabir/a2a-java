@@ -7,11 +7,9 @@ import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -276,7 +274,8 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
      * @param headers custom headers to add to the request
      * @param bodyBuffer optional body buffer for POST requests (null for GET/DELETE)
      * @return the HTTP response
-     * @throws IOException if the request fails or returns 401/403
+     * @throws IOException if the request fails; the cause may be an
+     *         {@link org.a2aproject.sdk.spec.A2AClientHTTPError} for HTTP 401/403 responses
      * @throws InterruptedException if the thread is interrupted while waiting
      */
     private A2AHttpResponse executeSyncRequest(
@@ -332,10 +331,19 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
             HttpResponse<Buffer> response = ar.result();
             int status = response.statusCode();
 
-            // Check for authentication/authorization errors
             switch (status) {
-                case HTTP_UNAUTHORIZED -> errorRef.set(new IOException(A2AErrorMessages.AUTHENTICATION_FAILED));
-                case HTTP_FORBIDDEN -> errorRef.set(new IOException(A2AErrorMessages.AUTHORIZATION_FAILED));
+                case HTTP_UNAUTHORIZED -> {
+                    A2AHttpHeaders headers = fromVertxHeaders(response.headers());
+                    errorRef.set(new IOException(A2AErrorMessages.AUTHENTICATION_FAILED,
+                            new org.a2aproject.sdk.spec.A2AClientHTTPError(
+                                    HTTP_UNAUTHORIZED, A2AErrorMessages.AUTHENTICATION_FAILED, null, headers.toMap())));
+                }
+                case HTTP_FORBIDDEN -> {
+                    A2AHttpHeaders headers = fromVertxHeaders(response.headers());
+                    errorRef.set(new IOException(A2AErrorMessages.AUTHORIZATION_FAILED,
+                            new org.a2aproject.sdk.spec.A2AClientHTTPError(
+                                    HTTP_FORBIDDEN, A2AErrorMessages.AUTHORIZATION_FAILED, null, headers.toMap())));
+                }
                 default -> {
                     String body = response.bodyAsString();
                     A2AHttpHeaders headers = fromVertxHeaders(response.headers());
@@ -394,10 +402,13 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
                     int statusCode = response.statusCode();
                     if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
                         if (futureCompleted.compareAndSet(false, true)) {
-                            IOException error = (statusCode == HTTP_UNAUTHORIZED)
-                                    ? new IOException(A2AErrorMessages.AUTHENTICATION_FAILED)
-                                    : new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
-                            errorConsumer.accept(error);
+                            A2AHttpHeaders respHeaders = fromVertxHeaders(response.headers());
+                            String msg = statusCode == HTTP_UNAUTHORIZED
+                                    ? A2AErrorMessages.AUTHENTICATION_FAILED
+                                    : A2AErrorMessages.AUTHORIZATION_FAILED;
+                            errorConsumer.accept(new IOException(msg,
+                                    new org.a2aproject.sdk.spec.A2AClientHTTPError(
+                                            statusCode, msg, null, respHeaders.toMap())));
                             future.complete(null);
                         }
                         return;
@@ -478,12 +489,8 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
          * the asynchronous HTTP request completes. The underlying Vert.x operation executes
          * asynchronously on the Vert.x event loop.
          *
-         * @throws IOException if the request fails, including:
-         * <ul>
-         * <li>Network errors (connection refused, timeout, etc.)</li>
-         * <li>HTTP 401 Unauthorized - with message from {@link A2AErrorMessages#AUTHENTICATION_FAILED}</li>
-         * <li>HTTP 403 Forbidden - with message from {@link A2AErrorMessages#AUTHORIZATION_FAILED}</li>
-         * </ul>
+         * @throws IOException if the request fails, including network errors, HTTP 401, and HTTP 403;
+         *         the cause may be an {@link org.a2aproject.sdk.spec.A2AClientHTTPError} carrying the response headers
          * @throws InterruptedException if the thread is interrupted while waiting
          */
         @Override
@@ -519,12 +526,8 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
          * the asynchronous HTTP request completes. The underlying Vert.x operation executes
          * asynchronously on the Vert.x event loop.
          *
-         * @throws IOException if the request fails, including:
-         * <ul>
-         * <li>Network errors (connection refused, timeout, etc.)</li>
-         * <li>HTTP 401 Unauthorized - with message from {@link A2AErrorMessages#AUTHENTICATION_FAILED}</li>
-         * <li>HTTP 403 Forbidden - with message from {@link A2AErrorMessages#AUTHORIZATION_FAILED}</li>
-         * </ul>
+         * @throws IOException if the request fails, including network errors, HTTP 401, and HTTP 403;
+         *         the cause may be an {@link org.a2aproject.sdk.spec.A2AClientHTTPError} carrying the response headers
          * @throws InterruptedException if the thread is interrupted while waiting
          */
         @Override
@@ -554,12 +557,8 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
          * the asynchronous HTTP request completes. The underlying Vert.x operation executes
          * asynchronously on the Vert.x event loop.
          *
-         * @throws IOException if the request fails, including:
-         * <ul>
-         * <li>Network errors (connection refused, timeout, etc.)</li>
-         * <li>HTTP 401 Unauthorized - with message from {@link A2AErrorMessages#AUTHENTICATION_FAILED}</li>
-         * <li>HTTP 403 Forbidden - with message from {@link A2AErrorMessages#AUTHORIZATION_FAILED}</li>
-         * </ul>
+         * @throws IOException if the request fails, including network errors, HTTP 401, and HTTP 403;
+         *         the cause may be an {@link org.a2aproject.sdk.spec.A2AClientHTTPError} carrying the response headers
          * @throws InterruptedException if the thread is interrupted while waiting
          */
         @Override
@@ -649,33 +648,11 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
     }
 
     private static A2AHttpHeaders fromVertxHeaders(io.vertx.core.MultiMap headers) {
-        return new A2AHttpHeaders() {
-            @Override
-            public @Nullable String firstValue(String name) {
-                if (name == null) {
-                    return null;
-                }
-                return headers.get(name);
-            }
-
-            @Override
-            public List<String> allValues(String name) {
-                if (name == null) {
-                    return List.of();
-                }
-                List<String> values = headers.getAll(name);
-                return values != null ? Collections.unmodifiableList(values) : List.of();
-            }
-
-            @Override
-            public Map<String, List<String>> toMap() {
-                Map<String, List<String>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-                for (String name : headers.names()) {
-                    map.put(name, Collections.unmodifiableList(headers.getAll(name)));
-                }
-                return Collections.unmodifiableMap(map);
-            }
-        };
+        Map<String, List<String>> snapshot = new HashMap<>();
+        for (String name : headers.names()) {
+            snapshot.put(name, headers.getAll(name));
+        }
+        return A2AHttpHeaders.of(snapshot);
     }
 
     private record VertxHttpResponse(int status, String body, A2AHttpHeaders headers) implements A2AHttpResponse {

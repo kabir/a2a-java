@@ -114,7 +114,7 @@ public class A2AClientHTTPError extends A2AClientError {
         TreeMap<String, List<String>> copy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, List<String>> entry : responseHeaders.entrySet()) {
             if (entry.getKey() != null && entry.getValue() != null) {
-                copy.put(entry.getKey(), entry.getValue().stream().filter(v -> v != null).toList());
+                copy.put(entry.getKey(), List.copyOf(entry.getValue()));
             }
         }
         this.responseHeaders = Collections.unmodifiableMap(copy);

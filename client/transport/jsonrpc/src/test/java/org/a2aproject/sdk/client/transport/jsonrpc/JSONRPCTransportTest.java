@@ -728,13 +728,11 @@ public class JSONRPCTransportTest {
             assertNotNull(headers);
             assertFalse(headers.isEmpty());
 
-            List<String> retryAfter = headers.getOrDefault("Retry-After",
-                    headers.getOrDefault("retry-after", List.of()));
+            List<String> retryAfter = headers.getOrDefault("Retry-After", List.of());
             assertFalse(retryAfter.isEmpty(), "Expected Retry-After header");
             assertEquals("120", retryAfter.get(0));
 
-            List<String> rateLimitRemaining = headers.getOrDefault("X-RateLimit-Remaining",
-                    headers.getOrDefault("x-ratelimit-remaining", List.of()));
+            List<String> rateLimitRemaining = headers.getOrDefault("X-RateLimit-Remaining", List.of());
             assertFalse(rateLimitRemaining.isEmpty(), "Expected X-RateLimit-Remaining header");
             assertEquals("0", rateLimitRemaining.get(0));
         }

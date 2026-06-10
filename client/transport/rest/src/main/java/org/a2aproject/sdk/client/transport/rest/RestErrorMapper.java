@@ -70,7 +70,13 @@ public class RestErrorMapper {
                     String errorMessage = errorObj.has("message") ? errorObj.get("message").getAsString() : "";
                     ReasonAndMetadata reasonAndMetadata = extractReasonAndMetadata(errorObj);
                     if (reasonAndMetadata != null) {
-                        return mapRestErrorByReason(reasonAndMetadata.reason(), errorMessage, reasonAndMetadata.metadata());
+                        A2AClientException known = mapRestErrorByReason(reasonAndMetadata.reason(), errorMessage, reasonAndMetadata.metadata());
+                        if (known.getCause() != null) {
+                            return known;
+                        }
+                        // Unrecognized reason — include HTTP status and headers
+                        String msg = errorMessage.isEmpty() ? "Request failed with HTTP " + code : errorMessage;
+                        return new A2AClientException(msg, new A2AClientHTTPError(code, msg, body, headers));
                     }
                     return new A2AClientException(errorMessage,
                             new A2AClientHTTPError(code, errorMessage, body, headers));
@@ -78,14 +84,23 @@ public class RestErrorMapper {
                 // Legacy format (error class name, message)
                 String className = node.has("error") ? node.get("error").getAsString() : "";
                 String errorMessage = node.has("message") ? node.get("message").getAsString() : "";
-                return mapRestErrorByClassName(className, errorMessage, code);
+                if (!className.isEmpty()) {
+                    A2AClientException known = mapRestErrorByClassName(className, errorMessage, code);
+                    if (known.getCause() != null) {
+                        return known;
+                    }
+                }
+                // Unknown or empty class name — include HTTP status and headers
+                String msg = errorMessage.isEmpty() ? "Request failed with HTTP " + code : errorMessage;
+                return new A2AClientException(msg, new A2AClientHTTPError(code, msg, body, headers));
             }
             String message = "Request failed with HTTP " + code;
             return new A2AClientException(message,
                     new A2AClientHTTPError(code, message, body, headers));
         } catch (JsonProcessingException ex) {
             Logger.getLogger(RestErrorMapper.class.getName()).log(Level.SEVERE, null, ex);
-            return new A2AClientException("Failed to parse error response: " + ex.getMessage());
+            String message = "Failed to parse error response: " + ex.getMessage();
+            return new A2AClientException(message, new A2AClientHTTPError(code, message, body, headers));
         }
     }
 

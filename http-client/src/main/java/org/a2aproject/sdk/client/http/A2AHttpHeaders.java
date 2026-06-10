@@ -1,7 +1,9 @@
 package org.a2aproject.sdk.client.http;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.jspecify.annotations.Nullable;
 
@@ -77,4 +79,47 @@ public interface A2AHttpHeaders {
      * @return map of header names to lists of values
      */
     Map<String, List<String>> toMap();
+
+    /**
+     * Creates an {@link A2AHttpHeaders} instance from a map of header name to value lists.
+     *
+     * <p>Builds a case-insensitive snapshot: null keys and null value lists are silently
+     * skipped (e.g. the {@code null} status-line key from {@link java.net.HttpURLConnection}).
+     *
+     * @param headers the source header map; may be null-keyed
+     * @return an immutable, case-insensitive {@link A2AHttpHeaders} view
+     */
+    static A2AHttpHeaders of(Map<String, List<String>> headers) {
+        TreeMap<String, List<String>> copy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                copy.put(entry.getKey(), List.copyOf(entry.getValue()));
+            }
+        }
+        Map<String, List<String>> immutable = Collections.unmodifiableMap(copy);
+        return new A2AHttpHeaders() {
+            @Override
+            public @Nullable String firstValue(String name) {
+                if (name == null) {
+                    return null;
+                }
+                List<String> values = immutable.get(name);
+                return (values != null && !values.isEmpty()) ? values.get(0) : null;
+            }
+
+            @Override
+            public List<String> allValues(String name) {
+                if (name == null) {
+                    return List.of();
+                }
+                List<String> values = immutable.get(name);
+                return values != null ? values : List.of();
+            }
+
+            @Override
+            public Map<String, List<String>> toMap() {
+                return immutable;
+            }
+        };
+    }
 }
