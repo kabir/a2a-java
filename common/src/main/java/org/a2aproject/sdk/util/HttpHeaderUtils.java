@@ -3,6 +3,7 @@ package org.a2aproject.sdk.util;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -18,7 +19,8 @@ public final class HttpHeaderUtils {
      *
      * <p>Null keys and null value lists are silently skipped (e.g. the {@code null}
      * status-line key from {@link java.net.HttpURLConnection}).
-     * Individual value lists are defensively copied via {@link List#copyOf(java.util.Collection)}.
+     * Null elements within value lists are filtered out, and the remaining values
+     * are defensively copied.
      *
      * @param headers the source header map
      * @return an unmodifiable, case-insensitive map
@@ -27,7 +29,10 @@ public final class HttpHeaderUtils {
         TreeMap<String, List<String>> copy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
             if (entry.getKey() != null && entry.getValue() != null) {
-                copy.put(entry.getKey(), List.copyOf(entry.getValue()));
+                List<String> cleanValues = entry.getValue().stream()
+                        .filter(Objects::nonNull)
+                        .toList();
+                copy.put(entry.getKey(), cleanValues);
             }
         }
         return Collections.unmodifiableMap(copy);
