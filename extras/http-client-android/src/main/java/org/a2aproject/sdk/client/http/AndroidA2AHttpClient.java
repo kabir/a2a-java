@@ -6,6 +6,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 import org.a2aproject.sdk.common.A2AErrorMessages;
+import org.a2aproject.sdk.spec.A2AClientHTTPError;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,11 +18,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -127,10 +126,15 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
 
     protected A2AHttpResponse execute(HttpURLConnection connection) throws IOException {
       int status = connection.getResponseCode();
+      A2AHttpHeaders responseHeaders = fromConnectionHeaders(connection.getHeaderFields());
       if (status == HTTP_UNAUTHORIZED) {
-        throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED);
+        throw new IOException(A2AErrorMessages.AUTHENTICATION_FAILED,
+            new A2AClientHTTPError(HTTP_UNAUTHORIZED, A2AErrorMessages.AUTHENTICATION_FAILED,
+                null, responseHeaders.toMap()));
       } else if (status == HTTP_FORBIDDEN) {
-        throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED);
+        throw new IOException(A2AErrorMessages.AUTHORIZATION_FAILED,
+            new A2AClientHTTPError(HTTP_FORBIDDEN, A2AErrorMessages.AUTHORIZATION_FAILED,
+                null, responseHeaders.toMap()));
       }
 
       String body = "";
@@ -141,8 +145,7 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
         body = readStreamWithLimit(is);
       }
 
-      A2AHttpHeaders headers = fromConnectionHeaders(connection.getHeaderFields());
-      return new AndroidHttpResponse(status, body, headers);
+      return new AndroidHttpResponse(status, body, responseHeaders);
     }
 
     protected void processSSEResponse(
@@ -153,11 +156,13 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
       try {
         int status = connection.getResponseCode();
         if (!(status >= HTTP_OK && status < HTTP_MULT_CHOICE)) {
-          if (status == HTTP_UNAUTHORIZED) {
-            errorConsumer.accept(new IOException(A2AErrorMessages.AUTHENTICATION_FAILED));
-            return;
-          } else if (status == HTTP_FORBIDDEN) {
-            errorConsumer.accept(new IOException(A2AErrorMessages.AUTHORIZATION_FAILED));
+          if (status == HTTP_UNAUTHORIZED || status == HTTP_FORBIDDEN) {
+            A2AHttpHeaders responseHeaders = fromConnectionHeaders(connection.getHeaderFields());
+            String msg = status == HTTP_UNAUTHORIZED
+                ? A2AErrorMessages.AUTHENTICATION_FAILED
+                : A2AErrorMessages.AUTHORIZATION_FAILED;
+            errorConsumer.accept(new IOException(msg,
+                new A2AClientHTTPError(status, msg, null, responseHeaders.toMap())));
             return;
           }
 
@@ -312,40 +317,9 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
   }
 
   private static A2AHttpHeaders fromConnectionHeaders(@Nullable Map<String, List<String>> headerFields) {
-    Map<String, List<String>> filtered = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    if (headerFields != null) {
-      for (Map.Entry<String, List<String>> entry : headerFields.entrySet()) {
-        if (entry.getKey() != null && entry.getValue() != null) {
-          filtered.put(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
-        }
-      }
-    }
-    Map<String, List<String>> immutable = Collections.unmodifiableMap(filtered);
-
-    return new A2AHttpHeaders() {
-      @Override
-      public @Nullable String firstValue(String name) {
-        if (name == null) {
-          return null;
-        }
-        List<String> values = immutable.get(name);
-        return (values != null && !values.isEmpty()) ? values.get(0) : null;
-      }
-
-      @Override
-      public List<String> allValues(String name) {
-        if (name == null) {
-          return List.of();
-        }
-        List<String> values = immutable.get(name);
-        return values != null ? values : List.of();
-      }
-
-      @Override
-      public Map<String, List<String>> toMap() {
-        return immutable;
-      }
-    };
+    // HttpURLConnection.getHeaderFields() may include a null key for the HTTP status line;
+    // A2AHttpHeaders.of() filters those out automatically.
+    return A2AHttpHeaders.of(headerFields != null ? headerFields : Map.of());
   }
 
   private record AndroidHttpResponse(int status, String body, A2AHttpHeaders headers) implements A2AHttpResponse {

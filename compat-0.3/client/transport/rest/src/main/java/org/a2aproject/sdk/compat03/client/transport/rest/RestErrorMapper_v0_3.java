@@ -27,6 +27,8 @@ import java.util.logging.Logger;
 public class RestErrorMapper_v0_3 {
 
     public static A2AClientException_v0_3 mapRestError(A2AHttpResponse response) {
+        // Response headers are not propagated: the v0.3 exception hierarchy predates the
+        // headers feature and does not have an equivalent of A2AClientHTTPError.
         return RestErrorMapper_v0_3.mapRestError(response.body(), response.status());
     }
 
