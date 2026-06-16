@@ -270,6 +270,72 @@ a2a.blocking.consumption.timeout.seconds=5
 
 **Note:** The reference server implementations (Quarkus-based) automatically include the MicroProfile Config integration, so properties work out of the box in `application.properties`.
 
+### 5. Task Authorization (Optional)
+
+The SDK includes an opt-in SPI for per-user task authorization. When enabled, every `RequestHandler` operation checks whether the authenticated user is allowed to access the target task before proceeding. When no provider is present, all operations are permitted (the default).
+
+#### Providing an implementation
+
+Create an `@ApplicationScoped` CDI bean that implements `TaskAuthorizationProvider`:
+
+```java
+import jakarta.enterprise.context.ApplicationScoped;
+import org.a2aproject.sdk.server.auth.TaskAuthorizationProvider;
+import org.a2aproject.sdk.server.auth.TaskOperation;
+import org.a2aproject.sdk.server.ServerCallContext;
+
+@ApplicationScoped
+public class MyTaskAuthorizationProvider implements TaskAuthorizationProvider {
+
+    @Override
+    public boolean checkRead(ServerCallContext context, String taskId, TaskOperation op) {
+        // Return true to allow, false to deny.
+        // Denied reads throw TaskNotFoundError — the caller cannot distinguish
+        // "not found" from "not authorized", preventing information leakage.
+        return isOwner(context.getUser(), taskId);
+    }
+
+    @Override
+    public boolean checkWrite(ServerCallContext context, String taskId, TaskOperation op) {
+        return isOwner(context.getUser(), taskId);
+    }
+
+    @Override
+    public boolean checkCreate(ServerCallContext context, TaskOperation op) {
+        return context.getUser().isAuthenticated();
+    }
+
+    @Override
+    public boolean isTaskRecorded(String taskId) {
+        return ownershipStore.contains(taskId);
+    }
+
+    @Override
+    public void recordOwnership(ServerCallContext context, String taskId, TaskOperation op) {
+        ownershipStore.put(taskId, context.getUser().getUsername());
+    }
+}
+```
+
+No additional configuration is required — the SDK automatically discovers the bean via CDI and wires it into the request pipeline. See the [`TaskAuthorizationProvider`](server-common/src/main/java/org/a2aproject/sdk/server/auth/TaskAuthorizationProvider.java) javadoc for the full contract, including thread-safety requirements and ownership-recording semantics.
+
+#### User identity in ServerCallContext
+
+Authorization decisions rely on `context.getUser()` returning the authenticated user. How the user is populated depends on the transport:
+
+- **JSON-RPC and REST**: The Quarkus route handler extracts the user from the Vert.x routing context (`rc.userContext()`) and sets it on `ServerCallContext` directly.
+- **gRPC**: The reference server includes a `QuarkusCallContextFactory` CDI bean that injects the Quarkus `SecurityIdentity` and maps it to the `ServerCallContext` `User`. This happens automatically when using the reference gRPC module. If you provide your own `CallContextFactory`, you are responsible for populating the user.
+
+#### How it works
+
+| Operation | Check |
+|-----------|-------|
+| `getTask`, `subscribeToTask`, `getTaskPushNotificationConfig`, `listTaskPushNotificationConfigs` | `checkRead` |
+| `cancelTask`, `createTaskPushNotificationConfig`, `deleteTaskPushNotificationConfig` | `checkWrite` |
+| `messageSend` / `messageSendStream` (existing task) | `checkWrite` |
+| `messageSend` / `messageSendStream` (new task) | `checkCreate`, then `recordOwnership` after creation |
+| `listTasks` | Filtering pushed to `TaskStore.list()` — calls `checkRead` per task |
+
 ### Serving Older Protocol Versions (Backward Compatibility)
 
 The A2A Java SDK includes compatibility layers that allow your server to accept requests from clients using older protocol versions. Each compatibility layer is a separate set of modules that you add to your project as needed. **No changes to your `AgentExecutor` are needed** — the compatibility layer converts older protocol requests to v1.0 internally before delegating to your agent.
