@@ -278,11 +278,9 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
             // Build base WHERE clause (without cursor — shared across iterations)
             String baseWhereClause = buildBaseWhereClause(params);
 
-            // Get total count of matching tasks (pre-authorization)
-            int totalSize = executeCountQuery(baseWhereClause, params);
-
             List<Task> tasks;
             boolean hasMore;
+            int totalSize;
 
             if (authorizationProvider != null && context != null) {
                 // Iterative fetch: accumulate pageSize authorized results across DB pages
@@ -291,12 +289,14 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
                 boolean dbExhausted = false;
 
                 while (tasks.size() < pageSize && !dbExhausted) {
+                    int remaining = pageSize - tasks.size();
+                    int limit = remaining + 1;
                     TypedQuery<JpaTask> query = createPageQuery(
-                            baseWhereClause, params, cursor, pageSize + 1);
+                            baseWhereClause, params, cursor, limit);
                     List<JpaTask> batch = query.getResultList();
 
-                    dbExhausted = batch.size() <= pageSize;
-                    int batchEnd = Math.min(batch.size(), pageSize);
+                    dbExhausted = batch.size() < limit;
+                    int batchEnd = Math.min(batch.size(), remaining);
 
                     for (int i = 0; i < batchEnd; i++) {
                         Task task = deserializeTask(batch.get(i));
@@ -312,12 +312,12 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
                     }
                 }
 
-                if (tasks.size() > pageSize) {
-                    tasks = new ArrayList<>(tasks.subList(0, pageSize));
-                }
                 hasMore = !dbExhausted;
+                // Use the authorized count to avoid leaking the existence of unauthorized tasks
+                totalSize = tasks.size();
             } else {
                 // Single fetch — no authorization filtering needed
+                totalSize = executeCountQuery(baseWhereClause, params);
                 PageToken cursor = PageToken.fromString(params.pageToken());
                 TypedQuery<JpaTask> query = createPageQuery(
                         baseWhereClause, params, cursor, pageSize + 1);

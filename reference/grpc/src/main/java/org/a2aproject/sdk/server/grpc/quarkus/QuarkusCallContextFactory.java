@@ -66,6 +66,9 @@ public class QuarkusCallContextFactory implements CallContextFactory {
                 state.put("grpc_metadata", grpcMetadata);
                 Map<String, String> headers = new HashMap<>();
                 for (String key : grpcMetadata.keys()) {
+                    if (key.endsWith(Metadata.BINARY_HEADER_SUFFIX)) {
+                        continue;
+                    }
                     headers.put(key, grpcMetadata.get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER)));
                 }
                 state.put("headers", headers);
