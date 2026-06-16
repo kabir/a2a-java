@@ -20,7 +20,6 @@ import org.a2aproject.sdk.compat03.spec.EventKind_v0_3;
 import org.a2aproject.sdk.compat03.spec.GetTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.ListTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.MessageSendParams_v0_3;
-import org.a2aproject.sdk.compat03.spec.Message_v0_3;
 import org.a2aproject.sdk.compat03.spec.StreamingEventKind_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskIdParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskPushNotificationConfig_v0_3;
@@ -30,7 +29,6 @@ import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.CancelTaskParams;
-import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.DeleteTaskPushNotificationConfigParams;
 import org.a2aproject.sdk.spec.EventKind;
 import org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParams;
@@ -147,8 +145,6 @@ public class Convert_v0_3_To10RequestHandler {
             MessageSendParams_v0_3 v03Params,
             ServerCallContext context) throws A2AError {
 
-        validateMessage(v03Params.message());
-
         // Convert v0.3 params → v1.0 params
         MessageSendParams v10Params = MessageSendParamsMapper_v0_3.INSTANCE.toV10(v03Params);
 
@@ -176,8 +172,6 @@ public class Convert_v0_3_To10RequestHandler {
     public Flow.Publisher<StreamingEventKind_v0_3> onMessageSendStream(
             MessageSendParams_v0_3 v03Params,
             ServerCallContext context) throws A2AError {
-
-        validateMessage(v03Params.message());
 
         // Convert v0.3 params → v1.0 params
         MessageSendParams v10Params = MessageSendParamsMapper_v0_3.INSTANCE.toV10(v03Params);
@@ -356,21 +350,6 @@ public class Convert_v0_3_To10RequestHandler {
 
         // Call v1.0 handler
         v10Handler.onDeleteTaskPushNotificationConfig(v10Params, context);
-    }
-
-    private void validateMessage(Message_v0_3 message) throws A2AError {
-        if (message == null) {
-            throw new InvalidParamsError("message is required");
-        }
-        if (message.messageId() == null || message.messageId().isEmpty()) {
-            throw new InvalidParamsError("messageId is required");
-        }
-        if (message.role() == null) {
-            throw new InvalidParamsError("role is required");
-        }
-        if (message.parts() == null || message.parts().isEmpty()) {
-            throw new InvalidParamsError("parts is required and cannot be empty");
-        }
     }
 
     /**
