@@ -127,7 +127,7 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
     }
 
     @Override
-    public ListTasksResult list(ListTasksParams params, ServerCallContext context) {
+    public ListTasksResult list(ListTasksParams params, @Nullable ServerCallContext context) {
         // Filter and sort tasks in a single stream pipeline
         List<Task> allFilteredTasks = tasks.values().stream()
                 .filter(task -> params.contextId() == null || params.contextId().equals(task.contextId()))

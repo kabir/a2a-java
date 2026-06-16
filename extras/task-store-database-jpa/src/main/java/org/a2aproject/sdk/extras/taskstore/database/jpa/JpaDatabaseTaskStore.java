@@ -35,6 +35,7 @@ import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.util.PageToken;
 import org.a2aproject.sdk.spec.Task;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -268,7 +269,7 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
 
     @Transactional
     @Override
-    public ListTasksResult list(ListTasksParams params, ServerCallContext context) {
+    public ListTasksResult list(ListTasksParams params, @Nullable ServerCallContext context) {
         LOGGER.debug("Listing tasks with params: contextId={}, status={}, pageSize={}, pageToken={}",
                 params.contextId(), params.status(), params.pageSize(), params.pageToken());
 

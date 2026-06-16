@@ -208,5 +208,5 @@ public interface TaskStore {
      *                                  connection error)
      * @throws TaskStoreException for other listing failures not covered by specific subclasses
      */
-    ListTasksResult list(ListTasksParams params, ServerCallContext context);
+    ListTasksResult list(ListTasksParams params, @Nullable ServerCallContext context);
 }
