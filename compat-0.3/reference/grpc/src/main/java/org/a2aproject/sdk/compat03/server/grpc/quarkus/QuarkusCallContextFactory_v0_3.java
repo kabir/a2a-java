@@ -15,6 +15,7 @@ import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.security.identity.SecurityIdentity;
+import org.a2aproject.sdk.compat03.conversion.A2AProtocol_v0_3;
 import org.a2aproject.sdk.compat03.transport.grpc.context.GrpcContextKeys_v0_3;
 import org.a2aproject.sdk.compat03.transport.grpc.handler.CallContextFactory_v0_3;
 import org.a2aproject.sdk.server.ServerCallContext;
@@ -81,6 +82,6 @@ public class QuarkusCallContextFactory_v0_3 implements CallContextFactory_v0_3 {
             }
         }
 
-        return new ServerCallContext(user, state, new HashSet<>(), null);
+        return new ServerCallContext(user, state, new HashSet<>(), A2AProtocol_v0_3.PROTOCOL_VERSION);
     }
 }
