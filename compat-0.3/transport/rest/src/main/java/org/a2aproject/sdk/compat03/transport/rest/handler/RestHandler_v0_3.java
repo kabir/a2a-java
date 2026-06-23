@@ -2,6 +2,7 @@ package org.a2aproject.sdk.compat03.transport.rest.handler;
 
 import static org.a2aproject.sdk.server.util.async.AsyncUtils.createTubeConfig;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -57,6 +58,9 @@ import org.jspecify.annotations.Nullable;
 public class RestHandler_v0_3 {
 
     private static final Logger log = Logger.getLogger(RestHandler_v0_3.class.getName());
+    private static final com.google.gson.Gson NON_HTML_SAFE_GSON = new GsonBuilder()
+            .disableHtmlEscaping()
+            .create();
     private AgentCard_v0_3 agentCard;
     private @Nullable
     Instance<AgentCard_v0_3> extendedAgentCard;
@@ -267,7 +271,8 @@ public class RestHandler_v0_3 {
 
     private HTTPRestResponse createSuccessResponse(int statusCode, com.google.protobuf.Message.Builder builder) {
         try {
-            String jsonBody = JsonFormat.printer().print(builder);
+            String protoJson = JsonFormat.printer().print(builder);
+            String jsonBody = NON_HTML_SAFE_GSON.toJson(JsonParser.parseString(protoJson));
             return new HTTPRestResponse(statusCode, "application/json", jsonBody);
         } catch (InvalidProtocolBufferException e) {
             return createErrorResponse(new InternalError_v0_3("Failed to serialize response: " + e.getMessage()));
@@ -307,7 +312,8 @@ public class RestHandler_v0_3 {
                     @Override
                     public void onNext(StreamingEventKind_v0_3 item) {
                         try {
-                            String payload = JsonFormat.printer().omittingInsignificantWhitespace().print(ProtoUtils_v0_3.ToProto.taskOrMessageStream(item));
+                            String protoJson = JsonFormat.printer().omittingInsignificantWhitespace().print(ProtoUtils_v0_3.ToProto.taskOrMessageStream(item));
+                            String payload = NON_HTML_SAFE_GSON.toJson(JsonParser.parseString(protoJson));
                             tube.send(payload);
                             if (subscription != null) {
                                 subscription.request(1);

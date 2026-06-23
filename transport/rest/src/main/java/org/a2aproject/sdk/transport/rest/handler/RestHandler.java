@@ -20,6 +20,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -118,6 +119,11 @@ public class RestHandler {
 
     private static final Logger log = Logger.getLogger(RestHandler.class.getName());
     private static final String TASK_STATE_PREFIX = "TASK_STATE_";
+    // JsonFormat.printer() uses Gson's JsonWriter with HTML escaping enabled by default,
+    // converting < to <, > to >, etc. (see issue #892).
+    private static final com.google.gson.Gson NON_HTML_SAFE_GSON = new GsonBuilder()
+            .disableHtmlEscaping()
+            .create();
 
     // Fields set by constructor injection cannot be final. We need a noargs constructor for
     // Jakarta compatibility, and it seems that making fields set by constructor injection
@@ -666,7 +672,8 @@ public class RestHandler {
     private HTTPRestResponse createSuccessResponse(int statusCode, com.google.protobuf.Message.Builder builder) {
         try {
             // Include default value fields to ensure empty arrays, zeros, etc. are present in JSON
-            String jsonBody = JsonFormat.printer().alwaysPrintFieldsWithNoPresence().print(builder);
+            String protoJson = JsonFormat.printer().alwaysPrintFieldsWithNoPresence().print(builder);
+            String jsonBody = NON_HTML_SAFE_GSON.toJson(JsonParser.parseString(protoJson));
             return new HTTPRestResponse(statusCode, APPLICATION_JSON, jsonBody);
         } catch (InvalidProtocolBufferException e) {
             return createErrorResponse(new InternalError("Failed to serialize response: " + e.getMessage()));
@@ -717,7 +724,8 @@ public class RestHandler {
                     public void onNext(StreamingEventKind item) {
                         log.log(Level.FINE, "REST: onNext called with event: {0}", item.getClass().getSimpleName());
                         try {
-                            String payload = JsonFormat.printer().omittingInsignificantWhitespace().print(ProtoUtils.ToProto.taskOrMessageStream(item));
+                            String protoJson = JsonFormat.printer().omittingInsignificantWhitespace().print(ProtoUtils.ToProto.taskOrMessageStream(item));
+                            String payload = NON_HTML_SAFE_GSON.toJson(JsonParser.parseString(protoJson));
                             log.log(Level.FINE, "REST: Converted to JSON, sending via tube: {0}", payload.substring(0, Math.min(100, payload.length())));
                             tube.send(payload);
                             log.log(Level.FINE, "REST: tube.send() completed, requesting next event from EventConsumer");

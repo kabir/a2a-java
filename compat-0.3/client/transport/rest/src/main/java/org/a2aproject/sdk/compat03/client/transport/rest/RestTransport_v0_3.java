@@ -3,6 +3,8 @@ package org.a2aproject.sdk.compat03.client.transport.rest;
 import static org.a2aproject.sdk.util.Assert.checkNotNullParam;
 
 import org.a2aproject.sdk.compat03.json.JsonProcessingException_v0_3;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
@@ -59,6 +61,9 @@ import org.jspecify.annotations.Nullable;
 public class RestTransport_v0_3 implements ClientTransport_v0_3 {
 
     private static final Logger log = Logger.getLogger(RestTransport_v0_3.class.getName());
+    private static final com.google.gson.Gson NON_HTML_SAFE_GSON = new GsonBuilder()
+            .disableHtmlEscaping()
+            .create();
     private final A2AHttpClient httpClient;
     private final String agentUrl;
     private @Nullable final List<ClientCallInterceptor_v0_3> interceptors;
@@ -375,18 +380,19 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
         A2AHttpClient.PostBuilder builder = createPostBuilder(url, payloadAndHeaders);
         A2AHttpResponse response = builder.post();
         if (!response.success()) {
-            log.fine("Error on POST processing " + JsonFormat.printer().print((MessageOrBuilder) payloadAndHeaders.getPayload()));
+            log.fine("Error on POST processing " + printProtoAsJson((MessageOrBuilder) payloadAndHeaders.getPayload()));
             throw RestErrorMapper_v0_3.mapRestError(response);
         }
         return response.body();
     }
 
     private A2AHttpClient.PostBuilder createPostBuilder(String url, PayloadAndHeaders_v0_3 payloadAndHeaders) throws JsonProcessingException_v0_3, InvalidProtocolBufferException {
-        log.fine(JsonFormat.printer().print((MessageOrBuilder) payloadAndHeaders.getPayload()));
+        String body = printProtoAsJson((MessageOrBuilder) payloadAndHeaders.getPayload());
+        log.fine(body);
         A2AHttpClient.PostBuilder postBuilder = httpClient.createPost()
                 .url(url)
                 .addHeader("Content-Type", "application/json")
-                .body(JsonFormat.printer().print((MessageOrBuilder) payloadAndHeaders.getPayload()));
+                .body(body);
 
         if (payloadAndHeaders.getHeaders() != null) {
             for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
@@ -398,5 +404,13 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
 
     private Map<String, String> getHttpHeaders(@Nullable ClientCallContext_v0_3 context) {
         return context != null ? context.getHeaders() : Collections.emptyMap();
+    }
+
+    private static String printProtoAsJson(@Nullable MessageOrBuilder proto) throws InvalidProtocolBufferException {
+        if (proto == null) {
+            return "";
+        }
+        String protoJson = JsonFormat.printer().print(proto);
+        return NON_HTML_SAFE_GSON.toJson(JsonParser.parseString(protoJson));
     }
 }

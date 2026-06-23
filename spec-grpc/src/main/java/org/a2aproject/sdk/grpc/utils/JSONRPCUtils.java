@@ -172,6 +172,12 @@ public class JSONRPCUtils {
     private static final Gson GSON = new GsonBuilder()
             .setStrictness(Strictness.STRICT)
             .create();
+    // JsonFormat.printer() uses Gson's JsonWriter with HTML escaping enabled by default,
+    // converting < to <, > to >, & to &, etc. (see issue #892).
+    // This instance is used to re-serialize proto JSON without that escaping.
+    private static final Gson NON_HTML_SAFE_GSON = new GsonBuilder()
+            .disableHtmlEscaping()
+            .create();
     private static final Pattern EXTRACT_WRONG_VALUE = Pattern.compile("Expect (.*) but got: \".*\"");
     private static final Pattern EXTRACT_WRONG_TYPE = Pattern.compile("Expected (.*) but found \".*\"");
     static final String ERROR_MESSAGE = "Invalid request content: %s. Please verify the request matches the expected schema for this method.";
@@ -576,7 +582,7 @@ public class JSONRPCUtils {
                 output.name("method").value(method);
             }
             if (payload != null) {
-                String resultValue = JsonFormat.printer().alwaysPrintFieldsWithNoPresence().omittingInsignificantWhitespace().print(payload);
+                String resultValue = printProtoAsJson(payload);
                 output.name("params").jsonValue(resultValue);
             }
             output.endObject();
@@ -593,7 +599,7 @@ public class JSONRPCUtils {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
             JsonUtil.writeJsonRpcId(output, requestId);
-            String resultValue = JsonFormat.printer().alwaysPrintFieldsWithNoPresence().omittingInsignificantWhitespace().print(builder);
+            String resultValue = printProtoAsJson(builder);
             output.name("result").jsonValue(resultValue);
             output.endObject();
             return result.toString();
@@ -625,5 +631,21 @@ public class JSONRPCUtils {
                     "Failed to serialize JSON-RPC error response. "
                     + "Error code: " + error.getCode() + ", Request ID: " + requestId, ex);
         }
+    }
+
+    /**
+     * Serializes a protobuf message to compact JSON without HTML escaping.
+     * <p>
+     * {@link JsonFormat#printer()} uses Gson's {@link com.google.gson.stream.JsonWriter} with
+     * HTML escaping enabled by default, turning {@code <} into {@code <}, {@code >} into
+     * {@code >}, etc. (see issue #892). Re-parsing through {@link #NON_HTML_SAFE_GSON}
+     * restores the literal characters.
+     */
+    private static String printProtoAsJson(com.google.protobuf.MessageOrBuilder proto) throws InvalidProtocolBufferException {
+        String protoJson = JsonFormat.printer()
+                .alwaysPrintFieldsWithNoPresence()
+                .omittingInsignificantWhitespace()
+                .print(proto);
+        return NON_HTML_SAFE_GSON.toJson(JsonParser.parseString(protoJson));
     }
 }
