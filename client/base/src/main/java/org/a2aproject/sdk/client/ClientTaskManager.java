@@ -60,7 +60,7 @@ class ClientTaskManager {
         Task task = currentTask;
         if (task == null) {
             task = Task.builder()
-                    .status(new TaskStatus(TaskState.UNRECOGNIZED))
+                    .status(new TaskStatus(TaskState.TASK_STATE_UNSPECIFIED))
                     .id(taskId)
                     .contextId(contextId == null ? "" : contextId)
                     .build();
@@ -96,7 +96,7 @@ class ClientTaskManager {
         Task task = currentTask;
         if (task == null) {
             task = Task.builder()
-                    .status(new TaskStatus(TaskState.UNRECOGNIZED))
+                    .status(new TaskStatus(TaskState.TASK_STATE_UNSPECIFIED))
                     .id(taskId)
                     .contextId(contextId == null ? "" : contextId)
                     .build();

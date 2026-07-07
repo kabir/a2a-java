@@ -38,7 +38,7 @@ public interface TaskStateMapper {
             case TASK_STATE_CANCELED -> org.a2aproject.sdk.grpc.TaskState.TASK_STATE_CANCELED;
             case TASK_STATE_FAILED -> org.a2aproject.sdk.grpc.TaskState.TASK_STATE_FAILED;
             case TASK_STATE_REJECTED -> org.a2aproject.sdk.grpc.TaskState.TASK_STATE_REJECTED;
-            case UNRECOGNIZED -> org.a2aproject.sdk.grpc.TaskState.UNRECOGNIZED;
+            case TASK_STATE_UNSPECIFIED -> org.a2aproject.sdk.grpc.TaskState.UNRECOGNIZED;
         };
     }
 
@@ -50,7 +50,7 @@ public interface TaskStateMapper {
      */
     default org.a2aproject.sdk.spec.TaskState fromProto(org.a2aproject.sdk.grpc.TaskState proto) {
         if (proto == null) {
-            return org.a2aproject.sdk.spec.TaskState.UNRECOGNIZED;
+            return org.a2aproject.sdk.spec.TaskState.TASK_STATE_UNSPECIFIED;
         }
 
         return switch (proto) {
@@ -62,7 +62,7 @@ public interface TaskStateMapper {
             case TASK_STATE_CANCELED -> org.a2aproject.sdk.spec.TaskState.TASK_STATE_CANCELED;
             case TASK_STATE_FAILED -> org.a2aproject.sdk.spec.TaskState.TASK_STATE_FAILED;
             case TASK_STATE_REJECTED -> org.a2aproject.sdk.spec.TaskState.TASK_STATE_REJECTED;
-            case TASK_STATE_UNSPECIFIED, UNRECOGNIZED -> org.a2aproject.sdk.spec.TaskState.UNRECOGNIZED;
+            case TASK_STATE_UNSPECIFIED, UNRECOGNIZED -> org.a2aproject.sdk.spec.TaskState.TASK_STATE_UNSPECIFIED;
         };
     }
 }

@@ -59,7 +59,7 @@ public interface TaskStateMapper_v0_3 {
      */
     default TaskState toV10(TaskState_v0_3 v03) {
         if (v03 == null) {
-            return TaskState.UNRECOGNIZED;
+            return TaskState.TASK_STATE_UNSPECIFIED;
         }
         return switch (v03) {
             case SUBMITTED -> TaskState.TASK_STATE_SUBMITTED;
@@ -70,7 +70,7 @@ public interface TaskStateMapper_v0_3 {
             case CANCELED -> TaskState.TASK_STATE_CANCELED;
             case FAILED -> TaskState.TASK_STATE_FAILED;
             case REJECTED -> TaskState.TASK_STATE_REJECTED;
-            case UNKNOWN -> TaskState.UNRECOGNIZED;
+            case UNKNOWN -> TaskState.TASK_STATE_UNSPECIFIED;
         };
     }
 
@@ -109,7 +109,7 @@ public interface TaskStateMapper_v0_3 {
             case TASK_STATE_CANCELED -> TaskState_v0_3.CANCELED;
             case TASK_STATE_FAILED -> TaskState_v0_3.FAILED;
             case TASK_STATE_REJECTED -> TaskState_v0_3.REJECTED;
-            case UNRECOGNIZED -> TaskState_v0_3.UNKNOWN;
+            case TASK_STATE_UNSPECIFIED -> TaskState_v0_3.UNKNOWN;
         };
     }
 }
