@@ -38,7 +38,7 @@ public interface TaskStateMapper {
             case TASK_STATE_CANCELED -> org.a2aproject.sdk.grpc.TaskState.TASK_STATE_CANCELED;
             case TASK_STATE_FAILED -> org.a2aproject.sdk.grpc.TaskState.TASK_STATE_FAILED;
             case TASK_STATE_REJECTED -> org.a2aproject.sdk.grpc.TaskState.TASK_STATE_REJECTED;
-            case TASK_STATE_UNSPECIFIED -> org.a2aproject.sdk.grpc.TaskState.UNRECOGNIZED;
+            case TASK_STATE_UNSPECIFIED -> org.a2aproject.sdk.grpc.TaskState.TASK_STATE_UNSPECIFIED;
         };
     }
 
@@ -46,7 +46,7 @@ public interface TaskStateMapper {
      * Converts proto TaskState to domain TaskState.
      *
      * @param proto the proto task state
-     * @return the domain task state, or UNKNOWN if input is null or unrecognized
+     * @return the domain task state, or TASK_STATE_UNSPECIFIED if input is null or unrecognized
      */
     default org.a2aproject.sdk.spec.TaskState fromProto(org.a2aproject.sdk.grpc.TaskState proto) {
         if (proto == null) {
