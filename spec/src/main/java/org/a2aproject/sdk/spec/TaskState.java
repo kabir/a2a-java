@@ -64,7 +64,7 @@ public enum TaskState {
     TASK_STATE_REJECTED(true, false),
 
     /** Task state is unknown or cannot be determined (terminal state). */
-    TASK_STATE_UNSPECIFIED(true, false);
+    TASK_STATE_UNSPECIFIED(false, false);
 
     private final boolean isFinal;
     private final boolean isInterrupted;
