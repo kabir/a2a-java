@@ -6,6 +6,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.a2aproject.sdk.server.events.EventQueue;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Artifact;
@@ -94,6 +96,8 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 public class AgentEmitter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AgentEmitter.class);
+
     private final EventQueue eventQueue;
     private final String taskId;
     private final String contextId;
@@ -508,6 +512,14 @@ public class AgentEmitter {
      * @since 1.0.0
      */
     public void sendMessage(Message message) {
+        if (message.taskId() != null && !message.taskId().equals(taskId)) {
+            LOGGER.error("Message taskId mismatch: expected={}, actual={}", taskId, message.taskId());
+            throw new IllegalArgumentException("Message taskId does not match the emitter's taskId");
+        }
+        if (message.contextId() != null && !message.contextId().equals(contextId)) {
+            LOGGER.error("Message contextId mismatch: expected={}, actual={}", contextId, message.contextId());
+            throw new IllegalArgumentException("Message contextId does not match the emitter's contextId");
+        }
         eventQueue.enqueueEvent(message);
     }
 
