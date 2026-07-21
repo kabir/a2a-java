@@ -186,6 +186,24 @@ Update the previous default version's data file (e.g., `docs/data/versions/OLD_V
 
 Review the new version's content for accuracy — ensure all pages reflect features available in this release.
 
+#### Generate Javadoc (major/minor releases only)
+
+For major and minor releases (X.Y.0.Final), generate aggregated Javadoc. Skip this step for micro/patch releases (X.Y.Z.Final where Z > 0) — the API surface doesn't change meaningfully.
+
+```bash
+# Generate aggregated Javadoc (from the tagged commit)
+mvn javadoc:aggregate -Psite-javadoc
+
+# Copy to the release version directory (overwrites the placeholder)
+cp -r docs/public/dev/apidocs docs/public/X.Y.Z.Final/apidocs
+
+# Commit the generated Javadoc
+git add docs/public/X.Y.Z.Final/apidocs
+git commit -m "docs: add Javadoc for X.Y.Z.Final"
+```
+
+The Javadoc menu entry in the version's data file is inherited automatically from dev — no manual editing needed.
+
 ### 10. Increment to Next SNAPSHOT
 
 Prepare repository for next development cycle:

@@ -668,6 +668,29 @@
         </profile>
         <profile>
             <!--
+                This profile generates aggregated Javadoc across all SDK modules into the docs site.
+                Cross-module @see and {@link} references resolve automatically.
+                Used during the release process for major/minor releases.
+            -->
+            <id>site-javadoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <outputDirectory>${project.basedir}/docs/public/dev</outputDirectory>
+                            <excludePackageNames>org.a2aproject.sdk.testutils:org.a2aproject.sdk.bom.test</excludePackageNames>
+                            <source>17</source>
+                            <doclint>none</doclint>
+                            <quiet>true</quiet>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <!--
                 This profile gis required for old JDK that don't support reading type use annotations from bytecodes.
                 https://github.com/uber/NullAway/wiki/JSpecify-Support#supported-jdk-versions
             -->
