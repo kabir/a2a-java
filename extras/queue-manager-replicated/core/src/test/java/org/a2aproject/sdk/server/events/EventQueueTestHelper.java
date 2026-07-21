@@ -7,4 +7,12 @@ public class EventQueueTestHelper {
     public static EventQueue tapQueue(EventQueue queue) {
         return queue.tap();
     }
+
+    public static void startProcessor(MainEventBusProcessor processor) {
+        processor.start();
+    }
+
+    public static void stopProcessor(MainEventBusProcessor processor) {
+        processor.stop();
+    }
 }
