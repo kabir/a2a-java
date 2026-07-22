@@ -42,7 +42,15 @@ public final class VertxA2AHttpClientProvider implements A2AHttpClientProvider {
                     + "Add io.vertx:vertx-web-client dependency or use the JDK HTTP client implementation.");
         }
 
-        return new VertxA2AHttpClient();
+        // Reflection avoids a compile-time reference to VertxA2AHttpClient so that
+        // this provider class can be loaded by ServiceLoader even when Vert.x jars
+        // are absent from the classpath.
+        try {
+            Class<?> clientClass = Class.forName("org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClient");
+            return (A2AHttpClient) clientClass.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to create VertxA2AHttpClient instance", e);
+        }
     }
 
     @Override
