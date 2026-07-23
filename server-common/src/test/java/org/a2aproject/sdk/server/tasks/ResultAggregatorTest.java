@@ -3,8 +3,10 @@ package org.a2aproject.sdk.server.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -15,7 +17,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.a2aproject.sdk.server.events.EnhancedRunnable;
 import org.a2aproject.sdk.server.events.EventConsumer;
 import org.a2aproject.sdk.server.events.EventQueue;
 import org.a2aproject.sdk.server.events.EventQueueUtil;
@@ -24,6 +28,7 @@ import org.a2aproject.sdk.server.events.MainEventBus;
 import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.EventKind;
+import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
@@ -279,6 +284,76 @@ public class ResultAggregatorTest {
 
         // Cleanup: stop the processor
         EventQueueUtil.stop(processor);
+    }
+
+    @Test
+    void testBlockingReturnsTaskWhenStoreBecomesVisibleAfterEmptyCapture() throws Exception {
+        String taskId = "task-store-reconciliation";
+        Task completedTask = createSampleTask(taskId, TaskState.TASK_STATE_COMPLETED, "ctx1");
+        AtomicBoolean taskVisible = new AtomicBoolean(false);
+        TaskStore taskStore = mock(TaskStore.class);
+        when(taskStore.get(taskId)).thenAnswer(invocation ->
+                taskVisible.compareAndSet(false, true) ? null : completedTask);
+
+        TaskManager taskManager = new TaskManager(taskId, "ctx1", taskStore, null);
+        ResultAggregator blockingAggregator =
+                new ResultAggregator(taskManager, null, testExecutor, testExecutor);
+
+        MainEventBus mainEventBus = new MainEventBus();
+        InMemoryQueueManager queueManager =
+                new InMemoryQueueManager(new MockTaskStateProvider(), mainEventBus);
+        EventQueue queue = queueManager.getEventQueueBuilder(taskId).build().tap();
+        EventConsumer eventConsumer = new EventConsumer(queue, testExecutor);
+
+        EnhancedRunnable completedAgent = new EnhancedRunnable() {
+            @Override
+            public void run() {
+            }
+        };
+        eventConsumer.createAgentRunnableDoneCallback().done(completedAgent);
+
+        ResultAggregator.EventTypeAndInterrupt result =
+                blockingAggregator.consumeAndBreakOnInterrupt(eventConsumer, true);
+
+        assertEquals(completedTask, result.eventType());
+        assertFalse(result.interrupted());
+    }
+
+    @Test
+    void testBlockingStillRaisesMissingTaskErrorWhenStoreRemainsEmpty() {
+        String taskId = "missing-task";
+        TaskStore taskStore = mock(TaskStore.class);
+        TaskManager taskManager = new TaskManager(taskId, "ctx1", taskStore, null);
+        ResultAggregator blockingAggregator =
+                new ResultAggregator(taskManager, null, testExecutor, testExecutor);
+
+        InternalError error = assertThrows(InternalError.class, () ->
+                blockingAggregator.consumeAndBreakOnInterrupt(createClosedEventConsumer(taskId), true));
+
+        assertEquals("Could not find a Task/Message for " + taskId, error.getMessage());
+    }
+
+    @Test
+    void testNonBlockingDoesNotPollTaskStoreWhenCaptureIsEmpty() {
+        String taskId = "non-blocking-missing-task";
+        TaskStore taskStore = mock(TaskStore.class);
+        TaskManager taskManager = new TaskManager(taskId, "ctx1", taskStore, null);
+        ResultAggregator nonBlockingAggregator =
+                new ResultAggregator(taskManager, null, testExecutor, testExecutor);
+
+        assertThrows(InternalError.class, () ->
+                nonBlockingAggregator.consumeAndBreakOnInterrupt(createClosedEventConsumer(taskId), false));
+
+        verify(taskStore, times(1)).get(taskId);
+    }
+
+    private EventConsumer createClosedEventConsumer(String taskId) {
+        MainEventBus mainEventBus = new MainEventBus();
+        InMemoryQueueManager queueManager =
+                new InMemoryQueueManager(new MockTaskStateProvider(), mainEventBus);
+        EventQueue queue = queueManager.getEventQueueBuilder(taskId).build().tap();
+        queue.close();
+        return new EventConsumer(queue, testExecutor);
     }
 
     // AUTH_REQUIRED Tests
