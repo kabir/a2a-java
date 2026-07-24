@@ -106,7 +106,6 @@
           -Da2a.itk.proto.dir=... when building outside run_itk.sh.
         -->
         <a2a.itk.proto.dir>${project.basedir}/a2a-itk/protos</a2a.itk.proto.dir>
-        <protobuf-maven-plugin.version>4.1.2</protobuf-maven-plugin.version>
     </properties>
 
     <build>
@@ -123,7 +122,9 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>${protobuf-maven-plugin.version}</version>
                 <configuration>
-                    <protoc>${protobuf-java.version}</protoc>
+                    <protoc kind="binary-maven">
+                        <version>${protobuf-java.version}</version>
+                    </protoc>
                     <sourceDirectories>
                         <sourceDirectory>${a2a.itk.proto.dir}</sourceDirectory>
                     </sourceDirectories>
