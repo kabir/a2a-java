@@ -19,7 +19,7 @@ Import the extras BOM to manage versions:
     <dependencies>
         <dependency>
             <groupId>org.a2aproject.sdk</groupId>
-            <artifactId>a2a-java-extras-bom</artifactId>
+            <artifactId>a2a-java-sdk-extras-bom</artifactId>
             <version>$\{org.a2aproject.sdk.version}</version>
             <type>pom</type>
             <scope>import</scope>

@@ -179,12 +179,14 @@ Edit `docs/data/versions/X.Y.Z.Final.yml`:
 - Set `sortOrder` to the next number (higher than the previous release)
 - Set `defaultVersion` to `true`
 - Set `devVersion` to `false`
-- Adjust the `menu` list if the new version adds or removes pages
+- Verify the `menu` list matches the pages in the new version's content folder (add/remove entries if pages were added or removed since the previous release)
 
 Update the previous default version's data file (e.g., `docs/data/versions/OLD_VERSION.yml`):
 - Set `defaultVersion` to `false`
 
 Review the new version's content for accuracy — ensure all pages reflect features available in this release.
+
+**Validation**: The docs site enforces that exactly one version has `defaultVersion: true` and all `sortOrder` values are unique (see `docs/src/main/java/org/a2aproject/docs/Versions.java`). Run the docs site locally (`cd docs && mvn quarkus:dev`) to verify the new version renders correctly.
 
 ### 10. Increment to Next SNAPSHOT
 

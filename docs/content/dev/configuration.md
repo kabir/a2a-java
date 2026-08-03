@@ -30,6 +30,10 @@ a2a.executor.max-pool-size=50
 
 # Thread keep-alive time in seconds (default: 60)
 a2a.executor.keep-alive-seconds=60
+
+# Queue capacity for pending tasks (default: 100)
+# When the queue is full, new threads are created up to max-pool-size
+a2a.executor.queue-capacity=100
 ```
 
 ### Blocking Call Timeouts
@@ -43,6 +47,13 @@ a2a.blocking.consumption.timeout.seconds=5
 
 # Timeout for TaskStore reconciliation polling in blocking calls (default: 1 second)
 a2a.blocking.reconciliation.timeout.seconds=1
+```
+
+### Agent Card Caching
+
+```properties
+# HTTP Cache-Control max-age for Agent Card responses in seconds (default: 3600)
+a2a.agent-card.cache.max-age=3600
 ```
 
 ### Tuning Guidelines
