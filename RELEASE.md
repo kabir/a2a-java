@@ -202,7 +202,7 @@ git add docs/public/X.Y.Z.Final/apidocs
 git commit -m "docs: add Javadoc for X.Y.Z.Final"
 ```
 
-The Javadoc menu entry in the version's data file is inherited automatically from dev — no manual editing needed.
+The Javadoc menu entry structure matches `dev.yml` — copy it into the new version's data file when creating version files.
 
 ### 10. Increment to Next SNAPSHOT
 
