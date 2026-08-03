@@ -28,3 +28,7 @@ menu:
   - title: "Examples"
     path: "/examples"
     icon: "fa-solid fa-flask"
+  - title: "Javadoc"
+    path: "/apidocs/"
+    icon: "fa-solid fa-file-code"
+    target: "_blank"

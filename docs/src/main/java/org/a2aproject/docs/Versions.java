@@ -37,7 +37,8 @@ public record Versions(List<Version> list) {
         public record MenuItem(
                 String title,
                 String path,
-                String icon) {
+                String icon,
+                @org.jspecify.annotations.Nullable String target) {
 
             public MenuItem {
                 if (title == null || title.isBlank()) {
