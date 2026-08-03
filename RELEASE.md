@@ -99,8 +99,7 @@ Wait for all CI checks to pass before proceeding.
 ### 5. Merge Release PR
 
 Once all checks pass and the PR is approved:
-- Merge the PR to `main` branch
-- **Do NOT squash** - keep the release commit message intact for changelog
+- Merge the PR to `main` branch (squash merge — enforced by repo settings)
 
 ### 6. Tag and Push
 
@@ -179,7 +178,7 @@ Edit `docs/data/versions/X.Y.Z.Final.yml`:
 - Set `sortOrder` to the next number (higher than the previous release)
 - Set `defaultVersion` to `true`
 - Set `devVersion` to `false`
-- Adjust the `menu` list if the new version adds or removes pages
+- Verify the `menu` list matches the pages in the new version's content folder (add/remove entries if pages were added or removed since the previous release)
 
 Update the previous default version's data file (e.g., `docs/data/versions/OLD_VERSION.yml`):
 - Set `defaultVersion` to `false`
@@ -203,6 +202,8 @@ git commit -m "docs: add Javadoc for X.Y.Z.Final"
 ```
 
 The Javadoc menu entry structure matches `dev.yml` — copy it into the new version's data file when creating version files.
+
+**Validation**: The docs site enforces that exactly one version has `defaultVersion: true` and all `sortOrder` values are unique (see `docs/src/main/java/org/a2aproject/docs/Versions.java`). Run the docs site locally (`cd docs && mvn quarkus:dev`) to verify the new version renders correctly.
 
 ### 10. Increment to Next SNAPSHOT
 
@@ -293,7 +294,7 @@ Follow semantic versioning with qualifiers:
 - **Major.Minor.Patch** - Standard releases (e.g., `1.0.0`)
 - **Major.Minor.Patch.AlphaN** - Alpha releases (e.g., `0.4.0.Alpha1`)
 - **Major.Minor.Patch.BetaN** - Beta releases (e.g., `0.3.0.Beta1`)
-- **Major.Minor.Patch.RCN** - Release candidates (e.g., `1.0.0.RC1`)
+- **Major.Minor.Patch.CRN** - Candidate releases (e.g., `1.0.0.CR1`)
 - **-SNAPSHOT** - Development versions (e.g., `0.4.0.Alpha2-SNAPSHOT`)
 
 ## Workflows Reference

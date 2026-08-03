@@ -35,20 +35,19 @@ The system replicates these event types while preserving their specific types:
 - `Task` — complete task objects
 - `A2AError` — error events
 
-Events are serialized using Jackson with polymorphic type information:
+Events are serialized using Gson with member-name wrapping to preserve type information:
 
 ```json
 {
   "taskId": "task-123",
   "event": {
-    "@type": "TaskStatusUpdateEvent",
-    "taskId": "task-123",
-    "status": {
-      "state": "completed",
-      "timestamp": "2023-09-29T10:30:00Z"
-    },
-    "final": true,
-    "kind": "status-update"
+    "statusUpdate": {
+      "taskId": "task-123",
+      "status": {
+        "state": "completed"
+      },
+      "kind": "status-update"
+    }
   }
 }
 ```

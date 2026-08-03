@@ -96,28 +96,25 @@ Task task = client.getTask(new TaskQueryParams("task-1234"));
 Task task = client.getTask(new TaskQueryParams("task-1234", 10)); // with history limit
 
 // Cancel a task
-Task cancelled = client.cancelTask(new TaskIdParams("task-1234"));
+Task cancelled = client.cancelTask(new CancelTaskParams("task-1234"));
 
 // Subscribe to an ongoing task
 client.subscribeToTask(new TaskIdParams("task-1234"));
 client.subscribeToTask(taskIdParams, customConsumers, customErrorHandler);
 
 // Retrieve the server agent card
-AgentCard serverCard = client.getAgentCard();
+AgentCard serverCard = client.getExtendedAgentCard();
 ```
 
 ## Push Notifications
 
 ```java
 // Set a push notification configuration
-PushNotificationConfig pushConfig = PushNotificationConfig.builder()
-        .url("https://example.com/callback")
-        .authenticationInfo(new AuthenticationInfo(List.of("jwt"), null))
-        .build();
-
 TaskPushNotificationConfig taskConfig = TaskPushNotificationConfig.builder()
+        .id("config-4567")
         .taskId("task-1234")
-        .pushNotificationConfig(pushConfig)
+        .url("https://example.com/callback")
+        .authentication(new AuthenticationInfo("bearer", "my-token"))
         .build();
 
 client.createTaskPushNotificationConfiguration(taskConfig);
@@ -127,9 +124,9 @@ TaskPushNotificationConfig config = client.getTaskPushNotificationConfiguration(
         new GetTaskPushNotificationConfigParams("task-1234", "config-4567"));
 
 // List configurations
-List<TaskPushNotificationConfig> configs =
+ListTaskPushNotificationConfigsResult result =
         client.listTaskPushNotificationConfigurations(
-                new ListTaskPushNotificationConfigParams("task-1234"));
+                new ListTaskPushNotificationConfigsParams("task-1234"));
 
 // Delete a configuration
 client.deleteTaskPushNotificationConfigurations(
