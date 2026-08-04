@@ -744,7 +744,7 @@ public class JSONRPCHandler {
             });
     }
 
-    public void authorizeTaskAccess(String requestedTaskId, ServerCallContext context,TaskOperation operation) {
+    public void authorizeTaskAccess(String requestedTaskId, ServerCallContext context, TaskOperation operation) {
         requestHandler.authorizeTaskAccess(requestedTaskId, context, operation);
     }
 }

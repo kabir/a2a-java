@@ -63,7 +63,7 @@ a2a.agent-card.cache.max-age=3600
 a2a.request-context.populate-referred-tasks=true
 ```
 
-When enabled, task IDs referenced in incoming messages are looked up in the `TaskStore` and made available to the `AgentExecutor` via `RequestContext.getRelatedTasks()`. This is useful for multi-task conversations where the agent needs access to state from related tasks. Disabled by default to avoid extra `TaskStore` lookups when not needed.
+When enabled, task IDs referenced in incoming messages are looked up in the `TaskStore` and made available to the `AgentExecutor` via `RequestContext.getRelatedTasks()`. This is useful for multi-task conversations where the agent needs access to state from related tasks. Enabled by default; set to `false` to avoid extra `TaskStore` lookups when not needed.
 
 ### Tuning Guidelines
 
