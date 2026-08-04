@@ -107,7 +107,7 @@ public class WeatherAgentExecutorProducer {
         }
 
         @Override
-        public void execute(RequestContext context, AgentEmitter agentEmitter) throws JSONRPCError {
+        public void execute(RequestContext context, AgentEmitter agentEmitter) throws A2AError {
             if (context.getTask() == null) {
                 agentEmitter.submit();
             }
@@ -121,14 +121,14 @@ public class WeatherAgentExecutorProducer {
         }
 
         @Override
-        public void cancel(RequestContext context, AgentEmitter agentEmitter) throws JSONRPCError {
+        public void cancel(RequestContext context, AgentEmitter agentEmitter) throws A2AError {
             Task task = context.getTask();
             if (task == null) {
                 agentEmitter.cancel();
                 return;
             }
-            if (task.status().state() == TaskState.CANCELED ||
-                task.status().state() == TaskState.COMPLETED) {
+            if (task.status().state() == TaskState.TASK_STATE_CANCELED ||
+                task.status().state() == TaskState.TASK_STATE_COMPLETED) {
                 throw new TaskNotCancelableError();
             }
             agentEmitter.cancel();

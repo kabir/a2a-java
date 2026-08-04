@@ -68,12 +68,12 @@ AgentCard card = AgentCard.builder()
         .name("My Agent")
         // ... other v1.0 fields ...
         .supportedInterfaces(List.of(
-                new AgentInterface("jsonrpc", "http://localhost:9999")))
+                new AgentInterface(TransportProtocol.JSONRPC.asString(), "http://localhost:9999")))
         // v0.3 backward-compatibility fields:
         .url("http://localhost:9999")
-        .preferredTransport("jsonrpc")
+        .preferredTransport(TransportProtocol.JSONRPC.asString())
         .additionalInterfaces(List.of(
-                new Legacy_0_3_AgentInterface("jsonrpc", "http://localhost:9999")))
+                new Legacy_0_3_AgentInterface(TransportProtocol.JSONRPC.asString(), "http://localhost:9999")))
         .build();
 ```
 
@@ -109,14 +109,10 @@ gRPC and REST transports are also available:
 - `a2a-java-sdk-compat-0.3-client-transport-rest`
 
 ```java
-AgentCard card = A2ACardResolver.builder().baseUrl("http://localhost:1234")
-        .build().getAgentCard();
+// getAgentCard() handles agent card discovery internally
+AgentCard_v0_3 agentCard = A2A_v0_3.getAgentCard("http://localhost:1234");
 
-AgentInterface v03Interface = card.supportedInterfaces().stream()
-        .filter(i -> A2AProtocol_v0_3.PROTOCOL_VERSION.equals(i.protocolVersion()))
-        .findFirst().orElseThrow();
-
-Client_v0_3 client = ClientBuilder_v0_3.forUrl(v03Interface.url())
+Client_v0_3 client = Client_v0_3.builder(agentCard)
         .withTransport(JSONRPCTransport_v0_3.class, new JSONRPCTransportConfigBuilder_v0_3())
         .build();
 ```

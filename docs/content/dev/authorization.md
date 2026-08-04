@@ -53,7 +53,7 @@ The SDK discovers the bean via CDI automatically — no additional wiring needed
 
 Authorization decisions rely on `context.getUser()` returning the authenticated user. How the user is populated depends on the transport:
 
-- **JSON-RPC and REST**: The Quarkus route handler extracts the user from the Vert.x routing context (`rc.userContext()`) and sets it on `ServerCallContext` directly.
+- **JSON-RPC and REST**: The Quarkus route handler extracts the user from the Vert.x routing context (`rc.user()`) and sets it on `ServerCallContext` directly.
 - **gRPC**: The reference server includes a `QuarkusCallContextFactory` CDI bean that injects the Quarkus `SecurityIdentity` and maps it to the `ServerCallContext` `User`. This happens automatically when using the reference gRPC module. If you provide your own `CallContextFactory`, you are responsible for populating the user.
 
 ## Authorization Checks
