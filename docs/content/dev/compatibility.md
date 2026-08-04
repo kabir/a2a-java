@@ -109,6 +109,7 @@ gRPC and REST transports are also available:
 - `a2a-java-sdk-compat-0.3-client-transport-rest`
 
 ```java
+// getAgentCard() handles agent card discovery internally
 AgentCard_v0_3 agentCard = A2A_v0_3.getAgentCard("http://localhost:1234");
 
 Client_v0_3 client = Client_v0_3.builder(agentCard)

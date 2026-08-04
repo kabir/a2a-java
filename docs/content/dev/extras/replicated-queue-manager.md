@@ -35,7 +35,7 @@ The system replicates these event types while preserving their specific types:
 - `Task` — complete task objects
 - `A2AError` — error events
 
-Events are serialized using Gson with member-name wrapping to preserve type information:
+Events are serialized using Gson with member-name wrapping (the event type name becomes the JSON key wrapping the event data) to preserve type information:
 
 ```json
 {

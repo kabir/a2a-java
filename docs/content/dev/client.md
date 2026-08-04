@@ -117,7 +117,7 @@ TaskPushNotificationConfig taskConfig = TaskPushNotificationConfig.builder()
         .authentication(new AuthenticationInfo("bearer", "my-token"))
         .build();
 
-client.createTaskPushNotificationConfiguration(taskConfig);
+TaskPushNotificationConfig created = client.createTaskPushNotificationConfiguration(taskConfig);
 
 // Get a specific configuration
 TaskPushNotificationConfig config = client.getTaskPushNotificationConfiguration(

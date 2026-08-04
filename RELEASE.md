@@ -180,7 +180,7 @@ Edit `docs/data/versions/X.Y.Z.Final.yml`:
 - Set `devVersion` to `false`
 - Verify the `menu` list matches the pages in the new version's content folder (add/remove entries if pages were added or removed since the previous release)
 
-Update the previous default version's data file (e.g., `docs/data/versions/OLD_VERSION.yml`):
+Update the previous default version's data file (e.g., `docs/data/versions/<previous-version>.yml`):
 - Set `defaultVersion` to `false`
 
 Review the new version's content for accuracy — ensure all pages reflect features available in this release.
@@ -291,7 +291,7 @@ https://github.com/a2aproject/a2a-java/releases/new
 
 Follow semantic versioning with qualifiers:
 
-- **Major.Minor.Patch** - Standard releases (e.g., `1.0.0`)
+- **Major.Minor.Patch.Final** - Standard releases (e.g., `1.0.0.Final`)
 - **Major.Minor.Patch.AlphaN** - Alpha releases (e.g., `0.4.0.Alpha1`)
 - **Major.Minor.Patch.BetaN** - Beta releases (e.g., `0.3.0.Beta1`)
 - **Major.Minor.Patch.CRN** - Candidate releases (e.g., `1.0.0.CR1`)
