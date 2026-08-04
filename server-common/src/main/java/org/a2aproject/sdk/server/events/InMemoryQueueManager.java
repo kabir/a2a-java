@@ -21,6 +21,7 @@ public class InMemoryQueueManager implements QueueManager {
     // final, is not proxyable in all runtimes
     private EventQueueFactory factory;
     private TaskStateProvider taskStateProvider;
+    private TaskStreamLifecycleHook streamLifecycleHook;
 
     /**
      * No-args constructor for CDI proxy creation.
@@ -32,22 +33,35 @@ public class InMemoryQueueManager implements QueueManager {
         // For CDI proxy creation
         this.factory = null;
         this.taskStateProvider = null;
+        this.streamLifecycleHook = null;
     }
 
     MainEventBus mainEventBus;
 
-    @Inject
     public InMemoryQueueManager(TaskStateProvider taskStateProvider, MainEventBus mainEventBus) {
+        this(taskStateProvider, mainEventBus, new DefaultTaskStreamLifecycleHook());
+    }
+
+    @Inject
+    public InMemoryQueueManager(TaskStateProvider taskStateProvider, MainEventBus mainEventBus,
+                                TaskStreamLifecycleHook streamLifecycleHook) {
         this.mainEventBus = mainEventBus;
         this.factory = new DefaultEventQueueFactory();
         this.taskStateProvider = taskStateProvider;
+        this.streamLifecycleHook = streamLifecycleHook;
     }
 
     // For testing/extensions with custom factory and MainEventBus
     public InMemoryQueueManager(EventQueueFactory factory, TaskStateProvider taskStateProvider, MainEventBus mainEventBus) {
+        this(factory, taskStateProvider, mainEventBus, new DefaultTaskStreamLifecycleHook());
+    }
+
+    public InMemoryQueueManager(EventQueueFactory factory, TaskStateProvider taskStateProvider,
+                                MainEventBus mainEventBus, TaskStreamLifecycleHook streamLifecycleHook) {
         this.factory = factory;
         this.taskStateProvider = taskStateProvider;
         this.mainEventBus = mainEventBus;
+        this.streamLifecycleHook = streamLifecycleHook;
     }
 
     @Override
@@ -106,6 +120,12 @@ public class InMemoryQueueManager implements QueueManager {
         if (existing == null) {
             // Use builder pattern for cleaner queue creation
             newQueue = factory.builder(taskId).build();
+            // Set the stream lifecycle hook on newly created queues only.
+            // If a queue already exists (putIfAbsent returns non-null), the existing
+            // hook is retained — the hook is bound for the lifetime of the MainQueue.
+            if (newQueue instanceof EventQueue.MainQueue mainQueue) {
+                mainQueue.setTaskStreamLifecycleHook(streamLifecycleHook);
+            }
             // Make sure an existing queue has not been added in the meantime
             existing = queues.putIfAbsent(taskId, newQueue);
         }

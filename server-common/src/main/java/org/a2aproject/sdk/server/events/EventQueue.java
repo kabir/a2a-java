@@ -400,6 +400,19 @@ public abstract class EventQueue implements AutoCloseable {
         private final List<Runnable> onCloseCallbacks;
         private final @Nullable TaskStateProvider taskStateProvider;
         private final MainEventBus mainEventBus;
+        private volatile @Nullable TaskStreamLifecycleHook streamLifecycleHook;
+
+        private final StreamCloseHandle streamCloseHandle = new StreamCloseHandle() {
+            @Override
+            public void closeStreams() {
+                closeChildren();
+            }
+
+            @Override
+            public int getActiveSubscriberCount() {
+                return getActiveChildCount();
+            }
+        };
 
         MainQueue(int queueSize,
                   @Nullable EventEnqueueHook hook,
@@ -422,6 +435,13 @@ public abstract class EventQueue implements AutoCloseable {
         public EventQueue tap() {
             ChildQueue child = new ChildQueue(this);
             children.add(child);
+            if (streamLifecycleHook != null) {
+                try {
+                    streamLifecycleHook.onSubscribe(taskId, getStreamCloseHandle());
+                } catch (Exception e) {
+                    LOGGER.error("Error in TaskStreamLifecycleHook.onSubscribe for task {}", taskId, e);
+                }
+            }
             return child;
         }
 
@@ -564,7 +584,18 @@ public abstract class EventQueue implements AutoCloseable {
           }
 
         void childClosing(ChildQueue child, boolean immediate) {
-            children.remove(child);  // Remove the closing child
+            if (!children.remove(child)) {
+                return;  // Already removed by a concurrent close
+            }
+
+            // Notify stream lifecycle hook of unsubscription
+            if (streamLifecycleHook != null) {
+                try {
+                    streamLifecycleHook.onUnsubscribe(taskId, getStreamCloseHandle());
+                } catch (Exception e) {
+                    LOGGER.error("Error in TaskStreamLifecycleHook.onUnsubscribe for task {}", taskId, e);
+                }
+            }
 
             // If there are still children, keep queue open
             if (!children.isEmpty()) {
@@ -627,6 +658,36 @@ public abstract class EventQueue implements AutoCloseable {
          */
         public int getActiveChildCount() {
             return children.size();
+        }
+
+        void setTaskStreamLifecycleHook(@Nullable TaskStreamLifecycleHook hook) {
+            this.streamLifecycleHook = hook;
+        }
+
+        @Nullable
+        TaskStreamLifecycleHook getTaskStreamLifecycleHook() {
+            return streamLifecycleHook;
+        }
+
+        /**
+         * Gracefully closes all current ChildQueues without closing this MainQueue.
+         * Events already in ChildQueue deques will be drained before the stream terminates.
+         * New subscriptions via {@link #tap()} remain possible after this call.
+         * <p>
+         * Note: if the task is finalized, the last {@code childClosing()} call will close the
+         * MainQueue itself (existing behavior). For non-finalized tasks, the MainQueue stays open.
+         * </p>
+         */
+        void closeChildren() {
+            List<ChildQueue> snapshot = List.copyOf(children);
+            LOGGER.debug("MainQueue[{}]: Closing {} children gracefully", taskId, snapshot.size());
+            for (ChildQueue child : snapshot) {
+                child.close(false);
+            }
+        }
+
+        StreamCloseHandle getStreamCloseHandle() {
+            return streamCloseHandle;
         }
 
         @Override

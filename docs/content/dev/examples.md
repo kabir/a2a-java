@@ -144,6 +144,45 @@ The client expects an OpenTelemetry collector on port 5317. The easiest way is t
 
 For more information, see the [OpenTelemetry extras module](extras/opentelemetry).
 
+## Stream Lifecycle Hook
+
+This example demonstrates the `TaskStreamLifecycleHook` — a CDI-discoverable hook that observes stream lifecycle events and can close all active streams on demand.
+
+The server implements a hook that closes all subscriber streams when 3 clients connect to the same task. The client creates 3 subscribers sequentially, sending messages while the first two are active. When the third subscriber connects, the hook fires and all streams close gracefully.
+
+### Start the Server
+
+```bash
+cd examples/stream-lifecycle/server
+mvn quarkus:dev
+```
+
+### Run the Client
+
+```bash
+cd examples/stream-lifecycle/client
+mvn exec:java
+```
+
+The client logs each event received by each subscriber, showing events flowing to subscribers 1 and 2 before the hook triggers.
+
+#### Transport Protocol Selection
+
+```bash
+# JSON-RPC (default)
+mvn exec:java
+
+# gRPC
+mvn exec:java -Dquarkus.agentcard.protocol=GRPC
+
+# HTTP+JSON/REST
+mvn exec:java -Dquarkus.agentcard.protocol=HTTP+JSON
+```
+
+Select the same protocol on both server and client.
+
+For implementation details, see the [Stream Lifecycle Hook section](server#6-stream-lifecycle-hook-optional) in the Server Guide.
+
 ## More Examples
 
 - [a2a-samples repository](https://github.com/a2aproject/a2a-samples/tree/main/samples/java/agents) — Additional agent examples in Java and other languages

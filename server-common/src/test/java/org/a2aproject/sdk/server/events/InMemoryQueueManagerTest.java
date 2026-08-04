@@ -1,6 +1,7 @@
 package org.a2aproject.sdk.server.events;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -12,7 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+
+import org.a2aproject.sdk.spec.Event;
 
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.MockTaskStateProvider;
@@ -238,5 +242,98 @@ public class InMemoryQueueManagerTest {
         // All ChildQueues should be distinct instances
         long distinctCount = results.stream().distinct().count();
         assertEquals(results.size(), distinctCount, "All ChildQueues should be distinct instances");
+    }
+
+    @Test
+    public void testHookOnSubscribeCalledOnCreateOrTap() {
+        List<String> subscribeEvents = new ArrayList<>();
+        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
+            @Override
+            public void onSubscribe(String taskId, StreamCloseHandle handle) {
+                subscribeEvents.add(taskId);
+            }
+
+            @Override
+            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
+            }
+        };
+
+        InMemoryQueueManager hookedQueueManager = new InMemoryQueueManager(taskStateProvider, mainEventBus, hook);
+
+        hookedQueueManager.createOrTap("task-1");
+        assertEquals(1, subscribeEvents.size());
+        assertEquals("task-1", subscribeEvents.get(0));
+
+        hookedQueueManager.tap("task-1");
+        assertEquals(2, subscribeEvents.size());
+    }
+
+    @Test
+    public void testHookOnUnsubscribeCalledOnChildClose() {
+        List<String> unsubscribeEvents = new ArrayList<>();
+        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
+            @Override
+            public void onSubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
+                unsubscribeEvents.add(taskId);
+            }
+
+            @Override
+            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
+            }
+        };
+
+        InMemoryQueueManager hookedQueueManager = new InMemoryQueueManager(taskStateProvider, mainEventBus, hook);
+
+        EventQueue child = hookedQueueManager.createOrTap("task-1");
+        child.close();
+
+        assertEquals(1, unsubscribeEvents.size());
+        assertEquals("task-1", unsubscribeEvents.get(0));
+    }
+
+    @Test
+    public void testStreamCloseHandleClosesAllChildrenViaQueueManager() {
+        AtomicReference<StreamCloseHandle> capturedHandle = new AtomicReference<>();
+        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
+            @Override
+            public void onSubscribe(String taskId, StreamCloseHandle handle) {
+                capturedHandle.set(handle);
+            }
+
+            @Override
+            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
+            }
+        };
+
+        InMemoryQueueManager hookedQueueManager = new InMemoryQueueManager(taskStateProvider, mainEventBus, hook);
+
+        EventQueue child1 = hookedQueueManager.createOrTap("task-1");
+        EventQueue child2 = hookedQueueManager.tap("task-1");
+
+        assertNotNull(capturedHandle.get());
+        assertEquals(2, capturedHandle.get().getActiveSubscriberCount());
+
+        capturedHandle.get().closeStreams();
+
+        assertTrue(child1.isClosed());
+        assertTrue(child2.isClosed());
+        assertEquals(0, capturedHandle.get().getActiveSubscriberCount());
+
+        // MainQueue should still exist and accept new subscriptions
+        EventQueue child3 = hookedQueueManager.tap("task-1");
+        assertNotNull(child3);
+        assertFalse(child3.isClosed());
     }
 }

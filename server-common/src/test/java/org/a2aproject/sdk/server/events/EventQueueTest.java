@@ -10,11 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
+import org.a2aproject.sdk.server.tasks.MockTaskStateProvider;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Artifact;
@@ -493,5 +497,198 @@ public class EventQueueTest {
         // Now MainQueue should auto-close (no children left)
         assertTrue(mainQueue.isClosed());
         assertTrue(child2.isClosed());
+    }
+
+    /**
+     * Helper to create a queue with a TaskStateProvider that keeps MainQueue open
+     * when all children close (task is never finalized).
+     */
+    private EventQueue createNonFinalizedQueueWithEventBus(String taskId) {
+        return EventQueueUtil.getEventQueueBuilder(mainEventBus)
+                .taskId(taskId)
+                .taskStateProvider(new MockTaskStateProvider())
+                .build();
+    }
+
+    @Test
+    public void testCloseChildrenGracefullyClosesAllChildren() throws InterruptedException {
+        EventQueue mainQueue = createNonFinalizedQueueWithEventBus("close-children-test");
+
+        EventQueue child1 = mainQueue.tap();
+        EventQueue child2 = mainQueue.tap();
+        assertFalse(child1.isClosed());
+        assertFalse(child2.isClosed());
+
+        ((EventQueue.MainQueue) mainQueue).closeChildren();
+
+        assertTrue(child1.isClosed());
+        assertTrue(child2.isClosed());
+
+        assertFalse(mainQueue.isClosed());
+    }
+
+    @Test
+    public void testCloseChildrenAllowsNewSubscriptions() throws InterruptedException {
+        EventQueue mainQueue = createNonFinalizedQueueWithEventBus("close-children-resubscribe-test");
+
+        EventQueue child1 = mainQueue.tap();
+        ((EventQueue.MainQueue) mainQueue).closeChildren();
+        assertTrue(child1.isClosed());
+
+        EventQueue child2 = mainQueue.tap();
+        assertFalse(child2.isClosed());
+        assertFalse(mainQueue.isClosed());
+    }
+
+    @Test
+    public void testStreamCloseHandleCloseStreams() throws InterruptedException {
+        EventQueue mainQueue = createNonFinalizedQueueWithEventBus("handle-close-test");
+
+        EventQueue child1 = mainQueue.tap();
+        EventQueue child2 = mainQueue.tap();
+
+        StreamCloseHandle handle = ((EventQueue.MainQueue) mainQueue).getStreamCloseHandle();
+        assertEquals(2, handle.getActiveSubscriberCount());
+
+        handle.closeStreams();
+
+        assertTrue(child1.isClosed());
+        assertTrue(child2.isClosed());
+        assertFalse(mainQueue.isClosed());
+        assertEquals(0, handle.getActiveSubscriberCount());
+    }
+
+    @Test
+    public void testStreamLifecycleHookOnEventCalledAfterDistribution() throws InterruptedException {
+        List<Event> receivedEvents = new ArrayList<>();
+        CountDownLatch hookLatch = new CountDownLatch(1);
+        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
+            @Override
+            public void onSubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
+                receivedEvents.add(event);
+                hookLatch.countDown();
+            }
+        };
+
+        EventQueue mainQueue = createQueueWithEventBus("hook-event-test");
+        ((EventQueue.MainQueue) mainQueue).setTaskStreamLifecycleHook(hook);
+        EventQueue child = mainQueue.tap();
+
+        TaskStatusUpdateEvent statusEvent = TaskStatusUpdateEvent.builder()
+                .taskId("hook-event-test")
+                .contextId("ctx-1")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING, null, null))
+                .build();
+
+        mainQueue.enqueueEvent(statusEvent);
+
+        assertTrue(hookLatch.await(5, TimeUnit.SECONDS),
+                "TaskStreamLifecycleHook.onEvent should have been called");
+
+        assertEquals(1, receivedEvents.size());
+        assertSame(statusEvent, receivedEvents.get(0));
+    }
+
+    @Test
+    public void testCloseStreamsFromWithinOnEventDoesNotCauseConcurrentModification() throws InterruptedException {
+        CountDownLatch hookLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> caughtException = new AtomicReference<>();
+        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
+            @Override
+            public void onSubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
+                try {
+                    handle.closeStreams();
+                } catch (Throwable t) {
+                    caughtException.set(t);
+                } finally {
+                    hookLatch.countDown();
+                }
+            }
+        };
+
+        EventQueue mainQueue = createQueueWithEventBus("close-in-hook-test");
+        ((EventQueue.MainQueue) mainQueue).setTaskStreamLifecycleHook(hook);
+        mainQueue.tap();
+        mainQueue.tap();
+
+        TaskStatusUpdateEvent statusEvent = TaskStatusUpdateEvent.builder()
+                .taskId("close-in-hook-test")
+                .contextId("ctx-1")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING, null, null))
+                .build();
+
+        mainQueue.enqueueEvent(statusEvent);
+
+        assertTrue(hookLatch.await(5, TimeUnit.SECONDS),
+                "onEvent should have been called");
+        assertNull(caughtException.get(),
+                "closeStreams() from within onEvent should not throw");
+    }
+
+    @Test
+    public void testOnEventNotCalledWithZeroSubscribers() throws InterruptedException {
+        AtomicBoolean onEventCalled = new AtomicBoolean(false);
+        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
+            @Override
+            public void onSubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
+            }
+
+            @Override
+            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
+                onEventCalled.set(true);
+            }
+        };
+
+        EventQueue mainQueue = createQueueWithEventBus("no-subscribers-test");
+        ((EventQueue.MainQueue) mainQueue).setTaskStreamLifecycleHook(hook);
+
+        TaskStatusUpdateEvent statusEvent = TaskStatusUpdateEvent.builder()
+                .taskId("no-subscribers-test")
+                .contextId("ctx-1")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING, null, null))
+                .build();
+
+        CountDownLatch processingLatch = new CountDownLatch(1);
+        mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
+            @Override
+            public void onEventProcessed(String taskId, Event event) {
+                processingLatch.countDown();
+            }
+
+            @Override
+            public void onTaskFinalized(String taskId) {
+            }
+        });
+
+        try {
+            mainQueue.enqueueEvent(statusEvent);
+            assertTrue(processingLatch.await(5, TimeUnit.SECONDS),
+                    "Event should have been processed");
+        } finally {
+            mainEventBusProcessor.setCallback(null);
+        }
+
+        assertFalse(onEventCalled.get(),
+                "onEvent should not be called when there are zero subscribers");
     }
 }
