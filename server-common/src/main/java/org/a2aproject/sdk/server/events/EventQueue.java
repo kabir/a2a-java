@@ -414,6 +414,8 @@ public abstract class EventQueue implements AutoCloseable {
         private final MainEventBus mainEventBus;
         private final @Nullable TaskStreamLifecycleHook streamLifecycleHook;
 
+        private final ThreadLocal<Boolean> closingChildren = ThreadLocal.withInitial(() -> false);
+
         private final StreamCloseHandle streamCloseHandle = new StreamCloseHandle() {
             @Override
             public void closeStreams() {
@@ -446,6 +448,15 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
 
+        /**
+         * Creates a new ChildQueue subscribed to this MainQueue's event stream.
+         *
+         * <p><strong>Hook interaction:</strong> If a {@link TaskStreamLifecycleHook} is configured,
+         * {@code onSubscribe} is called after the child is added to the children list. If the hook
+         * calls {@link StreamCloseHandle#closeStreams()} during that callback, the returned
+         * ChildQueue will already be closed. Callers must handle this — a closed ChildQueue's
+         * {@link #dequeueEventItem(int)} will throw {@link EventQueueClosedException} immediately.
+         */
         public EventQueue tap() {
             ChildQueue child = new ChildQueue(this);
             children.add(child);
@@ -689,10 +700,21 @@ public abstract class EventQueue implements AutoCloseable {
          * </p>
          */
         void closeChildren() {
-            List<ChildQueue> snapshot = List.copyOf(children);
-            LOGGER.debug("MainQueue[{}]: Closing {} children gracefully", taskId, snapshot.size());
-            for (ChildQueue child : snapshot) {
-                child.close(false);
+            // Guard against reentrancy: onUnsubscribe callbacks (triggered by child.close below)
+            // receive a StreamCloseHandle and could call closeStreams() again on the same thread.
+            if (closingChildren.get()) {
+                LOGGER.debug("MainQueue[{}]: Reentrant closeChildren() call ignored", taskId);
+                return;
+            }
+            closingChildren.set(true);
+            try {
+                List<ChildQueue> snapshot = List.copyOf(children);
+                LOGGER.debug("MainQueue[{}]: Closing {} children gracefully", taskId, snapshot.size());
+                for (ChildQueue child : snapshot) {
+                    child.close(false);
+                }
+            } finally {
+                closingChildren.set(false);
             }
         }
 

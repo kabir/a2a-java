@@ -55,6 +55,11 @@ public interface TaskStreamLifecycleHook {
     /**
      * Called when a new ChildQueue is created for a task (a client subscribes to the stream).
      *
+     * <p>If this method calls {@link StreamCloseHandle#closeStreams()}, the ChildQueue being
+     * created will be closed before {@code tap()} returns it to the caller. The caller will
+     * receive a closed queue whose {@code dequeueEventItem()} throws
+     * {@code EventQueueClosedException} immediately.</p>
+     *
      * @param taskId the task identifier
      * @param handle handle to close streams and query subscriber count
      */
@@ -62,6 +67,11 @@ public interface TaskStreamLifecycleHook {
 
     /**
      * Called when a ChildQueue closes for a task (a client disconnects or streams are closed).
+     *
+     * <p>Calling {@link StreamCloseHandle#closeStreams()} from within this callback is safe
+     * but has no effect — a reentrancy guard prevents recursive iteration over the children
+     * list. To close remaining streams in response to an unsubscription, schedule the call
+     * asynchronously or handle it in {@link #onEvent}.</p>
      *
      * @param taskId the task identifier
      * @param handle handle to close streams and query subscriber count

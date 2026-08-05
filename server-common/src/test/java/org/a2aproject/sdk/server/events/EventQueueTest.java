@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
@@ -568,21 +569,10 @@ public class EventQueueTest {
     public void testStreamLifecycleHookOnEventCalledAfterDistribution() throws InterruptedException {
         List<Event> receivedEvents = new ArrayList<>();
         CountDownLatch hookLatch = new CountDownLatch(1);
-        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
-            @Override
-            public void onSubscribe(String taskId, StreamCloseHandle handle) {
-            }
-
-            @Override
-            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
-            }
-
-            @Override
-            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
-                receivedEvents.add(event);
-                hookLatch.countDown();
-            }
-        };
+        TaskStreamLifecycleHook hook = TestStreamLifecycleHook.onEvent((taskId, event, handle) -> {
+            receivedEvents.add(event);
+            hookLatch.countDown();
+        });
 
         EventQueue mainQueue = createQueueWithEventBus("hook-event-test", hook);
         EventQueue child = mainQueue.tap();
@@ -606,26 +596,15 @@ public class EventQueueTest {
     public void testCloseStreamsFromWithinOnEventDoesNotCauseConcurrentModification() throws InterruptedException {
         CountDownLatch hookLatch = new CountDownLatch(1);
         AtomicReference<Throwable> caughtException = new AtomicReference<>();
-        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
-            @Override
-            public void onSubscribe(String taskId, StreamCloseHandle handle) {
+        TaskStreamLifecycleHook hook = TestStreamLifecycleHook.onEvent((taskId, event, handle) -> {
+            try {
+                handle.closeStreams();
+            } catch (Throwable t) {
+                caughtException.set(t);
+            } finally {
+                hookLatch.countDown();
             }
-
-            @Override
-            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
-            }
-
-            @Override
-            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
-                try {
-                    handle.closeStreams();
-                } catch (Throwable t) {
-                    caughtException.set(t);
-                } finally {
-                    hookLatch.countDown();
-                }
-            }
-        };
+        });
 
         EventQueue mainQueue = createQueueWithEventBus("close-in-hook-test", hook);
         mainQueue.tap();
@@ -646,22 +625,51 @@ public class EventQueueTest {
     }
 
     @Test
+    public void testCloseStreamsFromOnUnsubscribeIsNoOp() {
+        AtomicInteger unsubscribeCount = new AtomicInteger(0);
+        AtomicReference<Throwable> caughtException = new AtomicReference<>();
+        TaskStreamLifecycleHook hook = TestStreamLifecycleHook.onUnsubscribe((taskId, handle) -> {
+            unsubscribeCount.incrementAndGet();
+            try {
+                handle.closeStreams();
+            } catch (Throwable t) {
+                caughtException.set(t);
+            }
+        });
+
+        EventQueue mainQueue = createQueueWithEventBus("reentrant-close-test", hook);
+        mainQueue.tap();
+        mainQueue.tap();
+        mainQueue.tap();
+
+        ((EventQueue.MainQueue) mainQueue).closeChildren();
+
+        assertNull(caughtException.get(),
+                "Reentrant closeStreams() from onUnsubscribe should not throw");
+        assertEquals(3, unsubscribeCount.get(),
+                "All three children should have triggered onUnsubscribe exactly once");
+        assertEquals(0, ((EventQueue.MainQueue) mainQueue).getActiveChildCount(),
+                "All children should be closed");
+    }
+
+    @Test
+    public void testTapReturnsClosedQueueWhenHookCallsCloseStreams() {
+        TaskStreamLifecycleHook hook = TestStreamLifecycleHook.onSubscribe((taskId, handle) -> handle.closeStreams());
+
+        EventQueue mainQueue = createQueueWithEventBus("tap-close-test", hook);
+        EventQueue child = mainQueue.tap();
+
+        assertTrue(child.isClosed(),
+                "ChildQueue returned by tap() should be closed when hook calls closeStreams() during onSubscribe");
+        assertThrows(EventQueueClosedException.class,
+                () -> child.dequeueEventItem(0),
+                "Dequeuing from a closed ChildQueue should throw EventQueueClosedException");
+    }
+
+    @Test
     public void testOnEventNotCalledWithZeroSubscribers() throws InterruptedException {
         AtomicBoolean onEventCalled = new AtomicBoolean(false);
-        TaskStreamLifecycleHook hook = new TaskStreamLifecycleHook() {
-            @Override
-            public void onSubscribe(String taskId, StreamCloseHandle handle) {
-            }
-
-            @Override
-            public void onUnsubscribe(String taskId, StreamCloseHandle handle) {
-            }
-
-            @Override
-            public void onEvent(String taskId, Event event, StreamCloseHandle handle) {
-                onEventCalled.set(true);
-            }
-        };
+        TaskStreamLifecycleHook hook = TestStreamLifecycleHook.onEvent((taskId, event, handle) -> onEventCalled.set(true));
 
         EventQueue mainQueue = createQueueWithEventBus("no-subscribers-test", hook);
 
