@@ -118,15 +118,7 @@ public class InMemoryQueueManager implements QueueManager {
 
         EventQueue newQueue = null;
         if (existing == null) {
-            // Use builder pattern for cleaner queue creation
             newQueue = factory.builder(taskId).build();
-            // Set the stream lifecycle hook on newly created queues only.
-            // If a queue already exists (putIfAbsent returns non-null), the existing
-            // hook is retained — the hook is bound for the lifetime of the MainQueue.
-            if (newQueue instanceof EventQueue.MainQueue mainQueue) {
-                mainQueue.setTaskStreamLifecycleHook(streamLifecycleHook);
-            }
-            // Make sure an existing queue has not been added in the meantime
             existing = queues.putIfAbsent(taskId, newQueue);
         }
 
@@ -176,7 +168,8 @@ public class InMemoryQueueManager implements QueueManager {
         return EventQueue.builder(mainEventBus)
                 .taskId(taskId)
                 .addOnCloseCallback(getCleanupCallback(taskId))
-                .taskStateProvider(taskStateProvider);
+                .taskStateProvider(taskStateProvider)
+                .streamLifecycleHook(streamLifecycleHook);
     }
 
     /**

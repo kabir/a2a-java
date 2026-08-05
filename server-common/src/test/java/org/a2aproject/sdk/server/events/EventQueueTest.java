@@ -31,6 +31,7 @@ import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,8 +89,13 @@ public class EventQueueTest {
      * Helper to create a queue with MainEventBus configured (for tests that need event distribution).
      */
     private EventQueue createQueueWithEventBus(String taskId) {
+        return createQueueWithEventBus(taskId, null);
+    }
+
+    private EventQueue createQueueWithEventBus(String taskId, @Nullable TaskStreamLifecycleHook hook) {
         return EventQueueUtil.getEventQueueBuilder(mainEventBus)
                 .taskId(taskId)
+                .streamLifecycleHook(hook)
                 .build();
     }
 
@@ -578,8 +584,7 @@ public class EventQueueTest {
             }
         };
 
-        EventQueue mainQueue = createQueueWithEventBus("hook-event-test");
-        ((EventQueue.MainQueue) mainQueue).setTaskStreamLifecycleHook(hook);
+        EventQueue mainQueue = createQueueWithEventBus("hook-event-test", hook);
         EventQueue child = mainQueue.tap();
 
         TaskStatusUpdateEvent statusEvent = TaskStatusUpdateEvent.builder()
@@ -622,8 +627,7 @@ public class EventQueueTest {
             }
         };
 
-        EventQueue mainQueue = createQueueWithEventBus("close-in-hook-test");
-        ((EventQueue.MainQueue) mainQueue).setTaskStreamLifecycleHook(hook);
+        EventQueue mainQueue = createQueueWithEventBus("close-in-hook-test", hook);
         mainQueue.tap();
         mainQueue.tap();
 
@@ -659,8 +663,7 @@ public class EventQueueTest {
             }
         };
 
-        EventQueue mainQueue = createQueueWithEventBus("no-subscribers-test");
-        ((EventQueue.MainQueue) mainQueue).setTaskStreamLifecycleHook(hook);
+        EventQueue mainQueue = createQueueWithEventBus("no-subscribers-test", hook);
 
         TaskStatusUpdateEvent statusEvent = TaskStatusUpdateEvent.builder()
                 .taskId("no-subscribers-test")

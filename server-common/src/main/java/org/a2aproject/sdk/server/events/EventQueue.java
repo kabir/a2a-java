@@ -91,6 +91,7 @@ public abstract class EventQueue implements AutoCloseable {
         private List<Runnable> onCloseCallbacks = new java.util.ArrayList<>();
         private @Nullable TaskStateProvider taskStateProvider;
         private @Nullable MainEventBus mainEventBus;
+        private @Nullable TaskStreamLifecycleHook streamLifecycleHook;
 
         /**
          * Sets the maximum queue size.
@@ -161,6 +162,17 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
         /**
+         * Sets the stream lifecycle hook for subscribe/unsubscribe/event notifications.
+         *
+         * @param streamLifecycleHook the hook to be notified of stream lifecycle events
+         * @return this builder
+         */
+        public EventQueueBuilder streamLifecycleHook(@Nullable TaskStreamLifecycleHook streamLifecycleHook) {
+            this.streamLifecycleHook = streamLifecycleHook;
+            return this;
+        }
+
+        /**
          * Builds and returns the configured EventQueue.
          *
          * @return a new MainQueue instance
@@ -173,7 +185,7 @@ public abstract class EventQueue implements AutoCloseable {
             if (taskId == null) {
                 throw new IllegalStateException("taskId is required for EventQueue creation");
             }
-            return new MainQueue(queueSize, hook, taskId, onCloseCallbacks, taskStateProvider, mainEventBus);
+            return new MainQueue(queueSize, hook, taskId, onCloseCallbacks, taskStateProvider, mainEventBus, streamLifecycleHook);
         }
     }
 
@@ -400,7 +412,7 @@ public abstract class EventQueue implements AutoCloseable {
         private final List<Runnable> onCloseCallbacks;
         private final @Nullable TaskStateProvider taskStateProvider;
         private final MainEventBus mainEventBus;
-        private volatile @Nullable TaskStreamLifecycleHook streamLifecycleHook;
+        private final @Nullable TaskStreamLifecycleHook streamLifecycleHook;
 
         private final StreamCloseHandle streamCloseHandle = new StreamCloseHandle() {
             @Override
@@ -419,7 +431,8 @@ public abstract class EventQueue implements AutoCloseable {
                   String taskId,
                   List<Runnable> onCloseCallbacks,
                   @Nullable TaskStateProvider taskStateProvider,
-                  @Nullable MainEventBus mainEventBus) {
+                  @Nullable MainEventBus mainEventBus,
+                  @Nullable TaskStreamLifecycleHook streamLifecycleHook) {
             super(queueSize);
             this.semaphore = new Semaphore(queueSize, true);
             this.enqueueHook = hook;
@@ -427,6 +440,7 @@ public abstract class EventQueue implements AutoCloseable {
             this.onCloseCallbacks = List.copyOf(onCloseCallbacks);  // Defensive copy
             this.taskStateProvider = taskStateProvider;
             this.mainEventBus = Objects.requireNonNull(mainEventBus, "MainEventBus is required");
+            this.streamLifecycleHook = streamLifecycleHook;
             LOGGER.debug("Created MainQueue for task {} with {} onClose callbacks, TaskStateProvider: {}, MainEventBus configured",
                     taskId, onCloseCallbacks.size(), taskStateProvider != null);
         }
@@ -658,10 +672,6 @@ public abstract class EventQueue implements AutoCloseable {
          */
         public int getActiveChildCount() {
             return children.size();
-        }
-
-        void setTaskStreamLifecycleHook(@Nullable TaskStreamLifecycleHook hook) {
-            this.streamLifecycleHook = hook;
         }
 
         @Nullable
