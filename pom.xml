@@ -575,6 +575,7 @@
         <module>client/transport/spi</module>
         <module>common</module>
         <module>examples/helloworld</module>
+        <module>examples/stream-lifecycle</module>
         <module>examples/cloud-deployment/server</module>
         <module>extras/common</module>
         <module>extras/opentelemetry</module>
