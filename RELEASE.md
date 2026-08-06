@@ -166,7 +166,7 @@ Create a new documentation version for the release:
 
 ```bash
 # Copy dev docs to the new version folder
-cp -r docs/content/dev docs/content/X.Y.Z.Final
+cp -r docs/content/dev.next docs/content/X.Y.Z.Final
 
 # Create a new version data file
 cp docs/data/versions/dev.yml docs/data/versions/X.Y.Z.Final.yml

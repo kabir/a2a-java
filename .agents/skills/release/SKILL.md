@@ -110,7 +110,7 @@ When applicable:
 
 1. Copy dev docs to the new version:
    ```bash
-   cp -r docs/content/dev docs/content/<version>
+   cp -r docs/content/dev.next docs/content/<version>
    ```
 
 2. Create the version data file by copying `dev.yml` (it has the most up-to-date menu):

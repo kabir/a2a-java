@@ -1,5 +1,5 @@
 label: "Development (unreleased)"
-path: "dev"
+path: "dev.next"
 sortOrder: 999
 defaultVersion: false
 devVersion: true
