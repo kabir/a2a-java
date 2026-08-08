@@ -252,9 +252,7 @@ public class GrpcTransport implements ClientTransport {
             @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("request", request);
         checkNotNullParam("taskId", request.taskId());
-        if(request.id() == null) {
-             throw new IllegalArgumentException("Id must not be null");
-        }
+        checkNotNullParam("id", request.id());
 
         org.a2aproject.sdk.grpc.GetTaskPushNotificationConfigRequest grpcRequest = org.a2aproject.sdk.grpc.GetTaskPushNotificationConfigRequest.newBuilder()
                 .setTaskId(request.taskId())
@@ -333,7 +331,7 @@ public class GrpcTransport implements ClientTransport {
             A2AServiceStub stubWithMetadata = createAsyncStubWithMetadata(context, payloadAndHeaders);
             stubWithMetadata.subscribeToTask(grpcRequest, streamObserver);
         } catch (StatusRuntimeException e) {
-            throw GrpcErrorMapper.mapGrpcError(e, "Failed to subscribe task push notification config: ");
+            throw GrpcErrorMapper.mapGrpcError(e, "Failed to subscribe to task: ");
         }
     }
 
