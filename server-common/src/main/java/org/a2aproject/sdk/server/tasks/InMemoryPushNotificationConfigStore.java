@@ -10,6 +10,7 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
@@ -23,6 +24,13 @@ import org.jspecify.annotations.Nullable;
  */
 @ApplicationScoped
 public class InMemoryPushNotificationConfigStore implements PushNotificationConfigStore {
+
+    /**
+     * Maximum number of push notification configs allowed per task.
+     * Prevents a single task from accumulating an unbounded list of configs
+     * (each config consumes memory and can trigger outbound HTTP requests).
+     */
+    public static final int MAX_PUSH_CONFIGS_PER_TASK = 100;
 
     private final Map<String, List<TaskPushNotificationConfig>> pushNotificationInfos = Collections.synchronizedMap(new HashMap<>());
     private final Map<String, String> protocolVersions = Collections.synchronizedMap(new HashMap<>());
@@ -40,6 +48,20 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
             builder.id(taskId);
         }
         notificationConfig = builder.build();
+
+        // Enforce the per-task limit (BUG-42). Re-registering/updating an already-registered
+        // config ID is allowed; only genuinely new configs count against the limit.
+        boolean isExistingConfig = false;
+        for (TaskPushNotificationConfig existing : notificationConfigList) {
+            if (existing.id() != null && existing.id().equals(notificationConfig.id())) {
+                isExistingConfig = true;
+                break;
+            }
+        }
+        if (!isExistingConfig && notificationConfigList.size() >= MAX_PUSH_CONFIGS_PER_TASK) {
+            throw new InvalidParamsError("Too many push notification configs for task " + taskId
+                    + " (max " + MAX_PUSH_CONFIGS_PER_TASK + ")");
+        }
 
         Iterator<TaskPushNotificationConfig> notificationConfigIterator = notificationConfigList.iterator();
         while (notificationConfigIterator.hasNext()) {
