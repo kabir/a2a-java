@@ -716,7 +716,7 @@ public class EventQueueTest {
         java.util.concurrent.BlockingQueue<?> childDeque =
                 (java.util.concurrent.BlockingQueue<?>) queueField.get(childQueue);
 
-        // The child queue must be bounded by the parent's configured capacity (BUG-28):
+        // The child queue must be bounded by the parent's configured capacity:
         // an unbounded deque would let a slow subscriber grow memory without limit.
         assertEquals(customSize, childDeque.remainingCapacity());
     }
@@ -740,7 +740,7 @@ public class EventQueueTest {
 
         // If the permit leaked, size() would be 1 (one permit held forever). It must be
         // released when submit() fails because MainEventBusProcessor never saw the event
-        // and therefore never called releaseSemaphore() (BUG-29).
+        // and therefore never called releaseSemaphore().
         assertEquals(0, mainQueue.size(), "Semaphore permit must be released on submit failure");
     }
 }
