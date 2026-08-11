@@ -702,4 +702,45 @@ public class EventQueueTest {
         assertFalse(onEventCalled.get(),
                 "onEvent should not be called when there are zero subscribers");
     }
+
+    @Test
+    public void testChildQueueIsBoundedByParentQueueSize() throws Exception {
+        int customSize = 5;
+        EventQueue mainQueue = EventQueueUtil.getEventQueueBuilder(mainEventBus)
+                .queueSize(customSize)
+                .build();
+        EventQueue childQueue = mainQueue.tap();
+
+        java.lang.reflect.Field queueField = EventQueue.ChildQueue.class.getDeclaredField("queue");
+        queueField.setAccessible(true);
+        java.util.concurrent.BlockingQueue<?> childDeque =
+                (java.util.concurrent.BlockingQueue<?>) queueField.get(childQueue);
+
+        // The child queue must be bounded by the parent's configured capacity:
+        // an unbounded deque would let a slow subscriber grow memory without limit.
+        assertEquals(customSize, childDeque.remainingCapacity());
+    }
+
+    @Test
+    public void testSemaphorePermitReleasedWhenSubmitFails() {
+        MainEventBus failingBus = org.mockito.Mockito.mock(MainEventBus.class);
+        org.mockito.Mockito.doThrow(new RuntimeException("submit failed"))
+                .when(failingBus).submit(org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any());
+
+        EventQueue mainQueue = EventQueueUtil.getEventQueueBuilder(failingBus)
+                .taskId(TASK_ID)
+                .queueSize(2)
+                .build();
+        assertEquals(0, mainQueue.size(), "No permits should be in use before enqueue");
+
+        assertThrows(RuntimeException.class,
+                () -> mainQueue.enqueueEvent(fromJson(MINIMAL_TASK, Task.class)));
+
+        // If the permit leaked, size() would be 1 (one permit held forever). It must be
+        // released when submit() fails because MainEventBusProcessor never saw the event
+        // and therefore never called releaseSemaphore().
+        assertEquals(0, mainQueue.size(), "Semaphore permit must be released on submit failure");
+    }
 }
