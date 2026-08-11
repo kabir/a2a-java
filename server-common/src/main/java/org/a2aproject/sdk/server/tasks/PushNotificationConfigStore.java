@@ -79,6 +79,13 @@ import org.jspecify.annotations.Nullable;
 public interface PushNotificationConfigStore {
 
     /**
+     * Default maximum number of push notification configs allowed per task,
+     * used when {@code a2a.push-notification-config.max-per-task} is not
+     * configured. See {@code META-INF/a2a-defaults.properties}.
+     */
+    int DEFAULT_MAX_PUSH_CONFIGS_PER_TASK = 100;
+
+    /**
      * Sets or updates the push notification configuration for a task.
      * <p>
      * If {@code notificationConfig.id()} is null or empty, it's set to the task ID.
@@ -126,18 +133,18 @@ public interface PushNotificationConfigStore {
      */
     static int maxPushConfigsPerTask(@Nullable A2AConfigProvider config) {
         if (config == null) {
-            return 100;
+            return DEFAULT_MAX_PUSH_CONFIGS_PER_TASK;
         }
         return config.getOptionalValue("a2a.push-notification-config.max-per-task")
                 .map(value -> {
                     try {
                         int parsed = Integer.parseInt(value.trim());
-                        return parsed > 0 ? parsed : 100;
+                        return parsed > 0 ? parsed : DEFAULT_MAX_PUSH_CONFIGS_PER_TASK;
                     } catch (NumberFormatException e) {
-                        return 100;
+                        return DEFAULT_MAX_PUSH_CONFIGS_PER_TASK;
                     }
                 })
-                .orElse(100);
+                .orElse(DEFAULT_MAX_PUSH_CONFIGS_PER_TASK);
     }
 
     /**

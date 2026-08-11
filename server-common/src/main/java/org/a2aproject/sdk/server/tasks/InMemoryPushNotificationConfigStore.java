@@ -32,7 +32,7 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
      * (each config consumes memory and can trigger outbound HTTP requests).
      * Overridable via {@code a2a.push-notification-config.max-per-task}.
      */
-    public static final int MAX_PUSH_CONFIGS_PER_TASK = 100;
+    public static final int MAX_PUSH_CONFIGS_PER_TASK = PushNotificationConfigStore.DEFAULT_MAX_PUSH_CONFIGS_PER_TASK;
 
     private final Map<String, List<TaskPushNotificationConfig>> pushNotificationInfos = Collections.synchronizedMap(new HashMap<>());
     private final Map<String, String> protocolVersions = Collections.synchronizedMap(new HashMap<>());
