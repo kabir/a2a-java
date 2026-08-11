@@ -10,6 +10,7 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.a2aproject.sdk.server.config.A2AConfigProvider;
 import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
@@ -26,14 +27,18 @@ import org.jspecify.annotations.Nullable;
 public class InMemoryPushNotificationConfigStore implements PushNotificationConfigStore {
 
     /**
-     * Maximum number of push notification configs allowed per task.
+     * Default maximum number of push notification configs allowed per task.
      * Prevents a single task from accumulating an unbounded list of configs
      * (each config consumes memory and can trigger outbound HTTP requests).
+     * Overridable via {@code a2a.push-notification-config.max-per-task}.
      */
     public static final int MAX_PUSH_CONFIGS_PER_TASK = 100;
 
     private final Map<String, List<TaskPushNotificationConfig>> pushNotificationInfos = Collections.synchronizedMap(new HashMap<>());
     private final Map<String, String> protocolVersions = Collections.synchronizedMap(new HashMap<>());
+
+    @Inject
+    @Nullable A2AConfigProvider config;
 
     @Inject
     public InMemoryPushNotificationConfigStore() {
@@ -49,8 +54,10 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
         }
         notificationConfig = builder.build();
 
-        // Enforce the per-task limit (BUG-42). Re-registering/updating an already-registered
-        // config ID is allowed; only genuinely new configs count against the limit.
+        // Enforce the per-task limit (configurable via
+        // a2a.push-notification-config.max-per-task). Re-registering/updating an
+        // already-registered config ID is allowed; only genuinely new configs count
+        // against the limit.
         boolean isExistingConfig = false;
         for (TaskPushNotificationConfig existing : notificationConfigList) {
             if (existing.id() != null && existing.id().equals(notificationConfig.id())) {
@@ -58,9 +65,10 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
                 break;
             }
         }
-        if (!isExistingConfig && notificationConfigList.size() >= MAX_PUSH_CONFIGS_PER_TASK) {
+        int maxPerTask = PushNotificationConfigStore.maxPushConfigsPerTask(config);
+        if (!isExistingConfig && notificationConfigList.size() >= maxPerTask) {
             throw new InvalidParamsError("Too many push notification configs for task " + taskId
-                    + " (max " + MAX_PUSH_CONFIGS_PER_TASK + ")");
+                    + " (max " + maxPerTask + ")");
         }
 
         Iterator<TaskPushNotificationConfig> notificationConfigIterator = notificationConfigList.iterator();

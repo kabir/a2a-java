@@ -681,7 +681,7 @@ class InMemoryPushNotificationConfigStoreTest {
                     "http://url" + i + ".com/callback", "cfg" + i, null));
         }
 
-        // The (MAX+1)-th distinct config for the same task must be rejected (BUG-42)
+        // The (MAX+1)-th distinct config for the same task must be rejected
         TaskPushNotificationConfig overflow = createSamplePushConfig(taskId,
                 "http://url-overflow.com/callback", "cfg-overflow", null);
         assertThrows(InvalidParamsError.class, () -> configStore.setInfo(overflow));
