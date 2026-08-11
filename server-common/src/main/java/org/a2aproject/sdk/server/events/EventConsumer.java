@@ -58,8 +58,8 @@ public class EventConsumer {
     /**
      * Returns the configured buffer-flush delay in milliseconds.
      *
-     * <p>Reads the {@value #BUFFER_FLUSH_DELAY_MS_PROPERTY} system property; values that
-     * are absent, non-numeric, or negative fall back to the default.</p>
+     * <p>Reads the {@value #BUFFER_FLUSH_DELAY_MS_PROPERTY} system property; absent or
+     * non-numeric values fall back to the default, negative values are clamped to 0.</p>
      *
      * @return the delay in milliseconds (never negative)
      */

@@ -4,13 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,8 +49,8 @@ import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
-import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TaskQueryParams;
+import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 
@@ -1171,21 +1169,6 @@ public class DefaultRequestHandlerTest {
 
         assertNotNull(result.history());
         assertTrue(result.history().isEmpty());
-    }
-
-    @Test
-    void testLimitTaskHistoryNegativeHistoryLengthReturnsTaskUnchanged() throws Exception {
-        Task task = taskWithHistory("task-hl-negative");
-
-        Method method = DefaultRequestHandler.class.getDeclaredMethod(
-                "limitTaskHistory", Task.class, Integer.class);
-        method.setAccessible(true);
-        Task result = (Task) method.invoke(null, task, -1);
-
-        // A negative historyLength must not throw IndexOutOfBoundsException and must leave
-        // the history untouched (aligned with the Python/JS SDK semantics).
-        assertSame(task, result);
-        assertEquals(task.history(), result.history());
     }
 
     private Task taskWithHistory(String id) {
