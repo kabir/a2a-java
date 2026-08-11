@@ -9,9 +9,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,9 +116,9 @@ public class EventQueueTest {
      */
     private void waitForEventProcessing(Runnable action) throws InterruptedException {
         CountDownLatch processingLatch = new CountDownLatch(1);
-        mainEventBusProcessor.setCallback(new org.a2aproject.sdk.server.events.MainEventBusProcessorCallback() {
+        mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
             @Override
-            public void onEventProcessed(String taskId, org.a2aproject.sdk.spec.Event event) {
+            public void onEventProcessed(String taskId, Event event) {
                 processingLatch.countDown();
             }
 
@@ -711,10 +717,9 @@ public class EventQueueTest {
                 .build();
         EventQueue childQueue = mainQueue.tap();
 
-        java.lang.reflect.Field queueField = EventQueue.ChildQueue.class.getDeclaredField("queue");
+        Field queueField = EventQueue.ChildQueue.class.getDeclaredField("queue");
         queueField.setAccessible(true);
-        java.util.concurrent.BlockingQueue<?> childDeque =
-                (java.util.concurrent.BlockingQueue<?>) queueField.get(childQueue);
+        BlockingQueue<?> childDeque = (BlockingQueue<?>) queueField.get(childQueue);
 
         // The child queue must be bounded by the parent's configured capacity:
         // an unbounded deque would let a slow subscriber grow memory without limit.
@@ -723,11 +728,9 @@ public class EventQueueTest {
 
     @Test
     public void testSemaphorePermitReleasedWhenSubmitFails() {
-        MainEventBus failingBus = org.mockito.Mockito.mock(MainEventBus.class);
-        org.mockito.Mockito.doThrow(new RuntimeException("submit failed"))
-                .when(failingBus).submit(org.mockito.ArgumentMatchers.anyString(),
-                        org.mockito.ArgumentMatchers.any(),
-                        org.mockito.ArgumentMatchers.any());
+        MainEventBus failingBus = mock(MainEventBus.class);
+        doThrow(new RuntimeException("submit failed"))
+                .when(failingBus).submit(anyString(), any(), any());
 
         EventQueue mainQueue = EventQueueUtil.getEventQueueBuilder(failingBus)
                 .taskId(TASK_ID)
