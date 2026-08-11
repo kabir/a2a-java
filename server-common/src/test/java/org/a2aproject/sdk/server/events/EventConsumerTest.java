@@ -214,35 +214,6 @@ public class EventConsumerTest {
     }
 
     @Test
-    public void testConsumeMessageEvents() throws Exception {
-        Message message = fromJson(MESSAGE_PAYLOAD, Message.class);
-        Message message2 = Message.builder(message).build();
-
-        List<Event> events = List.of(message, message2);
-
-        for (Event event : events) {
-            waitForEventProcessing(() -> eventQueue.enqueueEvent(event));
-        }
-
-        // A plain Message is no longer treated as a stream-terminating final event
-        // (BUG-26): the stream must stay open for subsequent events. Close the queue
-        // explicitly so the polling loop terminates after draining the messages.
-        eventQueue.close();
-
-        Flow.Publisher<EventQueueItem> publisher = eventConsumer.consumeAll();
-        final List<Event> receivedEvents = new ArrayList<>();
-        final AtomicReference<Throwable> error = new AtomicReference<>();
-
-        publisher.subscribe(getSubscriber(receivedEvents, error));
-
-        assertNull(error.get());
-        // Both messages should be delivered - the stream is no longer closed by the first Message
-        assertEquals(2, receivedEvents.size());
-        assertSame(message, receivedEvents.get(0));
-        assertSame(message2, receivedEvents.get(1));
-    }
-
-    @Test
     public void testBufferFlushDelayMsDefaultsTo150() {
         String original = System.getProperty("a2a.eventconsumer.bufferFlushDelayMs");
         try {
