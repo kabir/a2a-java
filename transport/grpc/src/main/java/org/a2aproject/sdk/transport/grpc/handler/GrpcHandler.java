@@ -838,8 +838,13 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     private AgentCard getAgentCardInternal() {
         AgentCard agentCard = getAgentCard();
         if (initialised.compareAndSet(false, true)) {
-            // Validate transport configuration with proper classloader context
-            validateTransportConfigurationWithCorrectClassLoader(agentCard);
+            try {
+                // Validate transport configuration with proper classloader context
+                validateTransportConfigurationWithCorrectClassLoader(agentCard);
+            } catch (RuntimeException e) {
+                initialised.set(false);
+                throw e;
+            }
         }
         return agentCard;
     }

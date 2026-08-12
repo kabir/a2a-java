@@ -17,6 +17,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import jakarta.enterprise.inject.Instance;
 import org.a2aproject.sdk.common.MediaType;
 import org.a2aproject.sdk.server.AgentCardCacheMetadata;
 import org.a2aproject.sdk.server.ServerCallContext;
@@ -556,7 +557,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard cardWithExtension = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with required extension")
-                .supportedInterfaces(Collections.singletonList(new AgentInterface("REST", "http://localhost:9999")))
+                .supportedInterfaces(Collections.singletonList(new AgentInterface("HTTP+JSON", "http://localhost:9999")))
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(true)
@@ -604,7 +605,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard cardWithExtension = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with required extension")
-                .supportedInterfaces(Collections.singletonList(new AgentInterface("REST", "http://localhost:9999")))
+                .supportedInterfaces(Collections.singletonList(new AgentInterface("HTTP+JSON", "http://localhost:9999")))
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(true)
@@ -699,7 +700,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard cardWithExtension = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with required extension")
-                .supportedInterfaces(Collections.singletonList(new AgentInterface("REST", "http://localhost:9999")))
+                .supportedInterfaces(Collections.singletonList(new AgentInterface("HTTP+JSON", "http://localhost:9999")))
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(true)
@@ -762,7 +763,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard agentCard = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with version 1.0")
-                .supportedInterfaces(Collections.singletonList(new AgentInterface("REST", "http://localhost:9999")))
+                .supportedInterfaces(Collections.singletonList(new AgentInterface("HTTP+JSON", "http://localhost:9999")))
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(true)
@@ -812,7 +813,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard agentCard = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with version 1.0")
-                .supportedInterfaces(Collections.singletonList(new AgentInterface("REST", "http://localhost:9999")))
+                .supportedInterfaces(Collections.singletonList(new AgentInterface("HTTP+JSON", "http://localhost:9999")))
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(true)
@@ -908,7 +909,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard agentCard = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with version 1.0")
-                .supportedInterfaces(Collections.singletonList(new AgentInterface("REST", "http://localhost:9999")))
+                .supportedInterfaces(Collections.singletonList(new AgentInterface("HTTP+JSON", "http://localhost:9999")))
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(true)
@@ -963,7 +964,7 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         AgentCard agentCard = AgentCard.builder()
                 .name("test-card")
                 .description("Test card with version 1.0")
-                .supportedInterfaces(Collections.singletonList(new AgentInterface("REST", "http://localhost:9999")))
+                .supportedInterfaces(Collections.singletonList(new AgentInterface("HTTP+JSON", "http://localhost:9999")))
                 .version("1.0.0")
                 .capabilities(AgentCapabilities.builder()
                         .streaming(true)
@@ -1077,6 +1078,16 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         // Verify empty array, not null
         Assertions.assertTrue(body.contains("\"tasks\":[]") || body.contains("\"tasks\": []"),
                 "tasks should be empty array");
+    }
+
+    @Test
+    void constructorDoesNotResolveAgentCardInstance() {
+        @SuppressWarnings("unchecked")
+        Instance<AgentCard> throwOnGet = Mockito.mock(Instance.class);
+        Mockito.when(throwOnGet.get()).thenThrow(new AssertionError("Instance.get() must not be called during construction"));
+
+        Assertions.assertDoesNotThrow(() -> new RestHandler(throwOnGet, throwOnGet,
+                createCacheMetadata(), requestHandler, internalExecutor));
     }
 
     private static void assertProblemDetail(RestHandler.HTTPRestResponse response,
