@@ -152,6 +152,14 @@ public class PartSerializationTest {
     }
 
     @Test
+    void testMultiplePopulatedContentKeysAreRejected() {
+        String json = """
+            {"text": "hello", "data": {"answer": "42"}}
+            """;
+        assertThrows(JsonProcessingException.class, () -> JsonUtil.fromJson(json, Part.class));
+    }
+
+    @Test
     void testNonStringContentKeyIsRejected() {
         String json = """
             {"text": "", "raw": {"nested": 1}}

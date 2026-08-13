@@ -603,7 +603,14 @@ public class JsonUtil {
             // A producer that emits every content key, leaving the unset ones as "", would otherwise
             // have its payload discarded by whichever empty placeholder came first on the wire.
             // The fallback keeps a deliberately empty TextPart decodable.
-            String discriminator = contentKeys(jsonObject).filter(key -> !isEmptyString(jsonObject.get(key))).findFirst()
+            List<String> populatedKeys = contentKeys(jsonObject)
+                    .filter(key -> !isEmptyString(jsonObject.get(key)))
+                    .toList();
+            if (populatedKeys.size() > 1) {
+                throw new JsonSyntaxException(
+                        format("Part is a oneOf: expected exactly one populated content key, but found: %s", populatedKeys));
+            }
+            String discriminator = populatedKeys.stream().findFirst()
                     .or(() -> contentKeys(jsonObject).findFirst())
                     .orElseThrow(() -> new JsonSyntaxException(format("Part must have one of: %s (found: %s)", VALID_KEYS, keys)));
 
