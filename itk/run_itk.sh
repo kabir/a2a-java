@@ -90,8 +90,8 @@ $CONTAINER_RT run -d --name itk-service \
   itk_service
 
 # Launcher's peer checkouts under /root/.cache/a2a-itk are host-owned; trust
-# every path so container-side git accepts them.
-$CONTAINER_RT exec itk-service git config --system --add safe.directory '*'
+# only repos under the launcher cache dir so container-side git accepts them.
+$CONTAINER_RT exec itk-service bash -lc 'while IFS= read -r -d "" d; do git config --system --add safe.directory "${d%/.git}"; done < <(find /root/.cache/a2a-itk -type d -name .git -print0)'
 
 # 4. Verify service is up and send post request
 MAX_RETRIES=30
