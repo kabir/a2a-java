@@ -11,17 +11,42 @@ import jakarta.enterprise.util.TypeLiteral;
 import org.jspecify.annotations.Nullable;
 
 /**
- * An {@link Instance} wrapper for a pre-resolved value, for use in non-CDI contexts
- * such as convenience constructors and tests.
+ * A static {@link Instance} wrapper holding a pre-resolved (or absent) value,
+ * for use in non-CDI contexts such as convenience constructors and tests.
+ * A {@code null} value represents an unsatisfied instance.
+ *
+ * <p>Usage example (wrapping a concrete value):
+ * <pre>{@code
+ * Instance<AgentCard> instance = new FixedInstance<>(myAgentCard);
+ * }</pre>
+ *
+ * <p>Usage example (empty / unsatisfied):
+ * <pre>{@code
+ * Instance<AgentCard> empty = FixedInstance.empty();
+ * }</pre>
  *
  * @param <T> the bean type
  */
-public class ResolvedInstance<T> implements Instance<T> {
+public class FixedInstance<T> implements Instance<T> {
+
+    @SuppressWarnings("rawtypes")
+    private static final FixedInstance EMPTY = new FixedInstance<>(null);
 
     private final @Nullable T value;
 
-    public ResolvedInstance(@Nullable T value) {
+    public FixedInstance(@Nullable T value) {
         this.value = value;
+    }
+
+    /**
+     * Returns a {@code FixedInstance} with no value (unsatisfied).
+     *
+     * @param <T> the bean type
+     * @return an empty instance
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> FixedInstance<T> empty() {
+        return (FixedInstance<T>) EMPTY;
     }
 
     @Override

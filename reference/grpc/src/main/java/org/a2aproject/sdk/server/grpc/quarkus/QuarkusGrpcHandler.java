@@ -75,7 +75,7 @@ import org.jspecify.annotations.Nullable;
 public class QuarkusGrpcHandler extends GrpcHandler {
 
     private final Instance<AgentCard> agentCard;
-    private final Instance<AgentCard> extendedAgentCard;
+    private final @Nullable Instance<AgentCard> extendedAgentCard;
     private final RequestHandler requestHandler;
     private final Instance<CallContextFactory> callContextFactoryInstance;
     private final Executor executor;

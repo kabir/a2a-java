@@ -80,9 +80,12 @@ import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
+import org.a2aproject.sdk.server.TestInstances;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.spec.VersionNotSupportedError;
+
 import jakarta.enterprise.inject.Instance;
+
 import mutiny.zero.ZeroPublisher;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -2028,10 +2031,8 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
-    void constructorDoesNotResolveAgentCardInstance() {
-        @SuppressWarnings("unchecked")
-        Instance<AgentCard> throwOnGet = Mockito.mock(Instance.class);
-        Mockito.when(throwOnGet.get()).thenThrow(new AssertionError("Instance.get() must not be called during construction"));
+    void constructorDoesNotResolveAgentCardInstances() {
+        Instance<AgentCard> throwOnGet = TestInstances.throwOnGet();
 
         assertDoesNotThrow(() -> new JSONRPCHandler(throwOnGet, null, requestHandler, internalExecutor));
     }
