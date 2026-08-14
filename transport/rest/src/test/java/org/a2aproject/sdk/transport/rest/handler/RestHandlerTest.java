@@ -1,6 +1,5 @@
 package org.a2aproject.sdk.transport.rest.handler;
 
-
 import static org.a2aproject.sdk.common.MediaType.APPLICATION_JSON;
 
 import java.util.Collections;
@@ -18,8 +17,9 @@ import com.google.gson.JsonParser;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import jakarta.enterprise.inject.Instance;
-import org.a2aproject.sdk.common.MediaType;
+
 import org.a2aproject.sdk.server.AgentCardCacheMetadata;
+import org.a2aproject.sdk.server.TestInstances;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
@@ -1081,10 +1081,8 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
-    void constructorDoesNotResolveAgentCardInstance() {
-        @SuppressWarnings("unchecked")
-        Instance<AgentCard> throwOnGet = Mockito.mock(Instance.class);
-        Mockito.when(throwOnGet.get()).thenThrow(new AssertionError("Instance.get() must not be called during construction"));
+    void constructorDoesNotResolveAgentCardInstances() {
+        Instance<AgentCard> throwOnGet = TestInstances.throwOnGet();
 
         Assertions.assertDoesNotThrow(() -> new RestHandler(throwOnGet, throwOnGet,
                 createCacheMetadata(), requestHandler, internalExecutor));

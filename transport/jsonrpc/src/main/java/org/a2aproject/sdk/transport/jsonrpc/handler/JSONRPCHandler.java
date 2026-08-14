@@ -38,8 +38,8 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import org.a2aproject.sdk.server.AgentCardValidator;
 import org.a2aproject.sdk.server.ExtendedAgentCard;
+import org.a2aproject.sdk.server.FixedInstance;
 import org.a2aproject.sdk.server.PublicAgentCard;
-import org.a2aproject.sdk.server.ResolvedInstance;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.TaskOperation;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
@@ -186,7 +186,7 @@ public class JSONRPCHandler {
      * @param executor the executor for asynchronous operations
      */
     public JSONRPCHandler(@PublicAgentCard AgentCard agentCard, RequestHandler requestHandler, Executor executor) {
-        this(new ResolvedInstance<>(agentCard), null, requestHandler, executor);
+        this(new FixedInstance<>(agentCard), null, requestHandler, executor);
     }
 
     /**
@@ -233,8 +233,8 @@ public class JSONRPCHandler {
      */
     public SendMessageResponse onMessageSend(SendMessageRequest request, ServerCallContext context) {
         try {
-            A2AVersionValidator.validateProtocolVersion(agentCard(), context);
-            A2AExtensions.validateRequiredExtensions(agentCard(), context);
+            A2AVersionValidator.validateProtocolVersion(resolveAgentCard(), context);
+            A2AExtensions.validateRequiredExtensions(resolveAgentCard(), context);
             EventKind taskOrMessage = requestHandler.onMessageSend(request.getParams(), context);
             return new SendMessageResponse(request.getId(), taskOrMessage);
         } catch (A2AError e) {
@@ -282,7 +282,7 @@ public class JSONRPCHandler {
      */
     public Flow.Publisher<SendStreamingMessageResponse> onMessageSendStream(
             SendStreamingMessageRequest request, ServerCallContext context) {
-        if (!agentCard().capabilities().streaming()) {
+        if (!resolveAgentCard().capabilities().streaming()) {
             return ZeroPublisher.fromItems(
                     new SendStreamingMessageResponse(
                             request.getId(),
@@ -290,8 +290,8 @@ public class JSONRPCHandler {
         }
 
         try {
-            A2AVersionValidator.validateProtocolVersion(agentCard(), context);
-            A2AExtensions.validateRequiredExtensions(agentCard(), context);
+            A2AVersionValidator.validateProtocolVersion(resolveAgentCard(), context);
+            A2AExtensions.validateRequiredExtensions(resolveAgentCard(), context);
             Flow.Publisher<StreamingEventKind> publisher =
                     requestHandler.onMessageSendStream(request.getParams(), context);
             // We can't use the convertingProcessor convenience method since that propagates any errors as an error handled
@@ -379,7 +379,7 @@ public class JSONRPCHandler {
      */
     public Flow.Publisher<SendStreamingMessageResponse> onSubscribeToTask(
             SubscribeToTaskRequest request, ServerCallContext context) throws A2AError {
-        if (!agentCard().capabilities().streaming()) {
+        if (!resolveAgentCard().capabilities().streaming()) {
             return ZeroPublisher.fromItems(
                     new SendStreamingMessageResponse(
                             request.getId(),
@@ -426,7 +426,7 @@ public class JSONRPCHandler {
      */
     public GetTaskPushNotificationConfigResponse getPushNotificationConfig(
             GetTaskPushNotificationConfigRequest request, ServerCallContext context) {
-        if (!agentCard().capabilities().pushNotifications()) {
+        if (!resolveAgentCard().capabilities().pushNotifications()) {
             return new GetTaskPushNotificationConfigResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
@@ -468,7 +468,7 @@ public class JSONRPCHandler {
      */
     public CreateTaskPushNotificationConfigResponse setPushNotificationConfig(
             CreateTaskPushNotificationConfigRequest request, ServerCallContext context) {
-        if (!agentCard().capabilities().pushNotifications()) {
+        if (!resolveAgentCard().capabilities().pushNotifications()) {
             return new CreateTaskPushNotificationConfigResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
@@ -591,7 +591,7 @@ public class JSONRPCHandler {
      */
     public ListTaskPushNotificationConfigsResponse listPushNotificationConfigs(
             ListTaskPushNotificationConfigsRequest request, ServerCallContext context) {
-        if (!agentCard().capabilities().pushNotifications()) {
+        if (!resolveAgentCard().capabilities().pushNotifications()) {
             return new ListTaskPushNotificationConfigsResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
@@ -633,7 +633,7 @@ public class JSONRPCHandler {
      */
     public DeleteTaskPushNotificationConfigResponse deletePushNotificationConfig(
             DeleteTaskPushNotificationConfigRequest request, ServerCallContext context) {
-        if (!agentCard().capabilities().pushNotifications()) {
+        if (!resolveAgentCard().capabilities().pushNotifications()) {
             return new DeleteTaskPushNotificationConfigResponse(request.getId(),
                     new PushNotificationNotSupportedError());
         }
@@ -673,7 +673,7 @@ public class JSONRPCHandler {
     // TODO: Add authentication (https://github.com/a2aproject/a2a-java/issues/77)
     public GetExtendedAgentCardResponse onGetExtendedCardRequest(
             GetExtendedAgentCardRequest request, ServerCallContext context) {
-        if (!agentCard().capabilities().extendedAgentCard()) {
+        if (!resolveAgentCard().capabilities().extendedAgentCard()) {
             return new GetExtendedAgentCardResponse(request.getId(), new UnsupportedOperationError());
         }
         if (extendedAgentCard == null || !extendedAgentCard.isResolvable()) {
@@ -700,20 +700,11 @@ public class JSONRPCHandler {
      * @see AgentCard
      */
     public AgentCard getAgentCard() {
-        return agentCard();
+        return resolveAgentCard();
     }
 
-    private AgentCard agentCard() {
-        AgentCard card = agentCardInstance.get();
-        if (transportValidated.compareAndSet(false, true)) {
-            try {
-                AgentCardValidator.validateTransportConfiguration(card);
-            } catch (RuntimeException e) {
-                transportValidated.set(false);
-                throw e;
-            }
-        }
-        return card;
+    private AgentCard resolveAgentCard() {
+        return AgentCardValidator.resolveAndValidateOnce(agentCardInstance, transportValidated);
     }
 
     private Flow.Publisher<SendStreamingMessageResponse> convertToSendStreamingMessageResponse(
