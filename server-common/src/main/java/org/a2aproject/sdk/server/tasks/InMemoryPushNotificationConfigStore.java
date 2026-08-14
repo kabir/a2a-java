@@ -83,7 +83,7 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
             return new ListTaskPushNotificationConfigsResult(Collections.emptyList());
         }
         if (params.pageSize() <= 0) {
-            return new ListTaskPushNotificationConfigsResult(new ArrayList<>(configs), null);
+            return new ListTaskPushNotificationConfigsResult(configs, null);
         }
         if (params.pageToken() != null && !params.pageToken().isBlank()) {
             int index = findFirstIndex(configs, params.pageToken());
