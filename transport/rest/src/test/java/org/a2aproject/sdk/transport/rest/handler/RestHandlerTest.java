@@ -26,6 +26,7 @@ import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
 import org.a2aproject.sdk.server.multitenancy.AgentCardRouter;
 import org.a2aproject.sdk.server.requesthandlers.AbstractA2ARequestHandlerTest;
+import org.a2aproject.sdk.server.requesthandlers.LogCaptureAssertions;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -455,6 +456,33 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         Assertions.assertEquals(200, response.getStatusCode());
         Assertions.assertEquals(APPLICATION_JSON, response.getContentType());
         Assertions.assertNotNull(response.getBody());
+    }
+
+    @Test
+    public void testPushNotificationConfigParseError_DoesNotLogSensitiveData() {
+        RestHandler handler = new RestHandler(CARD, createCacheMetadata(), requestHandler, internalExecutor);
+        taskStore.save(MINIMAL_TASK, false);
+
+        String requestBody = """
+            {
+              "id": "default-config-id",
+              "taskId": "%s",
+              "url": "https://webhook.example.com",
+              "token": "secret-token-12345",
+              "authentication": {
+                "scheme": "Bearer",
+                "credentials": "oauth-secret-67890"
+              },
+              "unknownField": "trigger-parse-error"
+            }""".formatted(MINIMAL_TASK.id());
+
+        // Request body with sensitive data and an unknown field to trigger parse error
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(RestHandler.class.getName());
+        LogCaptureAssertions.assertSensitiveDataNotLogged(logger,
+                () -> Assertions.assertEquals(422,
+                        handler.createTaskPushNotificationConfiguration(callContext, "", requestBody, MINIMAL_TASK.id())
+                                .getStatusCode()),
+                "secret-token-12345", "oauth-secret-67890");
     }
 
     @Test
