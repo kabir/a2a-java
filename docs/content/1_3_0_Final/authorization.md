@@ -6,7 +6,7 @@ layout: page
 
 # Task Authorization
 
-> **Security note:** By default, all task operations are **denied** when no `TaskAuthorizationProvider` is configured (fail-closed). This ensures multi-user deployments cannot accidentally expose tasks. For single-user deployments or testing where authorization is not needed, set `a2a.authorization.required=false` in your configuration, or call `.authorizationRequired(false)` on the builder. Production deployments should always configure a provider with a fail-closed ownership policy (deny access when ownership is unknown).
+> **Security note:** By default, all task operations are **denied** when no `TaskAuthorizationProvider` is configured (fail-closed). This ensures multi-user deployments cannot accidentally expose tasks. For single-user deployments or testing where authorization is not needed, set `a2a.authorization.required=false` in your configuration, or call `.authorizationRequired(false)` on the `DefaultRequestHandler` builder. Production deployments should always configure a provider with a fail-closed ownership policy (deny access when ownership is unknown).
 
 ## Implementing TaskAuthorizationProvider
 
