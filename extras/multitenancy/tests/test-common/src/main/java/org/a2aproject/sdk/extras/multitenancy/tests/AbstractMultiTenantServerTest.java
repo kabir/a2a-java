@@ -3,6 +3,7 @@ package org.a2aproject.sdk.extras.multitenancy.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TextPart;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -40,6 +42,9 @@ import org.junit.jupiter.api.Test;
  * exactly one transport's reference module on the classpath.
  */
 public abstract class AbstractMultiTenantServerTest {
+
+    /** Port every subclass's Quarkus test server and client URL/target must agree on. */
+    protected static final int TEST_PORT = 8081;
 
     protected final int serverPort;
     private Client streamingClient;
@@ -52,7 +57,11 @@ public abstract class AbstractMultiTenantServerTest {
     /** e.g. "JSONRPC", "GRPC", "HTTP+JSON". */
     protected abstract String getTransportProtocol();
 
-    /** Base URL/target the client uses to reach the server. */
+    /**
+     * Base URL/target the client uses to reach the server. Must encode the same port passed to
+     * this class's constructor (e.g. {@code "http://localhost:" + TEST_PORT}, or {@code "localhost:" + TEST_PORT}
+     * for gRPC's schemeless target) — the two are not derived from each other.
+     */
     protected abstract String getTransportUrl();
 
     /** Wire the transport-specific {@code Client} (channel/http-client factory). */
@@ -100,10 +109,10 @@ public abstract class AbstractMultiTenantServerTest {
         try {
             CompletableFuture<String> acme = CompletableFuture.supplyAsync(() -> sendQuietly(Tenants.ACME), pool);
             CompletableFuture<String> beta = CompletableFuture.supplyAsync(() -> sendQuietly(Tenants.BETA), pool);
-            CompletableFuture<String> def = CompletableFuture.supplyAsync(() -> sendQuietly(null), pool);
-            assertEquals(Tenants.ACME, acme.get());
-            assertEquals(Tenants.BETA, beta.get());
-            assertEquals(Tenants.DEFAULT_LABEL, def.get());
+            CompletableFuture<String> defaultFuture = CompletableFuture.supplyAsync(() -> sendQuietly(null), pool);
+            assertEquals(Tenants.ACME, acme.get(30, TimeUnit.SECONDS));
+            assertEquals(Tenants.BETA, beta.get(30, TimeUnit.SECONDS));
+            assertEquals(Tenants.DEFAULT_LABEL, defaultFuture.get(30, TimeUnit.SECONDS));
         } finally {
             pool.shutdown();
         }
@@ -154,6 +163,18 @@ public abstract class AbstractMultiTenantServerTest {
                 .then().statusCode(404);
     }
 
+    // ---------- lifecycle ----------
+
+    @AfterEach
+    public void closeClients() {
+        if (streamingClient != null) {
+            streamingClient.close();
+        }
+        if (nonStreamingClient != null) {
+            nonStreamingClient.close();
+        }
+    }
+
     // ---------- helpers ----------
 
     private String sendQuietly(@Nullable String tenant) {
@@ -198,7 +219,11 @@ public abstract class AbstractMultiTenantServerTest {
         Client client = streaming ? getStreamingClient() : getNonStreamingClient();
         client.sendMessage(params.build(), List.of(consumer), null, null);
         if (streaming) {
-            done.await(30, TimeUnit.SECONDS);
+            // The streaming client returns as soon as the SSE connection is initiated; wait for
+            // completion. The non-streaming client blocks in sendMessage() until the task is done,
+            // so no latch is needed there.
+            boolean completed = done.await(30, TimeUnit.SECONDS);
+            assertTrue(completed, "Timed out waiting for streaming task to complete");
         }
 
         assertFalse(artifactTexts.isEmpty(), "Expected at least one artifact text event");

@@ -1,5 +1,7 @@
 package org.a2aproject.sdk.extras.multitenancy.tests.grpc;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import io.grpc.ManagedChannel;
@@ -15,10 +17,12 @@ import org.junit.jupiter.api.AfterAll;
 @QuarkusTest
 public class MultiTenantGrpcTest extends AbstractMultiTenantServerTest {
 
-    private static ManagedChannel channel;
+    // Two clients (streaming + non-streaming) are built per test instance, each creating its own
+    // channel; accumulate them all here so @AfterAll can close every one, not just the last.
+    private static final List<ManagedChannel> channels = new CopyOnWriteArrayList<>();
 
     public MultiTenantGrpcTest() {
-        super(8081);
+        super(TEST_PORT);
     }
 
     @Override
@@ -28,20 +32,21 @@ public class MultiTenantGrpcTest extends AbstractMultiTenantServerTest {
 
     @Override
     protected String getTransportUrl() {
-        return "localhost:8081";
+        return "localhost:" + TEST_PORT;
     }
 
     @Override
     protected void configureTransport(ClientBuilder builder) {
         builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {
-            channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+            ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+            channels.add(channel);
             return channel;
         }));
     }
 
     @AfterAll
-    public static void closeChannel() {
-        if (channel != null) {
+    public static void closeChannels() {
+        for (ManagedChannel channel : channels) {
             channel.shutdownNow();
             try {
                 channel.awaitTermination(10, TimeUnit.SECONDS);
@@ -49,6 +54,7 @@ public class MultiTenantGrpcTest extends AbstractMultiTenantServerTest {
                 Thread.currentThread().interrupt();
             }
         }
+        channels.clear();
     }
 
     // gRPC-only deployments do not serve the well-known public-card endpoints.

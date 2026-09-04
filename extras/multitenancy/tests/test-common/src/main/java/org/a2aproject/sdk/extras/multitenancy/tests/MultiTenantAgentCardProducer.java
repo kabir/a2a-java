@@ -29,8 +29,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @Singleton
 public class MultiTenantAgentCardProducer {
 
-    @ConfigProperty(name = "quarkus.http.port", defaultValue = "8081")
+    @ConfigProperty(name = "quarkus.http.port", defaultValue = "" + AbstractMultiTenantServerTest.TEST_PORT)
     int serverPort;
+
+    private final String preferredTransport = loadPreferredTransport();
 
     @Produces
     @Singleton
@@ -77,7 +79,6 @@ public class MultiTenantAgentCardProducer {
     }
 
     private AgentCard card(String name) {
-        String preferredTransport = loadPreferredTransport();
         String url = TransportProtocol.GRPC.asString().equals(preferredTransport)
                 ? "localhost:" + serverPort
                 : "http://localhost:" + serverPort;

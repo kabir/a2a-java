@@ -12,7 +12,7 @@ import org.a2aproject.sdk.spec.TransportProtocol;
 public class MultiTenantJSONRPCTest extends AbstractMultiTenantServerTest {
 
     public MultiTenantJSONRPCTest() {
-        super(8081);
+        super(TEST_PORT);
     }
 
     @Override
@@ -22,7 +22,7 @@ public class MultiTenantJSONRPCTest extends AbstractMultiTenantServerTest {
 
     @Override
     protected String getTransportUrl() {
-        return "http://localhost:8081";
+        return "http://localhost:" + TEST_PORT;
     }
 
     @Override
