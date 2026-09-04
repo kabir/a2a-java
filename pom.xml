@@ -635,17 +635,20 @@
         <module>reference/multiversion-jsonrpc</module>
         <module>reference/multiversion-rest</module>
 
-        <!-- Multitenancy test module (Weld SE unit tests, no Quarkus) -->
-        <module>tests/multitenancy</module>
+        <!-- Multitenancy reusable test support (published) -->
+        <module>extras/multitenancy/tests/test-common</module>
 
-        <!-- Multitenancy common test infrastructure (shared CDI producers) -->
-        <module>tests/multitenancy/test-common</module>
+        <!-- Multitenancy REST integration tests -->
+        <module>extras/multitenancy/tests/rest</module>
 
         <!-- Multitenancy JSON-RPC integration tests (no REST transport on classpath) -->
-        <module>tests/multitenancy/jsonrpc</module>
+        <module>extras/multitenancy/tests/jsonrpc</module>
 
-        <!-- Multitenancy gRPC integration tests (executor routing via gRPC) -->
-        <module>tests/multitenancy/grpc</module>
+        <!-- Multitenancy gRPC integration tests -->
+        <module>extras/multitenancy/tests/grpc</module>
+
+        <!-- Multitenancy router unit tests (Weld SE, no Quarkus) -->
+        <module>extras/multitenancy/tests/router-unit</module>
 
         <!-- Multi-version test modules -->
         <module>tests/multiversion/jsonrpc</module>
