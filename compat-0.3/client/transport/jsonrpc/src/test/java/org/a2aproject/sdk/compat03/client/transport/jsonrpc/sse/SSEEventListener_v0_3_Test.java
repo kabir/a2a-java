@@ -61,6 +61,21 @@ public class SSEEventListener_v0_3_Test {
     }
 
     @Test
+    public void testFinalTaskResultCancelsStream() {
+        AtomicReference<StreamingEventKind_v0_3> receivedEvent = new AtomicReference<>();
+        SSEEventListener_v0_3 listener = new SSEEventListener_v0_3(receivedEvent::set, error -> {});
+        CancelCapturingFuture future = new CancelCapturingFuture();
+
+        String eventData = JsonStreamingMessages_v0_3.STREAMING_TASK_EVENT
+                .replace("\"working\"", "\"completed\"")
+                .substring(JsonStreamingMessages_v0_3.STREAMING_TASK_EVENT.indexOf("{"));
+        listener.onMessage(eventData, future);
+
+        assertInstanceOf(Task_v0_3.class, receivedEvent.get());
+        assertTrue(future.cancelHandlerCalled);
+    }
+
+    @Test
     public void testOnEventWithMessageResult() throws Exception {
         // Set up event handler
         AtomicReference<StreamingEventKind_v0_3> receivedEvent = new AtomicReference<>();
@@ -187,6 +202,19 @@ public class SSEEventListener_v0_3_Test {
     }
 
     @Test
+    public void testNonObjectJsonEventReportsAndCancels() {
+        AtomicReference<Throwable> receivedError = new AtomicReference<>();
+        SSEEventListener_v0_3 listener = new SSEEventListener_v0_3(
+                event -> {}, receivedError::set);
+        CancelCapturingFuture future = new CancelCapturingFuture();
+
+        listener.onMessage("[]", future);
+
+        assertNotNull(receivedError.get());
+        assertTrue(future.cancelHandlerCalled);
+    }
+
+    @Test
     public void testOnFailure() {
         AtomicBoolean failureHandlerCalled = new AtomicBoolean(false);
         SSEEventListener_v0_3 listener = new SSEEventListener_v0_3(
@@ -202,6 +230,14 @@ public class SSEEventListener_v0_3_Test {
         assertTrue(failureHandlerCalled.get());
         // Verify it got cancelled
         assertTrue(future.cancelHandlerCalled);
+    }
+
+    @Test
+    public void testOnFailureWithNullFutureDoesNotThrow() {
+        SSEEventListener_v0_3 listener = new SSEEventListener_v0_3(
+                event -> {}, error -> {});
+
+        listener.onError(new RuntimeException("Test exception"), null);
     }
 
     @Test
@@ -250,6 +286,17 @@ public class SSEEventListener_v0_3_Test {
         assertEquals(TaskState_v0_3.COMPLETED, taskStatusUpdateEvent.status().state());
 
         assertTrue(future.cancelHandlerCalled);
+    }
+
+    @Test
+    public void testFinalTaskStatusUpdateWithNullFutureDoesNotThrow() {
+        SSEEventListener_v0_3 listener = new SSEEventListener_v0_3(
+                event -> {}, error -> {});
+
+        String eventData = JsonStreamingMessages_v0_3.STREAMING_STATUS_UPDATE_EVENT_FINAL.substring(
+                JsonStreamingMessages_v0_3.STREAMING_STATUS_UPDATE_EVENT_FINAL.indexOf("{"));
+
+        listener.onMessage(eventData, null);
     }
 
 
