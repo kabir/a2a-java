@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.server.events;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
@@ -9,6 +10,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.spec.A2AError;
@@ -513,20 +515,31 @@ public abstract class EventQueue implements AutoCloseable {
 
             boolean finalEvent = isFinalEvent(event);
 
+            // Notify current children before waiting for capacity. A consumer may already be
+            // marked complete (for example, while waiting for a replicated final event) and
+            // otherwise close its queue before this producer is able to submit the event.
+            List<ChildQueue> awaitingChildren = new ArrayList<>();
+            if (finalEvent) {
+                awaitingChildren.addAll(children);
+                awaitingChildren.forEach(ChildQueue::expectFinalEvent);
+            }
+
             // Acquire semaphore for backpressure
             try {
                 semaphore.acquire();
             } catch (InterruptedException e) {
+                awaitingChildren.forEach(ChildQueue::cancelExpectedFinalEvent);
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Unable to acquire the semaphore to enqueue the event", e);
             }
 
-            // Notify children only after acquiring capacity. An interrupted acquire must not
-            // leave them waiting for an event that was never submitted.
+            // Include children that subscribed while this producer was waiting for capacity.
             if (finalEvent) {
-                LOGGER.debug("Final event detected, notifying {} children to expect it", children.size());
                 for (ChildQueue child : children) {
-                    child.expectFinalEvent();
+                    if (!awaitingChildren.contains(child)) {
+                        child.expectFinalEvent();
+                        awaitingChildren.add(child);
+                    }
                 }
             }
 
@@ -544,11 +557,7 @@ public abstract class EventQueue implements AutoCloseable {
                 // Release the permit here to avoid leaking it and eventually blocking
                 // all event processing for this task.
                 semaphore.release();
-                if (finalEvent) {
-                    for (ChildQueue child : children) {
-                        child.clearAwaitingFinalEvent();
-                    }
-                }
+                awaitingChildren.forEach(ChildQueue::cancelExpectedFinalEvent);
                 throw e;
             }
         }
@@ -786,7 +795,7 @@ public abstract class EventQueue implements AutoCloseable {
         private final MainQueue parent;
         private final BlockingQueue<EventQueueItem> queue;
         private volatile boolean immediateClose = false;
-        private volatile boolean awaitingFinalEvent = false;
+        private final AtomicInteger expectedFinalEvents = new AtomicInteger();
 
         public ChildQueue(MainQueue parent) {
             this.parent = parent;
@@ -824,8 +833,8 @@ public abstract class EventQueue implements AutoCloseable {
                 LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
 
                 // If we were awaiting a final event and this is it, clear the flag
-                if (awaitingFinalEvent && isFinalEvent(event)) {
-                    awaitingFinalEvent = false;
+                if (isAwaitingFinalEvent() && isFinalEvent(event)) {
+                    expectedFinalEvents.set(0);
                     LOGGER.debug("ChildQueue {} received awaited final event", System.identityHashCode(this));
                 }
             }
@@ -861,7 +870,7 @@ public abstract class EventQueue implements AutoCloseable {
             // For immediate close: exit immediately even if queue is not empty (race with MainEventBusProcessor)
             // For graceful close: only exit when queue is empty (wait for all events to be consumed)
             // BUT: if awaiting final event, keep polling even if closed and empty
-            if (isClosed() && (queue.isEmpty() || immediateClose) && !awaitingFinalEvent) {
+            if (isClosed() && (queue.isEmpty() || immediateClose) && !isAwaitingFinalEvent()) {
                 LOGGER.debug("ChildQueue is closed{}, sending termination message. {} (queueSize={})",
                         immediateClose ? " (immediate)" : " and empty",
                         this,
@@ -906,7 +915,7 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public boolean isAwaitingFinalEvent() {
-            return awaitingFinalEvent;
+            return expectedFinalEvents.get() > 0;
         }
 
         @Override
@@ -938,8 +947,15 @@ public abstract class EventQueue implements AutoCloseable {
          * This ensures the ChildQueue keeps polling until the final event arrives (after MainEventBusProcessor).
          */
         void expectFinalEvent() {
-            awaitingFinalEvent = true;
+            expectedFinalEvents.incrementAndGet();
             LOGGER.debug("ChildQueue {} now awaiting final event", System.identityHashCode(this));
+        }
+
+        /**
+         * Removes one expectation when the corresponding final event could not be submitted.
+         */
+        void cancelExpectedFinalEvent() {
+            expectedFinalEvents.updateAndGet(count -> Math.max(0, count - 1));
         }
 
         /**
@@ -948,7 +964,7 @@ public abstract class EventQueue implements AutoCloseable {
          */
         @Override
         public void clearAwaitingFinalEvent() {
-            awaitingFinalEvent = false;
+            expectedFinalEvents.set(0);
             LOGGER.debug("ChildQueue {} cleared awaitingFinalEvent flag (timeout)", System.identityHashCode(this));
         }
 
