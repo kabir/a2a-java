@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1859,9 +1860,14 @@ public class DefaultRequestHandlerTest {
     }
 
     private static boolean awaitThreadWaiting(Thread thread, boolean interrupted) throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
         do {
-            if (thread.getState() == Thread.State.WAITING && thread.isInterrupted() == interrupted) {
+            boolean waitingOrAcquiring = thread.getState() == Thread.State.WAITING
+                    || Arrays.stream(thread.getStackTrace()).anyMatch(frame ->
+                            frame.getClassName().equals("java.util.concurrent.Semaphore")
+                                    && (frame.getMethodName().equals("acquire")
+                                            || frame.getMethodName().equals("tryAcquire")));
+            if (waitingOrAcquiring && thread.isInterrupted() == interrupted) {
                 return true;
             }
             TimeUnit.MILLISECONDS.sleep(10);

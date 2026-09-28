@@ -187,6 +187,9 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 public class DefaultRequestHandler implements RequestHandler {
+    private static final int MAX_INTERRUPTED_ERROR_ENQUEUE_RETRIES = 1;
+    private static final long ERROR_ENQUEUE_TIMEOUT_SECONDS = 5;
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultRequestHandler.class);
 
@@ -1319,15 +1322,17 @@ public class DefaultRequestHandler implements RequestHandler {
 
     private void enqueueErrorPreservingInterrupt(AgentEmitter emitter, A2AError error) {
         boolean wasInterrupted = Thread.interrupted();
+        int retries = 0;
         try {
             while (true) {
                 try {
-                    emitter.tryFail(error);
+                    emitter.tryFailWithTimeout(error, ERROR_ENQUEUE_TIMEOUT_SECONDS, SECONDS);
                     return;
-                } catch (RuntimeException e) {
-                    if (!causedByInterruptedEnqueue(e)) {
+                } catch (EventQueue.EnqueueInterruptedException e) {
+                    if (retries >= MAX_INTERRUPTED_ERROR_ENQUEUE_RETRIES) {
                         throw e;
                     }
+                    retries++;
                     wasInterrupted |= Thread.interrupted();
                 }
             }
@@ -1336,15 +1341,6 @@ public class DefaultRequestHandler implements RequestHandler {
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    private boolean causedByInterruptedEnqueue(Throwable error) {
-        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
-            if (cause instanceof InterruptedException) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private CompletableFuture<Void> cleanupProducer(@Nullable CompletableFuture<Void> agentFuture, @Nullable CompletableFuture<Void> consumptionFuture, String taskId, EventQueue queue, boolean isStreaming) {

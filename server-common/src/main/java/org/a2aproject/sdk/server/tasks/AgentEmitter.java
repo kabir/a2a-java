@@ -3,6 +3,8 @@ package org.a2aproject.sdk.server.tasks;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
 import org.slf4j.Logger;
@@ -100,7 +102,7 @@ public class AgentEmitter {
     private final EventQueue eventQueue;
     private final String taskId;
     private final String contextId;
-    private boolean terminalStateReached;
+    private final AtomicBoolean terminalStateReached = new AtomicBoolean(false);
 
     /**
      * Creates a new AgentEmitter for the given request context and event queue.
@@ -120,16 +122,16 @@ public class AgentEmitter {
      * @param taskState the new task state
      * @param message optional message to include with the status update
      */
-    public synchronized void updateStatus(TaskState taskState, @Nullable Message message) {
+    public void updateStatus(TaskState taskState, @Nullable Message message) {
         boolean isFinal = taskState.isFinal();
         // Check terminal state first (fail fast)
-        if (terminalStateReached) {
+        if (terminalStateReached.get()) {
             throw new IllegalStateException("Cannot update task status - terminal state already reached");
         }
         
-        // For final states, record the terminal transition while holding this emitter's lock.
-        if (isFinal) {
-            terminalStateReached = true;
+        // Claim the terminal transition atomically without holding a lock during queue backpressure.
+        if (isFinal && !terminalStateReached.compareAndSet(false, true)) {
+            throw new IllegalStateException("Cannot update task status - terminal state already reached");
         }
 
         TaskStatusUpdateEvent event = TaskStatusUpdateEvent.builder()
@@ -147,8 +149,17 @@ public class AgentEmitter {
     private void enqueueTerminalEvent(Event event) {
         try {
             eventQueue.enqueueEvent(event);
-        } catch (RuntimeException e) {
-            terminalStateReached = false;
+        } catch (RuntimeException | Error e) {
+            terminalStateReached.compareAndSet(true, false);
+            throw e;
+        }
+    }
+
+    private void enqueueTerminalEvent(Event event, long timeout, TimeUnit unit) {
+        try {
+            eventQueue.enqueueEvent(event, timeout, unit);
+        } catch (RuntimeException | Error e) {
+            terminalStateReached.compareAndSet(true, false);
             throw e;
         }
     }
@@ -301,13 +312,28 @@ public class AgentEmitter {
      * @param error the A2A error to enqueue
      * @return {@code true} if the error was enqueued, or {@code false} if a terminal state was already reached
      */
-    public synchronized boolean tryFail(A2AError error) {
-        if (terminalStateReached) {
+    public boolean tryFail(A2AError error) {
+        if (!terminalStateReached.compareAndSet(false, true)) {
             return false;
         }
-        terminalStateReached = true;
         enqueueTerminalEvent(error);
         // Status transition happens automatically in MainEventBusProcessor
+        return true;
+    }
+
+    /**
+     * Attempts to fail the task, waiting no longer than the supplied duration for queue capacity.
+     *
+     * @param error the A2A error to enqueue
+     * @param timeout maximum time to wait for queue capacity
+     * @param unit timeout unit
+     * @return {@code true} if the error was enqueued, or {@code false} if a terminal state was already reached
+     */
+    public boolean tryFailWithTimeout(A2AError error, long timeout, TimeUnit unit) {
+        if (!terminalStateReached.compareAndSet(false, true)) {
+            return false;
+        }
+        enqueueTerminalEvent(error, timeout, unit);
         return true;
     }
 
