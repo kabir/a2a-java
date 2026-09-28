@@ -1255,24 +1255,29 @@ public class DefaultRequestHandler implements RequestHandler {
                 LOGGER.debug("Agent execution starting for task {}", taskId);
                 AgentEmitter emitter = new AgentEmitter(requestContext, queue);
                 try {
-                    resolvedExecutor.execute(requestContext, emitter);
-                } catch (A2AError e) {
-                    // Log A2A errors at WARN level with full stack trace
-                    // These are expected business errors but should be tracked
-                    LOGGER.warn("Agent execution threw A2AError for task {}: {} - {}",
-                        taskId, e.getClass().getSimpleName(), e.getMessage(), e);
-                    enqueueErrorPreservingInterrupt(emitter, e);
-                } catch (RuntimeException e) {
-                    // Log unexpected runtime exceptions at ERROR level
-                    // These indicate bugs in agent implementation
-                    LOGGER.error("Agent execution threw unexpected RuntimeException for task {}", taskId, e);
-                    enqueueErrorPreservingInterrupt(emitter,
-                            new InternalError("Agent execution failed: " + e.getMessage()));
-                } catch (Exception e) {
-                    // Log other exceptions at ERROR level
-                    LOGGER.error("Agent execution threw unexpected Exception for task {}", taskId, e);
-                    enqueueErrorPreservingInterrupt(emitter,
-                            new InternalError("Agent execution failed: " + e.getMessage()));
+                    try {
+                        resolvedExecutor.execute(requestContext, emitter);
+                    } catch (A2AError e) {
+                        // Log A2A errors at WARN level with full stack trace
+                        // These are expected business errors but should be tracked
+                        LOGGER.warn("Agent execution threw A2AError for task {}: {} - {}",
+                            taskId, e.getClass().getSimpleName(), e.getMessage(), e);
+                        enqueueErrorPreservingInterrupt(emitter, e);
+                    } catch (RuntimeException e) {
+                        // Log unexpected runtime exceptions at ERROR level
+                        // These indicate bugs in agent implementation
+                        LOGGER.error("Agent execution threw unexpected RuntimeException for task {}", taskId, e);
+                        enqueueErrorPreservingInterrupt(emitter,
+                                new InternalError("Agent execution failed: " + e.getMessage()));
+                    } catch (Exception e) {
+                        // Log other exceptions at ERROR level
+                        LOGGER.error("Agent execution threw unexpected Exception for task {}", taskId, e);
+                        enqueueErrorPreservingInterrupt(emitter,
+                                new InternalError("Agent execution failed: " + e.getMessage()));
+                    }
+                } finally {
+                    // Executor threads are reused. Do not return an agent's interrupt to the pool.
+                    Thread.interrupted();
                 }
                 LOGGER.debug("Agent execution completed for task {}", taskId);
                 // The consumer (running on the Vert.x worker thread) handles queue lifecycle.
@@ -1315,12 +1320,31 @@ public class DefaultRequestHandler implements RequestHandler {
     private void enqueueErrorPreservingInterrupt(AgentEmitter emitter, A2AError error) {
         boolean wasInterrupted = Thread.interrupted();
         try {
-            emitter.fail(error);
+            while (true) {
+                try {
+                    emitter.tryFail(error);
+                    return;
+                } catch (RuntimeException e) {
+                    if (!causedByInterruptedEnqueue(e)) {
+                        throw e;
+                    }
+                    wasInterrupted |= Thread.interrupted();
+                }
+            }
         } finally {
             if (wasInterrupted) {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    private boolean causedByInterruptedEnqueue(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InterruptedException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private CompletableFuture<Void> cleanupProducer(@Nullable CompletableFuture<Void> agentFuture, @Nullable CompletableFuture<Void> consumptionFuture, String taskId, EventQueue queue, boolean isStreaming) {

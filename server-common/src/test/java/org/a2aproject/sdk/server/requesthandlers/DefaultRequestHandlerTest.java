@@ -1765,12 +1765,13 @@ public class DefaultRequestHandlerTest {
 
         CountDownLatch agentFinished = new CountDownLatch(1);
         AtomicReference<Thread> agentThread = new AtomicReference<>();
-        AtomicReference<Boolean> interruptStatusAfterAgent = new AtomicReference<>(false);
+        AtomicReference<Boolean> interruptStatusAtPoolReturn = new AtomicReference<>(false);
         Executor recordingExecutor = command -> internalExecutor.execute(() -> {
             try {
                 command.run();
             } finally {
-                interruptStatusAfterAgent.set(Thread.currentThread().isInterrupted());
+                interruptStatusAtPoolReturn.set(Thread.currentThread().isInterrupted());
+                Thread.interrupted();
                 agentFinished.countDown();
             }
         });
@@ -1808,14 +1809,14 @@ public class DefaultRequestHandlerTest {
 
         ExecutorService controller = Executors.newSingleThreadExecutor();
         try {
-            Future<Boolean> interruptWasRestored = controller.submit(() -> {
+        Future<Boolean> poolInterruptStatus = controller.submit(() -> {
                 assertTrue(workingEventProcessing.await(5, TimeUnit.SECONDS),
                         "Processor should hold the queue capacity after the WORKING event");
                 assertTrue(executorRan.await(5, TimeUnit.SECONDS), "Executor should have run");
                 Thread worker = agentThread.get();
                 assertNotNull(worker);
                 if (interruptBlockedTerminalEnqueue) {
-                    assertTrue(awaitSemaphoreAcquire(worker, false),
+                    assertTrue(awaitThreadWaiting(worker, false),
                             "Terminal enqueue should wait while the queue is full");
                 } else {
                     assertNotNull(agentReadyToBeInterrupted);
@@ -1825,11 +1826,11 @@ public class DefaultRequestHandlerTest {
 
                 worker.interrupt();
 
-                assertTrue(awaitSemaphoreAcquire(worker, false),
+                assertTrue(awaitThreadWaiting(worker, false),
                         "Error enqueue should wait with the interrupt temporarily cleared");
                 releaseWorkingEvent.countDown();
                 assertTrue(agentFinished.await(5, TimeUnit.SECONDS), "Agent error reporting should finish");
-                return interruptStatusAfterAgent.get();
+                return interruptStatusAtPoolReturn.get();
             });
 
             String taskId = "";
@@ -1849,24 +1850,19 @@ public class DefaultRequestHandlerTest {
                 assertNotNull(storedTask);
                 assertEquals(TaskState.TASK_STATE_FAILED, storedTask.status().state());
             }
-            assertTrue(interruptWasRestored.get(5, TimeUnit.SECONDS),
-                    "The agent worker's interrupt status should be restored after reporting the error");
+            assertFalse(poolInterruptStatus.get(5, TimeUnit.SECONDS),
+                    "The agent worker should return to the executor pool without an interrupt flag");
         } finally {
             releaseWorkingEvent.countDown();
             controller.shutdownNow();
         }
     }
 
-    private static boolean awaitSemaphoreAcquire(Thread thread, boolean interrupted) throws InterruptedException {
+    private static boolean awaitThreadWaiting(Thread thread, boolean interrupted) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         do {
             if (thread.getState() == Thread.State.WAITING && thread.isInterrupted() == interrupted) {
-                for (StackTraceElement frame : thread.getStackTrace()) {
-                    if (frame.getClassName().equals("java.util.concurrent.Semaphore")
-                            && frame.getMethodName().equals("acquire")) {
-                        return true;
-                    }
-                }
+                return true;
             }
             TimeUnit.MILLISECONDS.sleep(10);
         } while (System.nanoTime() < deadline);

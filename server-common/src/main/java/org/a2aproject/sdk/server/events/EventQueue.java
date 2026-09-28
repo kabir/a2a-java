@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
+import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
@@ -510,14 +511,7 @@ public abstract class EventQueue implements AutoCloseable {
             // Validate event taskId matches queue taskId
             validateEventIds(event);
 
-            // Check if this is a final event BEFORE submitting to MainEventBus
-            // If it is, notify all children to expect it (so they wait for MainEventBusProcessor)
-            if (isFinalEvent(event)) {
-                LOGGER.debug("Final event detected, notifying {} children to expect it", children.size());
-                for (ChildQueue child : children) {
-                    child.expectFinalEvent();
-                }
-            }
+            boolean finalEvent = isFinalEvent(event);
 
             // Acquire semaphore for backpressure
             try {
@@ -525,6 +519,15 @@ public abstract class EventQueue implements AutoCloseable {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Unable to acquire the semaphore to enqueue the event", e);
+            }
+
+            // Notify children only after acquiring capacity. An interrupted acquire must not
+            // leave them waiting for an event that was never submitted.
+            if (finalEvent) {
+                LOGGER.debug("Final event detected, notifying {} children to expect it", children.size());
+                for (ChildQueue child : children) {
+                    child.expectFinalEvent();
+                }
             }
 
             LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
@@ -541,6 +544,11 @@ public abstract class EventQueue implements AutoCloseable {
                 // Release the permit here to avoid leaking it and eventually blocking
                 // all event processing for this task.
                 semaphore.release();
+                if (finalEvent) {
+                    for (ChildQueue child : children) {
+                        child.clearAwaitingFinalEvent();
+                    }
+                }
                 throw e;
             }
         }
@@ -595,6 +603,8 @@ public abstract class EventQueue implements AutoCloseable {
                         && task.status().state().isFinal();
             } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
                 return statusUpdate.isFinal();
+            } else if (event instanceof A2AError) {
+                return true;
             }
             return false;
         }
@@ -830,6 +840,8 @@ public abstract class EventQueue implements AutoCloseable {
                         && task.status().state().isFinal();
             } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
                 return statusUpdate.isFinal();
+            } else if (event instanceof A2AError) {
+                return true;
             }
             return false;
         }
