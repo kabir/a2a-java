@@ -1328,9 +1328,20 @@ public class DefaultRequestHandler implements RequestHandler {
                 try {
                     emitter.tryFailWithTimeout(error, ERROR_ENQUEUE_TIMEOUT_SECONDS, SECONDS);
                     return;
+                } catch (EventQueue.EnqueueTimeoutException e) {
+                    // Queue stayed full for the entire timeout window — the infrastructure is
+                    // under severe backpressure and we cannot deliver the terminal error event.
+                    // Log and return so the agent thread exits cleanly; the EventConsumer will
+                    // eventually close the stream via its normal timeout path.
+                    LOGGER.warn("Timed out after {} s enqueueing error event for task after {} attempt(s) — task may not receive terminal status",
+                            ERROR_ENQUEUE_TIMEOUT_SECONDS, retries + 1);
+                    return;
                 } catch (EventQueue.EnqueueInterruptedException e) {
+                    wasInterrupted = true;
                     if (retries >= MAX_INTERRUPTED_ERROR_ENQUEUE_RETRIES) {
-                        throw e;
+                        LOGGER.warn("Interrupted {} time(s) enqueueing error event for task — task may not receive terminal status",
+                                retries + 1);
+                        return;
                     }
                     retries++;
                     wasInterrupted |= Thread.interrupted();
