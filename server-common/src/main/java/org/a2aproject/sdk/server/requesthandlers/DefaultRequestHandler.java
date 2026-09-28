@@ -187,6 +187,9 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 public class DefaultRequestHandler implements RequestHandler {
+    private static final int MAX_INTERRUPTED_ERROR_ENQUEUE_RETRIES = 1;
+    private static final long ERROR_ENQUEUE_TIMEOUT_SECONDS = 5;
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultRequestHandler.class);
 
@@ -1282,22 +1285,29 @@ public class DefaultRequestHandler implements RequestHandler {
                 LOGGER.debug("Agent execution starting for task {}", taskId);
                 AgentEmitter emitter = new AgentEmitter(requestContext, queue);
                 try {
-                    resolvedExecutor.execute(requestContext, emitter);
-                } catch (A2AError e) {
-                    // Log A2A errors at WARN level with full stack trace
-                    // These are expected business errors but should be tracked
-                    LOGGER.warn("Agent execution threw A2AError for task {}: {} - {}",
-                        taskId, e.getClass().getSimpleName(), e.getMessage(), e);
-                    emitter.fail(e);
-                } catch (RuntimeException e) {
-                    // Log unexpected runtime exceptions at ERROR level
-                    // These indicate bugs in agent implementation
-                    LOGGER.error("Agent execution threw unexpected RuntimeException for task {}", taskId, e);
-                    emitter.fail(new org.a2aproject.sdk.spec.InternalError("Agent execution failed: " + e.getMessage()));
-                } catch (Exception e) {
-                    // Log other exceptions at ERROR level
-                    LOGGER.error("Agent execution threw unexpected Exception for task {}", taskId, e);
-                    emitter.fail(new org.a2aproject.sdk.spec.InternalError("Agent execution failed: " + e.getMessage()));
+                    try {
+                        resolvedExecutor.execute(requestContext, emitter);
+                    } catch (A2AError e) {
+                        // Log A2A errors at WARN level with full stack trace
+                        // These are expected business errors but should be tracked
+                        LOGGER.warn("Agent execution threw A2AError for task {}: {} - {}",
+                            taskId, e.getClass().getSimpleName(), e.getMessage(), e);
+                        enqueueErrorPreservingInterrupt(emitter, e);
+                    } catch (RuntimeException e) {
+                        // Log unexpected runtime exceptions at ERROR level
+                        // These indicate bugs in agent implementation
+                        LOGGER.error("Agent execution threw unexpected RuntimeException for task {}", taskId, e);
+                        enqueueErrorPreservingInterrupt(emitter,
+                                new InternalError("Agent execution failed: " + e.getMessage()));
+                    } catch (Exception e) {
+                        // Log other exceptions at ERROR level
+                        LOGGER.error("Agent execution threw unexpected Exception for task {}", taskId, e);
+                        enqueueErrorPreservingInterrupt(emitter,
+                                new InternalError("Agent execution failed: " + e.getMessage()));
+                    }
+                } finally {
+                    // Executor threads are reused. Do not return an agent's interrupt to the pool.
+                    Thread.interrupted();
                 }
                 LOGGER.debug("Agent execution completed for task {}", taskId);
                 // The consumer (running on the Vert.x worker thread) handles queue lifecycle.
@@ -1335,6 +1345,40 @@ public class DefaultRequestHandler implements RequestHandler {
         runningAgents.put(taskId, cf);
         LOGGER.debug("Registered agent for task {}, runningAgents.size() after: {}", taskId, runningAgents.size());
         return runnable;
+    }
+
+    private void enqueueErrorPreservingInterrupt(AgentEmitter emitter, A2AError error) {
+        boolean wasInterrupted = Thread.interrupted();
+        int retries = 0;
+        try {
+            while (true) {
+                try {
+                    emitter.tryFailWithTimeout(error, ERROR_ENQUEUE_TIMEOUT_SECONDS, SECONDS);
+                    return;
+                } catch (EventQueue.EnqueueTimeoutException e) {
+                    // Queue stayed full for the entire timeout window — the infrastructure is
+                    // under severe backpressure and we cannot deliver the terminal error event.
+                    // Log and return so the agent thread exits cleanly; the EventConsumer will
+                    // eventually close the stream via its normal timeout path.
+                    LOGGER.warn("Timed out after {} s enqueueing error event for task after {} attempt(s) — task may not receive terminal status",
+                            ERROR_ENQUEUE_TIMEOUT_SECONDS, retries + 1);
+                    return;
+                } catch (EventQueue.EnqueueInterruptedException e) {
+                    wasInterrupted = true;
+                    if (retries >= MAX_INTERRUPTED_ERROR_ENQUEUE_RETRIES) {
+                        LOGGER.warn("Interrupted {} time(s) enqueueing error event for task — task may not receive terminal status",
+                                retries + 1);
+                        return;
+                    }
+                    retries++;
+                    wasInterrupted |= Thread.interrupted();
+                }
+            }
+        } finally {
+            if (wasInterrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private CompletableFuture<Void> cleanupProducer(@Nullable CompletableFuture<Void> agentFuture, @Nullable CompletableFuture<Void> consumptionFuture, String taskId, EventQueue queue, boolean isStreaming) {

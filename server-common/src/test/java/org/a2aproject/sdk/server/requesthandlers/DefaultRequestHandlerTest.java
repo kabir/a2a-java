@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,17 +36,20 @@ import org.a2aproject.sdk.server.events.EventQueueUtil;
 import org.a2aproject.sdk.server.events.InMemoryQueueManager;
 import org.a2aproject.sdk.server.events.MainEventBus;
 import org.a2aproject.sdk.server.events.MainEventBusProcessor;
+import org.a2aproject.sdk.server.events.MainEventBusProcessorCallback;
 import org.a2aproject.sdk.server.tasks.AgentEmitter;
 import org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.TaskStore;
+import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.CancelTaskParams;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.EventKind;
 import org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParams;
+import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
@@ -1690,6 +1694,185 @@ public class DefaultRequestHandlerTest {
         }
         assertNotNull(storedTask);
         assertEquals(TaskState.TASK_STATE_FAILED, storedTask.status().state());
+    }
+
+    @Test
+    void interruptedTerminalEnqueueStillReportsAgentFailure() throws Exception {
+        assertInterruptedTerminalEnqueueReportsError(
+                (context, emitter) -> emitter.complete(), InternalError.class, null, true, false);
+    }
+
+    @Test
+    void interruptedProtocolErrorEnqueueStillReportsAgentFailure() throws Exception {
+        CountDownLatch agentReadyToBeInterrupted = new CountDownLatch(1);
+        CountDownLatch agentWait = new CountDownLatch(1);
+        try {
+            assertInterruptedTerminalEnqueueReportsError((context, emitter) -> {
+                agentReadyToBeInterrupted.countDown();
+                try {
+                    agentWait.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new UnsupportedOperationError();
+                }
+            }, UnsupportedOperationError.class, agentReadyToBeInterrupted, false, true);
+        } finally {
+            agentWait.countDown();
+        }
+    }
+
+    private void assertInterruptedTerminalEnqueueReportsError(
+            AgentExecutorMethod agentAction,
+            Class<? extends A2AError> expectedErrorClass,
+            CountDownLatch agentReadyToBeInterrupted,
+            boolean interruptBlockedTerminalEnqueue,
+            boolean returnImmediately) throws Exception {
+        EventQueueUtil.stop(mainEventBusProcessor);
+        queueManager = new InMemoryQueueManager((TaskStateProvider) taskStore, mainEventBus) {
+            @Override
+            public EventQueue.EventQueueBuilder createBaseEventQueueBuilder(String taskId) {
+                return super.createBaseEventQueueBuilder(taskId).queueSize(1);
+            }
+        };
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore,
+                NOOP_PUSHNOTIFICATION_SENDER, queueManager);
+        EventQueueUtil.start(mainEventBusProcessor);
+
+        CountDownLatch workingEventProcessing = new CountDownLatch(1);
+        CountDownLatch releaseWorkingEvent = new CountDownLatch(1);
+        CountDownLatch reportedErrorProcessed = new CountDownLatch(1);
+        AtomicReference<A2AError> reportedError = new AtomicReference<>();
+        mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
+            @Override
+            public void onEventProcessed(String taskId, Event event) {
+                if (event instanceof TaskStatusUpdateEvent statusUpdate
+                        && statusUpdate.status().state() == TaskState.TASK_STATE_WORKING) {
+                    workingEventProcessing.countDown();
+                    try {
+                        releaseWorkingEvent.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else if (event instanceof A2AError error && expectedErrorClass.isInstance(error)) {
+                    reportedError.set(error);
+                    reportedErrorProcessed.countDown();
+                }
+            }
+
+            @Override
+            public void onTaskFinalized(String taskId) {
+            }
+        });
+
+        CountDownLatch agentFinished = new CountDownLatch(1);
+        AtomicReference<Thread> agentThread = new AtomicReference<>();
+        AtomicReference<Boolean> interruptStatusAtPoolReturn = new AtomicReference<>(false);
+        Executor recordingExecutor = command -> internalExecutor.execute(() -> {
+            try {
+                command.run();
+            } finally {
+                interruptStatusAtPoolReturn.set(Thread.currentThread().isInterrupted());
+                Thread.interrupted();
+                agentFinished.countDown();
+            }
+        });
+        requestHandler = DefaultRequestHandler.builder()
+                .agentExecutor(executor)
+                .taskStore(taskStore)
+                .queueManager(queueManager)
+                .pushConfigStore(pushConfigStore)
+                .pushNotificationsEnabled(true)
+                .mainEventBusProcessor(mainEventBusProcessor)
+                .executor(recordingExecutor)
+                .eventConsumerExecutor(internalExecutor)
+                .authorizationRequired(false)
+                .build();
+
+        CountDownLatch executorRan = new CountDownLatch(1);
+        agentExecutorExecute = (context, emitter) -> {
+            agentThread.set(Thread.currentThread());
+            executorRan.countDown();
+            emitter.startWork();
+            agentAction.invoke(context, emitter);
+        };
+
+        MessageSendParams params = MessageSendParams.builder()
+                .message(Message.builder()
+                        .messageId("msg-interrupted-terminal-enqueue")
+                        .role(Message.Role.ROLE_USER)
+                        .parts(new TextPart("hello"))
+                        .build())
+                .configuration(MessageSendConfiguration.builder()
+                        .returnImmediately(returnImmediately)
+                        .acceptedOutputModes(List.of())
+                        .build())
+                .build();
+
+        ExecutorService controller = Executors.newSingleThreadExecutor();
+        try {
+        Future<Boolean> poolInterruptStatus = controller.submit(() -> {
+                assertTrue(workingEventProcessing.await(5, TimeUnit.SECONDS),
+                        "Processor should hold the queue capacity after the WORKING event");
+                assertTrue(executorRan.await(5, TimeUnit.SECONDS), "Executor should have run");
+                Thread worker = agentThread.get();
+                assertNotNull(worker);
+                if (interruptBlockedTerminalEnqueue) {
+                    assertTrue(awaitThreadWaiting(worker, false),
+                            "Terminal enqueue should wait while the queue is full");
+                } else {
+                    assertNotNull(agentReadyToBeInterrupted);
+                    assertTrue(agentReadyToBeInterrupted.await(5, TimeUnit.SECONDS),
+                            "Agent should be ready to throw the protocol error");
+                }
+
+                worker.interrupt();
+
+                assertTrue(awaitThreadWaiting(worker, false),
+                        "Error enqueue should wait with the interrupt temporarily cleared");
+                releaseWorkingEvent.countDown();
+                assertTrue(agentFinished.await(5, TimeUnit.SECONDS), "Agent error reporting should finish");
+                return interruptStatusAtPoolReturn.get();
+            });
+
+            String taskId = "";
+            if (returnImmediately) {
+                Task task = assertInstanceOf(Task.class, requestHandler.onMessageSend(params, NULL_CONTEXT));
+                taskId = task.id();
+            } else {
+                assertThrows(expectedErrorClass,
+                        () -> requestHandler.onMessageSend(params, NULL_CONTEXT));
+            }
+
+            assertTrue(reportedErrorProcessed.await(5, TimeUnit.SECONDS),
+                    "The agent error should be processed by the event bus");
+            assertInstanceOf(expectedErrorClass, reportedError.get());
+            if (returnImmediately) {
+                Task storedTask = taskStore.get(taskId);
+                assertNotNull(storedTask);
+                assertEquals(TaskState.TASK_STATE_FAILED, storedTask.status().state());
+            }
+            assertFalse(poolInterruptStatus.get(5, TimeUnit.SECONDS),
+                    "The agent worker should return to the executor pool without an interrupt flag");
+        } finally {
+            releaseWorkingEvent.countDown();
+            controller.shutdownNow();
+        }
+    }
+
+    private static boolean awaitThreadWaiting(Thread thread, boolean interrupted) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        do {
+            boolean waitingOrAcquiring = thread.getState() == Thread.State.WAITING
+                    || Arrays.stream(thread.getStackTrace()).anyMatch(frame ->
+                            frame.getClassName().equals("java.util.concurrent.Semaphore")
+                                    && (frame.getMethodName().equals("acquire")
+                                            || frame.getMethodName().equals("tryAcquire")));
+            if (waitingOrAcquiring && thread.isInterrupted() == interrupted) {
+                return true;
+            }
+            TimeUnit.MILLISECONDS.sleep(10);
+        } while (System.nanoTime() < deadline);
+        return false;
     }
 
     private DefaultRequestHandler buildHandlerWithRouter(AgentExecutorRouter router) {

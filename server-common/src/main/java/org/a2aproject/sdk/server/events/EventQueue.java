@@ -1,7 +1,9 @@
 package org.a2aproject.sdk.server.events;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -11,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
+import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
@@ -222,6 +225,22 @@ public abstract class EventQueue implements AutoCloseable {
     }
 
     /**
+     * Enqueues an event using the queue's bounded backpressure operation.
+     *
+     * @param event the event to enqueue
+     * @param timeout the maximum time to wait for queue capacity; must be non-negative
+     * @param unit the timeout unit
+     * @throws IllegalArgumentException if timeout is negative
+     * @throws UnsupportedOperationException if this queue does not support bounded enqueues
+     */
+    public void enqueueEvent(Event event, long timeout, TimeUnit unit) {
+        if (timeout < 0) {
+            throw new IllegalArgumentException("timeout must be non-negative");
+        }
+        enqueueItem(new LocalEventQueueItem(event), timeout, Objects.requireNonNull(unit, "unit"));
+    }
+
+    /**
      * Enqueues an event queue item for processing.
      * <p>
      * This method will block if the queue is full, waiting to acquire a semaphore permit.
@@ -232,6 +251,29 @@ public abstract class EventQueue implements AutoCloseable {
      * @throws RuntimeException if interrupted while waiting to acquire the semaphore
      */
     public abstract void enqueueItem(EventQueueItem item);
+
+    /** Timed form of {@link #enqueueItem(EventQueueItem)}. */
+    public void enqueueItem(EventQueueItem item, long timeout, TimeUnit unit) {
+        throw new UnsupportedOperationException("This event queue does not support bounded enqueues");
+    }
+
+    /** Runtime exception used when a queue acquire was interrupted. */
+    public static class EnqueueInterruptedException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public EnqueueInterruptedException(InterruptedException cause) {
+            super("Unable to acquire the semaphore to enqueue the event", cause);
+        }
+    }
+
+    /** Runtime exception used when a timed queue acquire expires. */
+    public static class EnqueueTimeoutException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public EnqueueTimeoutException() {
+            super("Timed out waiting for queue capacity to enqueue the event");
+        }
+    }
 
     /**
      * Enqueues an event directly to this specific queue only, bypassing the MainEventBus.
@@ -347,6 +389,20 @@ public abstract class EventQueue implements AutoCloseable {
     }
 
     /**
+     * Closes this queue if it is not currently waiting for an in-flight final event.
+     * ChildQueue overrides this with an atomic check-and-close operation.
+     *
+     * @return true if the queue was closed, false if a final event is still expected
+     */
+    public boolean closeIfNotAwaitingFinalEvent() {
+        if (isAwaitingFinalEvent()) {
+            return false;
+        }
+        close();
+        return true;
+    }
+
+    /**
      * Closes this event queue gracefully, allowing pending events to be consumed.
      */
     public abstract void close();
@@ -397,9 +453,37 @@ public abstract class EventQueue implements AutoCloseable {
                 return;
             }
             LOGGER.debug("Closing {} (immediate={})", this, immediate);
+            // onClose is invoked while the lock is still held so that subclasses can update
+            // their own state (e.g. immediateClose + queue.clear()) atomically with closed=true.
+            onClose(immediate);
             closed = true;
         }
-        // Subclasses handle immediate close logic (e.g., ChildQueue clears its local queue)
+    }
+
+    /**
+     * Called from within the {@code synchronized(this)} block of {@link #doClose(boolean)},
+     * before {@code closed} is set to {@code true}.  Subclasses may override to perform
+     * state updates that must be atomic with the close.  The default implementation is a no-op.
+     *
+     * @param immediate whether this is an immediate (non-draining) close
+     */
+    protected void onClose(boolean immediate) {
+        // no-op — subclasses override
+    }
+
+    /**
+     * Returns whether an event represents a final task state.
+     */
+    static boolean isFinalEvent(Event event) {
+        if (event instanceof Task task) {
+            return task.status() != null && task.status().state() != null
+                    && task.status().state().isFinal();
+        } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
+            return statusUpdate.isFinal();
+        } else if (event instanceof A2AError) {
+            return true;
+        }
+        return false;
     }
 
     static class MainQueue extends EventQueue {
@@ -499,6 +583,18 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public void enqueueItem(EventQueueItem item) {
+            enqueueItemInternal(item, -1, null);
+        }
+
+        @Override
+        public void enqueueItem(EventQueueItem item, long timeout, TimeUnit unit) {
+            if (timeout < 0) {
+                throw new IllegalArgumentException("timeout must be non-negative");
+            }
+            enqueueItemInternal(item, timeout, Objects.requireNonNull(unit, "unit"));
+        }
+
+        private void enqueueItemInternal(EventQueueItem item, long timeout, @Nullable TimeUnit unit) {
             // MainQueue must accept events even when closed to support:
             // 1. Late-arriving replicated events for non-finalized tasks
             // 2. Events enqueued during onClose callbacks (before super.doClose())
@@ -510,21 +606,42 @@ public abstract class EventQueue implements AutoCloseable {
             // Validate event taskId matches queue taskId
             validateEventIds(event);
 
-            // Check if this is a final event BEFORE submitting to MainEventBus
-            // If it is, notify all children to expect it (so they wait for MainEventBusProcessor)
-            if (isFinalEvent(event)) {
-                LOGGER.debug("Final event detected, notifying {} children to expect it", children.size());
+            boolean finalEvent = isFinalEvent(event);
+
+            // Notify current children before waiting for capacity. A consumer may already be
+            // marked complete (for example, while waiting for a replicated final event) and
+            // otherwise close its queue before this producer is able to submit the event.
+            Set<ChildQueue> awaitingChildren = new HashSet<>();
+            if (finalEvent) {
                 for (ChildQueue child : children) {
-                    child.expectFinalEvent();
+                    if (child.expectFinalEvent()) {
+                        awaitingChildren.add(child);
+                    }
                 }
             }
 
             // Acquire semaphore for backpressure
             try {
-                semaphore.acquire();
+                if (unit == null) {
+                    semaphore.acquire();
+                } else if (!semaphore.tryAcquire(timeout, unit)) {
+                    awaitingChildren.forEach(ChildQueue::cancelPendingFinalEvent);
+                    throw new EnqueueTimeoutException();
+                }
             } catch (InterruptedException e) {
+                awaitingChildren.forEach(ChildQueue::cancelPendingFinalEvent);
                 Thread.currentThread().interrupt();
-                throw new RuntimeException("Unable to acquire the semaphore to enqueue the event", e);
+                throw new EnqueueInterruptedException(e);
+            }
+
+            // Include children that subscribed while this producer was waiting for capacity.
+            if (finalEvent) {
+                for (ChildQueue child : children) {
+                    if (!awaitingChildren.contains(child) && child.expectFinalEvent()) {
+                        awaitingChildren.add(child);
+                    }
+                }
+                awaitingChildren.forEach(ChildQueue::submitExpectedFinalEvent);
             }
 
             LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
@@ -541,6 +658,7 @@ public abstract class EventQueue implements AutoCloseable {
                 // Release the permit here to avoid leaking it and eventually blocking
                 // all event processing for this task.
                 semaphore.release();
+                awaitingChildren.forEach(ChildQueue::cancelSubmittedFinalEvent);
                 throw e;
             }
         }
@@ -584,19 +702,6 @@ public abstract class EventQueue implements AutoCloseable {
                     String.format("Event taskId mismatch: queue=%s, event=%s, eventType=%s",
                         taskId, eventTaskId, eventType));
             }
-        }
-
-        /**
-         * Checks if an event represents a final task state.
-         */
-        private boolean isFinalEvent(Event event) {
-            if (event instanceof Task task) {
-                return task.status() != null && task.status().state() != null
-                        && task.status().state().isFinal();
-            } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
-                return statusUpdate.isFinal();
-            }
-            return false;
         }
 
         @Override
@@ -664,6 +769,18 @@ public abstract class EventQueue implements AutoCloseable {
                         taskId, item.getEvent().getClass().getSimpleName(), childCount);
             }
             children.forEach(child -> {
+                // Skip children that have already been closed. CopyOnWriteArrayList gives
+                // snapshot semantics, so a child removed by closeIfNotAwaitingFinalEvent()
+                // may still appear in this iteration. Checking isClosed() here narrows the
+                // TOCTOU window to the time between the check and internalEnqueueItem();
+                // a narrow residual race remains for graceful close but is harmless for
+                // non-final events (they'd land in the draining queue) and impossible for
+                // final events (submittedFinalEvents prevents close while one is in flight).
+                if (child.isClosed()) {
+                    LOGGER.debug("MainQueue[{}]: Skipping closed child queue for event {}",
+                            taskId, item.getEvent().getClass().getSimpleName());
+                    return;
+                }
                 LOGGER.debug("MainQueue[{}]: Enqueueing event {} to child queue",
                         taskId, item.getEvent().getClass().getSimpleName());
                 child.internalEnqueueItem(item);
@@ -776,7 +893,8 @@ public abstract class EventQueue implements AutoCloseable {
         private final MainQueue parent;
         private final BlockingQueue<EventQueueItem> queue;
         private volatile boolean immediateClose = false;
-        private volatile boolean awaitingFinalEvent = false;
+        private int pendingFinalEvents;
+        private int submittedFinalEvents;
 
         public ChildQueue(MainQueue parent) {
             this.parent = parent;
@@ -797,6 +915,11 @@ public abstract class EventQueue implements AutoCloseable {
             parent.enqueueItem(item);
         }
 
+        @Override
+        public void enqueueItem(EventQueueItem item, long timeout, TimeUnit unit) {
+            parent.enqueueItem(item, timeout, unit);
+        }
+
         private void internalEnqueueItem(EventQueueItem item) {
             // Internal method called by MainEventBusProcessor to add to local queue
             // Note: Semaphore is managed by parent MainQueue (acquire/release), not ChildQueue
@@ -813,25 +936,16 @@ public abstract class EventQueue implements AutoCloseable {
             } else {
                 LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
 
-                // If we were awaiting a final event and this is it, clear the flag
-                if (awaitingFinalEvent && isFinalEvent(event)) {
-                    awaitingFinalEvent = false;
-                    LOGGER.debug("ChildQueue {} received awaited final event", System.identityHashCode(this));
+                // If we were awaiting a final event and this is it, decrement the counter
+                if (isFinalEvent(event)) {
+                    synchronized (this) {
+                        if (submittedFinalEvents > 0) {
+                            submittedFinalEvents--;
+                            LOGGER.debug("ChildQueue {} received awaited final event", System.identityHashCode(this));
+                        }
+                    }
                 }
             }
-        }
-
-        /**
-         * Checks if an event represents a final task state.
-         */
-        private boolean isFinalEvent(Event event) {
-            if (event instanceof Task task) {
-                return task.status() != null && task.status().state() != null
-                        && task.status().state().isFinal();
-            } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
-                return statusUpdate.isFinal();
-            }
-            return false;
         }
 
         @Override
@@ -849,7 +963,7 @@ public abstract class EventQueue implements AutoCloseable {
             // For immediate close: exit immediately even if queue is not empty (race with MainEventBusProcessor)
             // For graceful close: only exit when queue is empty (wait for all events to be consumed)
             // BUT: if awaiting final event, keep polling even if closed and empty
-            if (isClosed() && (queue.isEmpty() || immediateClose) && !awaitingFinalEvent) {
+            if (isClosed() && (queue.isEmpty() || immediateClose) && !isAwaitingFinalEvent()) {
                 LOGGER.debug("ChildQueue is closed{}, sending termination message. {} (queueSize={})",
                         immediateClose ? " (immediate)" : " and empty",
                         this,
@@ -893,8 +1007,8 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
         @Override
-        public boolean isAwaitingFinalEvent() {
-            return awaitingFinalEvent;
+        public synchronized boolean isAwaitingFinalEvent() {
+            return pendingFinalEvents > 0 || submittedFinalEvents > 0;
         }
 
         @Override
@@ -908,16 +1022,18 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
         @Override
-        protected void doClose(boolean immediate) {
-            super.doClose(immediate);  // Sets closed flag
+        protected void onClose(boolean immediate) {
+            // Invoked by EventQueue.doClose() while synchronized(this) is held, so closed,
+            // immediateClose, and the queue clear all become visible atomically.
             if (immediate) {
-                // Immediate close: clear pending events from local queue
                 this.immediateClose = true;
+                pendingFinalEvents = 0;
+                submittedFinalEvents = 0;
                 int clearedCount = queue.size();
                 queue.clear();
                 LOGGER.debug("Cleared {} events from ChildQueue for immediate close: {}", clearedCount, this);
             }
-            // For graceful close, let the queue drain naturally through normal consumption
+            // For graceful close the queue drains naturally; nothing to do here.
         }
 
         /**
@@ -925,9 +1041,34 @@ public abstract class EventQueue implements AutoCloseable {
          * Called by MainQueue when it enqueues a final event, BEFORE submitting to MainEventBus.
          * This ensures the ChildQueue keeps polling until the final event arrives (after MainEventBusProcessor).
          */
-        void expectFinalEvent() {
-            awaitingFinalEvent = true;
+        synchronized boolean expectFinalEvent() {
+            if (isClosed()) {
+                return false;
+            }
+            pendingFinalEvents++;
             LOGGER.debug("ChildQueue {} now awaiting final event", System.identityHashCode(this));
+            return true;
+        }
+
+        synchronized void submitExpectedFinalEvent() {
+            if (pendingFinalEvents > 0) {
+                pendingFinalEvents--;
+                if (!isClosed()) {
+                    submittedFinalEvents++;
+                }
+            }
+        }
+
+        synchronized void cancelPendingFinalEvent() {
+            if (pendingFinalEvents > 0) {
+                pendingFinalEvents--;
+            }
+        }
+
+        synchronized void cancelSubmittedFinalEvent() {
+            if (submittedFinalEvents > 0) {
+                submittedFinalEvents--;
+            }
         }
 
         /**
@@ -935,9 +1076,22 @@ public abstract class EventQueue implements AutoCloseable {
          * This allows normal timeout logic to proceed if the final event never arrives.
          */
         @Override
-        public void clearAwaitingFinalEvent() {
-            awaitingFinalEvent = false;
+        public synchronized void clearAwaitingFinalEvent() {
+            pendingFinalEvents = 0;
+            submittedFinalEvents = 0;
             LOGGER.debug("ChildQueue {} cleared awaitingFinalEvent flag (timeout)", System.identityHashCode(this));
+        }
+
+        @Override
+        public boolean closeIfNotAwaitingFinalEvent() {
+            synchronized (this) {
+                if (pendingFinalEvents > 0 || submittedFinalEvents > 0) {
+                    return false;
+                }
+                doClose(false);
+            }
+            parent.childClosing(this, false);
+            return true;
         }
 
         @Override

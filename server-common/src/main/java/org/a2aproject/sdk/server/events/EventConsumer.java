@@ -179,10 +179,14 @@ public class EventConsumer {
                                     if (pollTimeoutsAfterAgentCompleted >= MAX_POLL_TIMEOUTS_AFTER_AGENT_COMPLETED) {
                                         LOGGER.debug("Agent completed with {} consecutive poll timeouts and empty queue, closing for graceful completion (queue={})",
                                             pollTimeoutsAfterAgentCompleted, System.identityHashCode(queue));
-                                        queue.close();
-                                        completed = true;
-                                        tube.complete();
-                                        return;
+                                        if (queue.closeIfNotAwaitingFinalEvent()) {
+                                            completed = true;
+                                            tube.complete();
+                                            return;
+                                        }
+                                        // A final event started while this consumer was timing out.
+                                        // Keep polling until it is distributed or its producer rolls back.
+                                        pollTimeoutsAfterAgentCompleted = 0;
                                     } else {
                                         LOGGER.debug("Agent completed but grace period active ({}/{} timeouts), continuing to poll (queue={})",
                                             pollTimeoutsAfterAgentCompleted, MAX_POLL_TIMEOUTS_AFTER_AGENT_COMPLETED, System.identityHashCode(queue));
