@@ -89,10 +89,11 @@ public class A2ACardResolver {
     private final @Nullable String fallbackUrl;
     private final @Nullable Map<String, String> authHeaders;
     private final Set<String> supportedProtocolVersions;
+    private final boolean protocolVersionsExplicitlySet;
 
     private A2ACardResolver(A2AHttpClient httpClient, String baseUrl, @Nullable String tenant,
             @Nullable String agentCardPath, @Nullable Map<String, String> authHeaders,
-            Set<String> supportedProtocolVersions) throws A2AClientError {
+            Set<String> supportedProtocolVersions, boolean protocolVersionsExplicitlySet) throws A2AClientError {
         checkNotNullParam("httpClient", httpClient);
         checkNotNullParam("baseUrl", baseUrl);
         this.httpClient = httpClient;
@@ -108,6 +109,7 @@ public class A2ACardResolver {
         }
         this.authHeaders = authHeaders != null ? Map.copyOf(authHeaders) : null;
         this.supportedProtocolVersions = Set.copyOf(supportedProtocolVersions);
+        this.protocolVersionsExplicitlySet = protocolVersionsExplicitlySet;
         LOGGER.debug("Initialized A2ACardResolver with cardUrl={}", cardUrl);
     }
 
@@ -131,6 +133,7 @@ public class A2ACardResolver {
         private @Nullable String agentCardPath;
         private @Nullable Map<String, String> authHeaders;
         private Set<String> supportedProtocolVersions = Set.of("1.0");
+        private boolean protocolVersionsExplicitlySet;
 
         private Builder() {
         }
@@ -211,6 +214,9 @@ public class A2ACardResolver {
 
         /**
          * Sets the protocol versions this resolver is allowed to discover.
+         * Calling this method makes protocol selection explicit. When omitted, discovery defaults
+         * to v1.0 but returns a parsed card with no supported interfaces so legacy callers can
+         * select their v0.3 client.
          *
          * @param supportedProtocolVersions non-empty set of supported versions, such as {@code 1.0}
          *                                  or {@code 0.3}; patch forms are normalized
@@ -226,6 +232,7 @@ public class A2ACardResolver {
                 throw new IllegalArgumentException("supportedProtocolVersions must not be empty");
             }
             this.supportedProtocolVersions = normalizedVersions;
+            this.protocolVersionsExplicitlySet = true;
             return this;
         }
 
@@ -241,7 +248,8 @@ public class A2ACardResolver {
             if (baseUrl == null) {
                 throw new IllegalArgumentException("baseUrl must not be null");
             }
-            return new A2ACardResolver(client, baseUrl, tenant, agentCardPath, authHeaders, supportedProtocolVersions);
+            return new A2ACardResolver(client, baseUrl, tenant, agentCardPath, authHeaders,
+                    supportedProtocolVersions, protocolVersionsExplicitlySet);
         }
     }
 
@@ -354,7 +362,7 @@ public class A2ACardResolver {
             JSONRPCUtils.parseJsonString(body, agentCardBuilder, "", true);
             parsedV10Card = ProtoUtils.FromProto.agentCard(agentCardBuilder);
         } catch (JsonProcessingException | RuntimeException e) {
-            if (supportedProtocolVersions.equals(Set.of("1.0"))) {
+            if (!supportedProtocolVersions.contains("0.3")) {
                 throw new A2AClientJSONError("Could not unmarshal agent card response", e);
             }
         }
@@ -368,6 +376,11 @@ public class A2ACardResolver {
             // as a legacy card merely because it does not advertise a requested version.
             if (!parsedV10Card.supportedInterfaces().isEmpty()) {
                 throw new A2AClientJSONError("Agent card does not expose a requested protocol version");
+            }
+            // The default discovery API predates protocol-version selection. Preserve its
+            // legacy signal: callers can detect an empty interface list and use their v0.3 client.
+            if (!protocolVersionsExplicitlySet) {
+                return parsedV10Card;
             }
         }
 

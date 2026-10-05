@@ -243,6 +243,33 @@ public class A2ACardResolverTest {
     }
 
     @Test
+    public void testDefaultProtocolDiscoveryReturnsLegacyCardWithoutInterfaces() throws Exception {
+        TestHttpClient client = createTestClient();
+        client.body = JsonMessages.AGENT_CARD.replaceFirst("(?s)\"supportedInterfaces\"\\s*:\\s*\\[.*?\\]",
+                "\"supportedInterfaces\": []");
+
+        AgentCard card = A2ACardResolver.builder().httpClient(client).baseUrl("http://example.com")
+                .build().getAgentCard();
+
+        assertEquals("GeoSpatial Route Planner Agent", card.name());
+        assertTrue(card.supportedInterfaces().isEmpty());
+    }
+
+    @Test
+    public void testExplicitProtocolDiscoveryRejectsCardWithoutRequestedInterface() {
+        TestHttpClient client = createTestClient();
+        client.body = JsonMessages.AGENT_CARD.replaceFirst("(?s)\"supportedInterfaces\"\\s*:\\s*\\[.*?\\]",
+                "\"supportedInterfaces\": []");
+
+        A2AClientJSONError error = assertThrows(A2AClientJSONError.class, () -> A2ACardResolver.builder()
+                .httpClient(client).baseUrl("http://example.com")
+                .supportedProtocolVersions(Set.of("1.0"))
+                .build().getAgentCard());
+
+        assertTrue(error.getMessage().contains("does not expose a requested protocol version"));
+    }
+
+    @Test
     public void testSupportedProtocolVersions_rejectsEmptySet() {
         assertThrows(IllegalArgumentException.class, () -> A2ACardResolver.builder()
                 .supportedProtocolVersions(Set.of()));
