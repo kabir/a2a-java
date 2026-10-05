@@ -1,7 +1,7 @@
 package org.a2aproject.sdk.compat03.conversion.mappers.domain;
 
-import org.a2aproject.sdk.compat03.conversion.mappers.config.A2AMappers_v0_3;
 import org.a2aproject.sdk.compat03.conversion.mappers.config.A03ToV10MapperConfig;
+import org.a2aproject.sdk.compat03.conversion.mappers.config.A2AMappers_v0_3;
 import org.a2aproject.sdk.compat03.spec.FileContent_v0_3;
 import org.a2aproject.sdk.compat03.spec.FileWithBytes_v0_3;
 import org.a2aproject.sdk.compat03.spec.FileWithUri_v0_3;
@@ -51,11 +51,13 @@ public interface FileContentMapper_v0_3 {
         }
 
         if (v03 instanceof FileWithBytes_v0_3 v03Bytes) {
+            String mimeType = v03Bytes.mimeType() != null ? v03Bytes.mimeType() : "";
             String name = v03Bytes.name() != null ? v03Bytes.name() : "";
-            return new FileWithBytes(v03Bytes.mimeType(), name, v03Bytes.bytes());
+            return new FileWithBytes(mimeType, name, v03Bytes.bytes());
         } else if (v03 instanceof FileWithUri_v0_3 v03Uri) {
+            String mimeType = v03Uri.mimeType() != null ? v03Uri.mimeType() : "";
             String name = v03Uri.name() != null ? v03Uri.name() : "";
-            return new FileWithUri(v03Uri.mimeType(), name, v03Uri.uri());
+            return new FileWithUri(mimeType, name, v03Uri.uri());
         }
 
         throw new InvalidRequestError(null, "Unrecognized FileContent type: " + v03.getClass().getName(), null);

@@ -2,24 +2,30 @@ package org.a2aproject.sdk.compat03.client.adapter.jsonrpc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
+import org.a2aproject.sdk.client.transport.spi.ClientTransportConfig;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallInterceptor;
 import org.a2aproject.sdk.client.transport.spi.interceptors.PayloadAndHeaders;
-import org.a2aproject.sdk.client.transport.spi.ClientTransportConfig;
-import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
 import org.a2aproject.sdk.compat03.client.transport.spi.ClientTransport_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallContext_v0_3;
+import org.a2aproject.sdk.compat03.json.JsonUtil_v0_3;
 import org.a2aproject.sdk.compat03.spec.AgentCard_v0_3;
 import org.a2aproject.sdk.compat03.spec.DeleteTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.EventKind_v0_3;
 import org.a2aproject.sdk.compat03.spec.GetTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.ListTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.MessageSendParams_v0_3;
+import org.a2aproject.sdk.compat03.spec.Message_v0_3;
 import org.a2aproject.sdk.compat03.spec.StreamingEventKind_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskIdParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskPushNotificationConfig_v0_3;
@@ -27,7 +33,14 @@ import org.a2aproject.sdk.compat03.spec.TaskQueryParams_v0_3;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
+import org.a2aproject.sdk.spec.DataPart;
+import org.a2aproject.sdk.spec.FilePart;
+import org.a2aproject.sdk.spec.FileWithBytes;
+import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.TaskQueryParams;
+import org.a2aproject.sdk.spec.TextPart;
+import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.junit.jupiter.api.Test;
 
 class JSONRPCCompat03ClientTransportTest {
@@ -85,6 +98,67 @@ class JSONRPCCompat03ClientTransportTest {
     }
 
     @Test
+    void receivesInlineFilesWithoutMimeTypeForBlockingAndStreamingSends() throws Exception {
+        RecordingDelegate delegate = new RecordingDelegate();
+        delegate.response = JsonUtil_v0_3.fromJson("""
+                {"kind":"message","role":"agent","messageId":"response",
+                 "parts":[{"kind":"file","file":{"bytes":"aGVsbG8="}}]}
+                """, Message_v0_3.class);
+        JSONRPCCompat03ClientTransport transport = new JSONRPCCompat03ClientTransport(
+                delegate, testCard(), List.of());
+        MessageSendParams request = new MessageSendParams(
+                new Message(Message.Role.ROLE_USER, List.of(new TextPart("hello")), "request",
+                        null, null, null, null, null), null, null);
+
+        Message blocking = assertInstanceOf(Message.class, transport.sendMessage(request, null));
+        AtomicReference<org.a2aproject.sdk.spec.StreamingEventKind> received = new AtomicReference<>();
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        transport.sendMessageStreaming(request, received::set, error::set, null);
+
+        assertNull(error.get());
+        Message streaming = assertInstanceOf(Message.class, received.get());
+        for (Message response : List.of(blocking, streaming)) {
+            assertEquals("response", response.messageId());
+            FilePart part = assertInstanceOf(FilePart.class, response.parts().get(0));
+            FileWithBytes file = assertInstanceOf(FileWithBytes.class, part.file());
+            assertEquals("", file.mimeType());
+            assertEquals("", file.name());
+            assertEquals("aGVsbG8=", file.bytes());
+        }
+    }
+
+    @Test
+    void rejectsNonObjectDataIntroducedByAnInterceptorBeforeDelegation() {
+        ClientCallInterceptor interceptor = new ClientCallInterceptor() {
+            @Override
+            public PayloadAndHeaders intercept(String method, Object payload, java.util.Map<String, String> headers,
+                    AgentCard card, ClientCallContext context) {
+                Message replacement = new Message(Message.Role.ROLE_USER, List.of(new DataPart(List.of("item"))),
+                        "request", null, null, null, null, null);
+                org.a2aproject.sdk.grpc.SendMessageRequest request =
+                        (org.a2aproject.sdk.grpc.SendMessageRequest) payload;
+                return new PayloadAndHeaders(request.toBuilder()
+                        .setMessage(org.a2aproject.sdk.grpc.utils.ProtoUtils.ToProto.message(replacement)).build(), headers);
+            }
+        };
+        RecordingDelegate delegate = new RecordingDelegate();
+        JSONRPCCompat03ClientTransport transport = new JSONRPCCompat03ClientTransport(
+                delegate, testCard(), List.of(interceptor));
+        MessageSendParams request = new MessageSendParams(
+                new Message(Message.Role.ROLE_USER, List.of(new TextPart("hello")), "request",
+                        null, null, null, null, null), null, null);
+
+        var blocking = assertThrows(org.a2aproject.sdk.spec.A2AClientException.class,
+                () -> transport.sendMessage(request, null));
+        var streaming = assertThrows(org.a2aproject.sdk.spec.A2AClientException.class,
+                () -> transport.sendMessageStreaming(request, event -> { }, error -> { }, null));
+
+        assertInstanceOf(UnsupportedOperationError.class, blocking.getCause());
+        assertInstanceOf(UnsupportedOperationError.class, streaming.getCause());
+        assertFalse(delegate.called);
+    }
+
+    @Test
     void rejectsUnsupportedHistoryLengthIntroducedByAnInterceptor() {
         ClientCallInterceptor interceptor = new ClientCallInterceptor() {
             @Override
@@ -123,10 +197,19 @@ class JSONRPCCompat03ClientTransportTest {
 
     private static final class RecordingDelegate implements ClientTransport_v0_3 {
         boolean called;
+        Message_v0_3 response;
 
-        @Override public EventKind_v0_3 sendMessage(MessageSendParams_v0_3 request, ClientCallContext_v0_3 context) { return null; }
+        @Override public EventKind_v0_3 sendMessage(MessageSendParams_v0_3 request, ClientCallContext_v0_3 context) {
+            called = true;
+            assertNotNull(response);
+            return response;
+        }
         @Override public void sendMessageStreaming(MessageSendParams_v0_3 request, java.util.function.Consumer<StreamingEventKind_v0_3> events,
-                java.util.function.Consumer<Throwable> errors, ClientCallContext_v0_3 context) { }
+                java.util.function.Consumer<Throwable> errors, ClientCallContext_v0_3 context) {
+            called = true;
+            assertNotNull(response);
+            events.accept(response);
+        }
         @Override public org.a2aproject.sdk.compat03.spec.Task_v0_3 getTask(TaskQueryParams_v0_3 request, ClientCallContext_v0_3 context) { called = true; return null; }
         @Override public org.a2aproject.sdk.compat03.spec.Task_v0_3 cancelTask(TaskIdParams_v0_3 request, ClientCallContext_v0_3 context) { return null; }
         @Override public TaskPushNotificationConfig_v0_3 setTaskPushNotificationConfiguration(TaskPushNotificationConfig_v0_3 request, ClientCallContext_v0_3 context) { return null; }

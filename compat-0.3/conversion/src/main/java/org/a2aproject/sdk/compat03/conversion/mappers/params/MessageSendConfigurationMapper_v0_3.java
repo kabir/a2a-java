@@ -1,7 +1,7 @@
 package org.a2aproject.sdk.compat03.conversion.mappers.params;
 
-import org.a2aproject.sdk.compat03.conversion.mappers.config.A2AMappers_v0_3;
 import org.a2aproject.sdk.compat03.conversion.mappers.config.A03ToV10MapperConfig;
+import org.a2aproject.sdk.compat03.conversion.mappers.config.A2AMappers_v0_3;
 import org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskPushNotificationConfigMapper_v0_3;
 import org.a2aproject.sdk.compat03.spec.MessageSendConfiguration_v0_3;
 import org.a2aproject.sdk.compat03.spec.PushNotificationConfig_v0_3;
@@ -89,9 +89,8 @@ public interface MessageSendConfigurationMapper_v0_3 {
         // Extract PushNotificationConfig from TaskPushNotificationConfig if present
         PushNotificationConfig_v0_3 pushConfig = null;
         if (v10.taskPushNotificationConfig() != null) {
-            TaskPushNotificationConfig_v0_3 v03TaskConfig =
-                TaskPushNotificationConfigMapper_v0_3.INSTANCE.fromV10(v10.taskPushNotificationConfig());
-            pushConfig = v03TaskConfig.pushNotificationConfig();
+            pushConfig = TaskPushNotificationConfigMapper_v0_3.INSTANCE
+                .fromV10PushNotificationConfig(v10.taskPushNotificationConfig());
         }
 
         // Convert returnImmediately to blocking (inverse semantics)

@@ -1,9 +1,11 @@
 package org.a2aproject.sdk.compat03.client.adapter;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
 import org.a2aproject.sdk.compat03.spec.JSONRPCError_v0_3;
@@ -23,6 +25,30 @@ class Compat03ClientErrorMapperTest {
         A2AClientException mapped = Compat03ClientErrorMapper.toV10(legacy);
 
         assertInstanceOf(UnsupportedOperationError.class, mapped.getCause());
+    }
+
+    @Test
+    void preservesScalarAndArrayDataForSynchronousAndStreamingErrors() {
+        for (Object data : List.of("missingScope", 42, true, List.of("missingScope", "write"))) {
+            JSONRPCError_v0_3 legacy = new JSONRPCError_v0_3(-32602, "invalid parameters", data);
+
+            A2AClientException synchronous = Compat03ClientErrorMapper.toV10(
+                    new A2AClientException_v0_3("request failed", legacy));
+            assertEquals(Map.of("data", data),
+                    assertInstanceOf(A2AError.class, synchronous.getCause()).getDetails());
+
+            AtomicReference<Throwable> received = new AtomicReference<>();
+            Compat03ClientTransportSupport.mapAsyncError(received::set).accept(legacy);
+            A2AClientException streaming = assertInstanceOf(A2AClientException.class, received.get());
+            assertEquals(Map.of("data", data),
+                    assertInstanceOf(A2AError.class, streaming.getCause()).getDetails());
+        }
+    }
+
+    @Test
+    void absentErrorDataRemainsEmpty() {
+        assertEquals(Map.of(), Compat03ClientErrorMapper.toV10(
+                new JSONRPCError_v0_3(-32602, "invalid parameters", null)).getDetails());
     }
 
     @Test

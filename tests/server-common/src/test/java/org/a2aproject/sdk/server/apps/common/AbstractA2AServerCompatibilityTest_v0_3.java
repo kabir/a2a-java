@@ -17,13 +17,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.a2aproject.sdk.A2A;
 import org.a2aproject.sdk.client.Client;
@@ -37,14 +37,17 @@ import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.CancelTaskParams;
+import org.a2aproject.sdk.spec.DataPart;
 import org.a2aproject.sdk.spec.DeleteTaskPushNotificationConfigParams;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParams;
-import org.a2aproject.sdk.spec.Message;
-import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
+import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.MessageSendConfiguration;
+import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskIdParams;
@@ -213,6 +216,46 @@ public abstract class AbstractA2AServerCompatibilityTest_v0_3 {
         Part<?> part = received.get().parts().get(0);
         assertInstanceOf(TextPart.class, part);
         assertEquals("test message", ((TextPart) part).text());
+    }
+
+    @Test
+    public void testSendMessageWithInlinePushConfiguration() throws Exception {
+        sendMessageWithInlinePushConfiguration(false);
+    }
+
+    @Test
+    public void testSendStreamingMessageWithInlinePushConfiguration() throws Exception {
+        sendMessageWithInlinePushConfiguration(true);
+    }
+
+    private void sendMessageWithInlinePushConfiguration(boolean streaming) throws Exception {
+        Client sendingClient = streaming ? getClient() : getNonStreamingClient();
+        for (String taskId : new String[] {null, ""}) {
+            TaskPushNotificationConfig push = new TaskPushNotificationConfig(
+                    "inline-config", taskId, "http://localhost:" + serverPort + "/callback", null, null, null);
+            MessageSendParams request = new MessageSendParams(MESSAGE,
+                    MessageSendConfiguration.builder().taskPushNotificationConfig(push).build(), null);
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<Message> received = new AtomicReference<>();
+            AtomicReference<Throwable> error = new AtomicReference<>();
+
+            sendingClient.sendMessage(request, List.of((event, card) -> {
+                if (event instanceof MessageEvent messageEvent) {
+                    received.set(messageEvent.getMessage());
+                    latch.countDown();
+                }
+            }), throwable -> {
+                if (throwable != null && !isStreamClosedError(throwable)) {
+                    error.set(throwable);
+                    latch.countDown();
+                }
+            }, null);
+
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertNull(error.get());
+            assertNotNull(received.get());
+            assertEquals(MESSAGE.messageId(), received.get().messageId());
+        }
     }
 
     @Test
@@ -644,6 +687,21 @@ public abstract class AbstractA2AServerCompatibilityTest_v0_3 {
 
     private static TaskPushNotificationConfig pushConfig(String id, String url) {
         return TaskPushNotificationConfig.builder().id(id).url(url).build();
+    }
+
+    @Test
+    public void testNonObjectDataPartsAreRejectedForBlockingAndStreamingSends() throws Exception {
+        for (Client sendingClient : List.of(getNonStreamingClient(), getClient())) {
+            for (Object data : List.of("value", 42, true, List.of("item"))) {
+                Message message = Message.builder().messageId("unsupported-data").role(Message.Role.ROLE_USER)
+                        .parts(new DataPart(data)).build();
+
+                A2AClientException exception = org.junit.jupiter.api.Assertions.assertThrows(A2AClientException.class,
+                        () -> sendingClient.sendMessage(message));
+
+                assertInstanceOf(UnsupportedOperationError.class, exception.getCause());
+            }
+        }
     }
 
     @Test

@@ -1,7 +1,7 @@
 package org.a2aproject.sdk.compat03.conversion.mappers.domain;
 
-import org.a2aproject.sdk.compat03.conversion.mappers.config.A2AMappers_v0_3;
 import org.a2aproject.sdk.compat03.conversion.mappers.config.A03ToV10MapperConfig;
+import org.a2aproject.sdk.compat03.conversion.mappers.config.A2AMappers_v0_3;
 import org.a2aproject.sdk.compat03.spec.PushNotificationConfig_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskPushNotificationConfig_v0_3;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
@@ -73,17 +73,19 @@ public interface TaskPushNotificationConfigMapper_v0_3 {
             return null;
         }
 
-        PushNotificationConfig_v0_3 pushConfig =
-            new PushNotificationConfig_v0_3(
-                v10.url(),
-                v10.token(),
-                AuthenticationInfoMapper_v0_3.INSTANCE.fromV10ToPushNotification(v10.authentication()),
-                v10.id()
-            );
-
         return new TaskPushNotificationConfig_v0_3(
             v10.taskId(),
-            pushConfig
+            fromV10PushNotificationConfig(v10)
+        );
+    }
+
+    /** Converts callback fields without requiring a task ID for inline message configuration. */
+    default PushNotificationConfig_v0_3 fromV10PushNotificationConfig(TaskPushNotificationConfig v10) {
+        return new PushNotificationConfig_v0_3(
+            v10.url(),
+            v10.token(),
+            AuthenticationInfoMapper_v0_3.INSTANCE.fromV10ToPushNotification(v10.authentication()),
+            v10.id()
         );
     }
 }

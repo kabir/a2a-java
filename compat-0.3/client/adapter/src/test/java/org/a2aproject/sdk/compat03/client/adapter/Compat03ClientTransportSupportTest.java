@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -16,6 +17,7 @@ import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallC
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.CancelTaskParams;
+import org.a2aproject.sdk.spec.DataPart;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
@@ -24,6 +26,7 @@ import org.a2aproject.sdk.spec.TaskIdParams;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TextPart;
+import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.junit.jupiter.api.Test;
 
 class Compat03ClientTransportSupportTest {
@@ -43,6 +46,33 @@ class Compat03ClientTransportSupportTest {
         assertThrows(A2AClientException.class,
                 () -> Compat03ClientTransportSupport.validatePushList(
                         new ListTaskPushNotificationConfigsParams("task", 10, "", null)));
+    }
+
+    @Test
+    void rejectsNonObjectDataPartsThroughClientExceptionBoundary() {
+        for (Object data : List.of("value", 42, true, List.of("item"))) {
+            MessageSendParams request = new MessageSendParams(
+                    new Message(Message.Role.ROLE_USER, List.of(new DataPart(data)), "message", null, null,
+                            null, null, null), null, null);
+
+            A2AClientException exception = assertThrows(A2AClientException.class,
+                    () -> Compat03ClientTransportSupport.toV03(request));
+
+            assertInstanceOf(UnsupportedOperationError.class, exception.getCause());
+        }
+    }
+
+    @Test
+    void preservesObjectDataParts() {
+        MessageSendParams request = new MessageSendParams(
+                new Message(Message.Role.ROLE_USER, List.of(new DataPart(Map.of("key", "value"))),
+                        "message", null, null, null, null, null), null, null);
+
+        var legacy = Compat03ClientTransportSupport.toV03(request);
+
+        var data = assertInstanceOf(org.a2aproject.sdk.compat03.spec.DataPart_v0_3.class,
+                legacy.message().parts().get(0));
+        assertEquals(Map.of("key", "value"), data.data());
     }
 
     @Test

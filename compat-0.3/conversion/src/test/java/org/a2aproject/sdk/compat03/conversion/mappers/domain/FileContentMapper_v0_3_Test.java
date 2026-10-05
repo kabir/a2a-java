@@ -1,14 +1,14 @@
 package org.a2aproject.sdk.compat03.conversion.mappers.domain;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
 import org.a2aproject.sdk.compat03.spec.FileWithBytes_v0_3;
 import org.a2aproject.sdk.compat03.spec.FileWithUri_v0_3;
 import org.a2aproject.sdk.spec.FileContent;
 import org.a2aproject.sdk.spec.FileWithBytes;
 import org.a2aproject.sdk.spec.FileWithUri;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class FileContentMapper_v0_3_Test {
 
@@ -48,6 +48,32 @@ class FileContentMapper_v0_3_Test {
         assertEquals("text/plain", result.mimeType());
         assertEquals("readme.txt", result.name());
         assertEquals("file:///path/to/readme.txt", result.uri());
+    }
+
+    @Test
+    void inlineFileWithoutMimeTypeConvertsToV10() {
+        FileWithBytes_v0_3 legacy = new FileWithBytes_v0_3(null, null, "aGVsbG8=");
+
+        FileWithBytes current = assertInstanceOf(FileWithBytes.class,
+                FileContentMapper_v0_3.INSTANCE.toV10(legacy));
+
+        assertEquals("", current.mimeType());
+        assertEquals("", current.name());
+        assertEquals("aGVsbG8=", current.bytes());
+        assertEquals(new FileWithBytes_v0_3("", "", "aGVsbG8="),
+                FileContentMapper_v0_3.INSTANCE.fromV10(current));
+    }
+
+    @Test
+    void uriFileWithoutMimeTypeConvertsToV10() {
+        FileWithUri_v0_3 legacy = new FileWithUri_v0_3(null, null, "https://example.test/file");
+
+        FileWithUri current = assertInstanceOf(FileWithUri.class,
+                FileContentMapper_v0_3.INSTANCE.toV10(legacy));
+
+        assertEquals(new FileWithUri("", "", "https://example.test/file"), current);
+        assertEquals(new FileWithUri_v0_3("", "", "https://example.test/file"),
+                FileContentMapper_v0_3.INSTANCE.fromV10(current));
     }
 
     @Test

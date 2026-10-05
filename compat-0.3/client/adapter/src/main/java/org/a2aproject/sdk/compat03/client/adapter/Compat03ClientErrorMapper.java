@@ -10,10 +10,10 @@ import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.ContentTypeNotSupportedError;
 import org.a2aproject.sdk.spec.ExtendedAgentCardNotConfiguredError;
-import org.a2aproject.sdk.spec.InvalidParamsError;
-import org.a2aproject.sdk.spec.InvalidRequestError;
 import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.InvalidAgentResponseError;
+import org.a2aproject.sdk.spec.InvalidParamsError;
+import org.a2aproject.sdk.spec.InvalidRequestError;
 import org.a2aproject.sdk.spec.JSONParseError;
 import org.a2aproject.sdk.spec.MethodNotFoundError;
 import org.a2aproject.sdk.spec.PushNotificationNotSupportedError;
@@ -62,8 +62,11 @@ public final class Compat03ClientErrorMapper {
     }
 
     private static Map<String, Object> details(Object data) {
-        if (!(data instanceof Map<?, ?> rawDetails)) {
+        if (data == null) {
             return Map.of();
+        }
+        if (!(data instanceof Map<?, ?> rawDetails)) {
+            return Map.of("data", data);
         }
         Map<String, Object> details = new LinkedHashMap<>();
         rawDetails.forEach((key, value) -> {

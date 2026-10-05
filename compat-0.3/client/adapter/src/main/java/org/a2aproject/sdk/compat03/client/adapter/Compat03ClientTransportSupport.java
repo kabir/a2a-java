@@ -18,26 +18,24 @@ import org.a2aproject.sdk.compat03.conversion.mappers.result.ListTaskPushNotific
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
 import org.a2aproject.sdk.compat03.spec.DeleteTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.GetTaskPushNotificationConfigParams_v0_3;
+import org.a2aproject.sdk.compat03.spec.JSONRPCError_v0_3;
 import org.a2aproject.sdk.compat03.spec.ListTaskPushNotificationConfigParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.MessageSendParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.StreamingEventKind_v0_3;
-import org.a2aproject.sdk.compat03.spec.JSONRPCError_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskIdParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskPushNotificationConfig_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskQueryParams_v0_3;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.CancelTaskParams;
-import org.a2aproject.sdk.spec.InvalidParamsError;
-import org.a2aproject.sdk.spec.InvalidRequestError;
-import org.a2aproject.sdk.spec.InternalError;
+import org.a2aproject.sdk.spec.DataPart;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.TaskIdParams;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
-import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.jspecify.annotations.Nullable;
 
 /** Shared, binding-independent behavior for adapters from the 1.0 client to 0.3 transports. */
@@ -68,6 +66,11 @@ public final class Compat03ClientTransportSupport {
 
     public static void validateMessageSend(MessageSendParams request) {
         validateTenant("sendMessage", request.tenant());
+        for (var part : request.message().parts()) {
+            if (part instanceof DataPart data && !(data.data() instanceof Map<?, ?>)) {
+                throw unsupported("sendMessage with non-object DataPart data");
+            }
+        }
         if (request.configuration() != null
                 && request.configuration().taskPushNotificationConfig() != null) {
             validateTenant("sendMessage with a task push notification configuration",
