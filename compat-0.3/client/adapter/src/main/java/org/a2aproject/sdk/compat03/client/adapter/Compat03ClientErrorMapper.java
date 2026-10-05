@@ -1,12 +1,15 @@
 package org.a2aproject.sdk.compat03.client.adapter;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
+import org.a2aproject.sdk.compat03.spec.A2AClientHTTPError_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AErrorCodes_v0_3;
 import org.a2aproject.sdk.compat03.spec.JSONRPCError_v0_3;
 import org.a2aproject.sdk.spec.A2AClientException;
+import org.a2aproject.sdk.spec.A2AClientHTTPError;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.ContentTypeNotSupportedError;
 import org.a2aproject.sdk.spec.ExtendedAgentCardNotConfiguredError;
@@ -30,6 +33,13 @@ public final class Compat03ClientErrorMapper {
     public static A2AClientException toV10(A2AClientException_v0_3 exception) {
         Throwable cause = exception.getCause();
         String message = exception.getMessage() == null ? "A2A 0.3 client operation failed" : exception.getMessage();
+        if (cause instanceof A2AClientHTTPError_v0_3 error) {
+            return new A2AClientException(message, new A2AClientHTTPError(error.getCode(), error.getMessage(),
+                    error.getResponseBody(), error.getResponseHeaders()));
+        }
+        if (cause instanceof IOException && cause.getCause() instanceof A2AClientHTTPError error) {
+            return new A2AClientException(message, error);
+        }
         if (cause instanceof JSONRPCError_v0_3 error) {
             return new A2AClientException(message, toV10(error));
         }

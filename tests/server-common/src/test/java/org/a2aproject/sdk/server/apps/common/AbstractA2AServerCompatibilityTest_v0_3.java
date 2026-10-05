@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import org.a2aproject.sdk.A2A;
 import org.a2aproject.sdk.client.Client;
@@ -533,13 +532,31 @@ public abstract class AbstractA2AServerCompatibilityTest_v0_3 {
                 TaskState.TASK_STATE_WORKING)).build();
         saveTaskInTaskStore(task);
         try {
-            ensureQueueForTask(taskId);
-            CountDownLatch latch = new CountDownLatch(1);
-            getClient().subscribeToTask(new TaskIdParams(taskId), List.of((event, card) -> latch.countDown()), null);
+            ensureQueueWithoutConsumer(taskId);
+            assertEquals(0, getChildQueueCount(taskId), "Non-final task queue must stay open with no consumers");
+            CountDownLatch updateReceived = new CountDownLatch(1);
+            AtomicReference<Throwable> error = new AtomicReference<>();
+            CompletableFuture<Void> subscription = awaitStreamingSubscription();
+            getClient().subscribeToTask(new TaskIdParams(taskId), List.of((event, card) -> {
+                if (event instanceof TaskUpdateEvent update
+                        && update.getUpdateEvent() instanceof TaskStatusUpdateEvent status
+                        && taskId.equals(status.taskId())
+                        && status.status().state() == TaskState.TASK_STATE_WORKING) {
+                    updateReceived.countDown();
+                }
+            }), failure -> {
+                if (failure != null && !isStreamClosedError(failure)) {
+                    error.set(failure);
+                    updateReceived.countDown();
+                }
+            });
+            subscription.get(15, TimeUnit.SECONDS);
+            assertEquals(1, getChildQueueCount(taskId), "Late subscription must create an active consumer");
             enqueueEventOnServer(TaskStatusUpdateEvent.builder().taskId(taskId).contextId(task.contextId())
                     .status(new org.a2aproject.sdk.spec.TaskStatus(TaskState.TASK_STATE_WORKING)).build());
-            assertTrue(latch.await(30, TimeUnit.SECONDS));
-            assertTrue(getChildQueueCount(taskId) >= 0);
+            assertTrue(updateReceived.await(30, TimeUnit.SECONDS), "Must receive the enqueued status update");
+            assertNull(error.get(), "Subscription must not fail");
+            assertEquals(1, getChildQueueCount(taskId), "Non-final update must leave the consumer and main queue open");
         } finally {
             deleteTaskInTaskStore(taskId);
         }
@@ -550,17 +567,44 @@ public abstract class AbstractA2AServerCompatibilityTest_v0_3 {
         String taskId = "finalized-task-integration";
         saveTaskInTaskStore(Task.builder(MINIMAL_TASK).id(taskId).build());
         try {
-            ensureQueueForTask(taskId);
-            CountDownLatch latch = new CountDownLatch(1);
+            ensureQueueWithoutConsumer(taskId);
+            assertEquals(0, getChildQueueCount(taskId));
+            CountDownLatch finalUpdateReceived = new CountDownLatch(1);
+            AtomicReference<Throwable> error = new AtomicReference<>();
             CompletableFuture<Void> subscription = awaitStreamingSubscription();
-            getClient().subscribeToTask(new TaskIdParams(taskId), List.of((event, card) -> latch.countDown()), null);
+            getClient().subscribeToTask(new TaskIdParams(taskId), List.of((event, card) -> {
+                if (event instanceof TaskUpdateEvent update
+                        && update.getUpdateEvent() instanceof TaskStatusUpdateEvent status
+                        && taskId.equals(status.taskId())
+                        && status.status().state() == TaskState.TASK_STATE_COMPLETED
+                        && status.isFinal()) {
+                    finalUpdateReceived.countDown();
+                }
+            }), failure -> {
+                if (failure != null && !isStreamClosedError(failure)) {
+                    error.set(failure);
+                    finalUpdateReceived.countDown();
+                }
+            });
             subscription.get(15, TimeUnit.SECONDS);
+            assertEquals(1, getChildQueueCount(taskId), "Subscription must be active before finalization");
             enqueueEventOnServer(TaskStatusUpdateEvent.builder().taskId(taskId).contextId(MINIMAL_TASK.contextId())
                     .status(new org.a2aproject.sdk.spec.TaskStatus(TaskState.TASK_STATE_COMPLETED)).build());
-            assertTrue(latch.await(30, TimeUnit.SECONDS));
+            assertTrue(finalUpdateReceived.await(30, TimeUnit.SECONDS), "Must receive the final status update");
+            assertNull(error.get(), "Subscription must not fail before delivering the final update");
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
+            while (getChildQueueCount(taskId) != -1 && System.nanoTime() < deadline) {
+                Thread.sleep(50);
+            }
+            assertEquals(-1, getChildQueueCount(taskId), "Finalized task must close or remove its main queue");
+            assertNull(error.get(), "Subscription must close without an unexpected error");
         } finally {
             deleteTaskInTaskStore(taskId);
         }
+    }
+
+    private void ensureQueueWithoutConsumer(String taskId) throws Exception {
+        sendTestRequest("/test/queue/ensure/" + taskId + "?withoutConsumer=true", "POST", "", 200);
     }
 
     private CompletableFuture<Void> awaitStreamingSubscription() {

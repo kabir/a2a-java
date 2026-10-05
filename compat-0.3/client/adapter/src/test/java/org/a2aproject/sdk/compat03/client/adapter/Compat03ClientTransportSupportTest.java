@@ -76,6 +76,43 @@ class Compat03ClientTransportSupportTest {
     }
 
     @Test
+    void preservesNullValuedDataAndMetadataAcrossVersionConversion() {
+        Map<String, Object> values = new java.util.LinkedHashMap<>();
+        values.put("nil", null);
+        MessageSendParams request = new MessageSendParams(
+                new Message(Message.Role.ROLE_USER, List.of(new DataPart(values, values)), "message",
+                        null, null, null, values, null), null, values);
+        var legacy = Compat03ClientTransportSupport.toV03(request);
+        var data = assertInstanceOf(org.a2aproject.sdk.compat03.spec.DataPart_v0_3.class,
+                legacy.message().parts().get(0));
+        assertEquals(values, data.data());
+        assertEquals(values, data.metadata());
+        assertEquals(values, legacy.message().metadata());
+        assertEquals(values, legacy.metadata());
+        assertEquals(request.message(), Compat03ClientTransportSupport.toV10(legacy.message()));
+    }
+
+    @Test
+    void rejectsFieldsMissingFromLegacyProtobufButPreservesThemForJsonRpc() {
+        MessageSendParams request = new MessageSendParams(
+                new Message(Message.Role.ROLE_USER, List.of(new TextPart("hello")), "message",
+                        null, null, List.of("referenced-task"), null, null), null, null);
+        assertEquals(List.of("referenced-task"), Compat03ClientTransportSupport.toV03(request).message().referenceTaskIds());
+        A2AClientException send = assertThrows(A2AClientException.class,
+                () -> Compat03ClientTransportSupport.toV03Protobuf(request));
+        assertInstanceOf(UnsupportedOperationError.class, send.getCause());
+        assertTrue(send.getMessage().contains("referenceTaskIds"));
+
+        CancelTaskParams cancel = new CancelTaskParams("task", null, Map.of("reason", "stop"));
+        assertEquals(cancel.metadata(), Compat03ClientTransportSupport.toV03(cancel).metadata());
+        A2AClientException cancellation = assertThrows(A2AClientException.class,
+                () -> Compat03ClientTransportSupport.toV03Protobuf(cancel));
+        assertInstanceOf(UnsupportedOperationError.class, cancellation.getCause());
+        assertTrue(cancellation.getMessage().contains("metadata"));
+        Compat03ClientTransportSupport.toV03Protobuf(new CancelTaskParams("task", null, Map.of()));
+    }
+
+    @Test
     void acceptsDefaultPushListAndReturnsNoPageToken() {
         var result = Compat03ClientTransportSupport.toV10PushList(java.util.List.of());
 

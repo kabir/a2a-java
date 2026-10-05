@@ -81,6 +81,21 @@ public final class Compat03ClientTransportSupport {
         }
     }
 
+    /** REST uses the same 0.3 protobuf schema as gRPC. */
+    public static void validateProtobufMessageSend(MessageSendParams request) {
+        validateMessageSend(request);
+        if (request.message().referenceTaskIds() != null && !request.message().referenceTaskIds().isEmpty()) {
+            throw unsupported("sendMessage with referenceTaskIds over REST or gRPC");
+        }
+    }
+
+    public static void validateProtobufCancel(CancelTaskParams request) {
+        validateCancel(request);
+        if (request.metadata() != null && !request.metadata().isEmpty()) {
+            throw unsupported("cancelTask with metadata over REST or gRPC");
+        }
+    }
+
     public static void validateTaskQuery(TaskQueryParams request) {
         validateTenant("getTask", request.tenant());
         if (Integer.valueOf(0).equals(request.historyLength())) {
@@ -129,6 +144,16 @@ public final class Compat03ClientTransportSupport {
     public static MessageSendParams_v0_3 toV03(MessageSendParams request) {
         validateMessageSend(request);
         return MessageSendParamsMapper_v0_3.INSTANCE.fromV10(request);
+    }
+
+    public static MessageSendParams_v0_3 toV03Protobuf(MessageSendParams request) {
+        validateProtobufMessageSend(request);
+        return MessageSendParamsMapper_v0_3.INSTANCE.fromV10(request);
+    }
+
+    public static TaskIdParams_v0_3 toV03Protobuf(CancelTaskParams request) {
+        validateProtobufCancel(request);
+        return CancelTaskParamsMapper_v0_3.INSTANCE.fromV10(request);
     }
 
     public static TaskQueryParams_v0_3 toV03(TaskQueryParams request) {

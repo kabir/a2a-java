@@ -39,22 +39,22 @@ public final class GrpcCompat03ClientTransport extends Compat03ClientTransportBa
 
     @Override
     public EventKind sendMessage(MessageSendParams request, @Nullable ClientCallContext context) {
-        Compat03ClientTransportSupport.validateMessageSend(request);
+        Compat03ClientTransportSupport.validateProtobufMessageSend(request);
         PayloadAndHeaders payload = apply(A2AMethods.SEND_MESSAGE_METHOD,
                 ProtoUtils.ToProto.sendMessageRequest(request), org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
         return Compat03ClientTransportSupport.call(() -> Compat03ClientTransportSupport.toV10(delegate.sendMessage(
-                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(payloadPayload(payload))),
+                Compat03ClientTransportSupport.toV03Protobuf(ProtoUtils.FromProto.messageSendParams(payloadPayload(payload))),
                 legacyContext(context, payload))));
     }
 
     @Override
     public void sendMessageStreaming(MessageSendParams request, Consumer<StreamingEventKind> events,
             Consumer<Throwable> errors, @Nullable ClientCallContext context) {
-        Compat03ClientTransportSupport.validateMessageSend(request);
+        Compat03ClientTransportSupport.validateProtobufMessageSend(request);
         PayloadAndHeaders payload = apply(A2AMethods.SEND_STREAMING_MESSAGE_METHOD,
                 ProtoUtils.ToProto.sendMessageRequest(request), org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
         Compat03ClientTransportSupport.run(() -> delegate.sendMessageStreaming(
-                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(payloadPayload(payload))),
+                Compat03ClientTransportSupport.toV03Protobuf(ProtoUtils.FromProto.messageSendParams(payloadPayload(payload))),
                 event -> events.accept(Compat03ClientTransportSupport.toV10(event)),
                 Compat03ClientTransportSupport.mapAsyncError(errors), legacyContext(context, payload)));
     }
@@ -71,11 +71,11 @@ public final class GrpcCompat03ClientTransport extends Compat03ClientTransportBa
 
     @Override
     public Task cancelTask(CancelTaskParams request, @Nullable ClientCallContext context) {
-        Compat03ClientTransportSupport.validateCancel(request);
+        Compat03ClientTransportSupport.validateProtobufCancel(request);
         PayloadAndHeaders payload = apply(A2AMethods.CANCEL_TASK_METHOD, ProtoUtils.ToProto.cancelTaskRequest(request),
                 org.a2aproject.sdk.grpc.CancelTaskRequest.class, context);
         return Compat03ClientTransportSupport.call(() -> TaskMapper_v0_3.INSTANCE.toV10(delegate.cancelTask(
-                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.cancelTaskParams(cancelPayload(payload))),
+                Compat03ClientTransportSupport.toV03Protobuf(ProtoUtils.FromProto.cancelTaskParams(cancelPayload(payload))),
                 legacyContext(context, payload))));
     }
 

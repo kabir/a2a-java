@@ -3,14 +3,17 @@ package org.a2aproject.sdk.compat03.client.adapter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
+import org.a2aproject.sdk.compat03.spec.A2AClientHTTPError_v0_3;
 import org.a2aproject.sdk.compat03.spec.JSONRPCError_v0_3;
 import org.a2aproject.sdk.compat03.spec.UnsupportedOperationError_v0_3;
 import org.a2aproject.sdk.spec.A2AClientException;
+import org.a2aproject.sdk.spec.A2AClientHTTPError;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.junit.jupiter.api.Test;
@@ -25,6 +28,33 @@ class Compat03ClientErrorMapperTest {
         A2AClientException mapped = Compat03ClientErrorMapper.toV10(legacy);
 
         assertInstanceOf(UnsupportedOperationError.class, mapped.getCause());
+    }
+
+    @Test
+    void exposesHttpErrorsWrappedByTheJdkClient() {
+        var httpError = new A2AClientHTTPError(401, "authentication failed", "unauthorized",
+                Map.of("WWW-Authenticate", List.of("Bearer")));
+        var legacy = new A2AClientException_v0_3("getTask failed", new IOException("authentication failed", httpError));
+        var exception = Compat03ClientErrorMapper.toV10(legacy);
+        var cause = assertInstanceOf(A2AClientHTTPError.class, exception.getCause());
+        assertEquals(401, cause.getCode());
+        assertEquals("unauthorized", cause.getResponseBody());
+        assertEquals(List.of("Bearer"), cause.getResponseHeaders().get("www-authenticate"));
+    }
+
+    @Test
+    void preservesHttpFailureDetailsForBlockingAndStreamingErrors() {
+        var legacy = new A2AClientException_v0_3("HTTP 429", new A2AClientHTTPError_v0_3(
+                429, "HTTP 429", "rate limited", Map.of("Retry-After", List.of("30"))));
+        AtomicReference<Throwable> streaming = new AtomicReference<>();
+        Compat03ClientTransportSupport.mapAsyncError(streaming::set).accept(legacy);
+        for (A2AClientException exception : List.of(Compat03ClientErrorMapper.toV10(legacy),
+                assertInstanceOf(A2AClientException.class, streaming.get()))) {
+            var cause = assertInstanceOf(A2AClientHTTPError.class, exception.getCause());
+            assertEquals(429, cause.getCode());
+            assertEquals("rate limited", cause.getResponseBody());
+            assertEquals(List.of("30"), cause.getResponseHeaders().get("retry-after"));
+        }
     }
 
     @Test

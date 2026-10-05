@@ -128,7 +128,10 @@ versions are requested.
 The adapter rejects 1.0 operations that have no 0.3 equivalent (such as
 `listTasks`), non-empty tenant values, extended-agent-card retrieval, and
 non-default push-configuration pagination before any network request. Generic
-1.0 transport parameters are also unsupported for 0.3 adapters.
+1.0 transport parameters are also unsupported for 0.3 adapters. REST and gRPC
+also reject non-empty `Message.referenceTaskIds` and cancellation metadata,
+which the 0.3 protobuf schema cannot represent. JSON-RPC preserves these fields.
+Validation also applies to requests modified by interceptors.
 
 If 0.3 is not requested, the optional parser is not used. If it is requested
 but the parser or binding adapter is absent, discovery or client construction
