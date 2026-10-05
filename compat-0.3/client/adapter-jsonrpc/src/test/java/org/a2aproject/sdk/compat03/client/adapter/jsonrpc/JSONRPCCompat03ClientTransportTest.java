@@ -10,6 +10,7 @@ import java.util.List;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallInterceptor;
 import org.a2aproject.sdk.client.transport.spi.interceptors.PayloadAndHeaders;
+import org.a2aproject.sdk.client.transport.spi.ClientTransportConfig;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
 import org.a2aproject.sdk.compat03.client.transport.spi.ClientTransport_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallContext_v0_3;
@@ -60,6 +61,27 @@ class JSONRPCCompat03ClientTransportTest {
                 () -> new JSONRPCCompat03ClientTransportProvider().create(null, card, card.supportedInterfaces().get(0)));
 
         assertTrue(exception.getMessage().contains("tenant"));
+    }
+
+    @Test
+    void providerRejectsWrongConfigurationType() {
+        org.a2aproject.sdk.spec.A2AClientException exception = assertThrows(
+                org.a2aproject.sdk.spec.A2AClientException.class,
+                () -> new JSONRPCCompat03ClientTransportProvider().create(
+                        new ClientTransportConfig<JSONRPCTransport>() { },
+                        testCard(), testCard().supportedInterfaces().get(0)));
+
+        assertTrue(exception.getMessage().contains("JSONRPCTransportConfig"));
+    }
+
+    @Test
+    void providerRejectsNullConfiguration() {
+        org.a2aproject.sdk.spec.A2AClientException exception = assertThrows(
+                org.a2aproject.sdk.spec.A2AClientException.class,
+                () -> new JSONRPCCompat03ClientTransportProvider().create(
+                        null, testCard(), testCard().supportedInterfaces().get(0)));
+
+        assertTrue(exception.getMessage().contains("JSONRPCTransportConfig"));
     }
 
     @Test

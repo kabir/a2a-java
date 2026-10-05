@@ -85,6 +85,12 @@ class Compat03ClientTransportSupportTest {
     }
 
     @Test
+    void mapsNullContextsToNull() {
+        assertNull(Compat03ClientTransportSupport.toV03Context(null));
+        assertNull(Compat03ClientCallContextMapper.toV03(null));
+    }
+
+    @Test
     void rejectsExplicitZeroHistoryLengthBecauseLegacyZeroMeansUnlimited() {
         A2AClientException exception = assertThrows(A2AClientException.class,
                 () -> Compat03ClientTransportSupport.validateTaskQuery(new TaskQueryParams("task", 0, null)));

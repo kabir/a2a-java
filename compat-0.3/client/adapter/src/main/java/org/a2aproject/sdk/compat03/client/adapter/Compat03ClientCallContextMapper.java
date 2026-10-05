@@ -12,7 +12,7 @@ public final class Compat03ClientCallContextMapper {
     private Compat03ClientCallContextMapper() {
     }
 
-    public static ClientCallContext_v0_3 toV03(@Nullable ClientCallContext context) {
+    public static @Nullable ClientCallContext_v0_3 toV03(@Nullable ClientCallContext context) {
         if (context == null) {
             return null;
         }

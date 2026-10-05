@@ -23,8 +23,9 @@ public final class RestCompat03ClientTransportProvider implements VersionedClien
     public ClientTransport create(ClientTransportConfig<?> config, AgentCard card, AgentInterface agentInterface)
             throws A2AClientException {
         Compat03ClientTransportSupport.validateAgentInterfaceTenant(agentInterface.tenant());
-        RestTransportConfig nativeConfig = config == null ? new RestTransportConfig() :
-                (RestTransportConfig) config;
+        if (!(config instanceof RestTransportConfig nativeConfig)) {
+            throw new A2AClientException("Expected RestTransportConfig for the REST 0.3 adapter");
+        }
         Compat03ClientTransportSupport.validateConfig(nativeConfig);
         A2AHttpClient httpClient = nativeConfig.getHttpClient();
         RestTransport_v0_3 legacy = new RestTransport_v0_3(httpClient,

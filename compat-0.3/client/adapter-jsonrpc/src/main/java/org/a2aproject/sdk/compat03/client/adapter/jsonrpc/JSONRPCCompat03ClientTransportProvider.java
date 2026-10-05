@@ -24,8 +24,9 @@ public final class JSONRPCCompat03ClientTransportProvider implements VersionedCl
     public ClientTransport create(ClientTransportConfig<?> config, AgentCard card, AgentInterface agentInterface)
             throws A2AClientException {
         Compat03ClientTransportSupport.validateAgentInterfaceTenant(agentInterface.tenant());
-        JSONRPCTransportConfig nativeConfig = config == null ? new JSONRPCTransportConfig() :
-                (JSONRPCTransportConfig) config;
+        if (!(config instanceof JSONRPCTransportConfig nativeConfig)) {
+            throw new A2AClientException("Expected JSONRPCTransportConfig for the JSON-RPC 0.3 adapter");
+        }
         Compat03ClientTransportSupport.validateConfig(nativeConfig);
         A2AHttpClient httpClient = nativeConfig.getHttpClient();
         JSONRPCTransport_v0_3 legacy = new JSONRPCTransport_v0_3(httpClient,

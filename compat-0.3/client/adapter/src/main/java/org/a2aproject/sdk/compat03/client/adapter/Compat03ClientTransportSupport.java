@@ -116,7 +116,7 @@ public final class Compat03ClientTransportSupport {
         validateTenant("AgentInterface", tenant);
     }
 
-    public static ClientCallContext_v0_3 toV03Context(@Nullable ClientCallContext context) {
+    public static @Nullable ClientCallContext_v0_3 toV03Context(@Nullable ClientCallContext context) {
         if (context == null) {
             return null;
         }
@@ -181,9 +181,7 @@ public final class Compat03ClientTransportSupport {
 
     public static ListTaskPushNotificationConfigsResult toV10PushList(
             List<TaskPushNotificationConfig_v0_3> configs) {
-        ListTaskPushNotificationConfigsResult result =
-                ListTaskPushNotificationConfigsResultMapper_v0_3.INSTANCE.toV10(configs);
-        return result;
+        return ListTaskPushNotificationConfigsResultMapper_v0_3.INSTANCE.toV10(configs);
     }
 
     public static A2AClientException mapLegacyException(A2AClientException_v0_3 exception) {

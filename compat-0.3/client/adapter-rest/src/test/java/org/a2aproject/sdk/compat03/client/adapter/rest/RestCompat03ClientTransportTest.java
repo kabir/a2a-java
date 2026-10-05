@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.a2aproject.sdk.client.transport.rest.RestTransport;
+import org.a2aproject.sdk.client.transport.spi.ClientTransportConfig;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -29,6 +30,34 @@ class RestCompat03ClientTransportTest {
                 () -> new RestCompat03ClientTransportProvider().create(null, card, card.supportedInterfaces().get(0)));
 
         assertTrue(exception.getMessage().contains("tenant"));
+    }
+
+    @Test
+    void providerRejectsWrongConfigurationType() {
+        AgentCard card = card();
+        A2AClientException exception = assertThrows(A2AClientException.class,
+                () -> new RestCompat03ClientTransportProvider().create(
+                        new ClientTransportConfig<RestTransport>() { }, card, card.supportedInterfaces().get(0)));
+
+        assertTrue(exception.getMessage().contains("RestTransportConfig"));
+    }
+
+    @Test
+    void providerRejectsNullConfiguration() {
+        AgentCard card = card();
+        A2AClientException exception = assertThrows(A2AClientException.class,
+                () -> new RestCompat03ClientTransportProvider().create(null, card, card.supportedInterfaces().get(0)));
+
+        assertTrue(exception.getMessage().contains("RestTransportConfig"));
+    }
+
+    private static AgentCard card() {
+        return AgentCard.builder().name("agent").description("description").version("1")
+                .capabilities(AgentCapabilities.builder().build())
+                .defaultInputModes(java.util.List.of("text")).defaultOutputModes(java.util.List.of("text"))
+                .skills(java.util.List.of())
+                .supportedInterfaces(java.util.List.of(new AgentInterface("HTTP+JSON", "https://example.test", null, "0.3")))
+                .build();
     }
 
     private static AgentCard cardWithTenant() {

@@ -180,6 +180,9 @@ public class ClientBuilder {
      * @return this builder for method chaining
      */
     public <T extends ClientTransport> ClientBuilder withTransport(Class<T> clazz, ClientTransportConfig<T> config) {
+        if (!transportProtocolMapping.containsKey(clazz)) {
+            throw new IllegalArgumentException("No ClientTransportProvider is registered for " + clazz.getName());
+        }
         clientTransports.put(clazz, config);
 
         return this;
