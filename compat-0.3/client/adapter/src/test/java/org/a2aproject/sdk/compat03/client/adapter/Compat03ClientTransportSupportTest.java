@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallContext_v0_3;
 import org.a2aproject.sdk.compat03.spec.A2AClientException_v0_3;
+import org.a2aproject.sdk.compat03.spec.EventKind_v0_3;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.CancelTaskParams;
 import org.a2aproject.sdk.spec.DataPart;
@@ -30,6 +31,21 @@ import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.junit.jupiter.api.Test;
 
 class Compat03ClientTransportSupportTest {
+
+    @Test
+    void normalizesDefaultPushConfigurationIdAfterProtobufConversion() {
+        var original = new org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParams("task");
+        var proto = org.a2aproject.sdk.grpc.utils.ProtoUtils.ToProto.getTaskPushNotificationConfigRequest(original);
+        assertNull(Compat03ClientTransportSupport.toV03(
+                org.a2aproject.sdk.grpc.utils.ProtoUtils.FromProto.getTaskPushNotificationConfigParams(proto))
+                .pushNotificationConfigId());
+        assertEquals("specific", Compat03ClientTransportSupport.toV03(
+                org.a2aproject.sdk.grpc.utils.ProtoUtils.FromProto.getTaskPushNotificationConfigParams(
+                        proto.toBuilder().setId("specific").build())).pushNotificationConfigId());
+        assertNull(Compat03ClientTransportSupport.toV03(
+                org.a2aproject.sdk.grpc.utils.ProtoUtils.FromProto.getTaskPushNotificationConfigParams(
+                        proto.toBuilder().setId("specific").clearId().build())).pushNotificationConfigId());
+    }
 
     @Test
     void rejectsUnsupportedOperationsBeforeDelegateUse() {
@@ -89,7 +105,7 @@ class Compat03ClientTransportSupportTest {
         assertEquals(values, data.metadata());
         assertEquals(values, legacy.message().metadata());
         assertEquals(values, legacy.metadata());
-        assertEquals(request.message(), Compat03ClientTransportSupport.toV10(legacy.message()));
+        assertEquals(request.message(), Compat03ClientTransportSupport.toV10((EventKind_v0_3) legacy.message()));
     }
 
     @Test

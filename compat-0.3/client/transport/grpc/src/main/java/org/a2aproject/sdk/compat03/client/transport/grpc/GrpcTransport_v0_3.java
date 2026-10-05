@@ -362,17 +362,8 @@ public class GrpcTransport_v0_3 implements ClientTransport_v0_3 {
     }
 
     private String getTaskPushNotificationConfigName(String taskId, @Nullable String pushNotificationConfigId) {
-        StringBuilder name = new StringBuilder();
-        name.append("tasks/");
-        name.append(taskId);
-        if (pushNotificationConfigId != null) {
-            name.append("/pushNotificationConfigs/");
-            name.append(pushNotificationConfigId);
-        }
-        //name.append("/pushNotificationConfigs/");
-        // Use taskId as default config ID if none provided
-        //name.append(pushNotificationConfigId != null ? pushNotificationConfigId : taskId);
-        return name.toString();
+        String configId = pushNotificationConfigId != null ? pushNotificationConfigId : taskId;
+        return "tasks/" + taskId + "/pushNotificationConfigs/" + configId;
     }
 
     private PayloadAndHeaders_v0_3 applyInterceptors(String methodName, Object payload,

@@ -179,7 +179,10 @@ public final class Compat03ClientTransportSupport {
     public static GetTaskPushNotificationConfigParams_v0_3 toV03(
             org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParams request) {
         validateGetPush(request);
-        return new GetTaskPushNotificationConfigParams_v0_3(request.taskId(), request.id());
+        @Nullable String id = request.id();
+        // An omitted optional protobuf string is read back as empty after interceptors.
+        return new GetTaskPushNotificationConfigParams_v0_3(request.taskId(),
+                id == null || id.isEmpty() ? null : id);
     }
 
     public static ListTaskPushNotificationConfigParams_v0_3 toV03(

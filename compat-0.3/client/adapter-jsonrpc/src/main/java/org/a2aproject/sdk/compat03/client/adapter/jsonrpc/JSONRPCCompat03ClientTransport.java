@@ -13,6 +13,8 @@ import org.a2aproject.sdk.compat03.client.adapter.Compat03ClientTransportSupport
 import org.a2aproject.sdk.compat03.client.adapter.Compat03InterceptorSupport;
 import org.a2aproject.sdk.compat03.client.transport.spi.ClientTransport_v0_3;
 import org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskMapper_v0_3;
+import org.a2aproject.sdk.compat03.spec.MessageSendParams_v0_3;
+import org.a2aproject.sdk.compat03.spec.TaskIdParams_v0_3;
 import org.a2aproject.sdk.grpc.utils.ProtoUtils;
 import org.a2aproject.sdk.spec.A2AMethods;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -40,11 +42,11 @@ public class JSONRPCCompat03ClientTransport extends Compat03ClientTransportBase 
     @Override
     public EventKind sendMessage(MessageSendParams request, @Nullable ClientCallContext context) {
         Compat03ClientTransportSupport.validateMessageSend(request);
+        org.a2aproject.sdk.grpc.SendMessageRequest original = ProtoUtils.ToProto.sendMessageRequest(request);
         PayloadAndHeaders payload = apply(A2AMethods.SEND_MESSAGE_METHOD,
-                ProtoUtils.ToProto.sendMessageRequest(request), org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
+                original, org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
         return Compat03ClientTransportSupport.call(() -> Compat03ClientTransportSupport.toV10(delegate.sendMessage(
-                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(
-                        (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload())),
+                adaptMessage(request, original, (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload()),
                 Compat03ClientCallContextMapper.toV03(contextWithHeaders(context, payload)))));
     }
 
@@ -52,11 +54,11 @@ public class JSONRPCCompat03ClientTransport extends Compat03ClientTransportBase 
     public void sendMessageStreaming(MessageSendParams request, Consumer<StreamingEventKind> events,
             Consumer<Throwable> errors, @Nullable ClientCallContext context) {
         Compat03ClientTransportSupport.validateMessageSend(request);
+        org.a2aproject.sdk.grpc.SendMessageRequest original = ProtoUtils.ToProto.sendMessageRequest(request);
         PayloadAndHeaders payload = apply(A2AMethods.SEND_STREAMING_MESSAGE_METHOD,
-                ProtoUtils.ToProto.sendMessageRequest(request), org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
+                original, org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
         Compat03ClientTransportSupport.run(() -> delegate.sendMessageStreaming(
-                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(
-                        (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload())),
+                adaptMessage(request, original, (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload()),
                 event -> events.accept(Compat03ClientTransportSupport.toV10(event)),
                 Compat03ClientTransportSupport.mapAsyncError(errors),
                 Compat03ClientCallContextMapper.toV03(contextWithHeaders(context, payload))));
@@ -76,11 +78,11 @@ public class JSONRPCCompat03ClientTransport extends Compat03ClientTransportBase 
     @Override
     public Task cancelTask(CancelTaskParams request, @Nullable ClientCallContext context) {
         Compat03ClientTransportSupport.validateCancel(request);
-        PayloadAndHeaders payload = apply(A2AMethods.CANCEL_TASK_METHOD, ProtoUtils.ToProto.cancelTaskRequest(request),
+        org.a2aproject.sdk.grpc.CancelTaskRequest original = ProtoUtils.ToProto.cancelTaskRequest(request);
+        PayloadAndHeaders payload = apply(A2AMethods.CANCEL_TASK_METHOD, original,
                 org.a2aproject.sdk.grpc.CancelTaskRequest.class, context);
         return Compat03ClientTransportSupport.call(() -> TaskMapper_v0_3.INSTANCE.toV10(delegate.cancelTask(
-                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.cancelTaskParams(
-                        (org.a2aproject.sdk.grpc.CancelTaskRequest) payload.getPayload())),
+                adaptCancel(request, original, (org.a2aproject.sdk.grpc.CancelTaskRequest) payload.getPayload()),
                 Compat03ClientCallContextMapper.toV03(contextWithHeaders(context, payload)))));
     }
 
@@ -144,6 +146,28 @@ public class JSONRPCCompat03ClientTransport extends Compat03ClientTransportBase 
                 event -> events.accept(Compat03ClientTransportSupport.toV10(event)),
                 Compat03ClientTransportSupport.mapAsyncError(errors),
                 Compat03ClientCallContextMapper.toV03(contextWithHeaders(context, payload))));
+    }
+
+    private static MessageSendParams_v0_3 adaptMessage(MessageSendParams request,
+            org.a2aproject.sdk.grpc.SendMessageRequest original, org.a2aproject.sdk.grpc.SendMessageRequest modified) {
+        MessageSendParams_v0_3 legacy = Compat03ClientTransportSupport.toV03(request);
+        if (original.equals(modified)) {
+            return legacy;
+        }
+        return JSONRPCCompat03PayloadSupport.preserveUnchangedValues(legacy,
+                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(original)),
+                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(modified)));
+    }
+
+    private static TaskIdParams_v0_3 adaptCancel(CancelTaskParams request,
+            org.a2aproject.sdk.grpc.CancelTaskRequest original, org.a2aproject.sdk.grpc.CancelTaskRequest modified) {
+        TaskIdParams_v0_3 legacy = Compat03ClientTransportSupport.toV03(request);
+        if (original.equals(modified)) {
+            return legacy;
+        }
+        return JSONRPCCompat03PayloadSupport.preserveUnchangedValues(legacy,
+                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.cancelTaskParams(original)),
+                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.cancelTaskParams(modified)));
     }
 
     private PayloadAndHeaders apply(String method, Object payload, Class<?> expected,

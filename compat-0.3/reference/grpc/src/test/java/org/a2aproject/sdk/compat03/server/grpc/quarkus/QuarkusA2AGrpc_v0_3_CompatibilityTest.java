@@ -2,11 +2,13 @@ package org.a2aproject.sdk.compat03.server.grpc.quarkus;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import org.a2aproject.sdk.client.ClientBuilder;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
@@ -15,22 +17,22 @@ import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.SecurityRequirement;
-import io.quarkus.test.junit.TestProfile;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.junit.jupiter.api.AfterAll;
 
 @QuarkusTest
 @TestProfile(CompatibilityTestProfile_v0_3.class)
 public class QuarkusA2AGrpc_v0_3_CompatibilityTest extends AbstractA2AServerCompatibilityTest_v0_3 {
-    private static ManagedChannel channel;
+    private static final List<ManagedChannel> channels = new CopyOnWriteArrayList<>();
 
     public QuarkusA2AGrpc_v0_3_CompatibilityTest() { super(8081); }
     @Override protected String getTransportProtocol() { return TransportProtocol.GRPC.asString(); }
     @Override protected String getTransportUrl() { return "localhost:8081"; }
     @Override protected void configureTransport(ClientBuilder builder) {
         builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {
-            channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-            return channel;
+            ManagedChannel created = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+            channels.add(created);
+            return created;
         }));
     }
     @Override protected AgentCard getAgentCard() { return card(false); }
@@ -50,11 +52,17 @@ public class QuarkusA2AGrpc_v0_3_CompatibilityTest extends AbstractA2AServerComp
     }
 
     @AfterAll
-    public static void closeChannel() {
-        if (channel != null) {
-            channel.shutdownNow();
-            try { channel.awaitTermination(10, TimeUnit.SECONDS); }
-            catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+    public static void closeChannels() {
+        // Shut down every caller-owned channel before waiting for any one of them.
+        channels.forEach(ManagedChannel::shutdownNow);
+        try {
+            for (ManagedChannel channel : channels) {
+                channel.awaitTermination(10, TimeUnit.SECONDS);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            channels.clear();
         }
     }
 }

@@ -232,28 +232,44 @@ public abstract class AbstractA2AServerCompatibilityTest_v0_3 {
         for (String taskId : new String[] {null, ""}) {
             TaskPushNotificationConfig push = new TaskPushNotificationConfig(
                     "inline-config", taskId, "http://localhost:" + serverPort + "/callback", null, null, null);
-            MessageSendParams request = new MessageSendParams(MESSAGE,
+            Message taskMessage = Message.builder(MESSAGE).parts(new TextPart("#a2a-delegated#inline push")).build();
+            MessageSendParams request = new MessageSendParams(taskMessage,
                     MessageSendConfiguration.builder().taskPushNotificationConfig(push).build(), null);
             CountDownLatch latch = new CountDownLatch(1);
-            AtomicReference<Message> received = new AtomicReference<>();
+            AtomicReference<Task> received = new AtomicReference<>();
             AtomicReference<Throwable> error = new AtomicReference<>();
+            try {
+                sendingClient.sendMessage(request, List.of((event, card) -> {
+                    Task task = event instanceof TaskEvent initial ? initial.getTask()
+                            : event instanceof TaskUpdateEvent update ? update.getTask() : null;
+                    if (task != null) {
+                        received.set(task);
+                        if (task.status().state() == TaskState.TASK_STATE_COMPLETED) {
+                            latch.countDown();
+                        }
+                    }
+                }), throwable -> {
+                    if (throwable != null && !isStreamClosedError(throwable)) {
+                        error.set(throwable);
+                        latch.countDown();
+                    }
+                }, null);
 
-            sendingClient.sendMessage(request, List.of((event, card) -> {
-                if (event instanceof MessageEvent messageEvent) {
-                    received.set(messageEvent.getMessage());
-                    latch.countDown();
+                assertTrue(latch.await(10, TimeUnit.SECONDS));
+                assertNull(error.get());
+                assertNotNull(received.get());
+                assertEquals(TaskState.TASK_STATE_COMPLETED, received.get().status().state());
+                TaskPushNotificationConfig stored = getClient().getTaskPushNotificationConfiguration(
+                        new GetTaskPushNotificationConfigParams(received.get().id(), "inline-config"));
+                assertEquals("inline-config", stored.id());
+                assertEquals(received.get().id(), stored.taskId());
+                assertEquals(push.url(), stored.url());
+            } finally {
+                if (received.get() != null) {
+                    deletePushNotificationConfigInStore(received.get().id(), "inline-config");
+                    deleteTaskInTaskStore(received.get().id());
                 }
-            }), throwable -> {
-                if (throwable != null && !isStreamClosedError(throwable)) {
-                    error.set(throwable);
-                    latch.countDown();
-                }
-            }, null);
-
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-            assertNull(error.get());
-            assertNotNull(received.get());
-            assertEquals(MESSAGE.messageId(), received.get().messageId());
+            }
         }
     }
 
@@ -333,6 +349,34 @@ public abstract class AbstractA2AServerCompatibilityTest_v0_3 {
             assertEquals(config.url(), result.url());
         } finally {
             deletePushNotificationConfigInStore(MINIMAL_TASK.id(), "c295ea44-7543-4f78-b524-7a38915ad6e4");
+            deleteTaskInTaskStore(MINIMAL_TASK.id());
+        }
+    }
+
+    @Test
+    public void testDefaultPushConfigurationLookupWithSeveralConfigurations() throws Exception {
+        saveTaskInTaskStore(MINIMAL_TASK);
+        try {
+            savePushNotificationConfigInStore(MINIMAL_TASK.id(), pushConfig("other-1", "http://example.com/one"));
+            savePushNotificationConfigInStore(MINIMAL_TASK.id(), pushConfig("other-2", "http://example.com/two"));
+            // REST/gRPC turn the default into an explicit ID on the server, permitting legacy fallback.
+            // JSON-RPC preserves omission and must not take that explicit-ID fallback.
+            if ("JSONRPC".equals(getTransportProtocol())) {
+                A2AClientException missing = org.junit.jupiter.api.Assertions.assertThrows(A2AClientException.class,
+                        () -> getClient().getTaskPushNotificationConfiguration(
+                                new GetTaskPushNotificationConfigParams(MINIMAL_TASK.id())));
+                assertInstanceOf(TaskNotFoundError.class, missing.getCause());
+            }
+            savePushNotificationConfigInStore(MINIMAL_TASK.id(),
+                    pushConfig(MINIMAL_TASK.id(), "http://example.com/default"));
+            TaskPushNotificationConfig result = getClient().getTaskPushNotificationConfiguration(
+                    new GetTaskPushNotificationConfigParams(MINIMAL_TASK.id()));
+            assertEquals(MINIMAL_TASK.id(), result.id());
+            assertEquals("http://example.com/default", result.url());
+        } finally {
+            deletePushNotificationConfigInStore(MINIMAL_TASK.id(), "other-1");
+            deletePushNotificationConfigInStore(MINIMAL_TASK.id(), "other-2");
+            deletePushNotificationConfigInStore(MINIMAL_TASK.id(), MINIMAL_TASK.id());
             deleteTaskInTaskStore(MINIMAL_TASK.id());
         }
     }
@@ -517,12 +561,80 @@ public abstract class AbstractA2AServerCompatibilityTest_v0_3 {
 
     @Test
     public void testNonBlockingWithMultipleMessages() throws Exception {
-        CountDownLatch latch = new CountDownLatch(2);
-        getPollingClient().sendMessage(Message.builder(MESSAGE).messageId("non-blocking-1").build(),
-                List.of((event, card) -> latch.countDown()), null);
-        getPollingClient().sendMessage(Message.builder(MESSAGE).messageId("non-blocking-2").build(),
-                List.of((event, card) -> latch.countDown()), null);
-        assertTrue(latch.await(30, TimeUnit.SECONDS));
+        Client polling = getPollingClient();
+        List<CompletableFuture<Void>> calls = new ArrayList<>();
+        List<Task> tasks = new ArrayList<>();
+        try {
+            for (int i = 0; i < 2; i++) {
+                Task task = Task.builder(MINIMAL_TASK).id("compat-held-task-" + i).build();
+                tasks.add(task);
+                saveTaskInTaskStore(task);
+                Message message = Message.builder(MESSAGE).messageId("non-blocking-" + i)
+                        .taskId(task.id()).contextId(task.contextId()).parts(new TextPart("compat-hold:")).build();
+                calls.add(CompletableFuture.runAsync(() -> polling.sendMessage(message,
+                        List.of((event, card) -> assertInstanceOf(TaskEvent.class, event)), null)));
+            }
+            for (int i = 0; i < calls.size(); i++) {
+                // The executor is still held; a blocking request cannot complete within this deadline.
+                calls.get(i).get(10, TimeUnit.SECONDS);
+                Task working = awaitTaskState(tasks.get(i).id(), TaskState.TASK_STATE_WORKING);
+                assertEquals(TaskState.TASK_STATE_WORKING, working.status().state());
+            }
+        } finally {
+            cleanupHeldTasks(tasks, calls);
+        }
+    }
+
+    private void cleanupHeldTasks(List<Task> tasks, List<CompletableFuture<Void>> calls) throws Exception {
+        List<Throwable> failures = new ArrayList<>();
+        try {
+            // Independent release markers cannot be overwritten by an executor's task update.
+            // Release all executors before waiting for any individual request to finish.
+            for (Task task : tasks) {
+                try {
+                    saveTaskInTaskStore(Task.builder(task).id(task.id() + "-release").build());
+                } catch (Exception e) {
+                    failures.add(e);
+                }
+            }
+            for (int i = 0; i < calls.size(); i++) {
+                try {
+                    calls.get(i).get(10, TimeUnit.SECONDS);
+                    awaitTaskState(tasks.get(i).id(), TaskState.TASK_STATE_COMPLETED);
+                } catch (Exception | AssertionError e) {
+                    failures.add(e);
+                }
+            }
+        } finally {
+            for (Task task : tasks) {
+                for (String id : List.of(task.id(), task.id() + "-release")) {
+                    try {
+                        deleteTaskInTaskStore(id);
+                    } catch (Exception e) {
+                        failures.add(e);
+                    }
+                }
+            }
+        }
+        if (!failures.isEmpty()) {
+            Exception failure = new Exception("Could not clean up held compatibility tasks");
+            failures.forEach(failure::addSuppressed);
+            throw failure;
+        }
+    }
+
+    private Task awaitTaskState(String taskId, TaskState expected) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        Task task;
+        do {
+            task = getTaskFromTaskStore(taskId);
+            if (task != null && task.status().state() == expected) {
+                return task;
+            }
+            Thread.sleep(25);
+        } while (System.nanoTime() < deadline);
+        fail("Task " + taskId + " did not reach " + expected);
+        throw new AssertionError("unreachable");
     }
 
     @Test

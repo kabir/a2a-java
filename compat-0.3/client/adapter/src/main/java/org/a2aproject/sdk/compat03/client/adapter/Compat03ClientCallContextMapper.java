@@ -1,8 +1,11 @@
 package org.a2aproject.sdk.compat03.client.adapter;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
+import org.a2aproject.sdk.common.A2AHeaders;
+import org.a2aproject.sdk.compat03.common.A2AHeaders_v0_3;
 import org.a2aproject.sdk.compat03.client.transport.spi.interceptors.ClientCallContext_v0_3;
 import org.jspecify.annotations.Nullable;
 
@@ -16,6 +19,19 @@ public final class Compat03ClientCallContextMapper {
         if (context == null) {
             return null;
         }
-        return new ClientCallContext_v0_3(Map.copyOf(context.getState()), Map.copyOf(context.getHeaders()));
+        Map<String, String> headers = new HashMap<>();
+        context.getHeaders().forEach((name, value) -> {
+            if (!A2AHeaders.A2A_EXTENSIONS.equalsIgnoreCase(name)) {
+                headers.put(A2AHeaders_v0_3.X_A2A_EXTENSIONS.equalsIgnoreCase(name)
+                        ? A2AHeaders_v0_3.X_A2A_EXTENSIONS : name, value);
+            }
+        });
+        // The native header, including interceptor replacements, takes precedence over a legacy alias.
+        context.getHeaders().forEach((name, value) -> {
+            if (A2AHeaders.A2A_EXTENSIONS.equalsIgnoreCase(name)) {
+                headers.put(A2AHeaders_v0_3.X_A2A_EXTENSIONS, value);
+            }
+        });
+        return new ClientCallContext_v0_3(Map.copyOf(context.getState()), Map.copyOf(headers));
     }
 }

@@ -233,7 +233,7 @@ public class RestTransport_v0_3_Test {
         assertEquals(Kind.FILE, part.kind());
         assertEquals("text/plain", part.file().mimeType());
         assertEquals("greeting.txt", part.file().name());
-        assertEquals("hello", ((FileWithBytes_v0_3) part.file()).bytes());
+        assertEquals("aGVsbG8=", ((FileWithBytes_v0_3) part.file()).bytes());
         assertNull(history.metadata());
         assertNull(history.referenceTaskIds());
     }

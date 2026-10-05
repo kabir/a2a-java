@@ -46,7 +46,7 @@ Applications continue to use only 1.0 `Client`, `AgentCard`, request/result, eve
 
 The fallback is shape-based, not solely exception-based. The current 1.0 resolver uses the 1.0 protobuf mapper, which ignores the legacy top-level fields, so a legacy card can otherwise parse without providing usable 1.0 interfaces. The lower-level raw-card parser SPI belongs in `http-client` (or a new discovery module below the client transport SPI), so it cannot create a dependency cycle with `client-transport-spi`.
 
-For a cohosted server, the documented dual-format card remains unchanged. Its usable 1.0 interface is preferred over a 0.3 interface with the same binding, including when client transport preference is enabled. The legacy fields continue to support existing 0.3 clients.
+For a cohosted server, the documented dual-format card remains unchanged. With the default server preference, the first usable interface in card order wins, including a 0.3 interface before a 1.0 interface. With client transport preference enabled, selection is restricted to usable 1.0 interfaces across configured bindings if any exist, and configured binding order then determines the match. Only when no such native interface exists does this mode consider 0.3. The legacy fields continue to support existing 0.3 clients. This reflects the implemented ordering, replacing the original design's unconditional native preference.
 
 The compatibility projection must contain enough information to recreate the `AgentCard_v0_3` required by the underlying 0.3 transport. It must not use a global cache keyed by a public `AgentCard`. A new bidirectional agent-card mapper must preserve all fields required by legacy transport selection and authentication; unrepresentable features, including the legacy state-transition-history capability, are not advertised through the 1.0 projection.
 
@@ -100,7 +100,7 @@ The normal 1.0 client artifacts have no compile-time dependency on 0.3 client, s
 | 0.3 requested for a legacy-only card, card parser absent | Discovery error naming `a2a-java-sdk-compat-0.3-client-adapter`. |
 | Legacy card parsed, selected binding adapter absent | Construction error naming the binding-specific compatibility adapter artifact. |
 | Standalone 0.3 card, adapter installed | Normal concrete `Client`, using 1.0 types and an adapted transport. |
-| Dual-format/cohosted card | Native 1.0 interface preferred. |
+| Dual-format/cohosted card | Server preference respects card interface order; client preference prioritizes usable native interfaces across configured bindings. |
 | 0.3 JSON-RPC, REST, gRPC | Supported operations use 1.0 public types and correct legacy wire protocol. |
 | 1.0-only operation/tenant against 0.3 | Local descriptive failure; no wire request. |
 | Authentication/interceptors | Existing 1.0 interceptor API applies through the adapter. |

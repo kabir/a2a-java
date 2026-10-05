@@ -122,8 +122,13 @@ Client client = Client.builder(agentCard)
 
 The returned card contains a 1.0 `AgentInterface` whose protocol version is
 `"0.3"`, so the ordinary builder selects the matching optional adapter through
-the versioned transport-provider SPI. A 1.0 card remains native when both
-versions are requested.
+the versioned transport-provider SPI. With the default server preference,
+the builder selects the first usable interface in the card's order. Requesting
+both versions does not give 1.0 priority over an earlier 0.3 interface. With
+client transport preference enabled, the builder first restricts selection to
+usable 1.0 interfaces if any configured binding provides one, then applies
+configured binding order. It considers 0.3 only when no such 1.0 interface is
+available.
 
 The adapter rejects 1.0 operations that have no 0.3 equivalent (such as
 `listTasks`), non-empty tenant values, extended-agent-card retrieval, and
@@ -132,6 +137,18 @@ non-default push-configuration pagination before any network request. Generic
 also reject non-empty `Message.referenceTaskIds` and cancellation metadata,
 which the 0.3 protobuf schema cannot represent. JSON-RPC preserves these fields.
 Validation also applies to requests modified by interceptors.
+
+JSON-RPC retains the original JSON numbers in fields whose protobuf values
+interceptors leave unchanged. Interceptors see protobuf doubles. Fields with
+identical protobuf values are treated as unchanged, including replacements or
+reordering of numbers with the same double representation. Such mutations are
+unsupported; use a string for
+an identifier that must be edited with exact precision. If an interceptor edits
+an array containing numbers that protobuf cannot represent exactly, the adapter
+rejects the request unless both the original and modified array contain a single
+element. This also applies to message parts and arrays in data or metadata.
+Unchanged arrays retain their original values. REST and gRPC use protobuf
+numeric precision throughout.
 
 If 0.3 is not requested, the optional parser is not used. If it is requested
 but the parser or binding adapter is absent, discovery or client construction
