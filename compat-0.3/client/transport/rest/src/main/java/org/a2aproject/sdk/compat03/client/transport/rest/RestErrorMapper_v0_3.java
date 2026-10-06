@@ -2,6 +2,8 @@ package org.a2aproject.sdk.compat03.client.transport.rest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -27,6 +29,7 @@ import org.a2aproject.sdk.compat03.spec.UnsupportedOperationError_v0_3;
  * Utility class to A2AHttpResponse to appropriate A2A error types
  */
 public class RestErrorMapper_v0_3 {
+    private static final Logger LOGGER = Logger.getLogger(RestErrorMapper_v0_3.class.getName());
 
     public static A2AClientException_v0_3 mapRestError(A2AHttpResponse response) {
         return mapRestError(response.body(), response.status(), response.headers().toMap());
@@ -49,8 +52,9 @@ public class RestErrorMapper_v0_3 {
                     }
                 }
             }
-        } catch (JsonProcessingException_v0_3 ignored) {
+        } catch (JsonProcessingException_v0_3 e) {
             // A non-JSON error body is still an HTTP failure with useful response details.
+            LOGGER.log(Level.SEVERE, "Failed to parse REST error response body as JSON", e);
         }
         return httpError(body, code, headers);
     }

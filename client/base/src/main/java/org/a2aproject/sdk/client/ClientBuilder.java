@@ -12,12 +12,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.a2aproject.sdk.client.config.ClientConfig;
+import org.a2aproject.sdk.client.http.A2ACardResolver;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportConfig;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportProvider;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportWrapper;
-import org.a2aproject.sdk.client.http.A2ACardResolver;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
@@ -383,6 +383,10 @@ public class ClientBuilder {
                     && normalizeInterfaceVersion(existing).equals(version))) {
                 ordered.add(iface);
             }
+        }
+        if (ordered.isEmpty()) {
+            throw new A2AClientException(
+                    "AgentCard does not advertise a supported protocol version (supported: 1.0 and 0.3)");
         }
         return ordered;
     }

@@ -58,6 +58,10 @@ public final class Compat03ClientTransportSupport {
         throw unsupported("getExtendedAgentCard");
     }
 
+    public static <T> T unsupportedOperation(String operation) {
+        throw unsupported(operation);
+    }
+
     public static void validateTenant(String operation, @Nullable String tenant) {
         if (tenant != null && !tenant.isEmpty()) {
             throw unsupported(operation + " with a tenant");

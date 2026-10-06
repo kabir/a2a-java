@@ -13,7 +13,6 @@ import org.a2aproject.sdk.compat03.spec.EventKind_v0_3;
 import org.a2aproject.sdk.compat03.spec.StreamingEventKind_v0_3;
 import org.a2aproject.sdk.compat03.spec.Task_v0_3;
 import org.a2aproject.sdk.spec.AgentCard;
-import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.CancelTaskParams;
 import org.a2aproject.sdk.spec.DeleteTaskPushNotificationConfigParams;
 import org.a2aproject.sdk.spec.EventKind;
@@ -82,8 +81,7 @@ public abstract class Compat03ClientTransportBase implements ClientTransport {
 
     @Override
     public ListTasksResult listTasks(ListTasksParams request, @Nullable ClientCallContext context) {
-        Compat03ClientTransportSupport.validateListTasks(request);
-        throw new A2AClientException("listTasks is not supported by A2A protocol 0.3");
+        return Compat03ClientTransportSupport.unsupportedOperation("listTasks");
     }
 
     @Override
@@ -134,8 +132,7 @@ public abstract class Compat03ClientTransportBase implements ClientTransport {
 
     @Override
     public AgentCard getExtendedAgentCard(GetExtendedAgentCardParams params, @Nullable ClientCallContext context) {
-        Compat03ClientTransportSupport.validateExtendedAgentCard(params);
-        throw new A2AClientException("getExtendedAgentCard is not supported by A2A protocol 0.3");
+        return Compat03ClientTransportSupport.unsupportedOperation("getExtendedAgentCard");
     }
 
     @Override

@@ -13,6 +13,7 @@ import org.a2aproject.sdk.compat03.client.adapter.Compat03ClientTransportSupport
 import org.a2aproject.sdk.compat03.client.adapter.Compat03InterceptorSupport;
 import org.a2aproject.sdk.compat03.client.transport.spi.ClientTransport_v0_3;
 import org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskMapper_v0_3;
+import org.a2aproject.sdk.compat03.conversion.mappers.params.MessageSendParamsMapper_v0_3;
 import org.a2aproject.sdk.compat03.spec.MessageSendParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskIdParams_v0_3;
 import org.a2aproject.sdk.grpc.utils.ProtoUtils;
@@ -41,24 +42,26 @@ public class JSONRPCCompat03ClientTransport extends Compat03ClientTransportBase 
 
     @Override
     public EventKind sendMessage(MessageSendParams request, @Nullable ClientCallContext context) {
-        Compat03ClientTransportSupport.validateMessageSend(request);
+        MessageSendParams_v0_3 legacyRequest = Compat03ClientTransportSupport.toV03(request);
         org.a2aproject.sdk.grpc.SendMessageRequest original = ProtoUtils.ToProto.sendMessageRequest(request);
         PayloadAndHeaders payload = apply(A2AMethods.SEND_MESSAGE_METHOD,
                 original, org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
         return Compat03ClientTransportSupport.call(() -> Compat03ClientTransportSupport.toV10(delegate.sendMessage(
-                adaptMessage(request, original, (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload()),
+                adaptMessage(legacyRequest, original,
+                        (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload()),
                 Compat03ClientCallContextMapper.toV03(contextWithHeaders(context, payload)))));
     }
 
     @Override
     public void sendMessageStreaming(MessageSendParams request, Consumer<StreamingEventKind> events,
             Consumer<Throwable> errors, @Nullable ClientCallContext context) {
-        Compat03ClientTransportSupport.validateMessageSend(request);
+        MessageSendParams_v0_3 legacyRequest = Compat03ClientTransportSupport.toV03(request);
         org.a2aproject.sdk.grpc.SendMessageRequest original = ProtoUtils.ToProto.sendMessageRequest(request);
         PayloadAndHeaders payload = apply(A2AMethods.SEND_STREAMING_MESSAGE_METHOD,
                 original, org.a2aproject.sdk.grpc.SendMessageRequest.class, context);
         Compat03ClientTransportSupport.run(() -> delegate.sendMessageStreaming(
-                adaptMessage(request, original, (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload()),
+                adaptMessage(legacyRequest, original,
+                        (org.a2aproject.sdk.grpc.SendMessageRequest) payload.getPayload()),
                 event -> events.accept(Compat03ClientTransportSupport.toV10(event)),
                 Compat03ClientTransportSupport.mapAsyncError(errors),
                 Compat03ClientCallContextMapper.toV03(contextWithHeaders(context, payload))));
@@ -148,14 +151,13 @@ public class JSONRPCCompat03ClientTransport extends Compat03ClientTransportBase 
                 Compat03ClientCallContextMapper.toV03(contextWithHeaders(context, payload))));
     }
 
-    private static MessageSendParams_v0_3 adaptMessage(MessageSendParams request,
+    private static MessageSendParams_v0_3 adaptMessage(MessageSendParams_v0_3 legacyRequest,
             org.a2aproject.sdk.grpc.SendMessageRequest original, org.a2aproject.sdk.grpc.SendMessageRequest modified) {
-        MessageSendParams_v0_3 legacy = Compat03ClientTransportSupport.toV03(request);
         if (original.equals(modified)) {
-            return legacy;
+            return legacyRequest;
         }
-        return JSONRPCCompat03PayloadSupport.preserveUnchangedValues(legacy,
-                Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(original)),
+        return JSONRPCCompat03PayloadSupport.preserveUnchangedValues(legacyRequest,
+                MessageSendParamsMapper_v0_3.INSTANCE.fromV10(ProtoUtils.FromProto.messageSendParams(original)),
                 Compat03ClientTransportSupport.toV03(ProtoUtils.FromProto.messageSendParams(modified)));
     }
 

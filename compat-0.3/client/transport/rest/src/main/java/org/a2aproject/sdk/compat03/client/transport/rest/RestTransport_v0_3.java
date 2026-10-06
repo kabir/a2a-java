@@ -314,21 +314,19 @@ public class RestTransport_v0_3 implements ClientTransport_v0_3 {
         RestSSEEventListener_v0_3 sseEventListener = new RestSSEEventListener_v0_3(eventConsumer, errorConsumer);
         try {
             String url = agentUrl + String.format("/v1/tasks/%1s:subscribe", request.id());
-            A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url)
-                    .addHeader(A2AHttpClient.ACCEPT, A2AHttpClient.EVENT_STREAM);
-            if (payloadAndHeaders.getHeaders() != null) {
-                payloadAndHeaders.getHeaders().forEach(getBuilder::addHeader);
-            }
-            ref.set(getBuilder.getAsyncSSE(
+            A2AHttpClient.PostBuilder postBuilder = createPostBuilder(url, payloadAndHeaders);
+            ref.set(postBuilder.postAsyncSSE(
                     event -> sseEventListener.onMessage(event.data(), ref.get()),
                     throwable -> sseEventListener.onError(throwable, ref.get()),
                     () -> {
                         // We don't need to do anything special on completion
                     }));
         } catch (IOException e) {
-            throw new A2AClientException_v0_3("Failed to send streaming message request: " + e, e);
+            throw new A2AClientException_v0_3("Failed to send task resubscription request: " + e, e);
         } catch (InterruptedException e) {
-            throw new A2AClientException_v0_3("Send streaming message request timed out: " + e, e);
+            throw new A2AClientException_v0_3("Task resubscription request timed out: " + e, e);
+        } catch (JsonProcessingException_v0_3 e) {
+            throw new A2AClientException_v0_3("Failed to process JSON for task resubscription request: " + e, e);
         }
     }
 

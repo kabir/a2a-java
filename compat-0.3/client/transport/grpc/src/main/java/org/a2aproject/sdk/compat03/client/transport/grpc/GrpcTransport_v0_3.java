@@ -362,8 +362,10 @@ public class GrpcTransport_v0_3 implements ClientTransport_v0_3 {
     }
 
     private String getTaskPushNotificationConfigName(String taskId, @Nullable String pushNotificationConfigId) {
-        String configId = pushNotificationConfigId != null ? pushNotificationConfigId : taskId;
-        return "tasks/" + taskId + "/pushNotificationConfigs/" + configId;
+        if (pushNotificationConfigId == null) {
+            return "tasks/" + taskId;
+        }
+        return "tasks/" + taskId + "/pushNotificationConfigs/" + pushNotificationConfigId;
     }
 
     private PayloadAndHeaders_v0_3 applyInterceptors(String methodName, Object payload,

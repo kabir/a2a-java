@@ -458,13 +458,14 @@ public class RestTransport_v0_3_Test {
     public void testResubscribe() throws Exception {
         LOGGER.info("Testing resubscribe");
         
-        this.server.when(request().withMethod("POST").withPath("/v1/tasks/task-1234:subscribe"))
+        this.server.when(request()
+                        .withMethod("GET")
+                        .withPath("/v1/tasks/task-1234:subscribe"))
                 .respond(response().withStatusCode(405));
-        this.server.when(
-                        request()
-                                .withMethod("GET")
-                                .withPath("/v1/tasks/task-1234:subscribe")
-                )
+        this.server.when(request()
+                        .withMethod("POST")
+                        .withPath("/v1/tasks/task-1234:subscribe")
+                        .withBody(JsonBody.json("{\"name\":\"tasks/task-1234\"}", MatchType.ONLY_MATCHING_FIELDS)))
                 .respond(
                         response()
                                 .withStatusCode(200)
