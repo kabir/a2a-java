@@ -246,6 +246,7 @@ See [Backward Compatibility](compatibility) for multi-version modules, version r
 
 - **Quarkus** — Reference implementations are Quarkus-based (JSON-RPC, gRPC, REST)
 - **Jakarta EE** — [a2a-jakarta](https://github.com/wildfly-extras/a2a-jakarta) works with any Jakarta EE Web Profile runtime
+- **Spring Boot** — [a2a-spring](https://github.com/soheilqalamkari/a2a-spring) provides Spring MVC JSON-RPC hosting for the official A2A Java SDK.
 
 ### Manual Wiring
 

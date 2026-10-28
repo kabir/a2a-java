@@ -1,6 +1,6 @@
 # Contributing A2A SDK Integrations
 
-To add your A2A SDK Integration for your chosen runtime to the list of integrations in the [README](README.md#server-integrations), open a pull request adding it to the list.
+To add your A2A SDK Integration for your chosen runtime to the [Server Integrations](https://a2aproject.github.io/a2a-java/latest/server/#server-integrations) list, open a pull request updating the corresponding section in [docs/content/dev/server.md](docs/content/dev/server.md#server-integrations).
 
 The pull request should contain a link to your project page.
 
