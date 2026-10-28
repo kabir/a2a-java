@@ -153,9 +153,14 @@ import org.slf4j.LoggerFactory;
  *   <li><b>Blocking (configuration.blocking=true):</b> Client waits for first event or final task state</li>
  *   <li><b>Streaming:</b> Client receives events as they arrive via reactive streams</li>
  *   <li>Both modes support fire-and-forget (agent continues after client disconnect)</li>
- *   <li>Configurable timeouts via {@code a2a.blocking.agent.timeout.seconds},
+ *   <li>For CDI-managed handlers, configurable timeouts via {@code a2a.blocking.agent.timeout.seconds},
  *       {@code a2a.blocking.consumption.timeout.seconds}, and
  *       {@code a2a.blocking.reconciliation.timeout.seconds}</li>
+ *   <li>For manually built handlers, configure timeouts with
+ *       {@link Builder#agentCompletionTimeoutSeconds(int)},
+ *       {@link Builder#consumptionCompletionTimeoutSeconds(int)}, and
+ *       {@link Builder#reconciliationTimeoutSeconds(int)}.
+ *       Both paths default to 30, 5, and 1 seconds, respectively.</li>
  * </ul>
  *
  * <h2>CDI Dependencies</h2>
@@ -405,6 +410,9 @@ public class DefaultRequestHandler implements RequestHandler {
         private boolean authorizationRequired = true;
         private boolean populateReferredTasks;
         private boolean pushNotificationsEnabled = true;
+        private int agentCompletionTimeoutSeconds = 30;
+        private int consumptionCompletionTimeoutSeconds = 5;
+        private int reconciliationTimeoutSeconds = 1;
 
         public Builder agentExecutor(AgentExecutor agentExecutor) {
             this.agentExecutor = agentExecutor;
@@ -438,6 +446,51 @@ public class DefaultRequestHandler implements RequestHandler {
 
         public Builder eventConsumerExecutor(Executor eventConsumerExecutor) {
             this.eventConsumerExecutor = eventConsumerExecutor;
+            return this;
+        }
+
+        /**
+         * Sets how long a blocking call waits for agent execution. Defaults to 30 seconds.
+         *
+         * @param seconds timeout in seconds; zero skips waiting
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if the timeout is negative
+         */
+        public Builder agentCompletionTimeoutSeconds(int seconds) {
+            if (seconds < 0) {
+                throw new IllegalArgumentException("Agent completion timeout must not be negative");
+            }
+            this.agentCompletionTimeoutSeconds = seconds;
+            return this;
+        }
+
+        /**
+         * Sets how long a blocking call waits for event consumption. Defaults to 5 seconds.
+         *
+         * @param seconds timeout in seconds; zero skips waiting
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if the timeout is negative
+         */
+        public Builder consumptionCompletionTimeoutSeconds(int seconds) {
+            if (seconds < 0) {
+                throw new IllegalArgumentException("Consumption completion timeout must not be negative");
+            }
+            this.consumptionCompletionTimeoutSeconds = seconds;
+            return this;
+        }
+
+        /**
+         * Sets how long TaskStore reconciliation polls in blocking calls. Defaults to 1 second.
+         *
+         * @param seconds timeout in seconds; zero disables reconciliation polling
+         * @return this builder for chaining
+         * @throws IllegalArgumentException if the timeout is negative
+         */
+        public Builder reconciliationTimeoutSeconds(int seconds) {
+            if (seconds < 0) {
+                throw new IllegalArgumentException("Reconciliation timeout must not be negative");
+            }
+            this.reconciliationTimeoutSeconds = seconds;
             return this;
         }
 
@@ -490,9 +543,9 @@ public class DefaultRequestHandler implements RequestHandler {
             DefaultRequestHandler handler =
                     new DefaultRequestHandler(agentExecutor, taskStore, queueManager, pushConfigStore,
                             mainEventBusProcessor, executor, eventConsumerExecutor);
-            handler.agentCompletionTimeoutSeconds = 5;
-            handler.consumptionCompletionTimeoutSeconds = 2;
-            handler.reconciliationTimeoutSeconds = 1;
+            handler.agentCompletionTimeoutSeconds = agentCompletionTimeoutSeconds;
+            handler.consumptionCompletionTimeoutSeconds = consumptionCompletionTimeoutSeconds;
+            handler.reconciliationTimeoutSeconds = reconciliationTimeoutSeconds;
             handler.authorizationProvider = authorizationProvider;
             handler.agentExecutorRouter = agentExecutorRouter;
             handler.authorizationRequired = authorizationRequired;

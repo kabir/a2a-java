@@ -295,4 +295,6 @@ class A2AServerConfiguration {
 
 Register the remaining dependencies, including an `a2aInternalExecutor` bean and a `TaskAuthorizationProvider`, as Spring beans. Keep the cached event consumer executor separate from the agent executor: blocking event polling can exhaust a bounded pool under load.
 
+Manually built handlers use blocking timeouts of 30 seconds for agent execution, 5 seconds for event consumption, and 1 second for TaskStore reconciliation. Override these with `agentCompletionTimeoutSeconds(int)`, `consumptionCompletionTimeoutSeconds(int)`, and `reconciliationTimeoutSeconds(int)` on the builder. The `a2a.blocking.*` configuration properties apply to CDI-managed handlers; manual wiring uses the builder methods.
+
 See [CONTRIBUTING_INTEGRATIONS.md](https://github.com/a2aproject/a2a-java/blob/main/CONTRIBUTING_INTEGRATIONS.md) to submit your own integration.
