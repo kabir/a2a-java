@@ -204,6 +204,44 @@ public class DefaultRequestHandlerTest {
     }
 
     @Test
+    void testBuilderUsesDocumentedBlockingTimeoutDefaults() {
+        DefaultRequestHandler handler = (DefaultRequestHandler) requestHandler;
+
+        assertEquals(30, handler.agentCompletionTimeoutSeconds);
+        assertEquals(5, handler.consumptionCompletionTimeoutSeconds);
+        assertEquals(1, handler.reconciliationTimeoutSeconds);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"41,8,3", "0,0,0"})
+    void testBuilderOverridesBlockingTimeouts(int agentTimeout, int consumptionTimeout, int reconciliationTimeout) {
+        DefaultRequestHandler handler = DefaultRequestHandler.builder()
+                .agentExecutor(executor)
+                .taskStore(taskStore)
+                .queueManager(queueManager)
+                .mainEventBusProcessor(mainEventBusProcessor)
+                .executor(internalExecutor)
+                .eventConsumerExecutor(internalExecutor)
+                .agentCompletionTimeoutSeconds(agentTimeout)
+                .consumptionCompletionTimeoutSeconds(consumptionTimeout)
+                .reconciliationTimeoutSeconds(reconciliationTimeout)
+                .build();
+
+        assertEquals(agentTimeout, handler.agentCompletionTimeoutSeconds);
+        assertEquals(consumptionTimeout, handler.consumptionCompletionTimeoutSeconds);
+        assertEquals(reconciliationTimeout, handler.reconciliationTimeoutSeconds);
+    }
+
+    @Test
+    void testBuilderRejectsNegativeBlockingTimeouts() {
+        DefaultRequestHandler.Builder builder = DefaultRequestHandler.builder();
+
+        assertThrows(IllegalArgumentException.class, () -> builder.agentCompletionTimeoutSeconds(-1));
+        assertThrows(IllegalArgumentException.class, () -> builder.consumptionCompletionTimeoutSeconds(-1));
+        assertThrows(IllegalArgumentException.class, () -> builder.reconciliationTimeoutSeconds(-1));
+    }
+
+    @Test
     void testBuilderStartsManuallyConstructedMainEventBusProcessor() throws Exception {
         InMemoryTaskStore manualTaskStore = new InMemoryTaskStore();
         PushNotificationConfigStore manualPushConfigStore = new InMemoryPushNotificationConfigStore();
@@ -1758,8 +1796,9 @@ public class DefaultRequestHandlerTest {
      * must still reach the queue, which was told to expect it; otherwise the consumer waits out its
      * grace period for it and the call fails or returns late.
      */
-    @Test
-    void blockingSendStillReturnsCompletedTaskWhenFinalEventArrivesLate() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"true", "false"})
+    void blockingSendStillReturnsCompletedTaskWhenFinalEventArrivesLate(boolean omitConfiguration) throws Exception {
         AtomicReference<EventQueue> callerQueue = new AtomicReference<>();
         useQueueManager(new InMemoryQueueManager((TaskStateProvider) taskStore, mainEventBus) {
             @Override
@@ -1772,15 +1811,37 @@ public class DefaultRequestHandlerTest {
         AtomicBoolean callerQueueClosedInTime = new AtomicBoolean();
         holdEventsAfterWorkingUntilClosed(callerQueue, callerQueueClosedInTime);
         agentExecutorExecute = (context, emitter) -> {
+            emitter.submit();
             emitter.startWork();
+            emitter.addArtifact(List.of(new TextPart("answer")), "answer-id", "answer", null);
             emitter.complete();
         };
 
-        EventKind result = requestHandler.onMessageSend(blockingParams("msg-blocking-final-event"), NULL_CONTEXT);
+        MessageSendParams params = blockingParams("msg-blocking-final-event");
+        if (omitConfiguration) {
+            params = MessageSendParams.builder().message(params.message()).build();
+        }
+        EventKind result = requestHandler.onMessageSend(params, NULL_CONTEXT);
 
         assertTrue(callerQueueClosedInTime.get(), "the caller's queue was not closed while the final event was held");
         Task task = assertInstanceOf(Task.class, result);
         assertEquals(TaskState.TASK_STATE_COMPLETED, task.status().state());
+        assertEquals(1, task.artifacts().size());
+        assertEquals("answer-id", task.artifacts().get(0).artifactId());
+        assertEquals("answer", assertInstanceOf(TextPart.class, task.artifacts().get(0).parts().get(0)).text());
+    }
+
+    @Test
+    void blockingSendWithoutFinalEventReturnsWorkingTaskAndAllowsResubscription() throws Exception {
+        agentExecutorExecute = (context, emitter) -> emitter.startWork();
+
+        EventKind result = requestHandler.onMessageSend(blockingParams("msg-fire-and-forget"), NULL_CONTEXT);
+
+        Task task = assertInstanceOf(Task.class, result);
+        assertEquals(TaskState.TASK_STATE_WORKING, task.status().state());
+        EventQueue resubscribedQueue = queueManager.tap(task.id());
+        assertNotNull(resubscribedQueue);
+        resubscribedQueue.close();
     }
 
     private void useQueueManager(InMemoryQueueManager manager) {
