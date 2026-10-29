@@ -1210,7 +1210,6 @@ public class DefaultRequestHandler implements RequestHandler {
     public TaskPushNotificationConfig onGetTaskPushNotificationConfig(
             GetTaskPushNotificationConfigParams params, ServerCallContext context) throws A2AError {
         validateRequiredId(context, "taskId", params.taskId());
-        validateRequiredId(context, "id", params.id());
         if (pushConfigStore == null) {
             throw new UnsupportedOperationError();
         }
@@ -1226,8 +1225,9 @@ public class DefaultRequestHandler implements RequestHandler {
         }
 
         String requestedConfigId = params.id();
-        String configId = Assert.isNullOrEmpty(requestedConfigId) ? params.taskId()
-                : Assert.checkNotNullParam("requestedConfigId", requestedConfigId);
+        String configId = requestedConfigId == null || requestedConfigId.isEmpty()
+            ? params.taskId()
+            : requestedConfigId;
         return getTaskPushNotificationConfig(listTaskPushNotificationConfigsResult, configId);
     }
 
