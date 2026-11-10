@@ -29,10 +29,14 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.a2aproject.sdk.client.transport.spi.ClientFeature;
+import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.extras.opentelemetry.StreamingEventAttributes;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
@@ -55,8 +59,11 @@ import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.jspecify.annotations.Nullable;
 
-public class OpenTelemetryClientTransport implements ClientTransport {
+/** Retains the delegate's immutable protocol profile while tracing ordinary operations. */
+public class OpenTelemetryClientTransport implements VersionedClientTransport {
 
+    private final String protocolVersion;
+    private final Set<ClientFeature> capabilities;
     private final Tracer tracer;
     private final ClientTransport delegate;
     @Nullable private final DoubleHistogram operationDurationHistogram;
@@ -70,12 +77,26 @@ public class OpenTelemetryClientTransport implements ClientTransport {
      */
     public OpenTelemetryClientTransport(ClientTransport delegate, Tracer tracer, @Nullable Meter meter) {
         this.delegate = delegate;
+        this.protocolVersion = delegate instanceof VersionedClientTransport versioned
+                ? ClientProtocolVersion.validate(versioned.protocolVersion()) : "1.0";
+        this.capabilities = delegate instanceof VersionedClientTransport versioned
+                ? Set.copyOf(versioned.capabilities()) : Set.of(ClientFeature.ORDINARY);
         this.tracer = tracer;
         this.operationDurationHistogram = meter == null ? null
                 : meter.histogramBuilder(GENAI_CLIENT_OPERATION_DURATION)
                         .setUnit("s")
                         .setDescription("Duration of A2A client operations")
                         .build();
+    }
+
+    @Override
+    public String protocolVersion() {
+        return protocolVersion;
+    }
+
+    @Override
+    public Set<ClientFeature> capabilities() {
+        return capabilities;
     }
 
     private boolean extractRequest() {

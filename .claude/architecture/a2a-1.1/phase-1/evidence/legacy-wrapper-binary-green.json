@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/base",
+    "-am",
+    "-Dtest=LegacyProviderCompatibilityTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:23:53.172762+00:00",
+  "deadline_seconds": 600,
+  "pid": 28760,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 4.175,
+  "end": "2026-11-10T15:23:57.347327+00:00"
+}

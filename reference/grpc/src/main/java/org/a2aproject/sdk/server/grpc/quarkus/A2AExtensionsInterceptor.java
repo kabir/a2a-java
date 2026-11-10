@@ -2,14 +2,19 @@ package org.a2aproject.sdk.server.grpc.quarkus;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.a2aproject.sdk.common.A2AHeaders;
-import org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys;
+import com.google.protobuf.Any;
+import com.google.rpc.ErrorInfo;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.protobuf.StatusProto;
+import org.a2aproject.sdk.common.A2AHeaders;
+import org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys;
 
 /**
  * gRPC server interceptor that captures request metadata and context information,
@@ -99,7 +104,27 @@ public class A2AExtensionsInterceptor implements ServerInterceptor {
             ServerCallHandler<ReqT, RespT> serverCallHandler) {
 
         // Extract A2A protocol version header
-        String version = metadata.get(VERSION_KEY);
+        String version = null;
+        Iterable<String> versions = metadata.getAll(VERSION_KEY);
+        if (versions != null) {
+            for (String supplied : versions) {
+                if (version != null && !version.equals(supplied)) {
+                    StatusRuntimeException error = StatusProto.toStatusRuntimeException(com.google.rpc.Status.newBuilder()
+                            .setCode(Status.Code.FAILED_PRECONDITION.value())
+                            .setMessage("Conflicting A2A-Version metadata")
+                            .addDetails(Any.pack(ErrorInfo.newBuilder().setReason("VERSION_NOT_SUPPORTED")
+                                    .setDomain("a2a-protocol.org").build()))
+                            .build());
+                    serverCall.close(error.getStatus(), error.getTrailers());
+                    return new ServerCall.Listener<>() { };
+                }
+                version = supplied;
+            }
+            metadata.discardAll(VERSION_KEY);
+            if (version != null) {
+                metadata.put(VERSION_KEY, version);
+            }
+        }
         // Extract A2A extensions header
         String extensions = metadata.get(EXTENSIONS_KEY);
 

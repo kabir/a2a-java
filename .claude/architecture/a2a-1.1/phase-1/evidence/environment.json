@@ -1,0 +1,9 @@
+{
+  "java.version": "17.0.18",
+  "java.vendor": "Eclipse Adoptium",
+  "java.home": "/Users/kabir/.sdkman/candidates/java/17.0.18-tem",
+  "os.name": "Mac OS X",
+  "os.arch": "aarch64",
+  "source_report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.MessageSendConfigurationTest.xml",
+  "root_build_release": "17 (parent POM; javac release17 in build log)"
+}

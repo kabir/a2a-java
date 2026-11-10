@@ -231,6 +231,11 @@ public class Client extends AbstractClient {
         return new ClientBuilder(agentCard);
     }
 
+    /** The version fixed at construction; discovery refresh never changes it. */
+    public String getProtocolVersion() {
+        return clientConfig.getProtocolVersion();
+    }
+
     @Override
     public void sendMessage(@NonNull Message request,
                             @NonNull List<BiConsumer<ClientEvent, AgentCard>> consumers,

@@ -10,6 +10,7 @@ import org.a2aproject.sdk.client.ClientEvent;
 import org.a2aproject.sdk.client.TaskEvent;
 import org.a2aproject.sdk.client.TaskUpdateEvent;
 import org.a2aproject.sdk.client.config.ClientConfig;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
@@ -20,8 +21,6 @@ import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TransportProtocol;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 
 /**
  * Helper class for creating A2A clients for agent-to-agent communication testing.
@@ -66,7 +65,7 @@ public class AgentToAgentClientFactory {
      */
     public static Client createClient(AgentCard agentCard, TransportProtocol transportProtocol)
             throws A2AClientException {
-        ClientConfig clientConfig = ClientConfig.builder()
+        ClientConfig clientConfig = ClientConfig.builder().setProtocolVersion("1.0")
             .setStreaming(false)
             .build();
 
@@ -95,10 +94,7 @@ public class AgentToAgentClientFactory {
     private static class GrpcClientEnhancer implements AgentToAgentClientFactory.ClientTransportEnhancer {
         @Override
         public void enhance(ClientBuilder clientBuilder) {
-            clientBuilder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {
-                ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-                return channel;
-            }));
+            clientBuilder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()));
         }
     }
 

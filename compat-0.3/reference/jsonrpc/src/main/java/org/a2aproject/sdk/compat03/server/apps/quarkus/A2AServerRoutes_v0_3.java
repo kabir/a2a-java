@@ -36,8 +36,8 @@ import org.a2aproject.sdk.compat03.spec.GetTaskPushNotificationConfigRequest_v0_
 import org.a2aproject.sdk.compat03.spec.GetTaskRequest_v0_3;
 import org.a2aproject.sdk.compat03.spec.InternalError_v0_3;
 import org.a2aproject.sdk.compat03.spec.JSONParseError_v0_3;
-import org.a2aproject.sdk.compat03.spec.JSONRPCError_v0_3;
 import org.a2aproject.sdk.compat03.spec.JSONRPCErrorResponse_v0_3;
+import org.a2aproject.sdk.compat03.spec.JSONRPCError_v0_3;
 import org.a2aproject.sdk.compat03.spec.JSONRPCRequest_v0_3;
 import org.a2aproject.sdk.compat03.spec.JSONRPCResponse_v0_3;
 import org.a2aproject.sdk.compat03.spec.ListTaskPushNotificationConfigRequest_v0_3;
@@ -57,9 +57,12 @@ import org.a2aproject.sdk.server.auth.AuthenticatedUser;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
 import org.a2aproject.sdk.server.common.quarkus.SseResponseWriter;
+import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.TransportProtocol;
 import org.jspecify.annotations.Nullable;
 
 @Singleton
@@ -227,6 +230,19 @@ public class A2AServerRoutes_v0_3 {
     }
 
     private ServerCallContext createCallContext(RoutingContext rc) {
+        ServerCallContext context = createRawCallContext(rc);
+        InterfaceRegistration registration = rc.get(VersionRouter.REGISTRATION_KEY);
+        if (registration != null) {
+            VersionRouter.validateContextVersion(context, VersionRouter.resolveVersion(rc));
+            registration.select(context.getRequestedProtocolVersion());
+            context.getState().put(ServerCallContext.TRANSPORT_KEY, TransportProtocol.JSONRPC);
+            context.getState().put("tenant", registration.tenant() == null ? "" : registration.tenant());
+            context.attachInterfaceRegistration(registration);
+        }
+        return context;
+    }
+
+    private ServerCallContext createRawCallContext(RoutingContext rc) {
 
         if (callContextFactory.isUnsatisfied()) {
             User user;

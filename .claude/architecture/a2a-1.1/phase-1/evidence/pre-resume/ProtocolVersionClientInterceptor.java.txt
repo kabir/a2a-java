@@ -1,0 +1,61 @@
+package org.a2aproject.sdk.client.transport.grpc;
+
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
+import io.grpc.ClientStreamTracer;
+import io.grpc.ForwardingClientCall;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
+import org.a2aproject.sdk.spec.A2AClientException;
+
+/** Validates metadata after the supplied channel's ordinary header interceptors have run. */
+final class ProtocolVersionClientInterceptor implements ClientInterceptor {
+    private static final Metadata.Key<String> VERSION = Metadata.Key.of("a2a-version", Metadata.ASCII_STRING_MARSHALLER);
+    private static final ClientStreamTracer NOOP_TRACER = new ClientStreamTracer() { };
+    private final String version;
+
+    ProtocolVersionClientInterceptor(String version) {
+        this.version = version;
+    }
+
+    @Override
+    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
+            CallOptions callOptions, Channel next) {
+        ClientStreamTracer.Factory validator = new ClientStreamTracer.Factory() {
+            @Override
+            public ClientStreamTracer newClientStreamTracer(ClientStreamTracer.StreamInfo info, Metadata headers) {
+                Iterable<String> supplied = headers.getAll(VERSION);
+                if (supplied != null) {
+                    for (String value : supplied) {
+                        if (!version.equals(value)) {
+                            throw new A2AClientException("Supplied gRPC channel metadata conflicts with selected protocol version "
+                                    + version + ": " + value);
+                        }
+                    }
+                }
+                headers.discardAll(VERSION);
+                headers.put(VERSION, version);
+                return NOOP_TRACER;
+            }
+        };
+        ClientCall<ReqT, RespT> delegate = next.newCall(method, callOptions.withStreamTracerFactory(validator));
+        return new ForwardingClientCall.SimpleForwardingClientCall<>(delegate) {
+            @Override
+            public void start(Listener<RespT> listener, Metadata headers) {
+                try {
+                    super.start(listener, headers);
+                } catch (RuntimeException | Error failure) {
+                    // In particular, cancel gRPC's retry stream if its first tracer rejected metadata.
+                    try {
+                        delegate.cancel("A2A protocol metadata validation failed", failure);
+                    } catch (RuntimeException | Error cancellationFailure) {
+                        failure.addSuppressed(cancellationFailure);
+                    }
+                    throw failure;
+                }
+            }
+        };
+    }
+}

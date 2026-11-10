@@ -1,0 +1,10 @@
+{
+  "checked_utc": "2026-11-10T19:36:01.664217+00:00",
+  "frozen_build_inputs": 156,
+  "functional_hashes_match": true,
+  "complete_proposed_paths": 394,
+  "functional_input_manifest": "resume-final-build-inputs.json",
+  "source_scope": "source-scope.json",
+  "inventory": "commit-files.txt",
+  "source_diffstat": " 156 files changed, 8460 insertions(+), 1015 deletions(-)"
+}

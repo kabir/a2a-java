@@ -1,0 +1,2063 @@
+{
+  "command": {
+    "command": [
+      "mvn",
+      "-B",
+      "-ntp",
+      "clean",
+      "install"
+    ],
+    "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+    "start": "2026-11-10T15:32:01.819075+00:00",
+    "deadline_seconds": 1200,
+    "pid": 33486,
+    "timed_out": false,
+    "exit_code": 1,
+    "elapsed_seconds": 244.703,
+    "end": "2026-11-10T15:36:06.525492+00:00"
+  },
+  "report_count": 164,
+  "kinds": {
+    "surefire-reports": 164
+  },
+  "totals": {
+    "discovered": 2528,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 44,
+    "executed": 2484
+  },
+  "reports": [
+    {
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.A2ATest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.A2ATest",
+      "discovered": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "530341c7311b40993c6fc074e69354031b0caccd650be0368a111a30bbfd937c"
+    },
+    {
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.AuthenticationAuthorizationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.AuthenticationAuthorizationTest",
+      "discovered": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "034e34ce2964e27ad97ed3838069c22653b1dc79afc4364d3415b8e31d53c32b"
+    },
+    {
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientBuilderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.ClientBuilderTest",
+      "discovered": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "118011c67f2d342fcff4c908b465dbca5a246cba1051b53f55bf2198bc24b3fd"
+    },
+    {
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientBuilderVersionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.ClientBuilderVersionTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b4949e3181bf00c933500c06bb932d416bfd57fc4c941d0180d7a511e5232805"
+    },
+    {
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientTaskManagerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.ClientTaskManagerTest",
+      "discovered": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "95f75b4e38dba159a45e8c0ddbeaef8e4673eb1e9be6224ba414a0eeabe8d654"
+    },
+    {
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientTransportPolicyTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.ClientTransportPolicyTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "07706b3d032da668ffb7dd619e159bbd0381643d26765b3843d91b42febd11dd"
+    },
+    {
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.LegacyProviderCompatibilityTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.LegacyProviderCompatibilityTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c7a05a50230f3fa657ef4c97ad217ec9c5f29dffdf4e0256b711617e85f9b354"
+    },
+    {
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.EventStreamObserverTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.EventStreamObserverTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e5dd847debb0e6efbd80b18d61eaeac640460b413c41c60825520e79b0a8c74e"
+    },
+    {
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcErrorMapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.GrpcErrorMapperTest",
+      "discovered": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "059902107f59071dfa7d35aac87df361be9ef0ed8f336f34d56fd95ab7327079"
+    },
+    {
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcTransportTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.GrpcTransportTest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "a1e9263f9fac98ec8bb595e6e0e0f6c57e368dbd47507af63c7ff84a238960db"
+    },
+    {
+      "report": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportStreamingTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportStreamingTest",
+      "discovered": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "4ec65a2c2143f93cdab7d1a5008344ecc1c97464de50469d94d1a041227f4d53"
+    },
+    {
+      "report": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportTest",
+      "discovered": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "6820c34f686b79bb6e1f97ee120747a03e4c388443d94dd7f5efd30c96de0586"
+    },
+    {
+      "report": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.ProtocolVersionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.jsonrpc.ProtocolVersionTest",
+      "discovered": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b49c58dc971e16620e721912a495ff5c311c0a67ba59aee87d52c5e5f8704c44"
+    },
+    {
+      "report": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListenerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListenerTest",
+      "discovered": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "0aaffde08ff2e2f7f5623975b92af6e94af7c5ce124c50b721f1cfee3da3b6fb"
+    },
+    {
+      "report": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.ProtocolVersionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.rest.ProtocolVersionTest",
+      "discovered": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "3c9eff00b0c6c51487361e922d3f3cacdfaabc5768623e3473555d918e8338fe"
+    },
+    {
+      "report": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestErrorMapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.rest.RestErrorMapperTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "1f5909bef23329c43b6238cec7ffa11c03b778ad5d1f46bd181ecb3a7556ee5a"
+    },
+    {
+      "report": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestTransportTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.rest.RestTransportTest",
+      "discovered": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "04d70839a416e8fb6b49147689b85e31849875f1a8e001d8fc3a001392bcc737"
+    },
+    {
+      "report": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.sse.SSEEventListenerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.rest.sse.SSEEventListenerTest",
+      "discovered": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "a143cb974112d400f4893dc6df9023a1ef0088403c2f5e95e94e7192ffad8db7"
+    },
+    {
+      "report": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.ClientProtocolVersionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.spi.ClientProtocolVersionTest",
+      "discovered": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "7d097eedb732a6439275cb6d448902c3645c9c6912e330cef31208644f549c03"
+    },
+    {
+      "report": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptorTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptorTest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e88547e3fa166efbbe6e749d3ec9c4347600180a0b034a92374d96502787288c"
+    },
+    {
+      "report": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.sse.SSEEventListenerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.spi.sse.SSEEventListenerTest",
+      "discovered": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "85b7716d64b170f494ca4b6c76019a7eafd8b0660495951ed6d8a26f59b90e10"
+    },
+    {
+      "report": "common/target/surefire-reports/TEST-org.a2aproject.sdk.util.AssertTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.util.AssertTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "445904376ab79d4466b5c1d8085dfa365d61da89d3476ef75522aea5c279672d"
+    },
+    {
+      "report": "common/target/surefire-reports/TEST-org.a2aproject.sdk.util.HtmlEscapeUtilsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.util.HtmlEscapeUtilsTest",
+      "discovered": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "0eaa271a48c84fa2f6bdf6778bbdf1f3eeda88a4ac7c4575d15c8068dece58b0"
+    },
+    {
+      "report": "examples/stream-lifecycle/server/target/surefire-reports/TEST-org.a2aproject.sdk.examples.streamlifecycle.server.StreamLifecycleTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.examples.streamlifecycle.server.StreamLifecycleTest",
+      "discovered": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c802137cb616a6daee3a75a9c586fa49a23fc6865c26e128c6154fa2fcb08dcd"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientFactoryTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientFactoryTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c86e618a413578a4bc3c6e05f3d42d0271e856fcec4aa7837834a9545fb0b446"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientIntegrationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientIntegrationTest",
+      "discovered": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c590f079f57362511fc4a3ffbe8a584b546bec154f241bc67d37b70d8111f706"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientProviderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientProviderTest",
+      "discovered": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "acf1bb4fdd14983ceb134b28ef89188b89b0fc9270e0b1e4a46eead0d86a973b"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientRedirectTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientRedirectTest",
+      "discovered": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "086c2f7e552abe23dce0e721d94db192c3f5da43873cac42660ce5261322943d"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientSSETest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientSSETest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c5a817e8b8cc6f0e7a5e5dac7ee6eb1b48bd00e3687b5202626ed216d8ac1c0a"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientTest",
+      "discovered": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b39f666fa70f01069c0d74b8b0d29466f3be393573424a531220bd29ef25833d"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidBoundedLineReaderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidBoundedLineReaderTest",
+      "discovered": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "cee87449a5cc05b1c254903e9a22b82358dd619c428ed0e88dd5457820412185"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientIntegrationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientIntegrationTest",
+      "discovered": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c3f09bdcd572ae393a31323bf29e30b0f7dc5fe59d37711c9a0a87126929cba0"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientRedirectTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientRedirectTest",
+      "discovered": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "aba1fdb38aa773a42a6203d00cbe5d928520d14c64980fdcc122b55ab5c4c09b"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientSSETest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientSSETest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "768293033b364f687a7d37f96db09d4f4789034796ceb91db2c27b8d9e8577ca"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientTest",
+      "discovered": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f49679cab43b5f0d6eba5bd8663a6fff7018ef204b51da5ef39efddc1cc26157"
+    },
+    {
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpPostRedirectHeaderLeakTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpPostRedirectHeaderLeakTest",
+      "discovered": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "513ebb5e26ed3a3b733e8490ee59b19c72a072aab64e5447768540548e312bfd"
+    },
+    {
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientFactoryTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientFactoryTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b854b3d88a7f963e3d82284321c7a1a3d0592bd77caad7564bc4bdeb4c4747e8"
+    },
+    {
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientIntegrationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientIntegrationTest",
+      "discovered": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f2b6bf13adc54af1e06fbd4961e1c3c0988e742e1ab65efea64ae93f85bdfd5f"
+    },
+    {
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientRedirectTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientRedirectTest",
+      "discovered": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "496945051d2c9fe1cbee0d5a6287e1801f9155faab88b762c24b0859001fc921"
+    },
+    {
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "skipped_cases": [
+        {
+          "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+          "name": "testCustomSSEParserConfigAcceptsLineWithinLimit",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: Implementation does not support SSEParserConfig\n\tat org.a2aproject.sdk.client.http.AbstractA2AHttpClientSSETest.testCustomSSEParserConfigAcceptsLineWithinLimit(AbstractA2AHttpClientSSETest.java:430)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+          "name": "testCustomSSEParserConfigRejectsOversizedLine",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: Implementation does not support SSEParserConfig\n\tat org.a2aproject.sdk.client.http.AbstractA2AHttpClientSSETest.testCustomSSEParserConfigRejectsOversizedLine(AbstractA2AHttpClientSSETest.java:395)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+          "name": "testSSEOversizedLineRejectedBeforeMemoryExhaustion",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: Implementation does not support SSEParserConfig\n\tat org.a2aproject.sdk.client.http.AbstractA2AHttpClientSSETest.testSSEOversizedLineRejectedBeforeMemoryExhaustion(AbstractA2AHttpClientSSETest.java:537)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+          "name": "testSSEEventIdAndLastEventId",
+          "reason": "Vert.x BodyCodec.sseStream() does not propagate last event ID to subsequent events"
+        },
+        {
+          "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+          "name": "testSSEStreamEndingWithoutTrailingEmptyLine",
+          "reason": "Vert.x BodyCodec.sseStream() has no flush() equivalent for streams ending without a trailing blank line"
+        }
+      ],
+      "sha256": "4704bc3d328d57c6954dae70e3bbf0c4393302e4097bc8b8c123d5e2f1fe06de"
+    },
+    {
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientTest",
+      "discovered": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "9ac6bb3dcac54a830c565f66c8c74303ba1005eb4cc5b41ac6cf5c2c941e7c56"
+    },
+    {
+      "report": "extras/opentelemetry/client/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.client.OpenTelemetryClientTransportTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.client.OpenTelemetryClientTransportTest",
+      "discovered": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "cbe2f4e52378a21a401d1c80257799a1aa54812d8a0e472d95828c981949f3f8"
+    },
+    {
+      "report": "extras/opentelemetry/client/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.client.VersionedWrapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.client.VersionedWrapperTest",
+      "discovered": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "3a92aa31d568563c2e151411914752b2f88a8b706c5c4ea812e5554c186746eb"
+    },
+    {
+      "report": "extras/opentelemetry/client-propagation/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.client.propagation.VersionedWrapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.client.propagation.VersionedWrapperTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "4046e99c551c61149cfc4573238c5327d14b1f39d02bc1d5c2ccf1cec42db9ca"
+    },
+    {
+      "report": "extras/opentelemetry/common/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.StreamingEventAttributesTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.StreamingEventAttributesTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "81d6c4b8c95f263a5d488adaab2137a4de133bf7782f09b3c046ad70c00d8cb7"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2ACardResolverTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.A2ACardResolverTest",
+      "discovered": 44,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e60d32e357e367232c85d8ac3e45c64fb609bb3665824d5ca01c0ec36ccfa896"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2AHttpClientFactoryTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.A2AHttpClientFactoryTest",
+      "discovered": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "2a69ff629af02d2d0ecb229d3d1cef110e6dbad61895a5dcb237d0125f3b3930"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2AHttpClientProviderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.A2AHttpClientProviderTest",
+      "discovered": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "9c421a6614eb354181ad7ff81ab1d4b214143768b9cfc709a971a8441fab6ddb"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.BoundedLineBodySubscriberTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.BoundedLineBodySubscriberTest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "d156d9d6ad118ab690b3294fb66fca5f049e7455d897912db711820390cb27c6"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientRedirectTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.JdkA2AHttpClientRedirectTest",
+      "discovered": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "69d8c0cf95547a782ebdcf4f2858f017105f04bb336e0b6c8dc0d8b2dfa4a3b0"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientSSETest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.JdkA2AHttpClientSSETest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "726083652d277dd822443807a2f76ba2e667fcae6401132b82fb0ea4a1ff969a"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.JdkA2AHttpClientTest",
+      "discovered": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "d7c296e919f2b7116560463b1342d4787ca2b540692f1e571d3ae3a1227a787d"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.RedirectHeaderPolicyTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.RedirectHeaderPolicyTest",
+      "discovered": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "fd6eea2c158eb773d4b6f57dc2967fd35d5fb495ce43efd122da425adb5e9f5c"
+    },
+    {
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.ServerSentEventParserTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.http.ServerSentEventParserTest",
+      "discovered": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "3ea26d22688201f83099243e6ae06e9da9ad1c6e57ba627ab585df35350a65fa"
+    },
+    {
+      "report": "integrations/microprofile-config/target/surefire-reports/TEST-org.a2aproject.sdk.integrations.microprofile.MicroProfileConfigProviderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.integrations.microprofile.MicroProfileConfigProviderTest",
+      "discovered": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "301f440968b701888a3176c37e7c6936f31067b795df9ba8235d6f9e5ceb6e8b"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.A2AErrorSerializationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.A2AErrorSerializationTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e9810438b135acf177283dca8d28e347c7a12ca38cabfbec0703d957fa02dfda"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.JsonUtilTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.JsonUtilTest",
+      "discovered": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "3413c64fb307c863d33bc3a51fe4dc1a04d96232188e7bf07e88df9daa85001c"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.NullDataTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.NullDataTest",
+      "discovered": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "d0c4788592606b9070e22bf927fe604d75f6ba791a098672e39769f7311b4c62"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.PartSerializationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.PartSerializationTest",
+      "discovered": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f5ec7b628c623e45f235058e00b395dbbd763a6a52c93d1667e2b3b93f04c964"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.SecurityRequirementSerializationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.SecurityRequirementSerializationTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "fa6e70caa242b8d9a1e589890b8cefca2cb1fe718e9319070be4103580af5d58"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.SecuritySchemeSerializationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.SecuritySchemeSerializationTest",
+      "discovered": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "d3b2266dfd8c717bfb1e42693900ecb5ec6dec1bcf8a98a513293ce826cd3f29"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.StreamingEventKindSerializationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.StreamingEventKindSerializationTest",
+      "discovered": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "21bc7e451a1e6c86ed450a717ef6c0a2aedebf65e9f36bd2188fe0cb68b983c4"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.TaskSerializationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.TaskSerializationTest",
+      "discovered": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "60d8c66d466d57f3dfc781b33f712a47abb738f46ac8e3a0bee37450de4104d3"
+    },
+    {
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequestTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequestTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "a53aa7bf875256738c20f501ed29c9f336ad1e5b623dd7f7c8a87f2d6ce0044e"
+    },
+    {
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.AsyncManagedExecutorProducerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.AsyncManagedExecutorProducerTest",
+      "discovered": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "37fc69a2c2fc8c410a75ac4ee0544d9c5ab61de0b2f9ad3334f9ed1676a37dcb"
+    },
+    {
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.SseResponseWriterTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.SseResponseWriterTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "8a947b82b157c84700dd45f2e3c1aa1023f9b3b9cfbe6369557689b2517a4642"
+    },
+    {
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.VersionRouterTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.VersionRouterTest",
+      "discovered": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "4cd7ec52b74f94db332e636a39b30bf78c915f5259b37d8ee1b57ae0dac1bc57"
+    },
+    {
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelperTest",
+      "discovered": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "11c4890ee6a01bd6b8d456d7df6f3bee8937e77f9e70e0a2df4dfa9ba56a6bd3"
+    },
+    {
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.Only11GrpcPackagingTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.Only11GrpcPackagingTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c215402c21a23f6568ddab8c8f88deab5705f6ceb65e2f898f351bf88e4fbb2c"
+    },
+    {
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "discovered": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "skipped_cases": [
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testNonStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testInvalidParamsJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testInvalidJSONRPCRequestInvalidId",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testMalformedJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testStreamingMethodWithoutAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testInvalidJSONRPCRequestNonExistentMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testInvalidJSONRPCRequestMissingJsonrpc",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+          "name": "testInvalidJSONRPCRequestMissingMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        }
+      ],
+      "sha256": "143a66d84e298e85439a1fb38a2197d161cf5a3d3446af74f7a66b26fdab1131"
+    },
+    {
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "skipped_cases": [
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+          "name": "testGetAgentCardIsPublic",
+          "reason": "public void org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest.testGetAgentCardIsPublic() is @Disabled"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+          "name": "testBasicAuthWorksViaHttp",
+          "reason": "public void org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest.testBasicAuthWorksViaHttp() is @Disabled"
+        }
+      ],
+      "sha256": "c1c257a4e51700090b35cbe603267988787a2ed4c02a6afbb8ce32da21608ef7"
+    },
+    {
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithTaskAuthorizationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithTaskAuthorizationTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "250c99d2af877bfc715b301c7baa961fc6245c768ca81aed29201806a7fbd386"
+    },
+    {
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusGrpcHandlerLazyResolutionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusGrpcHandlerLazyResolutionTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "97949fe9fc593ba20615488f630ef5198685f517df0f5eae5f524ccea7a6601d"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.A2AServerRoutesTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.A2AServerRoutesTest",
+      "discovered": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "6e280dbd7f25472d785c113d328ae95e7d5311107e75a1ac69ab769423c0e08a"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.Only11JSONRPCPackagingTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.Only11JSONRPCPackagingTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "ece92cfcf12a7438038606c20671da2f5824ec2b9e5b443c89294c56d98084ab"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCAndroidTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCAndroidTest",
+      "discovered": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "08ef0f2599bb39dfec5bf21ef9675e2353a80d440c4210b2b1528d7a79cc450d"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCJdkTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCJdkTest",
+      "discovered": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f9a33358b2348e72a916c96113d9d0d975fca85b1be0bd9109a6ce2a1eb30468"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCVertxTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCVertxTest",
+      "discovered": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "cf690280aea70a4970015e87ceb85c363d7b18292f3b5f181a6a191d9278b6b0"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthAndroidTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthAndroidTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "477de5d25744649ddee755e7d6fab5077454c05c2576f53d16d4696f5f9e5a9a"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthJdkTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthJdkTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "2ca06fe9edfa5734e9c0e25741da44407131b2a7c15e8f5fe68acc8b59ec7c08"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthVertxTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthVertxTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "3e3b71ec664532872f5b559dee2617a90e5a57a3de2c4c608f264f7148a2bbe0"
+    },
+    {
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithTaskAuthorizationVertxTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithTaskAuthorizationVertxTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "0aac7455e7d4745d6f43e6ef7fb6573eb76599f5bde06aa4c90b9f70ca3fbaf6"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.A2AServerRoutesTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.A2AServerRoutesTest",
+      "discovered": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "20bc2252de5457b78a6726f3a17b442a085781ebfbf841bf67ba43ed7e1876ab"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.Only11RestPackagingTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.Only11RestPackagingTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "11aaa32e552f5ac4095afdd1bbf1ae72a14e82313c0d717016190a07eb6f1268"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "discovered": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "skipped_cases": [
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testNonStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testInvalidParamsJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testInvalidJSONRPCRequestInvalidId",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testMalformedJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testStreamingMethodWithoutAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testInvalidJSONRPCRequestNonExistentMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testInvalidJSONRPCRequestMissingJsonrpc",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+          "name": "testInvalidJSONRPCRequestMissingMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        }
+      ],
+      "sha256": "8f0001588030d10769cbe0d1c473f36c0f9d8ef1f067d0be4fcb4a737707af07"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "discovered": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "skipped_cases": [
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testNonStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testInvalidParamsJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testInvalidJSONRPCRequestInvalidId",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testMalformedJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testStreamingMethodWithoutAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testInvalidJSONRPCRequestNonExistentMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testInvalidJSONRPCRequestMissingJsonrpc",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+          "name": "testInvalidJSONRPCRequestMissingMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        }
+      ],
+      "sha256": "16f9f55b9e5b87d133782a8d678059c4af7b6e086e30d9b0edac50f4d09fbeff"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "discovered": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "skipped_cases": [
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testNonStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testInvalidParamsJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testInvalidJSONRPCRequestInvalidId",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testMalformedJSONRPCRequest",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testStreamingMethodWithAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testStreamingMethodWithoutAcceptHeader",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testInvalidJSONRPCRequestNonExistentMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testInvalidJSONRPCRequestMissingJsonrpc",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        },
+        {
+          "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+          "name": "testInvalidJSONRPCRequestMissingMethod",
+          "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n"
+        }
+      ],
+      "sha256": "7f02033bc608b7e09ca6249ce82cd1ca31cb7eac4f9a000702aa1534a3d55559"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthAndroidTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthAndroidTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "928268230f2811bdec28cf24cb4feff0d30a979af44dc8bf12f091bd6cf964bc"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthJdkTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthJdkTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "58c0f10315bf44948b781878ed683fdaf961944dd75e50d683db1a50037bf353"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthVertxTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthVertxTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "50c209eda80f468189cf8157a3feac355de97c52202a404688742dc58728d753"
+    },
+    {
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithTaskAuthorizationVertxTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithTaskAuthorizationVertxTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "46d6856aad4d8f1d580b34b1cd9a772dd60b3f6278321c87141f0dfdce4731a1"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardRequestPolicyTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.AgentCardRequestPolicyTest",
+      "discovered": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "512826e6d2901265ffb0b7d8457409f49c24d14744af13ea7cf6146dd45074ec"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardResolverTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.AgentCardResolverTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b230f2cbb0b9473ffd1da1abfa4d3512570ba31a7eb1aa3240a74d64824717b2"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardValidatorTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.AgentCardValidatorTest",
+      "discovered": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "7301b1caba572519d5d882263a51877d8077c871219dde3565c4431b63ae0dbc"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.ServerCallContextTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.ServerCallContextTest",
+      "discovered": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e878cce43836c7d90db56a9dd56dfa33c301851ef55536170ffc2769347d6a58"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.agentexecution.RequestContextTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.agentexecution.RequestContextTest",
+      "discovered": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "960108aa62c10fc8bb15f1b2acab6cdee14ac26ffb22f86cee92ffa9c5fd39c2"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.agentexecution.SimpleRequestContextBuilderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.agentexecution.SimpleRequestContextBuilderTest",
+      "discovered": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "144cb5e19385f7c045350ed5605e38de612063ca3d60da56d865c76d56d730dd"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.auth.TaskAuthorizationCapabilityTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.auth.TaskAuthorizationCapabilityTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "0f76836187ab53d0605611f6518a6566bf50602041cd2eea721b83bb93a51c7b"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EnhancedRunnableTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.events.EnhancedRunnableTest",
+      "discovered": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "56ece81e827c8a15bca5341f8a964357951eb2390f6cb083deb47cf0107a8daa"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EventConsumerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.events.EventConsumerTest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "1830b00d0c45eda53ed5903acba6786584ec834f35f7adc7fecffd980e82d215"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EventQueueTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.events.EventQueueTest",
+      "discovered": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f0f1e697bf81b190f37824fadd71d1d21033e35c1accae6a0e198298bbdda931"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.InMemoryQueueManagerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.events.InMemoryQueueManagerTest",
+      "discovered": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "2b5f4b86e78348b22c24c45fc4b1d5f156322cea640de1e954e6258bc27aad25"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.MainEventBusProcessorExceptionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.events.MainEventBusProcessorExceptionTest",
+      "discovered": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "8ef45ebddbab91dd67e51a6dc31b7572444d347d64c6fbe1f6f8be79831323e2"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.MainEventBusProcessorPushNotificationOrderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.events.MainEventBusProcessorPushNotificationOrderTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "3ade9961137672ce414f5aeb34178cdb0c0796d6b06d8dc53d03133db1a36915"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.extensions.A2AExtensionsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.extensions.A2AExtensionsTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "14c8f372582c7ac6f61f19669594228c8dccba186b22c5ceb41da3a109c5157e"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerBuilderAuthorizationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerBuilderAuthorizationTest",
+      "discovered": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f0eef1f17acc3258a8dab8a22dd1379263e8adcb018d8c342e546a1b236480df"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerReferenceTaskAuthorizationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerReferenceTaskAuthorizationTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "cfdb8133a5a99d2726526e3259cb542da5a48e9abd7f926471df1037888f898b"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerTest",
+      "discovered": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "4ab348992704ebe2379e25af22c53c64b94e36f442de9c18f207e4017399538d"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.AgentEmitterConcurrencyTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.AgentEmitterConcurrencyTest",
+      "discovered": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "73eeb81951e44f7edd9f16afd3528ff20901977ab604823c1ce4e6908dbebd45"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.AgentEmitterTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.AgentEmitterTest",
+      "discovered": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "fcce7c1de77a1637d0d74f6bdccbe5978d76e6fefcd0687bc9338bc53f8c391f"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStoreTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStoreTest",
+      "discovered": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "fa05320a2c8688018dc6a12f26b5559e0af7c1f22eb2bc12c579839959fa5a1a"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryTaskStoreAuthorizationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.InMemoryTaskStoreAuthorizationTest",
+      "discovered": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "df522416562bd1e3e7f3a8194476613521968a1e866b7eccb4123d08fe051898"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryTaskStoreTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.InMemoryTaskStoreTest",
+      "discovered": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "10b8d4a9deceafdd2bdf2597767115d9bc4c0b5e587a6ffe04d1e06e2273db0e"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.PushNotificationSenderTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.PushNotificationSenderTest",
+      "discovered": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b94d9bf6137fd21007e1f211787879dcbbd65a6344e8d131dc4eaa3e17bf8a93"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.PushNotificationUrlValidatorTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.PushNotificationUrlValidatorTest",
+      "discovered": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e11104626831d128c371c638728dd7b520762977bf5824dccbe518192e8aa089"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.ResultAggregatorTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.ResultAggregatorTest",
+      "discovered": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b77e402e862d0cad037ff889843f5f91bd58765cc0e7c59e1e9fc0445fc7d4da"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskManagerSnapshotTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskManagerSnapshotTest",
+      "discovered": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "4b072f878637ea5fa187ef59971637589ede12ecde24df2edc7c0e64971d82ed"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskManagerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskManagerTest",
+      "discovered": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "5345f54c4108cbfb1244a27e7716344573396772ccde07298478b6f53f4880ef"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskPersistenceExceptionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskPersistenceExceptionTest",
+      "discovered": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "fe10a87a27b585abb18a59c5c0fab3eaf74809e1e3741f92bb8d8b346b15e09a"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskSerializationExceptionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskSerializationExceptionTest",
+      "discovered": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "a908b3f5fdd76c0a185362ed6d60e153bd5913b9ec8744b66b13137357985b6a"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskStoreAuthorizationFallbackTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskStoreAuthorizationFallbackTest",
+      "discovered": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "5605b8b5e33df752b945e950880e9cf1a6232ebe79ef4d80e30d22f141c33ea1"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskStoreExceptionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskStoreExceptionTest",
+      "discovered": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e59065f99c5817907ff24cbd47083d99cb4e30d961a81a51feb99871ade6c163"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.util.ArtifactUtilsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.util.ArtifactUtilsTest",
+      "discovered": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "4537b232080295c60f632d825e574be13daad1e58c49c610ffa14be2e71a361c"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.util.async.AsyncUtilsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.util.async.AsyncUtilsTest",
+      "discovered": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "dac9853ce9ef1155504fbce990634944472e22b62869b0b4d7baa6fe413a13f1"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.version.A2AVersionValidatorTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.version.A2AVersionValidatorTest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "47047e1661d77cc95f83457445c6571ece148ae021e9be34cfb1de57f2cc6f2c"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.version.InterfaceRegistrationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.version.InterfaceRegistrationTest",
+      "discovered": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "12f9bcc0e9cfb0269cd9e0b15ee8c455d31e21cdb8c387564793a33efd7b2c22"
+    },
+    {
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.version.ServerVersionPolicyTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.server.version.ServerVersionPolicyTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "caace63601e118901c494521fe67435d1c6375d8ab91da65b107cc05dbe18f31"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCapabilitiesTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.AgentCapabilitiesTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "93fe73b51386b84af20c96e6fc14bf96d79a06b66dfabfa2a26c95158b2da772"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCardSignatureTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.AgentCardSignatureTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "77ad21e75c07f8acd87395655a1a35f3e7a00d25f15b288731f5ed03eb60a3db"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCardTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.AgentCardTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "9175e384b5a5324689bd540ac482f15c1be63e251f5e88cdf79dd894a9919e37"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentExtensionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.AgentExtensionTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "93c32f12cdb45d5080d387bbe2262941a7dc433654cd6fb84975c9bed2bcda56"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentSkillTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.AgentSkillTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "801290dd9d17f7434696653eef40b26124cfef283be11d0f235e7732dbe2cce0"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.ArtifactTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.ArtifactTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "b438dd775b9fe4067b4d9b315f3516194cc28c4303eb0e3f893e6bf36094f5b1"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AuthorizationCodeOAuthFlowTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.AuthorizationCodeOAuthFlowTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "94213bc1d993c5e3d9986da07b133e251a28dbd7ae2dac818337e9e8c492eb78"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.CancelTaskParamsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.CancelTaskParamsTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "85663bbdb7c575fb2ea0a2f71f3ca399186c5d66930f19209d325f021aca2e0e"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.ClientCredentialsOAuthFlowTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.ClientCredentialsOAuthFlowTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "1d20dac3f049383e66cc8b24b329e74128a5fe9abc6d1f431e4441ef0ad3e43d"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.DataPartTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.DataPartTest",
+      "discovered": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "6c7b3fa49e42beb1a86cc1ee28777f6777d83ba37e16db4c6df9f073488d2ab1"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.DeviceCodeOAuthFlowTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.DeviceCodeOAuthFlowTest",
+      "discovered": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "698da487997c9c84f89fe26d8f01b2588d2e06fc17c8989bf2fabae4a8ead008"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.FilePartTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.FilePartTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "59d27369bfa5d3f5978a0fed74f33329548d5ea80a41e92b2906e9dbd5fe91a9"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.FileWithBytesTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.FileWithBytesTest",
+      "discovered": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "2483b8a18cf112060bb0219dbc2677fcfc01a28b7c8d13b5da2d371c9bf2873e"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParamsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParamsTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "54bc7771e524c048aa9329c3086be212c83858765c6a2dc9b16c3b3e3dcd4744"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.MessageSendConfigurationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.MessageSendConfigurationTest",
+      "discovered": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "772aa0ae55859970c8bd39df9e38130c03f6f901665489ce0bab8597d0728f81"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.MessageSendParamsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.MessageSendParamsTest",
+      "discovered": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "8180d3b743c65d33fa04218ac9a455c55d0fe1307d5e43193a3f1dd11503fb67"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.SecurityRequirementTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.SecurityRequirementTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "2e5847db9630c80f8a15a929ac44275fa0d9bb96512171de972ab0d9fa8e6b56"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskArtifactUpdateEventTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.TaskArtifactUpdateEventTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "338e4601b867026528841c9b41a8946e4c6e25d7a46e970f681842e9c9e6156b"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskPushNotificationConfigTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.TaskPushNotificationConfigTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "58bc36d0bab4767062ed17209f0597fd8101e654ff2e4e4922c0e0d11e7c511c"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskStatusUpdateEventTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.TaskStatusUpdateEventTest",
+      "discovered": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "a84d55eaaf3a6691d9fabd63ab20aef25b475accddcb69491ff34c6059045b42"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TextPartTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.TextPartTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "000846c8a6e622eb23c766e8112fee522a6d8e24c991957e7937b1258c200ab7"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.util.PageTokenTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.util.PageTokenTest",
+      "discovered": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f9b7c85ca2ead8833ca32ebb86a4338bed7fff802580222a3297c8efa09cfe2e"
+    },
+    {
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.util.UtilsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.spec.util.UtilsTest",
+      "discovered": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "719828d26518f10fea2d6f6769dd7e5a539cc8b3bce4dbe14dcb06be3401c248"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.A2ACommonFieldMapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.mapper.A2ACommonFieldMapperTest",
+      "discovered": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "75c39df637d059fb712dc7c00198c1885e8e2463440b5122adc61cda875eb69b"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.ListTasksParamsMapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.mapper.ListTasksParamsMapperTest",
+      "discovered": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "21c2c43a3c6583b80c911d18d82e617027900f3a6c031837b249a74ce8251ffe"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.PartMapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.mapper.PartMapperTest",
+      "discovered": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f9c7424e375eaebca6e1da40bf096d682bea9179d4495488a980a99f7a7cf0ee"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.StreamResponseMapperTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.mapper.StreamResponseMapperTest",
+      "discovered": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "f809dfee650ecbdb2d8534a925fa9dd7544fc84e4a5a7e4906c198590e1a5453"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.JSONRPCUtilsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.utils.JSONRPCUtilsTest",
+      "discovered": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "1d51b94e3b68e89872ead14004b1ef1a18714daf0254728f739f7b7a568041c8"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ListTasksNullDataTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.utils.ListTasksNullDataTest",
+      "discovered": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "22e1441f80309dc2953dd33f7245ab85d0688249ec5c826ae24c6d20597c63eb"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.PartTypeAdapterTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.utils.PartTypeAdapterTest",
+      "discovered": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "336a9b4ba30c4e93d768ffe1eff9dcbd302af26f592dd236c795b71127c1c0d6"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ProtoJsonUtilsTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.utils.ProtoJsonUtilsTest",
+      "discovered": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "5f70cc2418e12dbfa03145e290eb153e93ed16f389aea78881dec70d2302ef71"
+    },
+    {
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ToProtoTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.grpc.utils.ToProtoTest",
+      "discovered": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "e7830dc86131e8675a251dd704ffac7bbeab684f81a43513fba199b3ae554feb"
+    },
+    {
+      "report": "transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.grpc.handler.GrpcHandlerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.transport.grpc.handler.GrpcHandlerTest",
+      "discovered": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "ae8186d66f29dd08b22715581d9a3357ac0558ae3424f0d5da8db6941ad1608d"
+    },
+    {
+      "report": "transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.grpc.handler.GrpcVersionRegistrationTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.transport.grpc.handler.GrpcVersionRegistrationTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "7eed79f851c9d77d14d32c268b374552b8527fa199b2f4fbb8e289c9808b26df"
+    },
+    {
+      "report": "transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest",
+      "discovered": 73,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "skipped_cases": [
+        {
+          "class": "org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest",
+          "name": "testDefaultRequestHandlerWithCustomComponents",
+          "reason": "public void org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest.testDefaultRequestHandlerWithCustomComponents() is @Disabled"
+        }
+      ],
+      "sha256": "5b8403f9e1a9de942e0dfc0ce4c692873ce44ccb0370e08dec901d1cf843cc31"
+    },
+    {
+      "report": "transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.transport.rest.handler.RestHandlerTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.transport.rest.handler.RestHandlerTest",
+      "discovered": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "042111d6e2a93f7b5502888cbe505c25793cb3c7bf481f29350a8211481bc936"
+    },
+    {
+      "report": "transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.transport.rest.handler.RestVersionPolicyTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.transport.rest.handler.RestVersionPolicyTest",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "8720287e3b037a81be8591f70b825fc332a36e60f1b4db0192208c9fdae060ec"
+    }
+  ]
+}

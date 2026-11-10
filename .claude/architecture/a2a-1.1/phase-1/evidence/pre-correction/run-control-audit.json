@@ -1,0 +1,23 @@
+{
+  "checked_utc": "2026-11-10T16:08:22.820442+00:00",
+  "run_start": "2026-11-10T14:57:25Z",
+  "authorized_deadline": "2026-11-10T16:57:25+00:00",
+  "bounded_commands": 32,
+  "all_completed_before_run_deadline": true,
+  "all_bounds_at_most_1200_seconds_and_remaining_budget": true,
+  "timeouts": 0,
+  "overlapping_intervals": [],
+  "historical_phase0": {
+    "completed_iterations": 8,
+    "conservative_A03_audit": 10,
+    "no_progress": 0,
+    "original_attempt_limit_breach": true
+  },
+  "phase1": {
+    "completed_iterations": 8,
+    "iteration_limit": 10,
+    "no_progress": 0,
+    "budget_exhausted": false,
+    "commit_approval_pending": true
+  }
+}

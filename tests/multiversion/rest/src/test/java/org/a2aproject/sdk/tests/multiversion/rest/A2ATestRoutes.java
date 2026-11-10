@@ -4,6 +4,9 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.annotation.PostConstruct;
@@ -29,6 +32,17 @@ import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
  */
 @Singleton
 public class A2ATestRoutes {
+    private final ConcurrentLinkedQueue<String> protocolVersions = new ConcurrentLinkedQueue<>();
+
+    public List<String> drainProtocolVersions() {
+        List<String> versions = new ArrayList<>();
+        String version;
+        while ((version = protocolVersions.poll()) != null) {
+            versions.add(version);
+        }
+        return versions;
+    }
+
     @Inject
     TestUtilsBean testUtilsBean;
 
@@ -48,6 +62,14 @@ public class A2ATestRoutes {
     }
 
     void setupRouter(@Observes @Priority(1) Router router) {
+        router.route().order(-1000).handler(ctx -> {
+            if (!ctx.normalizedPath().startsWith("/test/")
+                    && !ctx.normalizedPath().startsWith("/.well-known/")) {
+                List<String> versions = ctx.request().headers().getAll("A2A-Version");
+                protocolVersions.addAll(versions.isEmpty() ? List.of("<missing>") : versions);
+            }
+            ctx.next();
+        });
         // Test routes - no authentication required (these are test utilities)
         // Don't add global BodyHandler - it interferes with other routes
         // Instead, add BodyHandler per-route below

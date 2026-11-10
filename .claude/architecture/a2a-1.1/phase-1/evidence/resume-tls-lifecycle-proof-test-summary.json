@@ -1,0 +1,47 @@
+{
+  "command": {
+    "command": [
+      "mvn",
+      "-B",
+      "-ntp",
+      "-pl",
+      "client/transport/grpc",
+      "-am",
+      "-Dtest=GrpcOwnedLifecycleTest",
+      "-Dsurefire.failIfNoSpecifiedTests=false",
+      "test"
+    ],
+    "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+    "start": "2026-11-10T18:56:11.263538+00:00",
+    "deadline_seconds": 180,
+    "pid": 16497,
+    "timed_out": false,
+    "exit_code": 0,
+    "elapsed_seconds": 3.744,
+    "end": "2026-11-10T18:56:15.007968+00:00"
+  },
+  "report_count": 1,
+  "kinds": {
+    "surefire-reports": 1
+  },
+  "totals": {
+    "discovered": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executed": 4
+  },
+  "reports": [
+    {
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOwnedLifecycleTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.GrpcOwnedLifecycleTest",
+      "discovered": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "881daef8db7f94651fa89fdef66ec34b9648ed43623438532fc5fb6da11603e9"
+    }
+  ]
+}

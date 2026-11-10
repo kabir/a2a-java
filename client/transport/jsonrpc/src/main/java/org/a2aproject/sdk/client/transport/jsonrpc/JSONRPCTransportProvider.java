@@ -1,7 +1,10 @@
 package org.a2aproject.sdk.client.transport.jsonrpc;
 
-import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
+import java.util.Map;
+import java.util.Set;
 import org.a2aproject.sdk.client.http.A2AHttpClientConfiguration;
+import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
+import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportProvider;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -10,6 +13,11 @@ import org.a2aproject.sdk.spec.TransportProtocol;
 import org.jspecify.annotations.Nullable;
 
 public class JSONRPCTransportProvider implements ClientTransportProvider<JSONRPCTransport, JSONRPCTransportConfig> {
+
+    @Override
+    public Map<String, Set<ClientFeature>> capabilities() {
+        return Map.of("1.0", Set.of(ClientFeature.ORDINARY), "1.1", Set.of(ClientFeature.ORDINARY));
+    }
 
     @Override
     public JSONRPCTransport create(@Nullable JSONRPCTransportConfig clientTransportConfig, AgentCard agentCard, AgentInterface agentInterface) throws A2AClientException {

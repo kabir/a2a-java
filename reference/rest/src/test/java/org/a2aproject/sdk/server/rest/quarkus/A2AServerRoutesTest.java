@@ -14,6 +14,7 @@ import static org.a2aproject.sdk.transport.rest.context.RestContextKeys.METHOD_N
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -25,6 +26,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -35,27 +38,35 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.RoutingContext;
-import org.jspecify.annotations.Nullable;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.server.AgentCardCacheMetadata;
+import org.a2aproject.sdk.server.FixedInstance;
 import org.a2aproject.sdk.server.ServerCallContext;
+import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
+import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentExtension;
 import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.ContentTypeNotSupportedError;
+import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.TaskState;
-import org.a2aproject.sdk.transport.rest.handler.RestHandler.HTTPRestResponse;
+import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.transport.rest.handler.RestHandler;
+import org.a2aproject.sdk.transport.rest.handler.RestHandler.HTTPRestResponse;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -101,6 +112,7 @@ public class A2AServerRoutesTest {
         // Setup common mock behavior
         when(mockCallContextFactory.isUnsatisfied()).thenReturn(true);
         when(mockRoutingContext.request()).thenReturn(mockRequest);
+        when(mockRequest.method()).thenReturn(HttpMethod.POST);
         when(mockRoutingContext.response()).thenReturn(mockResponse);
         when(mockRoutingContext.user()).thenReturn(null);
         when(mockRequest.headers()).thenReturn(mockHeaders);
@@ -112,6 +124,25 @@ public class A2AServerRoutesTest {
         when(mockResponse.putHeader(any(CharSequence.class), any(CharSequence.class))).thenReturn(mockResponse);
         when(mockResponse.end()).thenReturn(Future.succeededFuture());
         when(mockResponse.end(anyString())).thenReturn(Future.succeededFuture());
+    }
+
+    @Test
+    public void explicitRegistrationRejectsCustomFactoryVersionOverrideBeforeHandling() {
+        for (Set<String> versions : List.of(Set.of("1.0"), Set.of("1.0", "1.1"))) {
+            for (String header : List.of("1.1", "  ")) {
+                setUp();
+                InterfaceRegistration registration = new InterfaceRegistration(TransportProtocol.HTTP_JSON,
+                        "http://localhost:9999", null, versions, true);
+                InterfaceRegistrationResolver resolver = (selectedBinding, tenant) -> registration;
+                setField(routes, "interfaceRegistrationResolvers", new FixedInstance<>(resolver));
+                CallContextFactory factory = rc -> new ServerCallContext(UnauthenticatedUser.INSTANCE,
+                        Map.of(), Set.of(), "1.0");
+                setField(routes, "callContextFactory", new FixedInstance<>(factory));
+                when(mockRequest.getHeader(A2AHeaders.A2A_VERSION)).thenReturn(header);
+                when(mockRequest.getParam(A2AHeaders.A2A_VERSION)).thenReturn("1.1");
+                assertThrows(InvalidParamsError.class, () -> routes.sendMessage("{}", mockRoutingContext));
+            }
+        }
     }
 
     @Test

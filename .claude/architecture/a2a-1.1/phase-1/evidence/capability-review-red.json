@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/base",
+    "-am",
+    "-Dtest=ClientTransportPolicyTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:13:56.241704+00:00",
+  "deadline_seconds": 600,
+  "pid": 22980,
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 3.527,
+  "end": "2026-11-10T15:13:59.768955+00:00"
+}

@@ -1,0 +1,24 @@
+{
+  "authorization": "User: ok, you can do 5 more iterations",
+  "start": "2026-11-10T18:37:06+00:00",
+  "deadline": "2026-11-10T20:37:06+00:00",
+  "iteration_limit": 5,
+  "completed_iterations": 5,
+  "active_iteration": null,
+  "cumulative_prior_phase1_iterations": 12,
+  "no_progress": 0,
+  "historical_F1_failed_material_cycles": 3,
+  "resumed_F1_failed_material_cycles": 0,
+  "historical_phase0": {
+    "completed": 8,
+    "A03_conservative_audit": 10,
+    "no_progress": 0,
+    "original_breach": true
+  },
+  "commit_authorized": false,
+  "phase": "1 only",
+  "budget_exhausted": true,
+  "cumulative_phase1_completed_iterations": 17,
+  "completed_at": "2026-11-10T19:36:01.664217+00:00",
+  "exhaustion_reason": "five additional iterations completed with verified Phase 1 handoff; no implementation continuation remains"
+}

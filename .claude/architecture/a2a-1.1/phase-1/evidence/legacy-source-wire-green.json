@@ -1,0 +1,22 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/base",
+    "-am",
+    "-Dtest=LegacyProviderCompatibilityTest",
+    "-Dlegacy.provider.jar=/tmp/a2a-phase1-run/recompiled-providers.jar",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:24:35.842269+00:00",
+  "deadline_seconds": 600,
+  "pid": 29153,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 3.403,
+  "end": "2026-11-10T15:24:39.244824+00:00"
+}

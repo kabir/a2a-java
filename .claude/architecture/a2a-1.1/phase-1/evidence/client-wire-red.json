@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/transport/jsonrpc,client/transport/rest,client/transport/grpc",
+    "-am",
+    "-Dtest=ProtocolVersionTest,GrpcTransportTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:02:04.154585+00:00",
+  "deadline_seconds": 600,
+  "pid": 15605,
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 2.603,
+  "end": "2026-11-10T15:02:06.757363+00:00"
+}

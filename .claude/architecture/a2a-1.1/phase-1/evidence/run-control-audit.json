@@ -1,0 +1,68 @@
+{
+  "checked_utc": "2026-11-10T19:36:01.664217+00:00",
+  "bounded_commands": 58,
+  "overlapping_intervals": [],
+  "timeouts": 0,
+  "all_command_bounds_within_authorized_run": true,
+  "original_phase1_completed_iterations": 8,
+  "correction_authorization": {
+    "start": "2026-11-10T17:33:12Z",
+    "deadline": "2026-11-10T18:33:12Z",
+    "completed_iterations": 4,
+    "additional_limit": 4,
+    "cumulative_completed": 12,
+    "no_progress": 0,
+    "budget_exhausted": true,
+    "exhaustion_reason": "four additional iterations completed; F1 three-attempt safeguard"
+  },
+  "historical_phase0": {
+    "completed_iterations": 8,
+    "A03_conservative_audit": 10,
+    "original_breach": true,
+    "no_progress": 0
+  },
+  "F1_failed_material_cycles_conservative": 3,
+  "F1_status": "corrected within approved pinned owned-channel profile; independent final review retained",
+  "commit_ready": true,
+  "original_command_count": 32,
+  "correction_command_count": 12,
+  "resumed_command_count": 14,
+  "utc_and_monotonic_differences": [
+    {
+      "label": "resume-full-current-reactor",
+      "utc_span_seconds": 788.066,
+      "monotonic_elapsed_seconds": 641.917,
+      "both_recorded_unchanged": true
+    }
+  ],
+  "resumed_authorization": {
+    "authorization": "User: ok, you can do 5 more iterations",
+    "start": "2026-11-10T18:37:06+00:00",
+    "deadline": "2026-11-10T20:37:06+00:00",
+    "iteration_limit": 5,
+    "completed_iterations": 5,
+    "active_iteration": null,
+    "cumulative_prior_phase1_iterations": 12,
+    "no_progress": 0,
+    "historical_F1_failed_material_cycles": 3,
+    "resumed_F1_failed_material_cycles": 0,
+    "historical_phase0": {
+      "completed": 8,
+      "A03_conservative_audit": 10,
+      "no_progress": 0,
+      "original_breach": true
+    },
+    "commit_authorized": false,
+    "phase": "1 only",
+    "budget_exhausted": true,
+    "cumulative_phase1_completed_iterations": 17,
+    "completed_at": "2026-11-10T19:36:01.664217+00:00",
+    "exhaustion_reason": "five additional iterations completed with verified Phase 1 handoff; no implementation continuation remains"
+  },
+  "historical_F1_failed_material_cycles": 3,
+  "resumed_F1_failed_material_cycles": 0,
+  "resumed_verified_revised_implementation_cycles": 1,
+  "whitespace_fixture_isolation_fix_cycles": 1,
+  "commit_authorized": false,
+  "source_and_fixtures_frozen": true
+}

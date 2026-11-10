@@ -20,6 +20,7 @@ import org.a2aproject.sdk.client.MessageEvent;
 import org.a2aproject.sdk.client.TaskEvent;
 import org.a2aproject.sdk.client.TaskUpdateEvent;
 import org.a2aproject.sdk.client.config.ClientConfig;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
@@ -483,9 +484,7 @@ public class AgentExecutorProducer {
             switch (transport.toUpperCase()) {
                 case "GRPC" -> builder.withTransport(GrpcTransport.class,
                         new GrpcTransportConfigBuilder()
-                                .channelFactory(url -> ManagedChannelBuilder.forTarget(url)
-                                        .usePlaintext()
-                                        .build()));
+                                .managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()));
                 case "REST", "HTTP_JSON", "HTTP+JSON" -> builder.withTransport(
                         RestTransport.class, new RestTransportConfigBuilder());
                 default -> builder.withTransport(JSONRPCTransport.class,

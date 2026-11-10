@@ -11,17 +11,21 @@ import java.util.List;
 import java.util.Properties;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import org.a2aproject.sdk.server.ExtendedAgentCard;
 import org.a2aproject.sdk.server.PublicAgentCard;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
+import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.Compat03Fields;
 import org.a2aproject.sdk.spec.HTTPAuthSecurityScheme;
 import org.a2aproject.sdk.spec.SecurityRequirement;
+import org.a2aproject.sdk.spec.TransportProtocol;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.profile.IfBuildProfile;
@@ -39,6 +43,9 @@ public class AgentCardProducer {
     @ConfigProperty(name = "test.agent.security.enabled", defaultValue = "false")
     boolean securityEnabled;
 
+    @Inject
+    Instance<InterfaceRegistrationResolver> registrations;
+
     @Produces
     @PublicAgentCard
     @ExtendedAgentCard
@@ -47,7 +54,14 @@ public class AgentCardProducer {
         String preferredTransport = loadPreferredTransportFromProperties();
         String transportUrl = GRPC.toString().equals(preferredTransport) ? "localhost:" + port : "http://localhost:" + port;
 
-        List<AgentInterface> interfaces = Collections.singletonList(new AgentInterface(preferredTransport, transportUrl));
+        List<AgentInterface> interfaces = Collections.singletonList(new AgentInterface(preferredTransport, transportUrl, null, "1.0"));
+
+        if (registrations.isResolvable()) {
+            InterfaceRegistration registration = registrations.get().resolve(TransportProtocol.fromString(preferredTransport), null);
+            if (registration != null) {
+                interfaces = registration.supportedInterfaces();
+            }
+        }
 
         AgentCard.Builder builder = AgentCard.builder()
                 .name("test-card")

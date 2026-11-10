@@ -1,0 +1,20 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-fae",
+    "-pl",
+    "client/base,extras/opentelemetry/client,extras/opentelemetry/client-propagation",
+    "-am",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:14:34.102847+00:00",
+  "deadline_seconds": 600,
+  "pid": 23302,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 20.32,
+  "end": "2026-11-10T15:14:54.422493+00:00"
+}

@@ -1,0 +1,29 @@
+{
+  "suites": 42,
+  "totals": {
+    "discovered": 400,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 40
+  },
+  "bindings": {
+    "jsonrpc": {
+      "discovered": 129,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "rest": {
+      "discovered": 136,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 18
+    },
+    "grpc": {
+      "discovered": 124,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 22
+    }
+  }
+}

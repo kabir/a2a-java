@@ -1,0 +1,58 @@
+{
+  "command": {
+    "command": [
+      "mvn",
+      "-B",
+      "-ntp",
+      "-pl",
+      "client/transport/grpc",
+      "-am",
+      "-Dtest=GrpcOpaqueChannelAdmissionTest,GrpcOwnedChannelTest",
+      "-Dsurefire.failIfNoSpecifiedTests=false",
+      "test"
+    ],
+    "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+    "start": "2026-11-10T18:25:36.084482+00:00",
+    "deadline_seconds": 180,
+    "pid": 2117,
+    "timed_out": false,
+    "exit_code": 0,
+    "elapsed_seconds": 4.517,
+    "end": "2026-11-10T18:25:40.601220+00:00"
+  },
+  "report_count": 2,
+  "kinds": {
+    "surefire-reports": 2
+  },
+  "totals": {
+    "discovered": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executed": 14
+  },
+  "reports": [
+    {
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOpaqueChannelAdmissionTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.GrpcOpaqueChannelAdmissionTest",
+      "discovered": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "768ca3920b8fb5fd6b1b0fb9398bb3c517afbd0a9573c08a0e30365b780bc042"
+    },
+    {
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOwnedChannelTest.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.GrpcOwnedChannelTest",
+      "discovered": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "fc60ecad21b92fc4b35ae5f974563470722b18b0f61a05e1da7d6d03f9c142b1"
+    }
+  ]
+}

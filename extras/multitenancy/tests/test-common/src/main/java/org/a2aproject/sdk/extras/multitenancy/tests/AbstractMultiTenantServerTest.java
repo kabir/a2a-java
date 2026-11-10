@@ -30,7 +30,6 @@ import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.Task;
-import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TextPart;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -265,10 +264,10 @@ public abstract class AbstractMultiTenantServerTest {
                 .defaultOutputModes(List.of("text"))
                 .capabilities(AgentCapabilities.builder().streaming(true).extendedAgentCard(true).build())
                 .skills(List.of())
-                .supportedInterfaces(List.of(new AgentInterface(getTransportProtocol(), getTransportUrl())))
+                .supportedInterfaces(List.of(new AgentInterface(getTransportProtocol(), getTransportUrl(), null, "1.0")))
                 .build();
         ClientBuilder builder = Client.builder(card)
-                .clientConfig(new ClientConfig.Builder().setStreaming(streaming).build());
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setStreaming(streaming).build());
         configureTransport(builder);
         try {
             return builder.build();

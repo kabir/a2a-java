@@ -1,21 +1,15 @@
 package org.a2aproject.sdk.server.grpc.quarkus;
 
-import java.util.concurrent.TimeUnit;
-
 import org.a2aproject.sdk.client.ClientBuilder;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest;
 import org.a2aproject.sdk.spec.TransportProtocol;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.AfterAll;
 
 @QuarkusTest
 public class QuarkusA2AGrpcTest extends AbstractA2AServerTest {
-
-    private static ManagedChannel channel;
 
     public QuarkusA2AGrpcTest() {
         super(8081); // HTTP server port for utility endpoints
@@ -35,20 +29,7 @@ public class QuarkusA2AGrpcTest extends AbstractA2AServerTest {
 
     @Override
     protected void configureTransport(ClientBuilder builder) {
-        builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {
-            channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-            return channel;
-        }));
-    }
-
-    @AfterAll
-    public static void closeChannel() {
-        channel.shutdownNow();
-        try {
-            channel.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()));
     }
 
     @Override

@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.a2aproject.sdk.client.Client;
 import org.a2aproject.sdk.client.TaskEvent;
 import org.a2aproject.sdk.client.TaskUpdateEvent;
@@ -35,7 +36,6 @@ import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TextPart;
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,7 +64,7 @@ public class JpaDatabasePushNotificationConfigStoreIntegrationTest {
         mockPushNotificationSender.clear();
 
         // Create client configuration - enable streaming for automatic push notifications
-        ClientConfig clientConfig = new ClientConfig.Builder()
+        ClientConfig clientConfig = new ClientConfig.Builder().setProtocolVersion("1.0")
             .setStreaming(true)
             .build();
 

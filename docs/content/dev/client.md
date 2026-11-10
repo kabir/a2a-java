@@ -189,24 +189,63 @@ Client client = Client
         .build();
 ```
 
+### Protocol version selection
+
+New shared clients select protocol **1.1** by default. This support targets the experimental
+1.1 RC; later 1.1 features are not yet complete. To keep an existing 1.0 integration on
+its original contract, configure the version explicitly:
+
+```java
+ClientConfig config = ClientConfig.builder().setProtocolVersion("1.0").build();
+Client client = Client.builder(agentCard).clientConfig(config)
+        .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfig()).build();
+```
+
+The selected version is immutable. Card selection requires that exact version before
+applying transport preferences; an unavailable version fails without negotiation or
+fallback. Protocol 0.3 clients remain in their separate compatibility modules.
+
 ### gRPC
 
 ```java
-Function<String, Channel> channelFactory = agentUrl ->
-        ManagedChannelBuilder.forTarget(agentUrl).build();
+GrpcManagedChannelOptions channelOptions = GrpcManagedChannelOptions.builder().build();
 
-Client client = Client
+try (Client client = Client
         .builder(agentCard)
-        .withTransport(GrpcTransport.class, new GrpcTransportConfig(channelFactory))
-        .build();
+        .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()
+                .managedChannel(channelOptions)
+                .build())
+        .build()) {
+    // use client...
+}
 ```
+
+The SDK creates a dedicated Netty channel and closes it when the client closes. TLS with
+system trust is enabled by default. For a local plaintext server, add `.usePlaintext()`
+to the options builder. To send static authentication headers, use
+`.authentication(Map.of("authorization", "Bearer " + token))`.
+
+
+Existing raw `Channel` constructors and arbitrary `channelFactory` configurations retain
+their Java signatures but are rejected when creating a transport for **both 1.0 and 1.1**.
+Migrate to `managedChannel` options or `GrpcTransport.createManaged`; each transport owns
+its dedicated channel. SDK `ClientCallInterceptor` and SDK OpenTelemetry wrappers remain
+supported. Arbitrary gRPC interceptors, credentials, channel sharing and builder callbacks
+are outside this supported configuration.
+
+The owned channel uses private stock DNS resolution and an audited stock pick-first
+provider. A custom global pick-first provider causes construction to fail; global resolver
+replacements, proxies and DNS service-config policies are not applied. This isolation
+relies on the pinned gRPC 1.81.0 implementation and requires a new audit on dependency changes.
 
 ### Multiple Transports
 
 ```java
 Client client = Client
         .builder(agentCard)
-        .withTransport(GrpcTransport.class, new GrpcTransportConfig(channelFactory))
+        .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()
+                .managedChannel(GrpcManagedChannelOptions.builder().build())
+                .build())
         .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfig())
         .withTransport(RestTransport.class, new RestTransportConfig())
         .build();

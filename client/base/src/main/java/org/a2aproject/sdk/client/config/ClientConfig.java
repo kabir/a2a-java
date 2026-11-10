@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.jspecify.annotations.Nullable;
 
@@ -139,6 +140,13 @@ import org.jspecify.annotations.Nullable;
  */
 public class ClientConfig {
 
+    /** Construction default, independent of the frozen legacy model constant. */
+    public static final String DEFAULT_CLIENT_PROTOCOL_VERSION = ClientProtocolVersion.DEFAULT;
+
+    private final String protocolVersion;
+    private final @Nullable String endpoint;
+    private final @Nullable String tenant;
+
     private final Boolean streaming;
     private final Boolean polling;
     private final Boolean useClientPreference;
@@ -148,6 +156,9 @@ public class ClientConfig {
     private final Map<String, Object> metadata;
 
     private ClientConfig(Builder builder) {
+        this.protocolVersion = ClientProtocolVersion.validate(builder.protocolVersion);
+        this.endpoint = builder.endpoint;
+        this.tenant = builder.tenant;
         this.streaming = builder.streaming == null ? true : builder.streaming;
         this.polling = builder.polling == null ? false : builder.polling;
         this.useClientPreference = builder.useClientPreference == null ? false : builder.useClientPreference;
@@ -155,6 +166,21 @@ public class ClientConfig {
         this.taskPushNotificationConfig = builder.taskPushNotificationConfig;
         this.historyLength = builder.historyLength;
         this.metadata = builder.metadata;
+    }
+
+    /** Exact immutable protocol version selected by this client (default 1.1). */
+    public String getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    /** Optional exact endpoint selector, applied before binding preferences. */
+    public @Nullable String getEndpoint() {
+        return endpoint;
+    }
+
+    /** Optional exact tenant selector, applied before binding preferences. */
+    public @Nullable String getTenant() {
+        return tenant;
     }
 
     /**
@@ -275,6 +301,28 @@ public class ClientConfig {
      * }</pre>
      */
     public static class Builder {
+        private String protocolVersion = DEFAULT_CLIENT_PROTOCOL_VERSION;
+        private @Nullable String endpoint;
+        private @Nullable String tenant;
+
+        /** Pin 1.0 before upgrading an application that needs its previous selection. */
+        public Builder setProtocolVersion(String protocolVersion) {
+            this.protocolVersion = ClientProtocolVersion.validate(protocolVersion);
+            return this;
+        }
+
+        /** Select only descriptors at this exact endpoint; null leaves it unrestricted. */
+        public Builder setEndpoint(@Nullable String endpoint) {
+            this.endpoint = endpoint;
+            return this;
+        }
+
+        /** Select only descriptors for this tenant; null leaves it unrestricted. */
+        public Builder setTenant(@Nullable String tenant) {
+            this.tenant = tenant;
+            return this;
+        }
+
         private @Nullable Boolean streaming;
         private @Nullable Boolean polling;
         private @Nullable Boolean useClientPreference;

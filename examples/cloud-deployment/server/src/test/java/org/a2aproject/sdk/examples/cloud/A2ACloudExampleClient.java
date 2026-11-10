@@ -129,6 +129,7 @@ public class A2ACloudExampleClient {
     private void createClients(AgentCard agentCard) {
         System.out.println("Creating streaming client for subscription...");
         ClientConfig streamingConfig = new ClientConfig.Builder()
+                .setProtocolVersion("1.0")
                 .setStreaming(true)
                 .build();
 
@@ -139,6 +140,7 @@ public class A2ACloudExampleClient {
 
         System.out.println("Creating non-streaming client for sending messages...");
         nonStreamingConfig = new ClientConfig.Builder()
+                .setProtocolVersion("1.0")
                 .setStreaming(false)
                 .build();
 

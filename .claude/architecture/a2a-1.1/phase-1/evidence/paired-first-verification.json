@@ -1,0 +1,22 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-fae",
+    "-pl",
+    "tests/multiversion/jsonrpc,tests/multiversion/rest,tests/multiversion/grpc",
+    "-am",
+    "-Dtest=MultiVersion*Test,GrpcProvisioningSubset*Test,RestCardProvisioningWithout03Test",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "verify"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:20:13.616411+00:00",
+  "deadline_seconds": 900,
+  "pid": 26658,
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 162.21,
+  "end": "2026-11-10T15:22:55.826615+00:00"
+}

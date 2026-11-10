@@ -1,0 +1,948 @@
+{
+  "base_commit": "e468dd70a415d17c19ae70d75750b6464d983ad1",
+  "index_unchanged": true,
+  "source_and_test_file_count": 156,
+  "modified": 73,
+  "new": 83,
+  "source_patch": "source-and-tests.diff.gz",
+  "source_patch_uncompressed_sha256": "853960af48a30475a94581a72b64f34a9de4564aebd13d749e26d6e3ebd3a4c3",
+  "source_patch_uncompressed_bytes": 695019,
+  "files": [
+    {
+      "path": "client/base/src/main/java/org/a2aproject/sdk/client/Client.java",
+      "state": "modified",
+      "bytes": 31737,
+      "sha256": "31427b03e17e7ca70c13051b32033fed65dd4882d8f461dde2f7ad629c39365f"
+    },
+    {
+      "path": "client/base/src/main/java/org/a2aproject/sdk/client/ClientBuilder.java",
+      "state": "modified",
+      "bytes": 19144,
+      "sha256": "31acf4b045f56808d8643818307cbf4fcd4cf09ef727608bc92f0dff0de10cbf"
+    },
+    {
+      "path": "client/base/src/main/java/org/a2aproject/sdk/client/ClientTransportPolicy.java",
+      "state": "new",
+      "bytes": 3941,
+      "sha256": "eecec000fadd81eb9f257e44dcc5bdf5af6bf02fc844828bce18230077ba7cdc"
+    },
+    {
+      "path": "client/base/src/main/java/org/a2aproject/sdk/client/SelectedClientTransport.java",
+      "state": "new",
+      "bytes": 4873,
+      "sha256": "bc11e6e774997957fd6e29e179841b4d5d91da4879244e70d54c53768cfb203c"
+    },
+    {
+      "path": "client/base/src/main/java/org/a2aproject/sdk/client/config/ClientConfig.java",
+      "state": "modified",
+      "bytes": 18646,
+      "sha256": "4534308b4335ea523ada8667e94317646be5de84e87d72163244539b17e04c06"
+    },
+    {
+      "path": "client/base/src/test/java/org/a2aproject/sdk/client/AuthenticationAuthorizationTest.java",
+      "state": "modified",
+      "bytes": 14144,
+      "sha256": "199fca2ee632a04cc6dab5f0c2369039f328eb69e324b12bf015722b8562b737"
+    },
+    {
+      "path": "client/base/src/test/java/org/a2aproject/sdk/client/ClientBuilderTest.java",
+      "state": "modified",
+      "bytes": 9371,
+      "sha256": "8d9c6af59209b7a27c0c8b09e9fe4b62e863294747f9b43ec5d0715b53aaca29"
+    },
+    {
+      "path": "client/base/src/test/java/org/a2aproject/sdk/client/ClientBuilderVersionTest.java",
+      "state": "new",
+      "bytes": 2747,
+      "sha256": "66d98433f498f7752b779cc9296740311acbe5d3a45042d9c7e2c3b415c937c8"
+    },
+    {
+      "path": "client/base/src/test/java/org/a2aproject/sdk/client/ClientTransportPolicyTest.java",
+      "state": "new",
+      "bytes": 7448,
+      "sha256": "2a23a376c395b52619cd83f86315978cf5ea47f2064cddb2199fd08dd1a663d4"
+    },
+    {
+      "path": "client/base/src/test/java/org/a2aproject/sdk/client/LegacyProviderCompatibilityTest.java",
+      "state": "new",
+      "bytes": 8488,
+      "sha256": "46933de6c7ebf346429595fcb5405081c768d6611bf578162824ae71bca10445"
+    },
+    {
+      "path": "client/base/src/test/resources/legacy-providers/get-task-response.json",
+      "state": "new",
+      "bytes": 611,
+      "sha256": "68f1bba65d478bda96f78d5da4a9fd79e2a26b76cf2180b7953ed540ddbb2949"
+    },
+    {
+      "path": "client/base/src/test/resources/legacy-providers/legacy-providers.jar",
+      "state": "new",
+      "bytes": 6893,
+      "sha256": "1960be1e1250724e2f2c39e7da33fcb31246d71cb459e6a36ea208073224654d"
+    },
+    {
+      "path": "client/transport/grpc/pom.xml",
+      "state": "modified",
+      "bytes": 2680,
+      "sha256": "88780b6191260cec81f7022aecfa3560747add90e56a291bfc7382b2643133de"
+    },
+    {
+      "path": "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcManagedChannelOptions.java",
+      "state": "new",
+      "bytes": 2469,
+      "sha256": "ae65bed3dcd31784bb9c3dc0d68b9a40dd00b4daeab88aeaef699200e7552576"
+    },
+    {
+      "path": "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransport.java",
+      "state": "modified",
+      "bytes": 26448,
+      "sha256": "92a70c317de012be195f0ba794a4f3d2033cdbba3d34d970ef326fbbcbbb41dc"
+    },
+    {
+      "path": "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfig.java",
+      "state": "modified",
+      "bytes": 1907,
+      "sha256": "bfafaf6f4d732566e7e108b577a6391a349480b162598a4659a46464512cfc30"
+    },
+    {
+      "path": "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfigBuilder.java",
+      "state": "modified",
+      "bytes": 3246,
+      "sha256": "f7962f0cab4c1b56595c9e5fffec75c507cfd76b055ecf81c675f769292d6a25"
+    },
+    {
+      "path": "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportProvider.java",
+      "state": "modified",
+      "bytes": 2692,
+      "sha256": "3bb93f5de502dd07ee6d517dbc30397ba805698e483d23be7bf2f60d38ced927"
+    },
+    {
+      "path": "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/OwnedGrpcChannel.java",
+      "state": "new",
+      "bytes": 12404,
+      "sha256": "8e15bc57fe5c73b5f2306ac61dd5515faf158e695f5fd6350bcb6faa1a4c0b40"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcChannelMetadataTest.java",
+      "state": "new",
+      "bytes": 12112,
+      "sha256": "c65e9ffc8eff93b6f5524a4bc073c8a87c4c65abec407cf62c3c5e692111e5f5"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcGlobalProviderIsolationTest.java",
+      "state": "new",
+      "bytes": 21192,
+      "sha256": "8b6490c75736e13f0f40bfaceb6664f7d98175197e492fe466b569d00d94b621"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcOpaqueChannelAdmissionTest.java",
+      "state": "new",
+      "bytes": 2690,
+      "sha256": "c30c9396ba72aa75e6ef25a0f65ca703533c0319c1a1a799b686b63a6d327869"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcOwnedCallAdmissionTest.java",
+      "state": "new",
+      "bytes": 6005,
+      "sha256": "fe0ded685303efc6ad540c583f215531c5a1184ceb681dc7a85c6e575b14ffe1"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcOwnedChannelTest.java",
+      "state": "new",
+      "bytes": 18498,
+      "sha256": "68b2c256ecd834e972a7d72ef7ec6553277c3cd81f4e16c9c8ca16e14bb3d3a6"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcOwnedLifecycleTest.java",
+      "state": "new",
+      "bytes": 19281,
+      "sha256": "fa9df810334629be515b20ca21b8b1c734fd6c96170eecd3fe90e4862a30d84a"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcProviderCleanupTest.java",
+      "state": "new",
+      "bytes": 5717,
+      "sha256": "e10f63091247e6b075a61fb6eeff87cc05728b9b64167624a51a773286796524"
+    },
+    {
+      "path": "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "state": "modified",
+      "bytes": 17636,
+      "sha256": "80f42644dc31432180de12da3517f0694c71762bc3387eecb5bebe4b2132a7cf"
+    },
+    {
+      "path": "client/transport/grpc/src/test/resources/owned-tls/README.md",
+      "state": "new",
+      "bytes": 979,
+      "sha256": "21a542d316b767229b4d9836c4242978d237870e342ce929703d35eec04e7f9b"
+    },
+    {
+      "path": "client/transport/grpc/src/test/resources/owned-tls/localhost-cert.pem",
+      "state": "new",
+      "bytes": 1241,
+      "sha256": "c126e7a2eb9ff4e1caa81a94674487a361eb9188d75320bd4c34106a383e6fbf"
+    },
+    {
+      "path": "client/transport/grpc/src/test/resources/owned-tls/localhost-key.pem",
+      "state": "new",
+      "bytes": 1704,
+      "sha256": "36b0c44d30fb4c8316652f3c398b26f04a99599edadc730e290f88ac78f58d67"
+    },
+    {
+      "path": "client/transport/jsonrpc/pom.xml",
+      "state": "modified",
+      "bytes": 2691,
+      "sha256": "274a0ecc4ddab137f8f0517031fd26fe04089a8a971eecebb1810b87463e723e"
+    },
+    {
+      "path": "client/transport/jsonrpc/src/main/java/org/a2aproject/sdk/client/transport/jsonrpc/JSONRPCTransport.java",
+      "state": "modified",
+      "bytes": 23322,
+      "sha256": "4c05bd05416db307ab126110097ec2f472c11ec41ab90a964d64fc108d67a6f5"
+    },
+    {
+      "path": "client/transport/jsonrpc/src/main/java/org/a2aproject/sdk/client/transport/jsonrpc/JSONRPCTransportProvider.java",
+      "state": "modified",
+      "bytes": 1854,
+      "sha256": "c2bf61294e6662cd7e8888c81148f8272e6c00b9a3fd844e402378b5aa109bc8"
+    },
+    {
+      "path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JSONRPCTransportStreamingTest.java",
+      "state": "modified",
+      "bytes": 7363,
+      "sha256": "1254a9ed619179146c93cb950b27588f0e373741aec50b9d32f6f62ca8052118"
+    },
+    {
+      "path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JSONRPCTransportTest.java",
+      "state": "modified",
+      "bytes": 43354,
+      "sha256": "932d5acbf03e579dced7c0d96b56b3932a20e1ac6a8d5f0e910ef93d86cd003f"
+    },
+    {
+      "path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/ProtocolVersionTest.java",
+      "state": "new",
+      "bytes": 10826,
+      "sha256": "adcd84aba4f1bab5fe75bcc656432421606f54b90c5e50b58a0c2425f7f6d981"
+    },
+    {
+      "path": "client/transport/rest/pom.xml",
+      "state": "modified",
+      "bytes": 2650,
+      "sha256": "3c6eaf9302f9e94186bc4d2ac5d6f4c93f40831936a36dc5de798f891a593e11"
+    },
+    {
+      "path": "client/transport/rest/src/main/java/org/a2aproject/sdk/client/transport/rest/RestTransport.java",
+      "state": "modified",
+      "bytes": 30916,
+      "sha256": "7bd422fd0604f265e2b797c70fbbb7da0a5db1f551cdaf6dca4a3147f2776966"
+    },
+    {
+      "path": "client/transport/rest/src/main/java/org/a2aproject/sdk/client/transport/rest/RestTransportProvider.java",
+      "state": "modified",
+      "bytes": 1673,
+      "sha256": "2f6fa2f62b6ff7e7d1fca11815a1268ba254dae3e73a1cf823a2bcd7422fe4cc"
+    },
+    {
+      "path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/ProtocolVersionTest.java",
+      "state": "new",
+      "bytes": 8938,
+      "sha256": "78e13a10f13159c57ff73a9cf9255bec4081ac29e488da483b4537acca0b6a1c"
+    },
+    {
+      "path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/RestTransportTest.java",
+      "state": "modified",
+      "bytes": 43314,
+      "sha256": "63b8979ff67ed2d404aa9e09c3fc5d32b5b8a733c162574c81b49b71f35fbd2d"
+    },
+    {
+      "path": "client/transport/spi/src/main/java/org/a2aproject/sdk/client/transport/spi/ClientFeature.java",
+      "state": "new",
+      "bytes": 251,
+      "sha256": "5514617befe793d6b11a61c9bba7b36161283d5a236a9ef8f89e6f71a159f98c"
+    },
+    {
+      "path": "client/transport/spi/src/main/java/org/a2aproject/sdk/client/transport/spi/ClientProtocolVersion.java",
+      "state": "new",
+      "bytes": 2256,
+      "sha256": "4de110f80f40b6be8555d67ac298b2dcaf77277d3ae787a3911b6c6a8bbe372d"
+    },
+    {
+      "path": "client/transport/spi/src/main/java/org/a2aproject/sdk/client/transport/spi/ClientTransportProvider.java",
+      "state": "modified",
+      "bytes": 1290,
+      "sha256": "b2343d1b3f60fb383acdd70cd902e653ede85ca82c42740b60b6de0cdbc50adc"
+    },
+    {
+      "path": "client/transport/spi/src/main/java/org/a2aproject/sdk/client/transport/spi/VersionedClientTransport.java",
+      "state": "new",
+      "bytes": 373,
+      "sha256": "4d64a6abd22efb084a6435940f5023b53c4128f2e449b80e6f6ac88d8bf11644"
+    },
+    {
+      "path": "client/transport/spi/src/test/java/org/a2aproject/sdk/client/transport/spi/ClientProtocolVersionTest.java",
+      "state": "new",
+      "bytes": 1594,
+      "sha256": "d3c73147bedf704876dab4bb617bc8f077cc7022f9270a851a9af5616510c759"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/src/main/java/org/a2aproject/sdk/compat03/server/grpc/quarkus/A2AExtensionsInterceptor_v0_3.java",
+      "state": "modified",
+      "bytes": 4865,
+      "sha256": "6f5fd0df1d0774c58af9f4d1979941bcc0e1b91990fc68a9deb6a9cf39795cb7"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/src/test/java/org/a2aproject/sdk/compat03/server/grpc/quarkus/GrpcRegisteredContextPropagationTest.java",
+      "state": "new",
+      "bytes": 9089,
+      "sha256": "7b98b041d50333bb89fd45253f83ea63bbd6c7f948edfd81130b7757e4242690"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/src/test/java/org/a2aproject/sdk/compat03/server/grpc/quarkus/GrpcRegistrationInterceptorTest.java",
+      "state": "new",
+      "bytes": 3368,
+      "sha256": "cb16748c64a39c7e8592ec2d4006b9a2e15ea07abb708a029c9dbb75d0cfd5b1"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/src/main/java/org/a2aproject/sdk/compat03/server/apps/quarkus/A2AServerRoutes_v0_3.java",
+      "state": "modified",
+      "bytes": 13494,
+      "sha256": "4a8faca464238d82a8d993869de1cd4ba558dbb90cbe7512f95ea59ba7c02722"
+    },
+    {
+      "path": "compat-0.3/reference/rest/src/main/java/org/a2aproject/sdk/compat03/server/rest/quarkus/A2AServerRoutes_v0_3.java",
+      "state": "modified",
+      "bytes": 17864,
+      "sha256": "559569b95c0a706d7b09ec647d87b34cce19c80d8310d65fcf0ccf67865dfbbc"
+    },
+    {
+      "path": "compat-0.3/transport/grpc/src/main/java/org/a2aproject/sdk/compat03/transport/grpc/context/GrpcContextKeys_v0_3.java",
+      "state": "modified",
+      "bytes": 1706,
+      "sha256": "92a3caf81b627f86bd8bb20d0e34fcfe37476a55e60cedc7a4824f5064dccc80"
+    },
+    {
+      "path": "compat-0.3/transport/grpc/src/main/java/org/a2aproject/sdk/compat03/transport/grpc/handler/GrpcHandler_v0_3.java",
+      "state": "modified",
+      "bytes": 24074,
+      "sha256": "9e99ab0e73cf91e18bf60c3499ee550158ce28f095fcdec7119f8fcf90c97814"
+    },
+    {
+      "path": "docs/content/dev/client.md",
+      "state": "modified",
+      "bytes": 11241,
+      "sha256": "99b301e2ff1eba94fff97c66f2652974de7616482c57cec271ef3217492ca33a"
+    },
+    {
+      "path": "examples/cloud-deployment/server/src/test/java/org/a2aproject/sdk/examples/cloud/A2ACloudExampleClient.java",
+      "state": "modified",
+      "bytes": 19592,
+      "sha256": "92c8f0df1ffe2637f9073d3cc9fa62b1f97130532ac835a069cf3a7d27add7a4"
+    },
+    {
+      "path": "examples/helloworld/client/src/main/java/org/a2aproject/sdk/examples/helloworld/client/HelloWorldClient.java",
+      "state": "modified",
+      "bytes": 9915,
+      "sha256": "513569008bbaf5d573dda6e036301af1d1ff3a095906df65878d1b139a24d4d2"
+    },
+    {
+      "path": "examples/stream-lifecycle/client/src/main/java/org/a2aproject/sdk/examples/streamlifecycle/client/StreamLifecycleClient.java",
+      "state": "modified",
+      "bytes": 11656,
+      "sha256": "7783a4d39f3337f70e9a4d998cefe5a84e5d7182f0d1264701b6fb678c73cb31"
+    },
+    {
+      "path": "extras/multitenancy/tests/grpc/src/test/java/org/a2aproject/sdk/extras/multitenancy/tests/grpc/MultiTenantGrpcTest.java",
+      "state": "modified",
+      "bytes": 1633,
+      "sha256": "ec573f62036fff549a4952d260c29b5f83d86d64892777529cf78c61d9c04cf9"
+    },
+    {
+      "path": "extras/multitenancy/tests/test-common/src/main/java/org/a2aproject/sdk/extras/multitenancy/tests/AbstractMultiTenantServerTest.java",
+      "state": "modified",
+      "bytes": 10932,
+      "sha256": "061a40bec4974cecc6fa94d5f4233074c2d371537b0c85f9fa163572b852d959"
+    },
+    {
+      "path": "extras/opentelemetry/client-propagation/src/main/java/org/a2aproject/sdk/extras/opentelemetry/client/propagation/OpenTelemetryClientPropagatorTransport.java",
+      "state": "modified",
+      "bytes": 6716,
+      "sha256": "7e1fb57e59bb5f5f118c9dab7b9cca88c6260f9e441959dc39e4d6a6fae098d8"
+    },
+    {
+      "path": "extras/opentelemetry/client-propagation/src/test/java/org/a2aproject/sdk/extras/opentelemetry/client/propagation/VersionedWrapperTest.java",
+      "state": "new",
+      "bytes": 5446,
+      "sha256": "1d071ada38d2f4f210989936c53d9d21dbecaad28dc96df6e5ebf431dcdb0529"
+    },
+    {
+      "path": "extras/opentelemetry/client/src/main/java/org/a2aproject/sdk/extras/opentelemetry/client/OpenTelemetryClientTransport.java",
+      "state": "modified",
+      "bytes": 29024,
+      "sha256": "7b867bb14f1f7c09695ab995ca158f8ab772a13c8adddae12a1b5de424faa931"
+    },
+    {
+      "path": "extras/opentelemetry/client/src/test/java/org/a2aproject/sdk/extras/opentelemetry/client/VersionedWrapperTest.java",
+      "state": "new",
+      "bytes": 2859,
+      "sha256": "b7624b6ef2e066a090042176b65667d9c242ba5dcda0d83a2b4d04f48ee32361"
+    },
+    {
+      "path": "extras/opentelemetry/integration-tests/src/test/java/org/a2aproject/sdk/extras/opentelemetry/it/OpenTelemetryA2ABaseTest.java",
+      "state": "modified",
+      "bytes": 26750,
+      "sha256": "afb084793a0980d7c8c5679b35e55f479789828d1ac39eeb857a017235079db7"
+    },
+    {
+      "path": "extras/push-notification-config-store-database-jpa/src/test/java/org/a2aproject/sdk/extras/pushnotificationconfigstore/database/jpa/JpaDatabasePushNotificationConfigStoreIntegrationTest.java",
+      "state": "modified",
+      "bytes": 27262,
+      "sha256": "29d76be6c4fb33416987d5749868edc5e5fce85ebd434d22d9422ca5f4eda40b"
+    },
+    {
+      "path": "extras/queue-manager-replicated/tests-multi-instance/tests/src/test/java/org/a2aproject/sdk/extras/queuemanager/replicated/tests/multiinstance/MultiInstanceReplicationTest.java",
+      "state": "modified",
+      "bytes": 23529,
+      "sha256": "1f23bff70785303d3dbd054ce5cdccd531bbd6b8c45dd5de3caa02a00d4beef6"
+    },
+    {
+      "path": "extras/queue-manager-replicated/tests-single-instance/src/test/java/org/a2aproject/sdk/extras/queuemanager/replicated/tests/KafkaReplicationIntegrationTest.java",
+      "state": "modified",
+      "bytes": 23235,
+      "sha256": "7300948ae01d8a928800da6a46ccad42bb187dea7c8fd9510877fba153e38d00"
+    },
+    {
+      "path": "extras/task-store-database-jpa/src/test/java/org/a2aproject/sdk/extras/taskstore/database/jpa/JpaDatabaseTaskStoreIntegrationTest.java",
+      "state": "modified",
+      "bytes": 5695,
+      "sha256": "604cf39dd40e7f77cd4c47ae818efc65505e2ff1907dba8d7653a667d512ab9d"
+    },
+    {
+      "path": "itk/src/main/java/org/a2aproject/sdk/itk/AgentExecutorProducer.java",
+      "state": "modified",
+      "bytes": 23411,
+      "sha256": "5d6dcfa85bd6f994e0361e9aefbc1f54d1378949e18baa71acfc4ace15dd45b7"
+    },
+    {
+      "path": "reference/common/src/main/java/org/a2aproject/sdk/server/common/quarkus/VersionRouter.java",
+      "state": "modified",
+      "bytes": 7395,
+      "sha256": "74b05fc63a94b8fde91aa167fdb65300826baf9bb4e4425c70ebd3bedee47d76"
+    },
+    {
+      "path": "reference/common/src/test/java/org/a2aproject/sdk/server/common/quarkus/VersionRouterTest.java",
+      "state": "modified",
+      "bytes": 4048,
+      "sha256": "47979987a25684fdd33c81d27e16b31d7fca5ce9f6dcb917f47d150c3e4c0b6e"
+    },
+    {
+      "path": "reference/grpc/src/main/java/org/a2aproject/sdk/server/grpc/quarkus/A2AExtensionsInterceptor.java",
+      "state": "modified",
+      "bytes": 8192,
+      "sha256": "5f6f603f298ef432ac1171c462eb70d421b5e7284515a1a129765869ff81123b"
+    },
+    {
+      "path": "reference/grpc/src/main/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusGrpcHandler.java",
+      "state": "modified",
+      "bytes": 7755,
+      "sha256": "9873b6cdd452bb1ada21521d957593e2370e704cea191c78eccf54954a83322a"
+    },
+    {
+      "path": "reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/A2AExtensionsInterceptorVersionTest.java",
+      "state": "new",
+      "bytes": 3092,
+      "sha256": "e2c4284029f6490860d44aa6705117dac0ab0d174c4e46808d936cd4da61a176"
+    },
+    {
+      "path": "reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/Only11GrpcPackagingTest.java",
+      "state": "new",
+      "bytes": 2894,
+      "sha256": "844a755771ac20bbaab826087d00a325f0ddefd7159fd2ca697ca8cad8c29966"
+    },
+    {
+      "path": "reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusA2AGrpcTest.java",
+      "state": "modified",
+      "bytes": 1462,
+      "sha256": "2c2b21b3e708f11edfee89780090816306f9defca04943894074e3314bfb8cc9"
+    },
+    {
+      "path": "reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusA2AGrpcWithAuthTest.java",
+      "state": "modified",
+      "bytes": 3089,
+      "sha256": "87732bfd59854ed4b4765d42663619f635909e92b473510be9caf6c19aa33df5"
+    },
+    {
+      "path": "reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusA2AGrpcWithTaskAuthorizationTest.java",
+      "state": "modified",
+      "bytes": 1939,
+      "sha256": "d7f8c573f6c9864d69fce23c00323c27d9cd79edf6f2a214921596aac867937f"
+    },
+    {
+      "path": "reference/jsonrpc/src/main/java/org/a2aproject/sdk/server/apps/quarkus/A2AServerRoutes.java",
+      "state": "modified",
+      "bytes": 37895,
+      "sha256": "08f72714991e8a9f20bf37f35d710c53dd8eaa55cd4d6888b665b9b913f451c4"
+    },
+    {
+      "path": "reference/jsonrpc/src/test/java/org/a2aproject/sdk/server/apps/quarkus/A2AServerRoutesTest.java",
+      "state": "modified",
+      "bytes": 46819,
+      "sha256": "8cfa44974391bb716e3ffd5cf3b7b9e279b9d99d9979293e7d899d909ce05215"
+    },
+    {
+      "path": "reference/jsonrpc/src/test/java/org/a2aproject/sdk/server/apps/quarkus/Only11JSONRPCPackagingTest.java",
+      "state": "new",
+      "bytes": 1915,
+      "sha256": "3e66c012448b9e2d71629e3a22f1ef740767bbcd71d12fc41d8ec70711c8472f"
+    },
+    {
+      "path": "reference/multiversion-jsonrpc/src/main/java/org/a2aproject/sdk/server/multiversion/jsonrpc/MultiVersionJSONRPCRoutes.java",
+      "state": "modified",
+      "bytes": 4277,
+      "sha256": "4f0c43e5fa8a8a6ab0db794994c6d21b4a14af6099669c4cccc6d72c7dcddae4"
+    },
+    {
+      "path": "reference/multiversion-rest/pom.xml",
+      "state": "modified",
+      "bytes": 1900,
+      "sha256": "ab11a49561d76308904c76444bdecdf8cba63997862beafd9bcdf07c27fd3082"
+    },
+    {
+      "path": "reference/multiversion-rest/src/main/java/org/a2aproject/sdk/server/multiversion/rest/MultiVersionRestRoutes.java",
+      "state": "modified",
+      "bytes": 15496,
+      "sha256": "ef4e0c8f3c4dc91c599cf5538cb3c322a307ef3df77d7d6f3a5c7157a71b323d"
+    },
+    {
+      "path": "reference/multiversion-rest/src/test/java/org/a2aproject/sdk/server/multiversion/rest/MultiVersionRestSubscriptionRouteTest.java",
+      "state": "new",
+      "bytes": 7407,
+      "sha256": "19df518b0782d0f89d1228a1c8f510513930064ee5387fd6edd19e0b5d602cf6"
+    },
+    {
+      "path": "reference/rest/src/main/java/org/a2aproject/sdk/server/rest/quarkus/A2AServerRoutes.java",
+      "state": "modified",
+      "bytes": 40642,
+      "sha256": "9b03c6253a0a75682fd6abbe7720bf2aea982331b8f51e39985262f8a6970b28"
+    },
+    {
+      "path": "reference/rest/src/main/java/org/a2aproject/sdk/server/rest/quarkus/package-info.java",
+      "state": "modified",
+      "bytes": 2563,
+      "sha256": "9a69430e9de94bf219598c2c0c30930c82591aa71d7328afbcd8e0bebbb0110e"
+    },
+    {
+      "path": "reference/rest/src/test/java/org/a2aproject/sdk/server/rest/quarkus/A2AServerRoutesTest.java",
+      "state": "modified",
+      "bytes": 48712,
+      "sha256": "ee5d49bb62cb1b73d2d001342cf1d52b3254ee1e8429e68bf922afd9f9dac230"
+    },
+    {
+      "path": "reference/rest/src/test/java/org/a2aproject/sdk/server/rest/quarkus/Only11RestPackagingTest.java",
+      "state": "new",
+      "bytes": 1691,
+      "sha256": "51879d31b3b9674847a8e47ed34386572746c2a4cff1e9cc2db3eabad7f164bd"
+    },
+    {
+      "path": "reference/rest/src/test/java/org/a2aproject/sdk/server/rest/quarkus/RestSubscribeIndependentPeerTest.java",
+      "state": "new",
+      "bytes": 4989,
+      "sha256": "4fa1fc612c7ded43ce3490ad9dc76147eac02a4332e503c95a89b1170c251399"
+    },
+    {
+      "path": "reference/rest/src/test/java/org/a2aproject/sdk/server/rest/quarkus/RestSubscriptionRouteTest.java",
+      "state": "new",
+      "bytes": 5517,
+      "sha256": "624a679094159e83d65609b808e0587305ef1ddeef286bd262c73f1c0602f51b"
+    },
+    {
+      "path": "server-common/src/main/java/org/a2aproject/sdk/server/AgentCardRequestPolicy.java",
+      "state": "modified",
+      "bytes": 3534,
+      "sha256": "19ad82cc3121d8de5b2a6dd83e574fa70cd6d654ec790205a95b6ee34d765129"
+    },
+    {
+      "path": "server-common/src/main/java/org/a2aproject/sdk/server/ServerCallContext.java",
+      "state": "modified",
+      "bytes": 8220,
+      "sha256": "6f4e2c070bebd8b6cfdbca562ff9cb4e864053bbf29aee236cfcc10745614a5f"
+    },
+    {
+      "path": "server-common/src/main/java/org/a2aproject/sdk/server/version/A2AVersionValidator.java",
+      "state": "modified",
+      "bytes": 5687,
+      "sha256": "87443679cfcf032098408b8c77d6948f1ceec5a1829a73f0db2c550f69323ef3"
+    },
+    {
+      "path": "server-common/src/main/java/org/a2aproject/sdk/server/version/InterfaceRegistration.java",
+      "state": "new",
+      "bytes": 3106,
+      "sha256": "6c54e2a0613fe1f4bb0c7d84c6b351d85709a40ddcfd64b714e322845bd4bf0c"
+    },
+    {
+      "path": "server-common/src/main/java/org/a2aproject/sdk/server/version/InterfaceRegistrationResolver.java",
+      "state": "new",
+      "bytes": 634,
+      "sha256": "1e3cba75bf9ad6b3a0128dcf5d5b02a656b69408f02d116ca1a64077a7da6726"
+    },
+    {
+      "path": "server-common/src/main/java/org/a2aproject/sdk/server/version/ServerVersionPolicy.java",
+      "state": "new",
+      "bytes": 2083,
+      "sha256": "eb6e58be95132cbcadb029929259d618cb17898972df64a2870ee0e4d8423038"
+    },
+    {
+      "path": "server-common/src/test/java/org/a2aproject/sdk/server/version/InterfaceRegistrationTest.java",
+      "state": "new",
+      "bytes": 6895,
+      "sha256": "b9c474368fa3ea7d7513e43a7db62313619aabb0acfaa4d4bd6a336e6fbd5419"
+    },
+    {
+      "path": "server-common/src/test/java/org/a2aproject/sdk/server/version/ServerVersionPolicyTest.java",
+      "state": "new",
+      "bytes": 1448,
+      "sha256": "bc22b361a043948ab3523c3ed7b1a0953527b5646a40b563e0f3a1885e516fcf"
+    },
+    {
+      "path": "spec/src/main/java/org/a2aproject/sdk/spec/AgentInterface.java",
+      "state": "modified",
+      "bytes": 3352,
+      "sha256": "390e4d22a72f6b7d2167549e6043961f36f5f6316c4f51a8f400897473508be4"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/AbstractGrpcProvisioningTest.java",
+      "state": "new",
+      "bytes": 8770,
+      "sha256": "ef9a535023c1123583eea17be4706cbe97983052cf683bfeef2f700cfad06e6f"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningProfiles.java",
+      "state": "new",
+      "bytes": 1770,
+      "sha256": "7337325ecaeee6ba1e38c289525c7458965192754e49dad3be3e8de60545b746"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningSubset1Test.java",
+      "state": "new",
+      "bytes": 286,
+      "sha256": "adfff72525cf077ab89ce97cb5f58e54a8f7bb841fe467d6e04dc963ca8bba3e"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningSubset2Test.java",
+      "state": "new",
+      "bytes": 286,
+      "sha256": "3e0db46def75ef6aed80de7ac8f6cc79c163da1e70778d1b4366c49089da9ca5"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningSubset3Test.java",
+      "state": "new",
+      "bytes": 286,
+      "sha256": "9fda7a3eaf4c44e92b126e06780f9c84e9cc1e57a27b39b9504b4af0b3704908"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningSubset4Test.java",
+      "state": "new",
+      "bytes": 286,
+      "sha256": "400f0447ab074ac0c9853b6c8e252f7750382238aa019cf4bbdf88cb3d93b6e0"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningSubset5Test.java",
+      "state": "new",
+      "bytes": 286,
+      "sha256": "eefc4e90ba1cff159685e4a04a01c07151c446f233136b7597b9b91b7173799e"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningSubset6Test.java",
+      "state": "new",
+      "bytes": 286,
+      "sha256": "9815f0c8a746231e652857bad4698a0c75ba3478c0e662fe2a4029860536e423"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/GrpcProvisioningSubset7Test.java",
+      "state": "new",
+      "bytes": 286,
+      "sha256": "a5ca8a05bd04cd02735ca7f02222832e7c0f9a1fb0831ec0d51ab2e2f91a5f56"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/MultiVersionGrpcTest.java",
+      "state": "modified",
+      "bytes": 5325,
+      "sha256": "85917242bd6a081615bba67ce9d89dac5633208c4881304b368694fbcf4048e7"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/MultiVersionGrpcWithAuthTest.java",
+      "state": "modified",
+      "bytes": 2427,
+      "sha256": "6978fcc21a8eab6f6268327da4e65338e24fb97ff45be1327dd500571880b7c0"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/MultiVersionGrpcWithTaskAuthorizationTest.java",
+      "state": "modified",
+      "bytes": 1870,
+      "sha256": "064cac7cb9f091b7abf3153897d3d315ad5e3966fc0968f184b6963a2ba3e808"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/ProtocolVersionCapture.java",
+      "state": "new",
+      "bytes": 1502,
+      "sha256": "98d3fe8d5cef00a99518c522d4973909772f10de4280033d8a6309e3e4f3137a"
+    },
+    {
+      "path": "tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/Public03ClientSupport.java",
+      "state": "new",
+      "bytes": 5569,
+      "sha256": "ca671b4a8eb878d555b5948c0c561ca53622fd5f7dc8e46038229318fe51ca8b"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/A2ATestRoutes.java",
+      "state": "modified",
+      "bytes": 10085,
+      "sha256": "4df6d5f0bec11e4b6799a6c32aec380080c81796c870144eaff29b882517b2d2"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/AbstractJSONRPCDefaultProvisioningTest.java",
+      "state": "new",
+      "bytes": 2691,
+      "sha256": "975dbd2be7cb86f2bc12ced4d7be3c9ff7d65fd8947a0cfde27d66095e8b4d64"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/JSONRPCDefaultProvisioningSubset1Test.java",
+      "state": "new",
+      "bytes": 402,
+      "sha256": "13579e413674638b9f716793d4c6d5a62beddf1c031b015be165d586df3c1025"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/JSONRPCDefaultProvisioningSubset2Test.java",
+      "state": "new",
+      "bytes": 402,
+      "sha256": "6ef803292e9706842b08183d64131f11dfd1fa1757505070151b50153893b3b7"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/JSONRPCDefaultProvisioningSubset3Test.java",
+      "state": "new",
+      "bytes": 402,
+      "sha256": "455e076a00b1503173c3eefee442c15ddcf8465f1f4e7e7d249132e9da19acaa"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/JSONRPCDefaultProvisioningSubset4Test.java",
+      "state": "new",
+      "bytes": 402,
+      "sha256": "d87e4f8ddcacb6c69383f4fb9a45fd4bd4b1d8ad8c4bb9632c486dbebb29ca41"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/JSONRPCDefaultProvisioningSubset5Test.java",
+      "state": "new",
+      "bytes": 402,
+      "sha256": "6c88f0b3c6b421f78f47247b352079e9de0aaed588823153714c59e5da32158d"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/JSONRPCDefaultProvisioningSubset6Test.java",
+      "state": "new",
+      "bytes": 402,
+      "sha256": "f2ef726960ea92c58a8a5342a9f5ac33e4db8e79f9e6ff6fb96b905ffc772318"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/JSONRPCDefaultProvisioningSubset7Test.java",
+      "state": "new",
+      "bytes": 402,
+      "sha256": "c9ad094f28c49feb2ab0a6922e7d28e19ea00c6b9239d103ede87d0974008fef"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/MultiVersionJSONRPCTest.java",
+      "state": "modified",
+      "bytes": 6874,
+      "sha256": "d704aa05b49bdcf70e8281e5cced12ce079220578af9c22190166c72670e731e"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/src/test/java/org/a2aproject/sdk/tests/multiversion/jsonrpc/Public03ClientSupport.java",
+      "state": "new",
+      "bytes": 5152,
+      "sha256": "d63dbd1be17fec90cd05f5faf379fce8328fb9d075c680d921d5c49846b03211"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/A2ATestRoutes.java",
+      "state": "modified",
+      "bytes": 12317,
+      "sha256": "b03568e533dd0b6388e292c5d2fc015bdca9705fe422736d96f201958acc28de"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/AbstractRestDefaultProvisioningTest.java",
+      "state": "new",
+      "bytes": 3196,
+      "sha256": "228787fc616b68043d8cc564ae19bc044c0e5290a73825cd76a2bc2e2f75f3ed"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/MultiVersionRestTest.java",
+      "state": "modified",
+      "bytes": 6458,
+      "sha256": "cb20f038f5ba3fd62d89de165e306d1c6577e8363d4a971f7011bfa0d7aaca32"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/Native03RestDefaultScopeTest.java",
+      "state": "new",
+      "bytes": 3740,
+      "sha256": "c6d6daca281923d22f39f05b1e802fa75645ee54bb84d3d53ddadb3b90299d3d"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/Native03RestDisabledDefaultScopeTest.java",
+      "state": "new",
+      "bytes": 1097,
+      "sha256": "48adf60fdfbb320b4892a2d99c105b81f2d5ce377bb4090079e17f402c6c4fc1"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/Public03ClientSupport.java",
+      "state": "new",
+      "bytes": 6866,
+      "sha256": "b55034a82af1297bcc631421882fce4e57b56ca2e2786211a14c32028d222418"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestCardProvisioningWithout03Test.java",
+      "state": "new",
+      "bytes": 3608,
+      "sha256": "90a498f877663b160b4c6eba184cf603da5135d7fb089dfca14fb8ad5307a6f3"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestDefaultProvisioningSubset1Test.java",
+      "state": "new",
+      "bytes": 393,
+      "sha256": "f2ae794da75d87cd48f1d659bc59d933c632ad9395bd24aa878f0046b6a5b937"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestDefaultProvisioningSubset2Test.java",
+      "state": "new",
+      "bytes": 393,
+      "sha256": "56bf9cee0e442fc4802832a2214e7587df28897ed5fa84d14e48b9641a125348"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestDefaultProvisioningSubset3Test.java",
+      "state": "new",
+      "bytes": 393,
+      "sha256": "c1e8a4a7a6b89c996856eb032a0cce3b10e05291fabdda0d5ed77e70167b7903"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestDefaultProvisioningSubset4Test.java",
+      "state": "new",
+      "bytes": 393,
+      "sha256": "feca742ff3880d519fb8b6c4e4bf1ad9fef9749840c9fd8457c28d1cacf0e7c4"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestDefaultProvisioningSubset5Test.java",
+      "state": "new",
+      "bytes": 393,
+      "sha256": "b30d9f0e5e94e9aca039d436331b00a83e9210884a58bdd820b8313b074d0393"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestDefaultProvisioningSubset6Test.java",
+      "state": "new",
+      "bytes": 393,
+      "sha256": "5c76ee101cba33217d2b619949a2954b0bfbe579f52b7ce858b6dbe9fd94c8fd"
+    },
+    {
+      "path": "tests/multiversion/rest/src/test/java/org/a2aproject/sdk/tests/multiversion/rest/RestDefaultProvisioningSubset7Test.java",
+      "state": "new",
+      "bytes": 393,
+      "sha256": "193a9b74f6ef0d86243af0bff14a9a586b94ed3471c7cb39661d4ee77231f7c0"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AbstractA2AServerTest.java",
+      "state": "modified",
+      "bytes": 150502,
+      "sha256": "58e51d5f3fbcec7dfae8fe478e7eb58508934a3279c4884c843237f4551c1da7"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AbstractA2AServerWithAuthTest.java",
+      "state": "modified",
+      "bytes": 12237,
+      "sha256": "d91604a126478965009e473437b2691835cfb355842d151608d693330874162d"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AbstractA2AServerWithTaskAuthorizationTest.java",
+      "state": "modified",
+      "bytes": 10659,
+      "sha256": "0b916c5dd135553a57bdfc3bd32e8d3f78f0c5370900d3bf7cc45d0cfd96f76c"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AbstractDefaultEndpointProvisioningTest.java",
+      "state": "new",
+      "bytes": 3047,
+      "sha256": "f597c4d34022358db624a2e6a5a8d1686edc52340bd2abc97eef0a920df21277"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AbstractOnly11ServerTest.java",
+      "state": "new",
+      "bytes": 3475,
+      "sha256": "ff70f86ee64d69d38948845db405bfbf4076170245ed64992753eef17156b4da"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AbstractPairedVersionServerTest.java",
+      "state": "new",
+      "bytes": 11553,
+      "sha256": "52bf03351da2e61c6927f2c832325d46b359e1770eb34706586d1a920687aaa2"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AgentCardProducer.java",
+      "state": "modified",
+      "bytes": 4587,
+      "sha256": "5bcf0b55a16feeb8f99af43c1e2702bea414a01ecdc283649d551ee548e2b51b"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AgentToAgentClientFactory.java",
+      "state": "modified",
+      "bytes": 4886,
+      "sha256": "3326afe4b0025c67b817fbac08292c0f27e2927545c6a7e63961e64df2042315"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/DefaultEndpointProvisioningProfiles.java",
+      "state": "new",
+      "bytes": 1774,
+      "sha256": "ccc439cb9a577405c148904151078e5d45d629a9a6086806d2b3285d4dad88ac"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/Only11TestProfile.java",
+      "state": "new",
+      "bytes": 394,
+      "sha256": "2d9c68f1dc562c28a73535eb74394a3faf5fcd58a65e6a5e26a1416a6384dcbf"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/PairedVersionAgentCardRouter.java",
+      "state": "new",
+      "bytes": 1534,
+      "sha256": "54ff510b130ca4dbdb23e0003a947ba2833db74e9f8688167902b57ffa594b1b"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/PairedVersionRegistrationResolver.java",
+      "state": "new",
+      "bytes": 2676,
+      "sha256": "1868ebf7b8c8ce56ebae6e55192bbba8f113f4ab297efe0a2614f3f5d9467ac3"
+    },
+    {
+      "path": "tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/PairedVersionTestProfile.java",
+      "state": "new",
+      "bytes": 488,
+      "sha256": "81970672506d5306d3df3c8c507763423ff1289fa87078b38ebf6dcb43659c79"
+    },
+    {
+      "path": "transport/grpc/src/main/java/org/a2aproject/sdk/transport/grpc/handler/GrpcHandler.java",
+      "state": "modified",
+      "bytes": 52841,
+      "sha256": "c14fbbc8b19bc01f239264a799a4a95f34a446d6b66b7db04b4750dba28d980d"
+    },
+    {
+      "path": "transport/grpc/src/test/java/org/a2aproject/sdk/transport/grpc/handler/GrpcVersionRegistrationTest.java",
+      "state": "new",
+      "bytes": 5738,
+      "sha256": "b756ba458b0c3579d209973ba2fca343135195f0d336a0429d5b31ef88a7cc9b"
+    },
+    {
+      "path": "transport/rest/src/main/java/org/a2aproject/sdk/transport/rest/handler/RestHandler.java",
+      "state": "modified",
+      "bytes": 54577,
+      "sha256": "85a17b8eecb3b596a9763e72029d8338c64e280e29a374b7dfa00d88ed4c4cf3"
+    },
+    {
+      "path": "transport/rest/src/test/java/org/a2aproject/sdk/transport/rest/handler/RestVersionPolicyTest.java",
+      "state": "new",
+      "bytes": 2548,
+      "sha256": "ae18b92a4f7b524d740eca8cfaef4ac8c5e9111f77e52997a59077a452111361"
+    }
+  ]
+}

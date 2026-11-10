@@ -1,5 +1,8 @@
 package org.a2aproject.sdk.client.transport.spi;
 
+import java.util.Map;
+import java.util.Set;
+
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
@@ -8,6 +11,14 @@ import org.a2aproject.sdk.spec.AgentInterface;
  * Client transport provider interface.
  */
 public interface ClientTransportProvider<T extends ClientTransport, C extends ClientTransportConfig<T>> {
+
+    /**
+     * Exact versions and implemented capabilities. Unchanged providers retain only
+     * the frozen 1.0 ordinary contract; supporting 1.1 requires explicit opt-in.
+     */
+    default Map<String, Set<ClientFeature>> capabilities() {
+        return Map.of("1.0", Set.of(ClientFeature.ORDINARY));
+    }
 
     /**
      * Create a client transport.

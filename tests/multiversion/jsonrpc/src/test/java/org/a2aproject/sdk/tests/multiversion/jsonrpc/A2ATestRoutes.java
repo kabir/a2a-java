@@ -4,6 +4,9 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.annotation.PostConstruct;
@@ -14,10 +17,10 @@ import jakarta.inject.Singleton;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import org.a2aproject.sdk.compat03.server.apps.quarkus.A2AServerRoutes_v0_3;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.server.apps.common.TestUtilsBean;
 import org.a2aproject.sdk.server.apps.quarkus.A2AServerRoutes;
-import org.a2aproject.sdk.compat03.server.apps.quarkus.A2AServerRoutes_v0_3;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
@@ -25,6 +28,17 @@ import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 
 @Singleton
 public class A2ATestRoutes {
+    private final ConcurrentLinkedQueue<String> protocolVersions = new ConcurrentLinkedQueue<>();
+
+    public List<String> drainProtocolVersions() {
+        List<String> versions = new ArrayList<>();
+        String version;
+        while ((version = protocolVersions.poll()) != null) {
+            versions.add(version);
+        }
+        return versions;
+    }
+
     @Inject
     TestUtilsBean testUtilsBean;
 
@@ -44,6 +58,14 @@ public class A2ATestRoutes {
     }
 
     void setupRoutes(@Observes Router router) {
+        router.route().order(-1000).handler(ctx -> {
+            if (!ctx.normalizedPath().startsWith("/test/")
+                    && !ctx.normalizedPath().startsWith("/.well-known/")) {
+                List<String> versions = ctx.request().headers().getAll("A2A-Version");
+                protocolVersions.addAll(versions.isEmpty() ? List.of("<missing>") : versions);
+            }
+            ctx.next();
+        });
         router.post("/test/task")
             .consumes(APPLICATION_JSON)
             .handler(BodyHandler.create())

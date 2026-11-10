@@ -1,0 +1,115 @@
+{
+  "archive": "resumed-client-reports.tar.gz",
+  "archive_sha256": "09ab1a640f364d04712b2f8069ed333ada43d30b3ac0d0d0f7faa7bc130f837b",
+  "report_count": 27,
+  "reports": [
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.A2ATest.xml",
+      "sha256": "8e5a4a727684c1c79deb48b11e0168e8efeceb881cddfe7391d310d29645f39c"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.AuthenticationAuthorizationTest.xml",
+      "sha256": "574a1df132a76a1810d5d939703ed166118c49ec0ceadfb83f55357845bf85d5"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientBuilderTest.xml",
+      "sha256": "b14660a5e6a3a1656788c698641418218283c3aa78238473731864a18e27e088"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientBuilderVersionTest.xml",
+      "sha256": "894785acb0c5fc6801e8efb7b92ecfc59e899d8f1c9e33cf6ffbba2ca07ef90a"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientTaskManagerTest.xml",
+      "sha256": "af27fa74836ddb08627bce431811fb5d80b797fb4fe84604681f1932eb48abde"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientTransportPolicyTest.xml",
+      "sha256": "55e03b6d3f55c14b3deb5a0c995afc87f76eb73e520cc48e50aff669f7208ef3"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.LegacyProviderCompatibilityTest.xml",
+      "sha256": "d7a73a39983416d346722f307aa4b05f675cfad98e595cbf2c66bb8faae185df"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.EventStreamObserverTest.xml",
+      "sha256": "488a6bf525582eab72b63d32df26dd83d7312428019fa06131b65bfac32fea5d"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcChannelMetadataTest.xml",
+      "sha256": "0e43746c657ef656e3d632a299862b5a7e4023e79d4ebd23c1974b9e833cb457"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcErrorMapperTest.xml",
+      "sha256": "104bc99e4560d91d57f99a8cfde6b3ddcd82c816468ed42c3820b9b1348e2c67"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcGlobalProviderIsolationTest.xml",
+      "sha256": "2a7ddead552a2078b0150755188ac1ba0c1265f2f64fd72fd693f4662b5bc236"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOpaqueChannelAdmissionTest.xml",
+      "sha256": "2035c77cba9545519acfb91420daefb2eb4f01c558df5d06474e6a342ded49d2"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOwnedChannelTest.xml",
+      "sha256": "d114cc1c056ed8763d5155a5a97c68de1596e77731cf2d2fa19ba6cf8a270bb7"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOwnedLifecycleTest.xml",
+      "sha256": "881daef8db7f94651fa89fdef66ec34b9648ed43623438532fc5fb6da11603e9"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcProviderCleanupTest.xml",
+      "sha256": "c902dee4ffae5583780c51bebca5b0c136b8ae7200fec353ace83f10c4ba21f7"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcTransportTest.xml",
+      "sha256": "3e4b4a5117e64837dca89b5e35390b1ecb1a238fcebeb9b02f4c5129afa67893"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportStreamingTest.xml",
+      "sha256": "46647072e71aa8d0b8d83c60bc868fe3684ff666c1bdc17243051b08363e7c10"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportTest.xml",
+      "sha256": "c96ffc11f4a471ba33e6342fbbbe91a4f61298f4f298da844dc5a70c4841bc5e"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.ProtocolVersionTest.xml",
+      "sha256": "3ff392173b86262552f6095a3e5702baf9c03fec8cfd8f170a494672dcc2f682"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListenerTest.xml",
+      "sha256": "3cdb474b39bb06ac41ef2b780ea95bab1aff989db25650d1154e1ef44e8a29af"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.ProtocolVersionTest.xml",
+      "sha256": "593d1c87627c04c0376faf66bd0922fc520936d937e5472a99ef945368ecbadb"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestErrorMapperTest.xml",
+      "sha256": "46d2cd1c37098d4b1a32915bfb801b6e09636179e8fa8375e18862795dae5534"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestTransportTest.xml",
+      "sha256": "9902d5f2637b71de9c4d0f66aaff313844b337512408ebb4872a24748272546a"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.sse.SSEEventListenerTest.xml",
+      "sha256": "3beee7458077a40f0edae8560fc83aad45cf6cd4c5e4fcf454a6b7f33197a0f7"
+    },
+    {
+      "path": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.ClientProtocolVersionTest.xml",
+      "sha256": "ca6d786d1b4b789fd8e9bb7de0231319e08b4345e70be9a31b70841aa45d2872"
+    },
+    {
+      "path": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptorTest.xml",
+      "sha256": "43a45c30acd02f0f824dfa7d335768d694885736f16301dede3cbf187e91ffc6"
+    },
+    {
+      "path": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.sse.SSEEventListenerTest.xml",
+      "sha256": "d61599ff0a31fd41b4f189761eefa5dde7e48613bde01154462dc3dc11874ac3"
+    }
+  ]
+}

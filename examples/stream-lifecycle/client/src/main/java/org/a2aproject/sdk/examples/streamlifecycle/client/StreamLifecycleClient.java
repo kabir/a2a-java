@@ -9,7 +9,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.a2aproject.sdk.A2A;
 import org.a2aproject.sdk.client.Client;
@@ -20,6 +19,7 @@ import org.a2aproject.sdk.client.TaskEvent;
 import org.a2aproject.sdk.client.TaskUpdateEvent;
 import org.a2aproject.sdk.client.config.ClientConfig;
 import org.a2aproject.sdk.client.http.A2ACardResolver;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
@@ -34,10 +34,6 @@ import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskIdParams;
 import org.a2aproject.sdk.spec.TextPart;
-
-import io.grpc.Channel;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 
 /**
  * Demonstrates the TaskStreamLifecycleHook by connecting 3 subscribers to a task.
@@ -60,7 +56,7 @@ public class StreamLifecycleClient {
 
     private static final String SERVER_URL = "http://localhost:9999";
 
-    private static final List<ManagedChannel> grpcChannels = new CopyOnWriteArrayList<>();
+    private static final List<Client> grpcClients = new CopyOnWriteArrayList<>();
 
     public static void main(String[] args) throws Exception {
         try {
@@ -174,15 +170,8 @@ public class StreamLifecycleClient {
     }
 
     public static void shutdownGrpcChannels() {
-        for (ManagedChannel ch : grpcChannels) {
-            ch.shutdownNow();
-            try {
-                ch.awaitTermination(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        grpcChannels.clear();
+        grpcClients.forEach(Client::close);
+        grpcClients.clear();
     }
 
     private static Client createStreamingClient(AgentCard agentCard, String name,
@@ -195,22 +184,22 @@ public class StreamLifecycleClient {
                     System.out.println("[" + name + "] Stream closed.");
                     streamDone.countDown();
                 })
-                .clientConfig(ClientConfig.builder().setStreaming(true).build());
+                .clientConfig(ClientConfig.builder().setProtocolVersion("1.0").setStreaming(true).build());
         configureTransport(builder, protocol);
-        return builder.build();
+        Client client = builder.build();
+        if ("GRPC".equals(protocol)) {
+            grpcClients.add(client);
+        }
+        return client;
     }
 
     private static void configureTransport(ClientBuilder clientBuilder, String protocol) {
         ClientTransportConfig transportConfig;
         switch (protocol) {
             case "GRPC":
-                Function<String, Channel> channelFactory = url -> {
-                    String target = url.replaceAll("^https?://", "");
-                    ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-                    grpcChannels.add(channel);
-                    return channel;
-                };
-                transportConfig = new GrpcTransportConfigBuilder().channelFactory(channelFactory).build();
+                transportConfig = new GrpcTransportConfigBuilder()
+                        .managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build())
+                        .build();
                 clientBuilder.withTransport(GrpcTransport.class, transportConfig);
                 break;
             case "HTTP+JSON":

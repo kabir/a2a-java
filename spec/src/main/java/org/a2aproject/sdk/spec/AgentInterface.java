@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record AgentInterface(String protocolBinding, String url, @Nullable String tenant, String protocolVersion) {
 
-    /** The default A2A Protocol version used when not explicitly specified. */
+    /** Frozen legacy model/server default. Client construction uses its independent 1.1 default. */
     public static final String CURRENT_PROTOCOL_VERSION = "1.0";
 
     /**

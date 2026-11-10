@@ -1,0 +1,10 @@
+{
+  "compared_utc": "2026-11-10T19:29:00.516400+00:00",
+  "historical_baseline": "../../phase-0/evidence/baseline-test-summary.json",
+  "candidate_summary": "full-changed-reactor-final-test-summary.json",
+  "baseline_skipped": 123,
+  "candidate_skipped": 123,
+  "same_skipped_test_identities": true,
+  "newly_skipped": [],
+  "formerly_skipped_now_executed": []
+}

@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/transport/grpc",
+    "-am",
+    "-Dtest=GrpcGlobalProviderIsolationTest,GrpcOwnedChannelTest,GrpcOpaqueChannelAdmissionTest,GrpcProviderCleanupTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T18:45:48.782108+00:00",
+  "deadline_seconds": 240,
+  "pid": 15069,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 8.624,
+  "end": "2026-11-10T18:45:57.405728+00:00"
+}

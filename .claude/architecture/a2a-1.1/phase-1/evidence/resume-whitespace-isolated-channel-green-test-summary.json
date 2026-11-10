@@ -1,0 +1,111 @@
+{
+  "command": {
+    "command": [
+      "mvn",
+      "-B",
+      "-ntp",
+      "-pl",
+      "tests/multiversion/grpc",
+      "-Dtest=GrpcProvisioningSubset1Test,GrpcProvisioningSubset2Test,GrpcProvisioningSubset3Test,GrpcProvisioningSubset4Test,GrpcProvisioningSubset5Test,GrpcProvisioningSubset6Test,GrpcProvisioningSubset7Test",
+      "test"
+    ],
+    "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+    "start": "2026-11-10T19:14:01.943495+00:00",
+    "deadline_seconds": 180,
+    "pid": 23295,
+    "timed_out": false,
+    "exit_code": 0,
+    "elapsed_seconds": 15.764,
+    "end": "2026-11-10T19:14:17.707507+00:00"
+  },
+  "report_count": 7,
+  "kinds": {
+    "surefire-reports": 7
+  },
+  "totals": {
+    "discovered": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executed": 7
+  },
+  "reports": [
+    {
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset1Test.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset1Test",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "be10c4554dddacae5f54ed64f10ed00b7c504cc3758889c2d6253cf0efad2046"
+    },
+    {
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset2Test.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset2Test",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "c9d1d74d224e80c8bc8c9674ea504eb30ce679cc255ec7a5d1fbda751061360d"
+    },
+    {
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset3Test.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset3Test",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "46ee6a285ba2f28bc9c32847c6042cc012a048b4a40365cf1d4b2ccc849d48e6"
+    },
+    {
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset4Test.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset4Test",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "543c84a19835807f79cbe14267407e1526fa113535cb303dd596819afacd6c6a"
+    },
+    {
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset5Test.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset5Test",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "80fa119336b583d124f630c2c137dabf03e8a11fbd49d127a6ee899a7a4c9322"
+    },
+    {
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset6Test.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset6Test",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "9d8515d650cfbc070b85f2f683b61763ba70c227e02116322e0672f75faa335f"
+    },
+    {
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset7Test.xml",
+      "kind": "surefire-reports",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset7Test",
+      "discovered": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skipped_cases": [],
+      "sha256": "499fc1f014439bd921fb1a4691497dfeb31b8e47447b172f11d4fbc8a9155eae"
+    }
+  ]
+}

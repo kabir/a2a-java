@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.a2aproject.sdk.server.auth.User;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.jspecify.annotations.Nullable;
 
@@ -40,6 +42,28 @@ public class ServerCallContext {
     private final Set<String> activatedExtensions;
     private final @Nullable String requestedProtocolVersion;
     private volatile @Nullable Runnable eventConsumerCancelCallback;
+    private volatile @Nullable InterfaceRegistration interfaceRegistration;
+
+    /** Attach the immutable endpoint registration, retaining the original requested version. */
+    public synchronized void attachInterfaceRegistration(InterfaceRegistration registration) {
+        if (interfaceRegistration != null && !interfaceRegistration.equals(registration)) {
+            throw new IllegalStateException("Conflicting interface registration");
+        }
+        Object transport = state.get(TRANSPORT_KEY);
+        if (transport != null && transport != registration.binding()) {
+            throw new IllegalStateException("Interface registration does not match request binding");
+        }
+        interfaceRegistration = registration;
+    }
+
+    public @Nullable InterfaceRegistration getInterfaceRegistration() {
+        return interfaceRegistration;
+    }
+
+    public ServerVersionPolicy getVersionPolicy() {
+        return ServerVersionPolicy.forRequest(requestedProtocolVersion);
+    }
+
 
     public ServerCallContext(User user, Map<String, Object> state, Set<String> requestedExtensions) {
         this(user, state, requestedExtensions, null);

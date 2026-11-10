@@ -1,14 +1,24 @@
 package org.a2aproject.sdk.compat03.server.grpc.quarkus;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.compat03.common.A2AHeaders_v0_3;
 import org.a2aproject.sdk.compat03.transport.grpc.context.GrpcContextKeys_v0_3;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
+import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
+import org.a2aproject.sdk.spec.TransportProtocol;
+import org.a2aproject.sdk.spec.VersionNotSupportedError;
+import org.jspecify.annotations.Nullable;
 
 /**
  * gRPC server interceptor that captures request metadata and context information,
@@ -23,12 +33,35 @@ import org.a2aproject.sdk.compat03.transport.grpc.context.GrpcContextKeys_v0_3;
 @ApplicationScoped
 public class A2AExtensionsInterceptor_v0_3 implements ServerInterceptor {
 
+    @Inject
+    @Nullable Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
+
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
             ServerCall<ReqT, RespT> serverCall,
             Metadata metadata,
             ServerCallHandler<ReqT, RespT> serverCallHandler) {
+
+        Instance<InterfaceRegistrationResolver> resolvers = interfaceRegistrationResolvers;
+        InterfaceRegistration registration = null;
+        if (resolvers != null && !resolvers.isUnsatisfied()) {
+            registration = resolvers.get().resolve(TransportProtocol.GRPC, null);
+            String version = ServerVersionPolicy.resolveVersion(metadata.get(
+                    Metadata.Key.of(A2AHeaders.A2A_VERSION, Metadata.ASCII_STRING_MARSHALLER)));
+            try {
+                if (registration == null || registration.binding() != TransportProtocol.GRPC
+                        || registration.tenant() != null || !"0.3".equals(version)) {
+                    throw new VersionNotSupportedError(null,
+                            "The separate a2a.v1 service only provides a provisioned 0.3 interface", null);
+                }
+                registration.select(version);
+            } catch (VersionNotSupportedError error) {
+                serverCall.close(io.grpc.Status.UNIMPLEMENTED
+                        .withDescription("VERSION_NOT_SUPPORTED: " + error.getMessage()), new Metadata());
+                return new ServerCall.Listener<>() {};
+            }
+        }
 
         // Extract A2A extensions header
         Metadata.Key<String> extensionsKey =
@@ -37,6 +70,8 @@ public class A2AExtensionsInterceptor_v0_3 implements ServerInterceptor {
 
         // Create enhanced context with rich information (equivalent to Python's ServicerContext)
         Context context = Context.current()
+            // Clear inherited registration when this endpoint uses the historical no-resolver path.
+            .withValue(GrpcContextKeys_v0_3.INTERFACE_REGISTRATION_KEY, registration)
             // Store complete metadata for full header access
             .withValue(GrpcContextKeys_v0_3.METADATA_KEY, metadata)
             // Store method name (equivalent to Python's context.method())

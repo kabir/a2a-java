@@ -12,7 +12,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import io.grpc.Server;
+import io.grpc.Status;
+import io.grpc.netty.NettyServerBuilder;
+import io.grpc.stub.StreamObserver;
 import org.a2aproject.sdk.client.config.ClientConfig;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
@@ -31,12 +36,6 @@ import org.a2aproject.sdk.spec.AgentSkill;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.TransportProtocol;
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.Status;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,8 +58,6 @@ public class AuthenticationAuthorizationTest {
     private Message MESSAGE;
     private AgentCard agentCard;
     private Server grpcServer;
-    private ManagedChannel grpcChannel;
-    private String grpcServerName;
 
     @BeforeEach
     public void setUp() {
@@ -72,7 +69,6 @@ public class AuthenticationAuthorizationTest {
                 .messageId("message-1234")
                 .build();
         
-        grpcServerName = InProcessServerBuilder.generateName();
 
         agentCard = AgentCard.builder()
                 .name("Test Agent")
@@ -92,18 +88,15 @@ public class AuthenticationAuthorizationTest {
                 .supportedInterfaces(java.util.Arrays.asList(
                         new AgentInterface(TransportProtocol.JSONRPC.asString(), AGENT_URL),
                         new AgentInterface(TransportProtocol.HTTP_JSON.asString(), AGENT_URL),
-                        new AgentInterface(TransportProtocol.GRPC.asString(), grpcServerName)))
+                        new AgentInterface(TransportProtocol.GRPC.asString(), "localhost:1")))
                 .build();
     }
 
     @AfterEach
-    public void tearDown() {
+    public void tearDown() throws InterruptedException {
         server.stop();
-        if (grpcChannel != null) {
-            grpcChannel.shutdownNow();
-        }
         if (grpcServer != null) {
-            grpcServer.shutdownNow();
+            grpcServer.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         }
     }
 
@@ -269,26 +262,20 @@ public class AuthenticationAuthorizationTest {
     public void testGrpcNonStreamingUnauthenticated() throws Exception {
         setupGrpcServer(Status.UNAUTHENTICATED);
 
-        Client client = getGrpcClientBuilder(false).build();
-
-        A2AClientException exception = assertThrows(A2AClientException.class, () -> {
-            client.sendMessage(MESSAGE);
-        });
-
-        assertTrue(exception.getMessage().contains(AUTHENTICATION_FAILED_MESSAGE));
+        try (Client client = getGrpcClientBuilder(false).build()) {
+            A2AClientException exception = assertThrows(A2AClientException.class, () -> client.sendMessage(MESSAGE));
+            assertTrue(exception.getMessage().contains(AUTHENTICATION_FAILED_MESSAGE));
+        }
     }
 
     @Test
     public void testGrpcNonStreamingUnauthorized() throws Exception {
         setupGrpcServer(Status.PERMISSION_DENIED);
 
-        Client client = getGrpcClientBuilder(false).build();
-
-        A2AClientException exception = assertThrows(A2AClientException.class, () -> {
-            client.sendMessage(MESSAGE);
-        });
-
-        assertTrue(exception.getMessage().contains(AUTHORIZATION_FAILED_MESSAGE));
+        try (Client client = getGrpcClientBuilder(false).build()) {
+            A2AClientException exception = assertThrows(A2AClientException.class, () -> client.sendMessage(MESSAGE));
+            assertTrue(exception.getMessage().contains(AUTHORIZATION_FAILED_MESSAGE));
+        }
     }
 
     @Test
@@ -311,21 +298,21 @@ public class AuthenticationAuthorizationTest {
 
     private ClientBuilder getJSONRPCClientBuilder(boolean streaming) {
         return Client.builder(agentCard)
-                .clientConfig(new ClientConfig.Builder().setStreaming(streaming).build())
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setStreaming(streaming).build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder());
     }
 
     private ClientBuilder getRestClientBuilder(boolean streaming) {
         return Client.builder(agentCard)
-                .clientConfig(new ClientConfig.Builder().setStreaming(streaming).build())
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setStreaming(streaming).build())
                 .withTransport(RestTransport.class, new RestTransportConfigBuilder());
     }
 
     private ClientBuilder getGrpcClientBuilder(boolean streaming) {
         return Client.builder(agentCard)
-                .clientConfig(new ClientConfig.Builder().setStreaming(streaming).build())
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setStreaming(streaming).build())
                 .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()
-                        .channelFactory(target -> grpcChannel));
+                        .managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()));
     }
 
     private void assertStreamingError(ClientBuilder clientBuilder, String expectedErrorMessage) throws Exception {
@@ -337,9 +324,7 @@ public class AuthenticationAuthorizationTest {
             errorLatch.countDown();
         };
 
-        Client client = clientBuilder.streamingErrorHandler(errorHandler).build();
-
-        try {
+        try (Client client = clientBuilder.streamingErrorHandler(errorHandler).build()) {
             client.sendMessage(MESSAGE);
             // If no immediate exception, wait for async error
             assertTrue(errorLatch.await(5, TimeUnit.SECONDS), "Expected error handler to be called");
@@ -354,8 +339,7 @@ public class AuthenticationAuthorizationTest {
     }
 
     private void setupGrpcServer(Status status) throws IOException {
-        grpcServerName = InProcessServerBuilder.generateName();
-        grpcServer = InProcessServerBuilder.forName(grpcServerName)
+        grpcServer = NettyServerBuilder.forPort(0)
                 .directExecutor()
                 .addService(new A2AServiceGrpc.A2AServiceImplBase() {
                     @Override
@@ -371,8 +355,9 @@ public class AuthenticationAuthorizationTest {
                 .build()
                 .start();
 
-        grpcChannel = InProcessChannelBuilder.forName(grpcServerName)
-                .directExecutor()
-                .build();
+        agentCard = AgentCard.builder(agentCard).supportedInterfaces(agentCard.supportedInterfaces().stream()
+                .map(iface -> TransportProtocol.GRPC.asString().equals(iface.protocolBinding())
+                        ? new AgentInterface(TransportProtocol.GRPC.asString(), "localhost:" + grpcServer.getPort())
+                        : iface).toList()).build();
     }
 }

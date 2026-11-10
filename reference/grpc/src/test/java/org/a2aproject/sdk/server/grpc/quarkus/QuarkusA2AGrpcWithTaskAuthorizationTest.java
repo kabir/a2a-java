@@ -1,15 +1,10 @@
 package org.a2aproject.sdk.server.grpc.quarkus;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.a2aproject.sdk.client.ClientBuilder;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptor;
@@ -18,7 +13,6 @@ import org.a2aproject.sdk.server.apps.common.AbstractA2AServerWithTaskAuthorizat
 import org.a2aproject.sdk.server.apps.common.TaskAuthorizationTestProfile;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.TransportProtocol;
-import org.junit.jupiter.api.AfterAll;
 
 @QuarkusTest
 @TestProfile(TaskAuthorizationTestProfile.class)
@@ -27,8 +21,6 @@ public class QuarkusA2AGrpcWithTaskAuthorizationTest extends AbstractA2AServerWi
     @Inject
     @PublicAgentCard
     AgentCard agentCard;
-
-    private static final Map<String, ManagedChannel> channels = new ConcurrentHashMap<>();
 
     @Override
     protected String getTransportProtocol() {
@@ -51,23 +43,8 @@ public class QuarkusA2AGrpcWithTaskAuthorizationTest extends AbstractA2AServerWi
                 (schemeName, context) -> BASIC_AUTH_SCHEME_NAME.equals(schemeName)
                         ? getEncodedCredentials(username, password) : null);
         builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()
-                .channelFactory(target -> {
-                    ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-                    channels.put(username, channel);
-                    return channel;
-                })
+                .managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build())
                 .addInterceptor(authInterceptor));
     }
 
-    @AfterAll
-    static void closeChannels() {
-        channels.values().forEach(ch -> {
-            ch.shutdownNow();
-            try {
-                ch.awaitTermination(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        });
-    }
 }

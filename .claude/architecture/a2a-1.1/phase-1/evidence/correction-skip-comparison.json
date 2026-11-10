@@ -1,0 +1,12 @@
+{
+  "candidate_skipped": 99,
+  "all_are_existing_baseline_test_identities": true,
+  "newly_skipped": [],
+  "explicitly_excluded_class": "GrpcChannelMetadataTest",
+  "excluded_tests": 5,
+  "excluded_class_separate_evidence": "correction-grpc-late-tracer-probe.json",
+  "excluded_separate_result": {
+    "passing": 4,
+    "failing": 1
+  }
+}

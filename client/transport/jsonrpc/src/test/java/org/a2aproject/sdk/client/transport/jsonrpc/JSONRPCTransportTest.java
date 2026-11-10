@@ -32,14 +32,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.A2AClientHTTPError;
@@ -125,7 +124,7 @@ public class JSONRPCTransportTest {
         server.when(request().withMethod("POST").withPath("/"))
                 .respond(response().withStatusCode(200).withBody(body));
 
-        ListTasksResult result = new JSONRPCTransport("http://localhost:4001").listTasks(params, null);
+        ListTasksResult result = new JSONRPCTransport("http://localhost:4001", "1.0").listTasks(params, null);
 
         assertTrue(result.tasks().isEmpty());
         assertEquals(0, result.totalSize());
@@ -162,7 +161,7 @@ public class JSONRPCTransportTest {
                                 .withBody(SEND_MESSAGE_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("tell me a joke")))
@@ -210,7 +209,7 @@ public class JSONRPCTransportTest {
                                 .withBody(SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("tell me a joke")))
@@ -252,7 +251,7 @@ public class JSONRPCTransportTest {
                                 .withBody(SEND_MESSAGE_ERROR_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("tell me a joke")))
@@ -291,7 +290,7 @@ public class JSONRPCTransportTest {
                                 .withBody(GET_TASK_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Task task = client.getTask(new TaskQueryParams("de38c76d-d54c-436c-8b9f-4c2703648d64",
                 10), null);
         assertEquals("de38c76d-d54c-436c-8b9f-4c2703648d64", task.id());
@@ -344,7 +343,7 @@ public class JSONRPCTransportTest {
                                 .withBody(CANCEL_TASK_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Task task = client.cancelTask(new CancelTaskParams("de38c76d-d54c-436c-8b9f-4c2703648d64"), null);
         assertEquals("de38c76d-d54c-436c-8b9f-4c2703648d64", task.id());
         assertEquals("c295ea44-7543-4f78-b524-7a38915ad6e4", task.contextId());
@@ -367,7 +366,7 @@ public class JSONRPCTransportTest {
                                 .withBody(GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         TaskPushNotificationConfig taskPushNotificationConfig = client.getTaskPushNotificationConfiguration(
                 new GetTaskPushNotificationConfigParams("de38c76d-d54c-436c-8b9f-4c2703648d64", "c295ea44-7543-4f78-b524-7a38915ad6e4"), null);
         assertNotNull(taskPushNotificationConfig);
@@ -391,7 +390,7 @@ public class JSONRPCTransportTest {
                                 .withBody(SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         TaskPushNotificationConfig taskPushNotificationConfig = client.createTaskPushNotificationConfiguration(
                 TaskPushNotificationConfig.builder()
                         .id("c295ea44-7543-4f78-b524-7a38915ad6e4")
@@ -420,7 +419,7 @@ public class JSONRPCTransportTest {
                                 .withBody(GET_AUTHENTICATED_EXTENDED_AGENT_CARD_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         GetExtendedAgentCardParams params = new GetExtendedAgentCardParams(null);
         AgentCard agentCard = client.getExtendedAgentCard(params, null);
         assertEquals("GeoSpatial Route Planner Agent Extended", agentCard.name());
@@ -494,7 +493,7 @@ public class JSONRPCTransportTest {
                                 .withBody(SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(List.of(
@@ -547,7 +546,7 @@ public class JSONRPCTransportTest {
                                 .withBody(SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
 
         Map<String, Object> data = new HashMap<>();
         data.put("temperature", 25.5);
@@ -605,7 +604,7 @@ public class JSONRPCTransportTest {
                                 .withBody(SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
 
         Map<String, Object> data = new HashMap<>();
         data.put("chartType", "bar");
@@ -676,7 +675,7 @@ public class JSONRPCTransportTest {
                                 .withBody(errorResponseBody)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("test message")))
@@ -721,7 +720,7 @@ public class JSONRPCTransportTest {
                                 .withBody("{\"error\": \"Service Unavailable\"}")
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         MessageSendParams params = MessageSendParams.builder()
                 .message(Message.builder()
                         .role(Message.Role.ROLE_USER)
@@ -765,7 +764,7 @@ public class JSONRPCTransportTest {
                                 .withBody("{\"error\": \"Too Many Requests\"}")
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         MessageSendParams params = MessageSendParams.builder()
                 .message(Message.builder()
                         .role(Message.Role.ROLE_USER)
@@ -825,7 +824,7 @@ public class JSONRPCTransportTest {
                                 .withBody(errorResponseBody)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("test message")))
@@ -875,7 +874,7 @@ public class JSONRPCTransportTest {
         server.when(request().withMethod("POST").withPath("/"))
                 .respond(response().withStatusCode(200).withBody("{\"jsonrpc\":\"2.0\",\"id\":\"null-task\",\"result\":" + resultJson + "}"));
 
-        var result = new JSONRPCTransport("http://localhost:4001").listTasks(new ListTasksParams(), null);
+        var result = new JSONRPCTransport("http://localhost:4001", "1.0").listTasks(new ListTasksParams(), null);
 
         assertEquals(1, result.tasks().size());
         assertEquals(Collections.singletonMap("optional", null), result.tasks().get(0).metadata());

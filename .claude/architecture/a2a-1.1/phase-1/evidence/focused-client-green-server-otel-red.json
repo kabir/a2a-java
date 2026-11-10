@@ -1,0 +1,22 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-fae",
+    "-pl",
+    "client/base,transport/rest,transport/grpc,extras/opentelemetry/client,extras/opentelemetry/client-propagation",
+    "-am",
+    "-Dtest=ClientBuilderVersionTest,ClientTransportPolicyTest,ClientProtocolVersionTest,ProtocolVersionTest,GrpcTransportTest,InterfaceRegistrationTest,ServerVersionPolicyTest,RestVersionPolicyTest,GrpcVersionRegistrationTest,VersionedWrapperTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:05:00.228955+00:00",
+  "deadline_seconds": 600,
+  "pid": 17302,
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 21.278,
+  "end": "2026-11-10T15:05:21.507285+00:00"
+}

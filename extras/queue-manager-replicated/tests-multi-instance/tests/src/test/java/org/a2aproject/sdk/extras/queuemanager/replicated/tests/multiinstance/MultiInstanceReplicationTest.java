@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -153,13 +153,13 @@ public class MultiInstanceReplicationTest {
             // Rebuild AgentCards with correct URLs (mapped ports, not container ports)
             app1Card = AgentCard.builder(originalApp1Card)
                     .supportedInterfaces(Collections.singletonList(
-                            new AgentInterface(TransportProtocol.JSONRPC.asString(), app1Url)
+                            new AgentInterface(TransportProtocol.JSONRPC.asString(), app1Url, null, "1.0")
                     ))
                     .build();
 
             app2Card = AgentCard.builder(originalApp2Card)
                     .supportedInterfaces(Collections.singletonList(
-                            new AgentInterface(TransportProtocol.JSONRPC.asString(), app2Url)
+                            new AgentInterface(TransportProtocol.JSONRPC.asString(), app2Url, null, "1.0")
                     ))
                     .build();
         } catch (Exception e) {
@@ -206,7 +206,7 @@ public class MultiInstanceReplicationTest {
     // Helper methods for creating A2A clients
 
     private Client createClient(AgentCard agentCard) throws A2AClientException {
-        ClientConfig config = ClientConfig.builder()
+        ClientConfig config = ClientConfig.builder().setProtocolVersion("1.0")
                 .setStreaming(true)
                 .build();
 
@@ -267,7 +267,7 @@ public class MultiInstanceReplicationTest {
         // Use NON-streaming client to create the task
         // Note: app1Card has the correct URL from Testcontainers setup
         Client nonStreamingClient = Client.builder(app1Card)
-                .clientConfig(ClientConfig.builder().setStreaming(false).build())
+                .clientConfig(ClientConfig.builder().setProtocolVersion("1.0").setStreaming(false).build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfig())
                 .build();
 

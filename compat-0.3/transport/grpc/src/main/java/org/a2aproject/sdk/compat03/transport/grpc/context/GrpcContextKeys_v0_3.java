@@ -1,6 +1,7 @@
 package org.a2aproject.sdk.compat03.transport.grpc.context;
 
 import io.grpc.Context;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
 
 /**
  * Shared gRPC context keys for A2A protocol data.
@@ -38,6 +39,10 @@ public final class GrpcContextKeys_v0_3 {
      */
     public static final Context.Key<String> PEER_INFO_KEY =
         Context.key("grpc-peer-info");
+
+    /** Registration admitted by the optional reference server registration resolver. */
+    public static final Context.Key<InterfaceRegistration> INTERFACE_REGISTRATION_KEY =
+        Context.key("a2a-0.3-interface-registration");
 
     private GrpcContextKeys_v0_3() {
         // Utility class

@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "examples/stream-lifecycle/server,examples/cloud-deployment/server",
+    "-am",
+    "-Dtest=StreamLifecycleTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "verify"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:44:10.908675+00:00",
+  "deadline_seconds": 600,
+  "pid": 39799,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 34.169,
+  "end": "2026-11-10T15:44:45.077751+00:00"
+}

@@ -11,9 +11,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-
 
 import io.restassured.RestAssured;
 import io.restassured.config.ObjectMapperConfig;
@@ -25,16 +22,12 @@ import org.a2aproject.sdk.client.config.ClientConfig;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.server.apps.common.A2AGsonObjectMapper;
 import org.a2aproject.sdk.spec.A2AClientException;
-import org.a2aproject.sdk.spec.A2AClientHTTPError;
-import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
-import org.a2aproject.sdk.spec.AgentInterface;
-import org.a2aproject.sdk.spec.HTTPAuthSecurityScheme;
-import org.a2aproject.sdk.spec.SecurityRequirement;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -57,6 +50,17 @@ import org.junit.jupiter.api.Test;
  * </ul>
  */
 public abstract class AbstractA2AServerWithAuthTest {
+    @AfterEach
+    void closeSdkClients() {
+        if (authenticatedClient != null) {
+            authenticatedClient.close();
+            authenticatedClient = null;
+        }
+        if (unauthenticatedClient != null) {
+            unauthenticatedClient.close();
+            unauthenticatedClient = null;
+        }
+    }
 
     protected static final String TEST_USERNAME = "testuser";
     protected static final String TEST_PASSWORD = "testpass";
@@ -135,7 +139,7 @@ public abstract class AbstractA2AServerWithAuthTest {
      */
     private Client createAuthenticatedClient() throws A2AClientException {
         AgentCard agentCard = fetchAgentCardFromServer();
-        ClientConfig clientConfig = new ClientConfig.Builder()
+        ClientConfig clientConfig = new ClientConfig.Builder().setProtocolVersion("1.0")
                 .setStreaming(false)  // Non-streaming for simple tests
                 .build();
 
@@ -152,7 +156,7 @@ public abstract class AbstractA2AServerWithAuthTest {
      */
     private Client createUnauthenticatedClient() throws A2AClientException {
         AgentCard agentCard = fetchAgentCardFromServer();
-        ClientConfig clientConfig = new ClientConfig.Builder()
+        ClientConfig clientConfig = new ClientConfig.Builder().setProtocolVersion("1.0")
                 .setStreaming(false)
                 .build();
 

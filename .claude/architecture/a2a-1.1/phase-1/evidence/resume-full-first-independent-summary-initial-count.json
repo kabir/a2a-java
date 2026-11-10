@@ -1,0 +1,3043 @@
+{
+  "reviewer": "correction_review",
+  "metadata": {
+    "command": [
+      "mvn",
+      "-B",
+      "-ntp",
+      "clean",
+      "install"
+    ],
+    "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+    "start": "2026-11-10T18:56:40.957103+00:00",
+    "deadline_seconds": 1200,
+    "pid": 16708,
+    "timed_out": false,
+    "exit_code": 1,
+    "elapsed_seconds": 641.917,
+    "end": "2026-11-10T19:09:49.023480+00:00"
+  },
+  "report_count": 299,
+  "counts": {
+    "tests": 4040,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 123,
+    "executed": 3917
+  },
+  "successful_modules": 55,
+  "failed_modules": 1,
+  "skip_identities": [
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest",
+      "testBasicAuthWorksViaHttp"
+    ],
+    [
+      "compat-0.3/reference/grpc",
+      "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest",
+      "testGetAgentCardIsPublic"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "compat-0.3/reference/rest",
+      "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "extras/http-client-vertx",
+      "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "testCustomSSEParserConfigAcceptsLineWithinLimit"
+    ],
+    [
+      "extras/http-client-vertx",
+      "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "testCustomSSEParserConfigRejectsOversizedLine"
+    ],
+    [
+      "extras/http-client-vertx",
+      "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "testSSEEventIdAndLastEventId"
+    ],
+    [
+      "extras/http-client-vertx",
+      "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "testSSEOversizedLineRejectedBeforeMemoryExhaustion"
+    ],
+    [
+      "extras/http-client-vertx",
+      "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "testSSEStreamEndingWithoutTrailingEmptyLine"
+    ],
+    [
+      "extras/push-notification-config-store-database-jpa",
+      "org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfigStoreTest",
+      "testSendNotificationWithToken"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+      "testBasicAuthWorksViaHttp"
+    ],
+    [
+      "reference/grpc",
+      "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+      "testGetAgentCardIsPublic"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "reference/rest",
+      "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest",
+      "testBasicAuthWorksViaHttp"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest",
+      "testGetAgentCardIsPublic"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest",
+      "testBasicAuthWorksViaHttp"
+    ],
+    [
+      "tests/multiversion/grpc",
+      "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest",
+      "testGetAgentCardIsPublic"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testInvalidJSONRPCRequestInvalidId"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testInvalidJSONRPCRequestMissingJsonrpc"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testInvalidJSONRPCRequestMissingMethod"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testInvalidJSONRPCRequestNonExistentMethod"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testInvalidParamsJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testMalformedJSONRPCRequest"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testNonStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testStreamingMethodWithAcceptHeader"
+    ],
+    [
+      "tests/multiversion/rest",
+      "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "testStreamingMethodWithoutAcceptHeader"
+    ],
+    [
+      "transport/jsonrpc",
+      "org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest",
+      "testDefaultRequestHandlerWithCustomComponents"
+    ]
+  ],
+  "new_skip_identities": [],
+  "missing_baseline_skip_identities": [],
+  "reports": [
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.A2ATest.xml",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7ed23fd1a4004642f653751cdef9a91497321cb7cb7553dcf71f1a8e0d26658b"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.AuthenticationAuthorizationTest.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fa6a1fd11a073876c9f779bd932e8b0d4cda7d1e127d7f90e44d0913082529d9"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientBuilderTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "586c0460133accae9038adcf051b72a1c2c3ecd3257a16fb43ac5ce68572de48"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientBuilderVersionTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e908e5f452801e17cb93e47015f324f8ac83c9f97d4165c8cd1f1030c84a6bd6"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientTaskManagerTest.xml",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e07f2c580f381d62fec02116c6b743c95d4f54636dfc1f31ad41b27a7b1d16e6"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientTransportPolicyTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "776e55cfe4badc34b07c96749c2b17801f545a85641ae4f381ce07a3e795b8a1"
+    },
+    {
+      "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.LegacyProviderCompatibilityTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1e931e4fff6e10e7206b876ec4e026343cf340b4b67cc65aac703aa3aeac4c76"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.EventStreamObserverTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c303f7e6c2b25f5ccf9d0c2d0ec46541de60979d1431565ac4b889e12951b164"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcChannelMetadataTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "83a7e8daa4620ed9f35773b9a382e734c91652054a0b775921b0cf4339f2c642"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcErrorMapperTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "146c84459b1f4995a360545a280b7ceec1733c350c9b9100f661dff8004c6e23"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcGlobalProviderIsolationTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4499f90aa82ca00e8d74c2b1b6b463221c8bcc5d850f2510d69d4a06705ec710"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOpaqueChannelAdmissionTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6ff27dc7c6344f936269ce1284db42031fdffbcb763e8bde87e90166a37e124a"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOwnedChannelTest.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0a00cce28b4c103ccdc0597bd98a073b5e8f46bbe22d40852c282ad20fe288b1"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcOwnedLifecycleTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6c8eb68b49522bad0bd5286e78a66394cf4006c4e073cddff8b406791a03339a"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcProviderCleanupTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b4996dd28b9720d84043b5586ebd0063854a46881072c0f79cf951e6906baf05"
+    },
+    {
+      "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcTransportTest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "93522f1b990a5920fe00f75ba8cdcff38f591b718d9cd25a437e9c29da511e04"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportStreamingTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8bdd26e3477ed99683a42d9b236f42e9d76d00d76a28f8878821c143966a4e77"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportTest.xml",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3d61946102b33e4a0539da6fa582271b3d470686107ef996e74a61f0f99f13c6"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.ProtocolVersionTest.xml",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "28f4818390ed499a7c8098913836e026bd40d16d253c7e0af36dbc9448c8604d"
+    },
+    {
+      "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListenerTest.xml",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2ba941176fdb6cdb559aee36c93a0a7045fd672db7375c327f3027ad5ee7094f"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.ProtocolVersionTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c778036f1433f1cc5739eea3fee21b845347ff7b459687c4d466b14d01795d02"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestErrorMapperTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "403ab3b44d6bdee5f51f7f858c3168b928d0d37234cd38fcf9dbfc68d039cf91"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestTransportTest.xml",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "89968c9044f27d2d37990095481dda852a71ec6a807f901e49f5257d15bf1650"
+    },
+    {
+      "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.sse.SSEEventListenerTest.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8aa46d6e1fab3a622d1a2da133ae6db77af422d4ec1f857dbed03200be4e2cde"
+    },
+    {
+      "path": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.ClientProtocolVersionTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7dc7dac087186e890653212d6a79051c024862f827688b9ea479a46f0078067d"
+    },
+    {
+      "path": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptorTest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d41476d9eaf6cbef79edf48838082d5a3c3478e8524bb9c041530b97fc1dba0a"
+    },
+    {
+      "path": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.sse.SSEEventListenerTest.xml",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b9a6f8d1f00097f64762a3fe826f5210df5faead5f8aa4f336a02723e0a39c83"
+    },
+    {
+      "path": "common/target/surefire-reports/TEST-org.a2aproject.sdk.util.AssertTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "029d68429d444acc97b1788337dcecc0b0bc84e34b9c2715458eeb1d7ec1f753"
+    },
+    {
+      "path": "common/target/surefire-reports/TEST-org.a2aproject.sdk.util.HtmlEscapeUtilsTest.xml",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3ce38d48ef8c8a57c665daee50717f37dcef8ca5748c019993ea2d5ce05c7aa0"
+    },
+    {
+      "path": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.A2A_v0_3_Test.xml",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "802dfba16b51bb3712cd71b3b7e0d57926aa563ee6c1cfebe75db9a0ee4e92c1"
+    },
+    {
+      "path": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.AuthenticationAuthorization_v0_3_Test.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c58593abb623cc789bea52bd890ce50ba2054dd548a7e4e623698a13ee695944"
+    },
+    {
+      "path": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.ClientBuilder_v0_3_Test.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "db62f5fe2366e9b46b1313769e97116a658469d3378bd0f95c71ef00eaf35913"
+    },
+    {
+      "path": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.ClientTaskManager_v0_3_Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "524af1a495597ff8a53ef9ac5a30feec2704d5287d4240fa2607c040e9fb3cab"
+    },
+    {
+      "path": "compat-0.3/client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.grpc.EventStreamObserver_v0_3_Test.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "845eef25343e68b6c95babf8a88ca9a54f682cc5038822ed50dcb4e13d1af970"
+    },
+    {
+      "path": "compat-0.3/client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.grpc.GrpcErrorMapper_v0_3_Test.xml",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fdb6890d76fc40ffa6e10e8072b2894e7c05385e66fe9c8c9c308d8922ac2c47"
+    },
+    {
+      "path": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransportStreamingCancel_v0_3_Test.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "aeccc268546c239075a43b9b3bddf91d353090f2cd69faba29af6c0f940dbea2"
+    },
+    {
+      "path": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransportStreaming_v0_3_Test.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fa255562dfa172fa003976cc86b72621c32031d9797ff1fca5c448300a007c20"
+    },
+    {
+      "path": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransport_v0_3_Test.xml",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "edf011334f89a1b6dd95f5abe44c2d755bebc75ae8c4091afec5a94c074f3773"
+    },
+    {
+      "path": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.sse.SSEEventListener_v0_3_Test.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "04004bcb9b2c74f835b974a7d917e1d5f6e723e32a2c20fa283d77a6cb1a3db0"
+    },
+    {
+      "path": "compat-0.3/client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.rest.RestTransportStreamingCancel_v0_3_Test.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "212dbbe815850636c98d85c8d64ac2917380933ea5643ff05edead6e6bae5bc4"
+    },
+    {
+      "path": "compat-0.3/client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.rest.RestTransport_v0_3_Test.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "457d98be83f3a342a9a6bf2e07766cc744a9c4baf6bee4055c39649884206c17"
+    },
+    {
+      "path": "compat-0.3/client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.rest.sse.RestSSEEventListener_v0_3_Test.xml",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "37a4526031ab24edb0cd7c1ece49079d9d541ff023e8092de7e4ac260eaebe41"
+    },
+    {
+      "path": "compat-0.3/client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.http.A2ACardResolver_v0_3_Test.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "03e420c160243f0a39c480858338fed32c092ecde1d829148fa2acb42c8f8ebb"
+    },
+    {
+      "path": "compat-0.3/client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.spi.interceptors.auth.AuthInterceptor_v0_3_Test.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a648e19d58a910fcb6d267fb2acda1b56f21920c0b810b6034ee1888b7497233"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.GrpcRegisteredContextPropagationTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d7bcf7884fb9e26193a412ef870aee1873760e4f880e9b97f2809bee3eb7aef5"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.GrpcRegistrationInterceptorTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "04c85708a641b0d5b1970fa7d739eda604b39cb07cbd6aaee22e5cef9fbe9249"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test.xml",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "745ed2bc41702a03c4482bb3400c96ed2c639930d5957cf80982ac323163e9ec"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "sha256": "bca3b0721cb5e14195eab1fcc4370d03eabeb7e67dec13cfcf101235ff6a805f"
+    },
+    {
+      "path": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithTaskAuthorizationTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2b5501ae6a2163602129460a9ebb382982b4b1332823986d72c6bbb737e52ad8"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.A2AServerRoutes_v0_3_Test.xml",
+      "tests": 64,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ff0c87877aaedb69b24dd52078d859c85a63532e0e6318733692af14b0874eb4"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_AndroidTest.xml",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d92acbf4eabb45adfabcaece051e1c0ab0e3234593daab064a4752c46687945e"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_JdkTest.xml",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "cac4855780366a7042f8f2e56a45322ca7c76da58227217a869076312a0d7e44"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_VertxTest.xml",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f3ea9c5bc8f748443f2228d117c92db382d055f57cdebb5f2d6085dadb729b8a"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthAndroidTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5265c1001786366dbdd98faeccdaeeaaafece8b695ceda48c24daede707f0e75"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "32a4ccdd8562213e672610039a6836b6bdbdfa10b562c2f9f7806d3d7df65718"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthVertxTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d47fd75cdc733c7c8981c723413b51d5d8c96f2dfc293b12967dc0d074748324"
+    },
+    {
+      "path": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithTaskAuthorizationVertxTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1659e5f662cd685310efbada34bc7e40c0792875f6f85b867d728285dded4d1c"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.A2AServerRoutes_v0_3_Test.xml",
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b5cf73f6cf3e1de37946a4d205abdff1caabd7ee132dbf1c79f17a54aafbcf5c"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest.xml",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "ea9d68a112f5932407f45b53a44ccde6dcb64c6c5bf39fd4f9fd9864cf0b45d2"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest.xml",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "04725680ebb476f58252ac1050d6969e27e052d3a6e06d3a74d4d9998f2e88e9"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest.xml",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "c41ec6e5087710f09848fa8d493b394cc89d81132a940be55f14d61ffc244b43"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthAndroidTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "51ca678702f1f1d28f04532e5cafd05b2ab4b10280193d6dac405dec45f9ba70"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1808f5e3880a59d8a015146dcea755160788c214a36963a818fcf881325c9f0f"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthVertxTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4d99d75e85055a3c609095de18be3a4d92c10ae15a3196c2336c58a808493945"
+    },
+    {
+      "path": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithTaskAuthorizationVertxTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e2d3ecf7203ec7eba6d2a021ba594d64eeb6e38ccdd7746d72d3eb60efa913db"
+    },
+    {
+      "path": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.PushNotificationPayloadFormatter_v0_3_Test.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5de5db64995bacc90699bd02766bbb0c065e0ef4275aceade7ee57105b560eb4"
+    },
+    {
+      "path": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.FileContentMapper_v0_3_Test.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "203a65aa58a23cdff8c184f3d03258b85ea563ec868bfafe00893a9a73a1d77d"
+    },
+    {
+      "path": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.NullData_v0_3_Test.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6e7c41b8d1febc06d930eedbc8af10083256092b943d52677fe770fd3a330370"
+    },
+    {
+      "path": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskMapper_v0_3_Test.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f39669e3aa1b95450fb09e3751ed12bcbd2f14e91a2e2e234d28e4f428ddb44b"
+    },
+    {
+      "path": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskStatusUpdateEventMapper_v0_3_Test.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1519854b54c08e8ff7e5e0c5db8c207a7738567de6a0b96d3355a5fbbb6108aa"
+    },
+    {
+      "path": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.json.ThrowableDeserializationSecurityTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "089be72b01e38afb557b4653db1eac3cece679685ca77dc407bf1af39b7f1193"
+    },
+    {
+      "path": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.JSONRPCErrorSerialization_v0_3_Test.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2406fb24b73362145cacee4b35de48c75002e7a6d9f9f4175ba46a8f94443514"
+    },
+    {
+      "path": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.NullValues_v0_3_Test.xml",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "719906145a23c9ecacc7ab783c0283b68fe3acd1ec3b717cab899b520c49cf0e"
+    },
+    {
+      "path": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.SubTypeSerialization_v0_3_Test.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9edbf9fc76a9b3c11ca4f73a7149c822443e0bbd2c9908a4dd022acf9bdafefb"
+    },
+    {
+      "path": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.TaskSerialization_v0_3_Test.xml",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "98bdf3650a60347f4228126f0d15e63ae5ef56c52360bffc16b5eefbf2cf2c4f"
+    },
+    {
+      "path": "compat-0.3/spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.grpc.utils.NullValues_v0_3_Test.xml",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4ca1f619a1ca8f5dae2c53da279ba8a44049d3fcef4accf7a4987f7d54fcaaf5"
+    },
+    {
+      "path": "compat-0.3/spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.grpc.utils.ProtoJsonUtils_v0_3_Test.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "02ee633eddb80e29d27312d9ff0e7825746d5814e53c97628ed1317b57de5689"
+    },
+    {
+      "path": "compat-0.3/spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.grpc.utils.ToProto_v0_3_Test.xml",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "87c117306c0563389a21e2d5c8c0f81fb4708feb3f2f6e98cbb2718bbe579b02"
+    },
+    {
+      "path": "compat-0.3/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.grpc.handler.GrpcHandler_v0_3_Test.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "54348e4afcbcb033d8197b1c4ff46c0771ee275dde7dca9d2fb6cb609c0f2bb0"
+    },
+    {
+      "path": "compat-0.3/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.jsonrpc.handler.JSONRPCHandler_v0_3_Test.xml",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ad3259be90b056bbd32608f7afe980184dbc606f120d401d6b2e7a33dedf9ef3"
+    },
+    {
+      "path": "compat-0.3/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.jsonrpc.handler.JSONRPCRequestDecoder_v0_3_Test.xml",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "cc0bfceaf01e1f6ced839dbf271beb668fa5b043d0da4039b5954b8390228dcb"
+    },
+    {
+      "path": "compat-0.3/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.rest.handler.RestHandler_v0_3_Test.xml",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "35cdafb62eafc6ca3e80436a77a650b26a7ab55e5e9e60f3091a2861fa26e449"
+    },
+    {
+      "path": "examples/stream-lifecycle/server/target/surefire-reports/TEST-org.a2aproject.sdk.examples.streamlifecycle.server.StreamLifecycleTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c1b9bdfcf40f513499fe442472ccdbe606df6393fe6c0c12d1a326aef8cde609"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientFactoryTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ad3a0ccb8361d5f81e5a4022867753035736c623351cb518b567000d4d40f6a6"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientIntegrationTest.xml",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5b6eb4587a59c80c6b6fcb656b0e36bd8a540db1e210425a4e0a10d0cba5ec84"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientProviderTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e131d6106ecc28b6119ddcc87e18caa33c5b38501e8b4167057315755b58c895"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientRedirectTest.xml",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "71f169d6627b2ec1011c922ffd3288b79980f8a68897659cca3ec0211707455e"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientSSETest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b481523822676b89136e87fe30bbfd1c52f41aeb34ee0597f5cafc0b21906169"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "07af95d7d0ca5c1048a2088275546a43c0ef0327f964d81f9eeb0d2533e917ec"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidBoundedLineReaderTest.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "611dadefaa63f403c915548666765c406d91160a78011aa7d59738b80180a06d"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientIntegrationTest.xml",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d2c8038e4f980d1616e58670a60eab2144f632985728e8a88d4a962011dd26a7"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientRedirectTest.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c2db703da474f0248b753594cce2cb217acd581f8ad09e7477e21c3891e90acd"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientSSETest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5f4c20d89f4b9b047a3f09dd831420d793c132baacf0861553d34c2de70ea5e9"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ff958caaa382d1b9176bd04d4ae9ef7f9a5d705a87605f335a22bbc241fffb93"
+    },
+    {
+      "path": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpPostRedirectHeaderLeakTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "922cdf49f86e08a5d05dbaa671f873a178213f88eaf4bc0bf28f107358fb4e56"
+    },
+    {
+      "path": "extras/http-client-cdi/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.cdi.CdiA2AHttpClientFactoryTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e1baed2495042c259ab29e031588d6e8e10e314ef91797da75e38943b8378af0"
+    },
+    {
+      "path": "extras/http-client-cdi/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.cdi.CdiA2AHttpClientProviderTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e89ba8be765738c115d90c4629966003723bd7142925986a407c42dcd89dbf65"
+    },
+    {
+      "path": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientFactoryTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b159bdbe432a6e43a9793bd7b8c9205a737d3dd837f572e3e3262c20a6a8f324"
+    },
+    {
+      "path": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientIntegrationTest.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0bbbcc5a4a3f7f0b2f79cf8a632f4d90b672cedaaf23cb44382a1e0d2e113280"
+    },
+    {
+      "path": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientRedirectTest.xml",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "51ee2518a1a77db049475cb6fa992955722da88b8f2ca8047b6c0a6fdfa93488"
+    },
+    {
+      "path": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "sha256": "04c392f91fad5d51f2e4c015ef434c12d259599584b21233e8221caff410847e"
+    },
+    {
+      "path": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientTest.xml",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e7d2754c505cca3ee01a1fcbf0915c4ba86b8a826392f453bb61bdf9453bf486"
+    },
+    {
+      "path": "extras/multitenancy/tests/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.tests.grpc.MultiTenantGrpcTest.xml",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e814bf1754c89b5800061bce2b9257f808a785959ba1d687db33a3bfcb7eadad"
+    },
+    {
+      "path": "extras/multitenancy/tests/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.tests.jsonrpc.MultiTenantJSONRPCTest.xml",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0ee12e8ec4fe0d19439d3a5db8600556e8a0c20be101dc1bcfc60a2f941395a8"
+    },
+    {
+      "path": "extras/multitenancy/tests/rest/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.tests.rest.MultiTenantRestTest.xml",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "06ac933a026c0fff270fec11cf7cf3ef402412b8a0d28c81e838c58508e58c05"
+    },
+    {
+      "path": "extras/multitenancy/tests/router-unit/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.CdiAgentCardRouterTest.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "74c7ecc56689fd7a53b73b04195e8a46462b288f4fbb3f51d5ec83ebec07680a"
+    },
+    {
+      "path": "extras/multitenancy/tests/router-unit/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.CdiAgentExecutorRouterTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8cad4fa625386e699c3f0032893c74675be446209970f3e976078d6d850fb03a"
+    },
+    {
+      "path": "extras/opentelemetry/client/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.client.OpenTelemetryClientTransportTest.xml",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "92e9310ced50c2eef05f91e7f42b6070460c9580ddface76e2244b32af114dd0"
+    },
+    {
+      "path": "extras/opentelemetry/client/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.client.VersionedWrapperTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1c05ce52e47f98a3cdc22ebec68171f3ff2d456de01df0afa555285d0594d4b8"
+    },
+    {
+      "path": "extras/opentelemetry/client-propagation/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.client.propagation.VersionedWrapperTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2b5536640f9e7897d7b01b62866a7087af0a30e69cb03dddf4bc3b5edce847ee"
+    },
+    {
+      "path": "extras/opentelemetry/common/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.StreamingEventAttributesTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d4b07c07faafe4eca6d11fe92ac9c6d98a322fca591994395127fc010b037c07"
+    },
+    {
+      "path": "extras/opentelemetry/integration-tests/target/failsafe-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryA2AIT.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3e31e8a7d4f66b0aef7b46942bf8d0d6685b03c1f81c22cb65b5763700ee293d"
+    },
+    {
+      "path": "extras/opentelemetry/integration-tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.A2ATestRoutesTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "de460d1800dc7677345bf07cb89d6d1562ec56387b4ba1b2b98463a002f1757c"
+    },
+    {
+      "path": "extras/opentelemetry/integration-tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryA2ATest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6fa8d5bb9fa404edf35a553e53f5b7284d8d41601f291f436d01a3d15b8e9711"
+    },
+    {
+      "path": "extras/opentelemetry/integration-tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8aec82e40b1cd001a3214f585fef07ef79a8c79d14690a9b13812836bcd7586a"
+    },
+    {
+      "path": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryA2AHttpClientTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b26b0bf6b3020105984971fbdce14e6dde33364972a5540773b657fa94a6c013"
+    },
+    {
+      "path": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryHttpClientProducerTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ca796c0e5580cef98d50429f9c0f541eaa0618fd7aeea88f1321304aeebbb90c"
+    },
+    {
+      "path": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryPushNotificationSenderDecoratorTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1fe6764329312666193e4ecef3efd44faa183b1a7d020af692c5af2c815beefa"
+    },
+    {
+      "path": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryRequestHandlerDecoratorTest.xml",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1080d456e5a0df8b0842823b5ec59ff317c164cba7882006222067223650cc4f"
+    },
+    {
+      "path": "extras/push-notification-config-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaDatabasePushNotificationConfigStoreIntegrationTest.xml",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "da879085e0e093b3ac678aabeddf25e4a1047244b49260113ee5cd219a362b57"
+    },
+    {
+      "path": "extras/push-notification-config-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfigStoreTest.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "sha256": "0c2630cbba3b31e17ee04b553df53b7c149d91619e77c9d8ba0daeb05faff423"
+    },
+    {
+      "path": "extras/queue-manager-replicated/core/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.core.EventSerializationTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "df7f9dcbbe30459077242aa70f3cae7b459ac6edd3e4b80a5ce42e9dd0633aea"
+    },
+    {
+      "path": "extras/queue-manager-replicated/core/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest.xml",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "95f3c763f841b1f4b83151c6406f38f7628ac3757820211d480ce7a5fb655c69"
+    },
+    {
+      "path": "extras/queue-manager-replicated/replication-mp-reactive/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.mp_reactive.ReactiveMessagingReplicationStrategyTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "435de128624ce81dd9a19cfdd2d9d40eca2ed13c48dbf5a9116410fac24391fc"
+    },
+    {
+      "path": "extras/queue-manager-replicated/tests-multi-instance/tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.tests.multiinstance.MultiInstanceReplicationTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a8aa0c3ec74d3aabe1a033a0ab1a6fd6a2169d215da289b9b2c1d85625c471a0"
+    },
+    {
+      "path": "extras/queue-manager-replicated/tests-single-instance/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.tests.KafkaReplicationIntegrationTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "cec1e0b0fb6c9568b7c334d3bbb9bddeb98091e0bf0188761af6284d422c576e"
+    },
+    {
+      "path": "extras/queue-manager-replicated/tests-single-instance/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.tests.ReplicatedQueueManagerTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f1a60b84aed9b327a1c26b94848cd10c32bdfd5f445a8b617dee8fddaffde158"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreAuthorizationTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "39ed0e45adec9cf7fe0180e5a7b15adea17c97c88114aa8ba76b3c6f58b46d98"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreConfigTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "11490f64feb4299edae5f58ec7a356c8f85ddc955efca334f1aff03cd24c35dd"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreIntegrationTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8fad2e44466415d4e6eccfca774bc53b5f06336c18a812c7e0689f17e662b51c"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreTest.xml",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c18f15d199137e4a2a75df58b7a2a7a30e628023c8ee9b28e125927a3b9354bb"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaSubjectKeyTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "31539979dd64bc784eeb00b61ae42f84bbd440e3e93e6736ad7657d0f204a087"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationCdiTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "90b015d44d5ab3321831d505de06f929d6f2486b99dbbbe60aceb56379d3cb83"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationMySqlTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3329b9207344d2c0784278836af8bbd1e8bb2ee29c3c63c3c0ade235ab20862b"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationPostgresTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "40e479f0209a048d11508562d449bfe48cabc8a8fdf4ae7f0599053a309271f5"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationQueryTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f313332111b44d7d848e7143f3c386a9b361b80b47da3d5d3c103ae9d7e9a011"
+    },
+    {
+      "path": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwnershipTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f69987b9f50c0fa71dcea511db8fcede1de4fd5b1f5917ea9b456fa360b8a55b"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2ACardResolverTest.xml",
+      "tests": 44,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c426d85c502d5692cc6fff76c9f4a8797ea57594a51da83e83732442c18cea54"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2AHttpClientFactoryTest.xml",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "dcea532badf212ce1d8350f5ce5fae65064d51d49800a7fd25a1e218356e1cef"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2AHttpClientProviderTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3aee8af933d4992dbaad8c0c06b66a42d8c20db4f52b2f9db4e03d4142c3c5ad"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.BoundedLineBodySubscriberTest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4952ed6d70283df58af59d2997c7cf17f33f68ecf09e03acb9a0dd2b835f7758"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientRedirectTest.xml",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ca38fa5216e71f7adc143253932cd5783abb5f85474b897c65c3dc9377231b37"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientSSETest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "782875c71ef9e7a57ecdf1d074362cf9c75569553ca211f807d760d8bf416108"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientTest.xml",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fec69825fbbd9527aab6e6aedae109fad8dee49a4b9e9069afddcdfe73b93070"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.RedirectHeaderPolicyTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "74bebaf416b7d6c98e3cba40a414034b17cd57f9895714de2a709f76064aa091"
+    },
+    {
+      "path": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.ServerSentEventParserTest.xml",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "814d35aece79295d48564bf6ce0be1a752aa38b9bdae015860c4e7856ae8c61e"
+    },
+    {
+      "path": "integrations/microprofile-config/target/surefire-reports/TEST-org.a2aproject.sdk.integrations.microprofile.MicroProfileConfigProviderTest.xml",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "645123902b7e8b1fc9031b5b8b0240873d364820c9846d3ef7dfe6e908d8f8ae"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.A2AErrorSerializationTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "38d451aba3076011fbd038e0dfdce14e3107d38618b0554746f5bd88c2d3c6d2"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.JsonUtilTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3a6d5b1b1754b89ffadf48434cfd41ec928614ead817757102fa848857c0b597"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.NullDataTest.xml",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "539e502b96070656fd997ae5d62bf4a36e2a0e04d0a1bd060fdd24b4ce6c21fb"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.PartSerializationTest.xml",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "da5031712276c9bec4db3d266836f842b6877890be2e791e5d10ddef2d4cd096"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.SecurityRequirementSerializationTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fc00b9a9e2f2eea1052c09a0def67c4d6db5998505e1b55ac14e317f8c84937f"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.SecuritySchemeSerializationTest.xml",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "533e665814f5be657e22209fb469fea471800c44aca29d134db190679c82edbe"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.StreamingEventKindSerializationTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "af755423804da9318be58ebce4376bcfeaf018b64d427afdffd2bee80ced566f"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.TaskSerializationTest.xml",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "33756537c55f72b961cda09d7b609fb8ea4f5d091b0806b9682ab2ae3a156eb7"
+    },
+    {
+      "path": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequestTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "71dd892f962304b5d10fb4a436c32f4574b6c72f110d083e713ac78c03252637"
+    },
+    {
+      "path": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.AsyncManagedExecutorProducerTest.xml",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fd771f3a5204b729e0d47b0098b6ee71cb018f415ae005e59ec5f78f7480d025"
+    },
+    {
+      "path": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.SseResponseWriterTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bdcd9eb9e52f32700e0f0b83bd9a67cc82c263160bc9eea9ace2e0483d0f7ca8"
+    },
+    {
+      "path": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.VersionRouterTest.xml",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "099242613353f7a0198ecb16a2b1a6c93cd3f36e1fd0813d7a9f2adcae34a5d2"
+    },
+    {
+      "path": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelperTest.xml",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4c1611e9cad864f3d5ae3555fed47ba7676f7ed50e7538c6027a075aacef900f"
+    },
+    {
+      "path": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.A2AExtensionsInterceptorVersionTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bc91babaa69cfbab4ae9d1173d500b3f217f9ee1a59b3ff99a4ea57aea2accec"
+    },
+    {
+      "path": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.Only11GrpcPackagingTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "85d1a6e4fc66881e46431aac1fbd8bc097a85ef98cac7806ea754f3903f1237f"
+    },
+    {
+      "path": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest.xml",
+      "tests": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "0f5eb779f3dbeaac2a65d0afd4df974ea865ccbf7dda46b69ea3cc4167c739b1"
+    },
+    {
+      "path": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "sha256": "9b65f21a329f30ff0ad918164f3ae948cf12c42f75c31f40e4e15fe0c7afd254"
+    },
+    {
+      "path": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithTaskAuthorizationTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "13dc1537e1c8957882b3aafe34bb63b8a6654ea2bf970e41af6f2081bf9e75db"
+    },
+    {
+      "path": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusGrpcHandlerLazyResolutionTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "13cadf0fa66d2a5aadedad31e6aa6efc0bc874b4b4c4c3a863e0b732e8486f48"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.A2AServerRoutesTest.xml",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "549146b48621d99757e3d04deb944f8f4410f497fd50009e3586dc09ae35beeb"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.Only11JSONRPCPackagingTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3cfadc623999318a2bd732bf299f47b81980b58cc1ac79b8bfde83aceca5b90d"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCAndroidTest.xml",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "74888ed78b165d9ca47b536fa2422871df6cec2905595dc9be9913223c018c47"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCJdkTest.xml",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6d0a84eb1bcd25969a16837fe9a1d361a962af68aa361ddab0bebe8f8eea24d7"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCVertxTest.xml",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1ab0e2bdfe7835b8f21e58ee670c8469c4eec3f212aca2c03046f411e3116936"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthAndroidTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3ad69ec728a52cb43012e2f62988ffb80d1bc259ab6488c4beb2e425994a32e4"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthJdkTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d18d3736832bc7bfc41709b331ce6fcdb2dc3db33a7549ec24e047a975d73aed"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthVertxTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "261e06b6459ace78c408df2726794d52cfbe0a0bac741c637bf58a0b7ee32642"
+    },
+    {
+      "path": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithTaskAuthorizationVertxTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "261abdfb91780a127ccd592d1af4eee9c7f075b865ae568879dbab367a48350a"
+    },
+    {
+      "path": "reference/multiversion-rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.multiversion.rest.MultiVersionRestSubscriptionRouteTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8197b69188425cf5aec04ce1a7f09ee7ff331abbcafdd2d95767ea6d964ae3ad"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.A2AServerRoutesTest.xml",
+      "tests": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1a6d187449302346e536ee4ee84b8ac8df78d38b5da149eebb63134662007629"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.Only11RestPackagingTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3d23bc1c0b5ae78ec735174226f14bd2823546552289b944f207b4e389d42b88"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest.xml",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "0ca783aa7c200f8106eda8f5e85275ebd04519976b78ddf6e4208946121a2667"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest.xml",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "51ca01874f4022612357526f15ef4395256e3923583cb1acb6e16634470bcf4d"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest.xml",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "dd95c7dcc36b1bddc3540d8ba89147e24aa6de32dd9da6bf34dbae07e0bcf47f"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthAndroidTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "01b8bf71b76cd2f904ea7ae10836187247f3b47c540eddd039f56c90fa7aa18f"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthJdkTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1e27bf59be212ca33d98da7ba0719973651c868beb9e992209aa8f4891bf41d8"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthVertxTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a186c8349d8606791f985e041f922c6f77719d5d4a04d1e540743e399a014c04"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithTaskAuthorizationVertxTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "17e06b666420434915d8b9cf0939b53c1c4e99dad4c552660c5f5501ba89c47e"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.RestSubscribeIndependentPeerTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "13e27cb8312fe63368fda89aee66a21ce8a99ad2f8765bceaefd3c7e14d84243"
+    },
+    {
+      "path": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.RestSubscriptionRouteTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "942f2372fbd96b24f35e98b01a30d378522440a359ca99a3ed1132cfd19375dd"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardRequestPolicyTest.xml",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e71a8020b8c45bb3407e119040002a98c9b535d0cf000b69613f8072cdf8d51f"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardResolverTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f396a80eccc1900e1895537c705b9eeebd8ca6994031566775f926e653107e75"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardValidatorTest.xml",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bf75c253c6c1ee51c32559a861f01837a0deb0ef0ec489b047ca201ea907d47e"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.ServerCallContextTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b86675350168bbfdb0ca80b1b65a99adb4feedb85e6b7aaf98e0e7e0e6e8ca8b"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.agentexecution.RequestContextTest.xml",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fdccf1a92ff0f2f8bb93b5105dabe3a8606efd81bfe57c3ce427d5e1b2caee72"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.agentexecution.SimpleRequestContextBuilderTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8d33e5046d9369f571d7174cf8755b1fd5d9c448415ebaeab6cb6c6ab3b8bb78"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.auth.TaskAuthorizationCapabilityTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "85b26d6732cb78dbd60d03b3acbb1fedb823e6a6da06c797f7b5c0b0967fdca7"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EnhancedRunnableTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9f0f8907b7fc9038207131e912866cd2c7c36f57ac0cd2f11b0bc4be7204b05f"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EventConsumerTest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e9d4b5a839cc2b891bf0fbd88c5fefc87dc356d15c0b03cb9dd84a4cf8aced87"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EventQueueTest.xml",
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "edf3fb47986da3b86b47c0d13474cc8a6425663559b4d5d5dd2ab87506f2601f"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.InMemoryQueueManagerTest.xml",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "984c8667fa661f48eb45cb37adae67b5858f56ec788dca13b0073ef287d8a6a9"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.MainEventBusProcessorExceptionTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "92e18a5aa16004843873d853e73d96aaf0f29c811d5727e612e7ca6c9a6d1422"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.MainEventBusProcessorPushNotificationOrderTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d6f8377590ed7a61fff71b6d36780e39dece626103e8594a38048ce18cf3b88f"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.extensions.A2AExtensionsTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "733ca538a85801e8e145d0e67c982d856ba08a93eb5ac322d68ea9d9236e4452"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerBuilderAuthorizationTest.xml",
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "05575785d6282c3761f7fd233e96222b99e06ebb801b67de102f22f096465f0a"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerReferenceTaskAuthorizationTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "be79535b62fd8c85bd789f451af94e8ec9f0bb1a967912dc1e2f796811857972"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerTest.xml",
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "213554dfc07f4a0aa38ae59e85c59dcd95b76b60af46ad8709e229289169e839"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.AgentEmitterConcurrencyTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c42fd6bfb26f8dc8965cebdec21958884b7a401463174993049cc5532cd244b1"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.AgentEmitterTest.xml",
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "eead2e0b276f44a4d734339195e5e2df3f846ea371af2571b30a007ad384d3d6"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStoreTest.xml",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fcf49e15f40814886816e9277adf1e43eb3ba145994e45ce4a72af0cfdd1e93f"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryTaskStoreAuthorizationTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c3341006481da29f5959560c71882749ed057cf08a73645d95d11bbf2e6765f9"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryTaskStoreTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5cfa08d2be5cf33e7354e133ebfbae1a625e3716ff9e0f7a97c5a09e14ae27c5"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.PushNotificationSenderTest.xml",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "41c0ba4ba2e1830a3630f36077c4db889153fc4886087f32f88f33c6dad3d376"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.PushNotificationUrlValidatorTest.xml",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f26e502f361293e9cc01c27710ddc9bc7c089b71fba20da6a20bae8bc4e7d412"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.ResultAggregatorTest.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "514502a0bdb18d1ec15d8e2323a8329b08c5237254dfc6e1e00ba1e1bb445e9d"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskManagerSnapshotTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d6a9bee23733ef367390771a6bfd39c4b3faf56fca7caff87d9e9e31a90c43c0"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskManagerTest.xml",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "25d773d58849f866e4f1d7ca840b73395387134602dfff6e142f2463bb9f01db"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskPersistenceExceptionTest.xml",
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5c49352126b70901dd28eef72494d34bd317e04938d3b423b90c956ed48bc7c3"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskSerializationExceptionTest.xml",
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5127f777ea52f57ab187d71cd8e25560725821381820c4cc95acca621c6cad5d"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskStoreAuthorizationFallbackTest.xml",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "22b0590d73f5d9227d34953a56a92d0f4cc666001cb7f332591800b9a3225198"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskStoreExceptionTest.xml",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6d3a4e6bfc052156e2ca918eb6dcca68888449aad0de87b5125f51e4eb3dc36e"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.util.ArtifactUtilsTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3a589f311609242629a6de15de9b8a1b835a75d6d153472f2f78b95d517b2322"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.util.async.AsyncUtilsTest.xml",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d61d011b62cedf367e25fab18d4ac302ab848d38088799552a4f8bf96bbbf0c2"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.version.A2AVersionValidatorTest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5c8562534f517ea7161a88d7eecbb2209b23cc04bdbef847b4ec293e6ba64b48"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.version.InterfaceRegistrationTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a315aa3d38f986389a8da7738a78a485d02448970b991ee0302e3f93480edd64"
+    },
+    {
+      "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.version.ServerVersionPolicyTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "63c79f337743380dc2ea8e29d098612e2171f85d40d9252f1db78c14e4a5950f"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCapabilitiesTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4a9d7ab7e96cfb4e2daf9242fc5d9b17e03b279d05ac0b28a3d4630a2233eb67"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCardSignatureTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a4d0d4fbda29056a62ed991bee77032b3c84bf815c72db7593a4432a706fc8ee"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCardTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "af64f3792d0492c9c56a290e3d4d7ea8c8a52643c47e97e08837b4c54b074fe5"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentExtensionTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "aa750099c2620cd6c3787b1733f02334bad5d7386ebbe37d6fe9857b5bb077c9"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentSkillTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "57d95ec364c5ea17307452963350e4964cd6da516c36e109f5e28db05173e36d"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.ArtifactTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fd85ebb4e4ae8798fe98e410541dc984b70299cf5c5fde15cae54ca53d84fada"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AuthorizationCodeOAuthFlowTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "59df6ce67f94bdb3b6776677be35f5df1246b539f463c2168f1e3d4c5afbc1c0"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.CancelTaskParamsTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fc5a1fe42e94556bcc552998a269e73ad74fa285a5ca2e7ee522c0b5820a15b7"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.ClientCredentialsOAuthFlowTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bf6359662dd4bdc03caddabf8f1aaa00f8b0ba23f16e8aaadf822868cbe10fd0"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.DataPartTest.xml",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8c238ac100f7b33e027bba22b430ea3f752b6973ffe8af302a1c9e4df436a6ae"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.DeviceCodeOAuthFlowTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f784689f87a4624ef8cfe51761888960daf8929699f85aabeb50297f03e74b94"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.FilePartTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1aa88852dd78a089d3ad5c0377577e74f46048f7813bcf6819b872a6acdc9a58"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.FileWithBytesTest.xml",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b19a21dacff0988ba9086b49e440fb3fa3975d8b6a2e21d50d848055f7678f7a"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParamsTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "acf80144db87d5cc32bfc3f7f7f53866dd04a9360072d5460663b724a9f44122"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.MessageSendConfigurationTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1198f7933e76a230a37cb02934333ba29a00bf23789f3080df357175381afb9b"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.MessageSendParamsTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ce4eee6979585a3d2b0ed86d73b247b5f11cee6e54635f0301960d1af63f3341"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.SecurityRequirementTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7e34f46e0273caec74dab8d6e3f2a23fbbae071ab1f818c02d0ce25213e0058f"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskArtifactUpdateEventTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5c62c632231da6d78b0319041f4bb10416ac32148455f2d61cb21feaa5541439"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskPushNotificationConfigTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c50f9add6c37bb817689f302cfa05f255794e6945dccc75a78f0be53d75bb4b6"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskStatusUpdateEventTest.xml",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "241e79e46e73176eb4e135f54babc0e4a4fe79a6896949b040e91b2e3392db33"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TextPartTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "80c539ce2b161e1a06034ae96b2b6ee6ee413be1a6986a9de577bf37e36d9e1c"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.util.PageTokenTest.xml",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "93aced369716c72fef6d2f15d5b9ab7893498c10b3d217332e90fabfac420ce8"
+    },
+    {
+      "path": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.util.UtilsTest.xml",
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "15d35aef6f8ec14fc2c360f777e78e96c6b650f759727709ad38867dea5c4dfe"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.A2ACommonFieldMapperTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c0f7ac46daac52bf3ebecfd71d6cf7851917b7c5b681023f4b72b665bec27ad8"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.ListTasksParamsMapperTest.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "880b56902da2f299c72146f89fb6233fcebcffef6e8d83f085b0d892f1a2a0b8"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.PartMapperTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "26fc017646d35a43d736fbbe0fc5fff90f406a6d1b93bf5bf63428f09198fd39"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.StreamResponseMapperTest.xml",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6d00e9a587f8257ae7c61586cd455f25a4ba35a794170fb9e225c9f6e021a293"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.JSONRPCUtilsTest.xml",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "64d8a1ccafda5920c69aa080a6aefabab2783897115a9586727b3940ce0eab17"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ListTasksNullDataTest.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7f994dd9e9eb90b2cec39887fd9bca73b0baeda4282669c02ea13cd08e9c53a2"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.PartTypeAdapterTest.xml",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bbd54080675a23211ca956de81290a8cf58b1e58f0c13a45dfdc8dcad066580c"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ProtoJsonUtilsTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "98c40de2c1d65285ee6ce8d898fe8f1aaf9517c9f438a4ab5eff3d4d9b24e5e2"
+    },
+    {
+      "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ToProtoTest.xml",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "454426be258f37318a41ed7901a4731d43d0b8659152c0ca0df7ed9c4c97349a"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset1Test.xml",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "441cd104a91b1fff5de920ae9a391930780cb9576be73413fd8c4c9c97b7bcd2"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset2Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "610a472d681f3a6e3678d5902f442489d33cbbf098626a7503cc1214290b0101"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset3Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c31fee3faed38c7f03d80a65fb80e119489b471acf463dd678b6c95299d8da84"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset4Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "771c80edca5e3e37f4f696ac2700843860a573122c9fe87e8aac0f387cfda354"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset5Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a8e890a0e84ff96e920abdc2912b230fbd9eaca889a0c53ee183dc5b06a8074f"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset6Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9ff09d6370e9947f01f25832a0b13739ce2f8d24a777283ed0dc629af743ad59"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.GrpcProvisioningSubset7Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7563ba70a1725ad8efaa58f64fa0fbf75c8a4ba099f91bfc39d902a742a9b551"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest.xml",
+      "tests": 64,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "12242bc267e8d7c2f5e596962080f5afc7c8fdc50a4fec5d18f06ec7819fad2a"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "sha256": "037f59d52d70e29a087405c2bd98fa740bc8d7a05d9912ee3202654a7d00eb26"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithTaskAuthorizationTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b4d76fdb84cb07b0a5262ad6175af3a1f6f6662c5544f153f607562b01294155"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest.xml",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "28d5f93107d4fc0c0a85b877b0f03a84c3344024887a510302e984f7c438a053"
+    },
+    {
+      "path": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "sha256": "eec1082dd2506d5504261b1169bbf565da4ab501cf647f301182f55372dd7b01"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.JSONRPCDefaultProvisioningSubset1Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "757a7c422d6256672a8abcb7d3b0f01cd97cc39516899aed24c4c1f94d9ddf96"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.JSONRPCDefaultProvisioningSubset2Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "40298a11e95ebba64c43fd53da7ce0328d65e9b5bd61af40fbbc5ab183d3449c"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.JSONRPCDefaultProvisioningSubset3Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "27bcfff92fd7d89e1e67bc783f3b1a48aa17a84e187933c562e37f69d4287245"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.JSONRPCDefaultProvisioningSubset4Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7a2cb8819c620e8dc861eb31a136fb5d5b8fc4be38298bbfd7e813c31eda0f06"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.JSONRPCDefaultProvisioningSubset5Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "52843851c71b5d9d0419242849feffc0931c2b59672ef88082c2e3768560ebcd"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.JSONRPCDefaultProvisioningSubset6Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3f1f8ec0811c297a9a85d0fd49ac1e7f1f435bd8b40ca49268c51373ea5537d4"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.JSONRPCDefaultProvisioningSubset7Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e1866c100f01995ec56c70d8f8509493b1792b16ea2038759d6c4ee7b8ff1e94"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCTest.xml",
+      "tests": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "39a76d1ef16fa3c05e3b09e736dffa7cc4aef01021d7f2f79732b6b934e99752"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCWithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "424e20c8434b8c1e199d62084f9248a5e794364076385259ce466d7de5046182"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCWithTaskAuthorizationTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4b3a5f7bab93fc2b240c0432b836853dae1f06c993d3a36cb67b2ea85dbc3273"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPC_v0_3_Test.xml",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1b1bf2b6e446cea9a3818580ce4b7b35a3b98e769230121539eeef824a04eabe"
+    },
+    {
+      "path": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPC_v0_3_WithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a35e19ae0b34e6c9fd0fd756ebb9c1f2cf7d82f0db69098d2d1557bf2c9afd71"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest.xml",
+      "tests": 68,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "1616095e8854a66607180cb9ba296b4a0272b6e5db59869a76e9ff65b9cdc25d"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestWithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "02d91e22ef779af0524be807f70e4b496f30e51caef2ad36dbf10bd335c697eb"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestWithTaskAuthorizationTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5b7a48cc9ac883d2ada840e613b98081f6bae91212d8d125a34b42f79e12be5b"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest.xml",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "sha256": "f44e47eec3f55240509846770b4cc0c25d58dac16a5815ad2caf72100d3b56bf"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestWithAuthTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2593324bbf7697f7057b22a8305a7392ee814d8bebb9b696dae0883e56a0546a"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.Native03RestDefaultScopeTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "347b468ce898d16ccf66bb5ac8ef35bb49ff2fd8c01486e4b7b5f41ae6c40b48"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.Native03RestDisabledDefaultScopeTest.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "881ebad6ef1f34e5147a1814e81f2bdfbc18366306da7a1c53b4bd120e211025"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestCardProvisioningWithout03Test.xml",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b3f7aa97600f7037bd8ba848178a74c60ded93ec26d29d6174d447e0c578bdbf"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestDefaultProvisioningSubset1Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4c795db24ac4f82956577ed15026ccf42a54e7c199619ecd76ceda89c75ecaa7"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestDefaultProvisioningSubset2Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "079602f34fe69e72903a5e5b528e94403985d95157df7171b3646afa09567e12"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestDefaultProvisioningSubset3Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "37747ade50844c4992d9c5110edc6333c83b913e05a585ce99f5b28be3d7e71a"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestDefaultProvisioningSubset4Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8d114bed72423ba04815c79b2df43d05acc4f647f1ea15e30931266a56b3d7eb"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestDefaultProvisioningSubset5Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4b02f360eef4625eef646eb52b4cdb56ad01e2f5e4d721ad70f4bac5ab6dbe24"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestDefaultProvisioningSubset6Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a6ba67a071738158839b5c797b6f0a794b738a8d8343ed14e7b8515f7d43fbba"
+    },
+    {
+      "path": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.RestDefaultProvisioningSubset7Test.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "930b80d31fbdaf8ab519cec0a4e258a895ee8eb6ab3a054d1995e91a90b8b351"
+    },
+    {
+      "path": "transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.grpc.handler.GrpcHandlerTest.xml",
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4a8d7af27e01cc964014ba425269d10c6e36ec015dd4ebaf29119eb1dde35726"
+    },
+    {
+      "path": "transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.grpc.handler.GrpcVersionRegistrationTest.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5232d6928d0388e5159c762773a346521017b75ad6ae72941bb5bfa20521f8d6"
+    },
+    {
+      "path": "transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest.xml",
+      "tests": 73,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "sha256": "ce973f4e42b28e1eb80b65dd6660e4755303982e5688e47630f1be88ce93d461"
+    },
+    {
+      "path": "transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.transport.rest.handler.RestHandlerTest.xml",
+      "tests": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bb88d2ff08b51bd26819fef31b32365ef7f54c334d52755747ad8ded49697d0e"
+    },
+    {
+      "path": "transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.transport.rest.handler.RestVersionPolicyTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "03fa7694bd344b5f9ae6f73efc95528a21329d05744351aba47e1d9c9da294bc"
+    }
+  ]
+}

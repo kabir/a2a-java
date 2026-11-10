@@ -32,7 +32,8 @@
  *   <li>{@code GET /tasks} - List tasks</li>
  *   <li>{@code GET /tasks/{taskId}} - Get task by ID</li>
  *   <li>{@code POST /tasks/{taskId}:cancel} - Cancel task</li>
- *   <li>{@code POST /tasks/{taskId}:subscribe} - Subscribe to task updates (SSE)</li>
+ *   <li>{@code GET /tasks/{taskId}:subscribe} - Subscribe to task updates for 1.1 (SSE)</li>
+ *   <li>{@code POST /tasks/{taskId}:subscribe} - Historical 1.0 subscription (SSE)</li>
  *   <li>{@code GET /.well-known/agent-card.json} - Get agent card</li>
  * </ul>
  *

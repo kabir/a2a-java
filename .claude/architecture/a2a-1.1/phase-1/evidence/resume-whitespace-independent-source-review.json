@@ -1,0 +1,113 @@
+{
+  "finding": "Only second/historical malformed probe failed after first shared call produced INTERNAL/PROTOCOL_ERROR. Raw channel is reused after malformed request can terminate HTTP2 connection. Source supports UNAVAILABLE from preceding connection GOAWAY as distinct from PROTOCOL_ERROR sent-stream INTERNAL. Diagnostic execution required; this evidence is source inspection, not executed reproduction.",
+  "sources": [
+    {
+      "archive": "/Users/kabir/.m2/repository/io/grpc/grpc-netty/1.81.0/grpc-netty-1.81.0-sources.jar",
+      "archive_sha256": "9568deab9aee56f4a0e298f32d65f12af28bcb03e89db6f0f64aae70b33f5610",
+      "entry": "io/grpc/netty/NettyClientHandler.java",
+      "excerpts": [
+        {
+          "start": 467,
+          "end": 480,
+          "lines": [
+            "  /**",
+            "   * Handler for an inbound HTTP/2 RST_STREAM frame, terminating a stream.",
+            "   */",
+            "  private void onRstStreamRead(int streamId, long errorCode) {",
+            "    NettyClientStream.TransportState stream = clientStream(connection().stream(streamId));",
+            "    if (stream != null) {",
+            "      PerfMark.event(\"NettyClientHandler.onRstStreamRead\", stream.tag());",
+            "      Status status = statusFromH2Error(null, \"RST_STREAM closed stream\", errorCode, null);",
+            "      stream.transportReportStatus(",
+            "          status,",
+            "          errorCode == Http2Error.REFUSED_STREAM.code()",
+            "              ? RpcProgress.REFUSED : RpcProgress.PROCESSED,",
+            "          false /*stop delivery*/,",
+            "          new Metadata());"
+          ]
+        },
+        {
+          "start": 950,
+          "end": 980,
+          "lines": [
+            "  private void goingAway(long errorCode, byte[] debugData) {",
+            "    Status finalStatus = statusFromH2Error(",
+            "        Status.Code.UNAVAILABLE, \"GOAWAY shut down transport\", errorCode, debugData);",
+            "    DisconnectError disconnectError = new GoAwayDisconnectError(",
+            "        GrpcUtil.Http2Error.forCode(errorCode));",
+            "    lifecycleManager.notifyGracefulShutdown(finalStatus, disconnectError);",
+            "    abruptGoAwayStatus = statusFromH2Error(",
+            "        Status.Code.UNAVAILABLE, \"Abrupt GOAWAY closed unsent stream\", errorCode, debugData);",
+            "    // While this _should_ be UNAVAILABLE, Netty uses the wrong stream id in the GOAWAY when it",
+            "    // fails streams due to HPACK failures (e.g., header list too large). To be more conservative,",
+            "    // we assume any sent streams may be related to the GOAWAY. This should rarely impact users",
+            "    // since the main time servers should use abrupt GOAWAYs if there is a protocol error, and if",
+            "    // there wasn't a protocol error the error code was probably NO_ERROR which is mapped to",
+            "    // UNAVAILABLE. https://github.com/netty/netty/issues/10670",
+            "    final Status abruptGoAwayStatusConservative = statusFromH2Error(",
+            "        null, \"Abrupt GOAWAY closed sent stream\", errorCode, debugData);",
+            "    final boolean mayBeHittingNettyBug = errorCode != Http2Error.NO_ERROR.code();",
+            "    // Try to allocate as many in-flight streams as possible, to reduce race window of",
+            "    // https://github.com/grpc/grpc-java/issues/2562 . To be of any help, the server has to",
+            "    // gracefully shut down the connection with two GOAWAYs. gRPC servers generally send a PING",
+            "    // after the first GOAWAY, so they can very precisely detect when the GOAWAY has been",
+            "    // processed and thus this processing must be in-line before processing additional reads.",
+            "",
+            "    // This can cause reentrancy, but should be minor since it is normal to handle writes in",
+            "    // response to a read. Also, the call stack is rather shallow at this point",
+            "    clientWriteQueue.drainNow();",
+            "    if (lifecycleManager.notifyShutdown(finalStatus, disconnectError)) {",
+            "      // This is for the only RPCs that are actually covered by the GOAWAY error code. All other",
+            "      // RPCs were not observed by the remote and so should be UNAVAILABLE.",
+            "      channelInactiveReason = statusFromH2Error(",
+            "          null, \"Connection closed after GOAWAY\", errorCode, debugData);"
+          ]
+        },
+        {
+          "start": 1017,
+          "end": 1031,
+          "lines": [
+            "  /** If {@code statusCode} is non-null, it will be used instead of the http2 error code mapping. */",
+            "  private Status statusFromH2Error(",
+            "      Status.Code statusCode, String context, long errorCode, byte[] debugData) {",
+            "    Status status = GrpcUtil.Http2Error.statusForCode(errorCode);",
+            "    if (statusCode == null) {",
+            "      statusCode = status.getCode();",
+            "    }",
+            "    String debugString = \"\";",
+            "    if (debugData != null && debugData.length > 0) {",
+            "      // If a debug message was provided, use it.",
+            "      debugString = \", debug data: \" + new String(debugData, UTF_8);",
+            "    }",
+            "    return statusCode.toStatus()",
+            "        .withDescription(context + \". \" + status.getDescription() + debugString);",
+            "  }"
+          ]
+        }
+      ]
+    },
+    {
+      "archive": "/Users/kabir/.m2/repository/io/grpc/grpc-core/1.81.0/grpc-core-1.81.0-sources.jar",
+      "archive_sha256": "d6fd286c3a94a16cab65fb48eba50250081891538f6031fc0756f55660670e87",
+      "entry": "io/grpc/internal/GrpcUtil.java",
+      "excerpts": [
+        {
+          "start": 329,
+          "end": 338,
+          "lines": [
+            "    /**",
+            "     * Servers implementing a graceful shutdown of the connection will send {@code GOAWAY} with",
+            "     * {@code NO_ERROR}. In this case it is important to indicate to the application that the",
+            "     * request should be retried (i.e. {@link Status#UNAVAILABLE}).",
+            "     */",
+            "    NO_ERROR(0x0, Status.UNAVAILABLE),",
+            "    PROTOCOL_ERROR(0x1, Status.INTERNAL),",
+            "    INTERNAL_ERROR(0x2, Status.INTERNAL),",
+            "    FLOW_CONTROL_ERROR(0x3, Status.INTERNAL),",
+            "    SETTINGS_TIMEOUT(0x4, Status.INTERNAL),"
+          ]
+        }
+      ]
+    }
+  ]
+}

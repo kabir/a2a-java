@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "tests/multiversion/rest",
+    "-am",
+    "-Dtest=RestCardProvisioningWithout03Test,MultiVersionRestTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "verify"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:30:58.806137+00:00",
+  "deadline_seconds": 600,
+  "pid": 32867,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 25.921,
+  "end": "2026-11-10T15:31:24.727054+00:00"
+}

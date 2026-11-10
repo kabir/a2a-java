@@ -29,7 +29,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.a2aproject.sdk.common.A2AHeaders;
-import org.a2aproject.sdk.server.auth.TaskOperation;
 import org.a2aproject.sdk.grpc.utils.JSONRPCUtils;
 import org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException;
 import org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException;
@@ -65,14 +64,18 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import org.a2aproject.sdk.server.AgentCardCacheMetadata;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.AuthenticatedUser;
+import org.a2aproject.sdk.server.auth.TaskOperation;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
 import org.a2aproject.sdk.server.common.quarkus.SseResponseWriter;
+import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
+import org.a2aproject.sdk.server.multitenancy.TenantNotFoundException;
 import org.a2aproject.sdk.server.util.async.Internal;
 import org.a2aproject.sdk.server.util.sse.SseFormatter;
-import org.a2aproject.sdk.server.multitenancy.TenantNotFoundException;
+import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.InternalError;
@@ -196,6 +199,9 @@ public class A2AServerRoutes {
     Instance<CallContextFactory> callContextFactory;
 
     @Inject
+    Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
+
+    @Inject
     VertxSecurityHelper vertxSecurityHelper;
 
     /**
@@ -208,6 +214,7 @@ public class A2AServerRoutes {
      * @param router the Vert.x Web Router instance to configure
      */
     void setupRoutes(@Observes Router router) {
+        VersionRouter.validateDefaultRegistration(interfaceRegistrationResolvers, TransportProtocol.JSONRPC);
         // Main JSON-RPC endpoint: POST /
         // BodyHandler is per-route (not global) to avoid interfering with gRPC routes
         // ordered=false: delegation via Vert.x WebClient can share the same event loop context as the outer request; ordered=true would serialize them, causing a 30s deadlock.
@@ -221,10 +228,32 @@ public class A2AServerRoutes {
                     });
                 } catch (UnauthorizedException | ForbiddenException e) {
                     vertxSecurityHelper.handleAuthError(ctx, e);
+                } catch (A2AError e) {
+                    ctx.response().setStatusCode(200).putHeader(CONTENT_TYPE, APPLICATION_JSON)
+                            .end(JSONRPCUtils.toJsonRPCErrorResponse(VersionRouter.requestIdForError(ctx), e));
                 } catch (Exception e) {
                     VertxSecurityHelper.handleGenericError(ctx);
                 }
             }, false);
+
+        if (interfaceRegistrationResolvers != null && !interfaceRegistrationResolvers.isUnsatisfied()) {
+            router.postWithRegex("^\\/(?<tenant>[^\\/]+)\\/?$")
+                .consumes(APPLICATION_JSON)
+                .handler(BodyHandler.create())
+                .blockingHandler(ctx -> {
+                    try {
+                        vertxSecurityHelper.runInRequestContextDeferred(ctx,
+                                () -> invokeJSONRPCHandler(ctx.body().asString(), ctx));
+                    } catch (UnauthorizedException | ForbiddenException e) {
+                        vertxSecurityHelper.handleAuthError(ctx, e);
+                    } catch (A2AError e) {
+                        ctx.response().setStatusCode(200).putHeader(CONTENT_TYPE, APPLICATION_JSON)
+                                .end(JSONRPCUtils.toJsonRPCErrorResponse(VersionRouter.requestIdForError(ctx), e));
+                    } catch (Exception e) {
+                        VertxSecurityHelper.handleGenericError(ctx);
+                    }
+                }, false);
+        }
 
         // Agent card endpoint: GET /.well-known/agent-card.json
         router.get("/.well-known/agent-card.json")
@@ -624,6 +653,18 @@ public class A2AServerRoutes {
      * @see CallContextFactory
      */
     private ServerCallContext createCallContext(RoutingContext rc) {
+        ServerCallContext context = createRawCallContext(rc);
+        VersionRouter.attachRegistration(context, interfaceRegistrationResolvers, TransportProtocol.JSONRPC,
+                extractTenant(rc), VersionRouter.resolveVersion(rc));
+        if (context.getInterfaceRegistration() != null
+                && context.getVersionPolicy() == ServerVersionPolicy.V0_3) {
+            throw new org.a2aproject.sdk.spec.VersionNotSupportedError(null,
+                    "The shared 1.x endpoint cannot provide the 0.3 contract", null);
+        }
+        return context;
+    }
+
+    private ServerCallContext createRawCallContext(RoutingContext rc) {
         if (callContextFactory.isUnsatisfied()) {
             User user;
             if (rc.user() == null) {
@@ -645,7 +686,7 @@ public class A2AServerRoutes {
             state.put(TRANSPORT_KEY, TransportProtocol.JSONRPC);
 
             // Extract requested protocol version from A2A-Version header
-            String requestedVersion = rc.request().getHeader(A2AHeaders.A2A_VERSION);
+            String requestedVersion = VersionRouter.resolveVersion(rc);
 
             // Extract requested extensions from A2A-Extensions header
             List<String> extensionHeaderValues = rc.request().headers().getAll(A2AHeaders.A2A_EXTENSIONS);

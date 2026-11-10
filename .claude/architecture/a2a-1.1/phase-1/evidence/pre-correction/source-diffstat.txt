@@ -1,0 +1,123 @@
+ .../java/org/a2aproject/sdk/client/Client.java     |    5 
+ .../org/a2aproject/sdk/client/ClientBuilder.java   |   92 ++++----
+ .../a2aproject/sdk/client/config/ClientConfig.java |   48 ++++
+ .../client/AuthenticationAuthorizationTest.java    |   18 +
+ .../a2aproject/sdk/client/ClientBuilderTest.java   |   13 +
+ .../sdk/client/transport/grpc/GrpcTransport.java   |  135 ++++++-----
+ .../transport/grpc/GrpcTransportProvider.java      |   14 +
+ .../client/transport/grpc/GrpcTransportTest.java   |  207 ++++++++++++++++-
+ client/transport/jsonrpc/pom.xml                   |    5 
+ .../client/transport/jsonrpc/JSONRPCTransport.java |   78 ++++--
+ .../jsonrpc/JSONRPCTransportProvider.java          |   10 +
+ .../jsonrpc/JSONRPCTransportStreamingTest.java     |    9 -
+ .../transport/jsonrpc/JSONRPCTransportTest.java    |   41 ++-
+ client/transport/rest/pom.xml                      |    5 
+ .../sdk/client/transport/rest/RestTransport.java   |   43 ++--
+ .../transport/rest/RestTransportProvider.java      |   10 +
+ .../client/transport/rest/RestTransportTest.java   |   39 ++-
+ .../transport/spi/ClientTransportProvider.java     |   11 +
+ .../quarkus/A2AExtensionsInterceptor_v0_3.java     |   32 +++
+ .../server/apps/quarkus/A2AServerRoutes_v0_3.java  |   18 +
+ .../server/rest/quarkus/A2AServerRoutes_v0_3.java  |   16 +
+ .../sdk/examples/cloud/A2ACloudExampleClient.java  |    2 
+ .../client/StreamLifecycleClient.java              |    2 
+ .../tests/AbstractMultiTenantServerTest.java       |    5 
+ .../OpenTelemetryClientPropagatorTransport.java    |   35 ++-
+ .../client/OpenTelemetryClientTransport.java       |   23 ++
+ .../opentelemetry/it/OpenTelemetryA2ABaseTest.java |   13 +
+ ...PushNotificationConfigStoreIntegrationTest.java |    4 
+ .../MultiInstanceReplicationTest.java              |   10 -
+ .../tests/KafkaReplicationIntegrationTest.java     |    8 -
+ .../jpa/JpaDatabaseTaskStoreIntegrationTest.java   |    4 
+ .../sdk/server/common/quarkus/VersionRouter.java   |  122 ++++++++++
+ .../server/common/quarkus/VersionRouterTest.java   |   36 +++
+ .../server/grpc/quarkus/QuarkusGrpcHandler.java    |   40 +++
+ .../sdk/server/apps/quarkus/A2AServerRoutes.java   |   47 ++++
+ .../server/apps/quarkus/A2AServerRoutesTest.java   |   28 ++
+ .../jsonrpc/MultiVersionJSONRPCRoutes.java         |   37 ++-
+ .../multiversion/rest/MultiVersionRestRoutes.java  |  135 ++++++++---
+ .../sdk/server/rest/quarkus/A2AServerRoutes.java   |   85 +++++--
+ .../server/rest/quarkus/A2AServerRoutesTest.java   |   33 +++
+ .../sdk/server/AgentCardRequestPolicy.java         |   11 +
+ .../a2aproject/sdk/server/ServerCallContext.java   |   24 ++
+ .../sdk/server/version/A2AVersionValidator.java    |   15 +
+ .../org/a2aproject/sdk/spec/AgentInterface.java    |    2 
+ .../multiversion/grpc/MultiVersionGrpcTest.java    |   98 ++++++++
+ .../tests/multiversion/jsonrpc/A2ATestRoutes.java  |   24 ++
+ .../jsonrpc/MultiVersionJSONRPCTest.java           |   63 +++++
+ .../sdk/tests/multiversion/rest/A2ATestRoutes.java |   22 ++
+ .../multiversion/rest/MultiVersionRestTest.java    |   79 ++++++-
+ .../server/apps/common/AbstractA2AServerTest.java  |   10 -
+ .../apps/common/AbstractA2AServerWithAuthTest.java |   11 -
+ ...AbstractA2AServerWithTaskAuthorizationTest.java |    2 
+ .../sdk/server/apps/common/AgentCardProducer.java  |   16 +
+ .../apps/common/AgentToAgentClientFactory.java     |    6 
+ .../sdk/transport/grpc/handler/GrpcHandler.java    |   75 +++++-
+ .../sdk/transport/rest/handler/RestHandler.java    |  116 +++++-----
+ .../sdk/client/ClientTransportPolicy.java          |   84 +++++++
+ .../sdk/client/SelectedClientTransport.java        |  110 +++++++++
+ .../sdk/client/ClientBuilderVersionTest.java       |   56 +++++
+ .../sdk/client/ClientTransportPolicyTest.java      |  143 ++++++++++++
+ .../client/LegacyProviderCompatibilityTest.java    |  147 ++++++++++++
+ .../legacy-providers/get-task-response.json        |    1 
+ .../legacy-providers/legacy-providers.jar          |  Bin
+ .../transport/jsonrpc/ProtocolVersionTest.java     |  209 +++++++++++++++++
+ .../client/transport/rest/ProtocolVersionTest.java |  175 ++++++++++++++
+ .../sdk/client/transport/spi/ClientFeature.java    |    7 +
+ .../transport/spi/ClientProtocolVersion.java       |   52 ++++
+ .../transport/spi/VersionedClientTransport.java    |   11 +
+ .../transport/spi/ClientProtocolVersionTest.java   |   40 +++
+ .../quarkus/GrpcRegistrationInterceptorTest.java   |   70 ++++++
+ .../client/propagation/VersionedWrapperTest.java   |   96 ++++++++
+ .../opentelemetry/client/VersionedWrapperTest.java |   56 +++++
+ .../grpc/quarkus/Only11GrpcPackagingTest.java      |   78 ++++++
+ .../apps/quarkus/Only11JSONRPCPackagingTest.java   |   42 +++
+ .../rest/quarkus/Only11RestPackagingTest.java      |   40 +++
+ .../sdk/server/version/InterfaceRegistration.java  |   65 +++++
+ .../version/InterfaceRegistrationResolver.java     |   14 +
+ .../sdk/server/version/ServerVersionPolicy.java    |   62 +++++
+ .../server/version/InterfaceRegistrationTest.java  |  140 ++++++++++++
+ .../server/version/ServerVersionPolicyTest.java    |   26 ++
+ .../grpc/AbstractGrpcProvisioningTest.java         |  167 ++++++++++++++
+ .../grpc/GrpcProvisioningProfiles.java             |   74 ++++++
+ .../grpc/GrpcProvisioningSubset1Test.java          |    9 +
+ .../grpc/GrpcProvisioningSubset2Test.java          |    9 +
+ .../grpc/GrpcProvisioningSubset3Test.java          |    9 +
+ .../grpc/GrpcProvisioningSubset4Test.java          |    9 +
+ .../grpc/GrpcProvisioningSubset5Test.java          |    9 +
+ .../grpc/GrpcProvisioningSubset6Test.java          |    9 +
+ .../grpc/GrpcProvisioningSubset7Test.java          |    9 +
+ .../multiversion/grpc/ProtocolVersionCapture.java  |   42 +++
+ .../multiversion/grpc/Public03ClientSupport.java   |  118 ++++++++++
+ .../AbstractJSONRPCDefaultProvisioningTest.java    |   56 +++++
+ .../JSONRPCDefaultProvisioningSubset1Test.java     |   10 +
+ .../JSONRPCDefaultProvisioningSubset2Test.java     |   10 +
+ .../JSONRPCDefaultProvisioningSubset3Test.java     |   10 +
+ .../JSONRPCDefaultProvisioningSubset4Test.java     |   10 +
+ .../JSONRPCDefaultProvisioningSubset5Test.java     |   10 +
+ .../JSONRPCDefaultProvisioningSubset6Test.java     |   10 +
+ .../JSONRPCDefaultProvisioningSubset7Test.java     |   10 +
+ .../jsonrpc/Public03ClientSupport.java             |  108 +++++++++
+ .../rest/AbstractRestDefaultProvisioningTest.java  |   65 +++++
+ .../rest/Native03RestDefaultScopeTest.java         |   85 +++++++
+ .../rest/Native03RestDisabledDefaultScopeTest.java |   30 ++
+ .../multiversion/rest/Public03ClientSupport.java   |  137 +++++++++++
+ .../rest/RestCardProvisioningWithout03Test.java    |   72 ++++++
+ .../rest/RestDefaultProvisioningSubset1Test.java   |   10 +
+ .../rest/RestDefaultProvisioningSubset2Test.java   |   10 +
+ .../rest/RestDefaultProvisioningSubset3Test.java   |   10 +
+ .../rest/RestDefaultProvisioningSubset4Test.java   |   10 +
+ .../rest/RestDefaultProvisioningSubset5Test.java   |   10 +
+ .../rest/RestDefaultProvisioningSubset6Test.java   |   10 +
+ .../rest/RestDefaultProvisioningSubset7Test.java   |   10 +
+ .../AbstractDefaultEndpointProvisioningTest.java   |   74 ++++++
+ .../apps/common/AbstractOnly11ServerTest.java      |   78 ++++++
+ .../common/AbstractPairedVersionServerTest.java    |  243 ++++++++++++++++++++
+ .../DefaultEndpointProvisioningProfiles.java       |   74 ++++++
+ .../sdk/server/apps/common/Only11TestProfile.java  |   11 +
+ .../apps/common/PairedVersionAgentCardRouter.java  |   38 +++
+ .../common/PairedVersionRegistrationResolver.java  |   67 ++++++
+ .../apps/common/PairedVersionTestProfile.java      |   18 +
+ .../grpc/handler/GrpcVersionRegistrationTest.java  |  107 +++++++++
+ .../rest/handler/RestVersionPolicyTest.java        |   48 ++++
+ 122 files changed, 5298 insertions(+), 433 deletions(-)

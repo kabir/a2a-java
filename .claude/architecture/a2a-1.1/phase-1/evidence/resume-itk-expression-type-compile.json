@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "/tmp/a2a-phase1-run/compile-itk-expression.py"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T19:16:23.074084+00:00",
+  "deadline_seconds": 60,
+  "pid": 24240,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 0.44,
+  "end": "2026-11-10T19:16:23.513836+00:00"
+}

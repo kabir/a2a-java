@@ -1,0 +1,266 @@
+{
+  "kind": "static candidate callsites; review before migration; not exhaustive dataflow analysis",
+  "count": 52,
+  "callsites": [
+    {
+      "path": "./client/base/src/main/java/org/a2aproject/sdk/client/ClientBuilder.java",
+      "line": 77,
+      "text": "*     .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./itk/src/main/java/org/a2aproject/sdk/itk/AgentExecutorProducer.java",
+      "line": 485,
+      "text": "new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./examples/stream-lifecycle/client/src/main/java/org/a2aproject/sdk/examples/streamlifecycle/client/StreamLifecycleClient.java",
+      "line": 213,
+      "text": "transportConfig = new GrpcTransportConfigBuilder().channelFactory(channelFactory).build();"
+    },
+    {
+      "path": "./client/base/src/test/java/org/a2aproject/sdk/client/ClientBuilderTest.java",
+      "line": 63,
+      "text": ".withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/base/src/test/java/org/a2aproject/sdk/client/ClientBuilderTest.java",
+      "line": 141,
+      "text": ".withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(s -> null))"
+    },
+    {
+      "path": "./client/base/src/test/java/org/a2aproject/sdk/client/ClientBuilderTest.java",
+      "line": 160,
+      "text": ".withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(s -> null));"
+    },
+    {
+      "path": "./client/base/src/test/java/org/a2aproject/sdk/client/AuthenticationAuthorizationTest.java",
+      "line": 327,
+      "text": ".withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./examples/helloworld/client/src/main/java/org/a2aproject/sdk/examples/helloworld/client/HelloWorldClient.java",
+      "line": 177,
+      "text": "transportConfig = new GrpcTransportConfigBuilder().channelFactory(channelFactory).build();"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfigBuilder.java",
+      "line": 37,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfigBuilder.java",
+      "line": 59,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfigBuilder.java",
+      "line": 78,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfigBuilder.java",
+      "line": 94,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfigBuilder.java",
+      "line": 101,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfigBuilder.java",
+      "line": 113,
+      "text": "*     .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransport.java",
+      "line": 91,
+      "text": "return new GrpcTransport(channel, agentInterface, agentCard, interceptors);"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfig.java",
+      "line": 30,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfig.java",
+      "line": 51,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportConfig.java",
+      "line": 71,
+      "text": "* GrpcTransportConfig config = new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 140,
+      "text": "new GrpcTransport(channel, CARD).getTaskPushNotificationConfiguration(new GetTaskPushNotificationConfigParams(TASK_ID), null);"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 147,
+      "text": "new GrpcTransport(channel, CARD).getTaskPushNotificationConfiguration(new GetTaskPushNotificationConfigParams(TASK_ID), context);"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 154,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(channel, CARD)"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 162,
+      "text": "new GrpcTransportConfigBuilder().channelFactory(url -> channel).build(), CARD,"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 171,
+      "text": "GrpcTransportConfig config = new GrpcTransportConfigBuilder().channelFactory(url -> channel).build();"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 183,
+      "text": "GrpcTransport transport = new GrpcTransport(channel, CARD);"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 198,
+      "text": "for (Consumer<ClientCallContext> operation : operations(new GrpcTransport(channel, CARD))) {"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 213,
+      "text": "GrpcTransport transport = new GrpcTransport(channel, CARD, \"\", List.of(interceptor));"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 223,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(channel, legacy));"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 230,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(channel, wrongBinding));"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 240,
+      "text": "new GrpcTransport(channel, cardWithInterfaces(interfaces))"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 249,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(channel, CARD, \"missing-tenant\", null));"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 250,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(channel, CARD, \"default-tenant\", null, \"1.0\"));"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 256,
+      "text": "new GrpcTransport(channel, legacy, \"1.0\")"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportTest.java",
+      "line": 280,
+      "text": "GrpcTransport transport = new GrpcTransport(channel, legacyCard, defaultTenant, null, \"1.0\");"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcChannelMetadataTest.java",
+      "line": 66,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(fixture.channel(), CARD, selected)"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcChannelMetadataTest.java",
+      "line": 78,
+      "text": "new GrpcTransport(fixture.channel(), CARD, selected)"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcChannelMetadataTest.java",
+      "line": 95,
+      "text": "new GrpcTransport(fixture.channel(), CARD, selected).sendMessageStreaming("
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcChannelMetadataTest.java",
+      "line": 122,
+      "text": "new GrpcTransport(fixture.channel(), CARD, selected).sendMessageStreaming("
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcChannelMetadataTest.java",
+      "line": 152,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(fixture.channel(), CARD, \"1.1\")"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcOpaqueChannelAdmissionTest.java",
+      "line": 37,
+      "text": "assertThrows(A2AClientException.class, () -> new GrpcTransport(opaque, card(version), version));"
+    },
+    {
+      "path": "./client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcOpaqueChannelAdmissionTest.java",
+      "line": 46,
+      "text": "GrpcTransportConfig config = new GrpcTransportConfigBuilder().channelFactory(url -> {"
+    },
+    {
+      "path": "./extras/multitenancy/tests/grpc/src/test/java/org/a2aproject/sdk/extras/multitenancy/tests/grpc/MultiTenantGrpcTest.java",
+      "line": 40,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {"
+    },
+    {
+      "path": "./reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusA2AGrpcTest.java",
+      "line": 38,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {"
+    },
+    {
+      "path": "./reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusA2AGrpcWithAuthTest.java",
+      "line": 68,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusA2AGrpcWithAuthTest.java",
+      "line": 82,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {"
+    },
+    {
+      "path": "./reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/QuarkusA2AGrpcWithTaskAuthorizationTest.java",
+      "line": 53,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./reference/grpc/src/test/java/org/a2aproject/sdk/server/grpc/quarkus/Only11GrpcPackagingTest.java",
+      "line": 37,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {"
+    },
+    {
+      "path": "./tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AgentToAgentClientFactory.java",
+      "line": 98,
+      "text": "clientBuilder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {"
+    },
+    {
+      "path": "./tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/MultiVersionGrpcTest.java",
+      "line": 81,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {"
+    },
+    {
+      "path": "./tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/AbstractGrpcProvisioningTest.java",
+      "line": 97,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> channel));"
+    },
+    {
+      "path": "./tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/MultiVersionGrpcWithAuthTest.java",
+      "line": 53,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    },
+    {
+      "path": "./tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/MultiVersionGrpcWithAuthTest.java",
+      "line": 66,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {"
+    },
+    {
+      "path": "./tests/multiversion/grpc/src/test/java/org/a2aproject/sdk/tests/multiversion/grpc/MultiVersionGrpcWithTaskAuthorizationTest.java",
+      "line": 52,
+      "text": "builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()"
+    }
+  ]
+}

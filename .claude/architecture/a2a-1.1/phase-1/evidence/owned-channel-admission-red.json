@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/transport/grpc",
+    "-am",
+    "-Dtest=GrpcOpaqueChannelAdmissionTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T18:22:11.454152+00:00",
+  "deadline_seconds": 120,
+  "pid": 99374,
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 3.317,
+  "end": "2026-11-10T18:22:14.770653+00:00"
+}

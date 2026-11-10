@@ -2,8 +2,8 @@ package org.a2aproject.sdk.client.transport.jsonrpc;
 
 import static org.a2aproject.sdk.client.transport.jsonrpc.JsonStreamingMessages.SEND_MESSAGE_STREAMING_TEST_REQUEST;
 import static org.a2aproject.sdk.client.transport.jsonrpc.JsonStreamingMessages.SEND_MESSAGE_STREAMING_TEST_RESPONSE;
-import static org.a2aproject.sdk.client.transport.jsonrpc.JsonStreamingMessages.TASK_SUBSCRIPTION_TEST_REQUEST;
 import static org.a2aproject.sdk.client.transport.jsonrpc.JsonStreamingMessages.TASK_SUBSCRIPTION_REQUEST_TEST_RESPONSE;
+import static org.a2aproject.sdk.client.transport.jsonrpc.JsonStreamingMessages.TASK_SUBSCRIPTION_TEST_REQUEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -17,7 +17,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
@@ -93,7 +92,7 @@ public class JSONRPCTransportStreamingTest {
                                 .withBody(SEND_MESSAGE_STREAMING_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("tell me some jokes")))
@@ -137,7 +136,7 @@ public class JSONRPCTransportStreamingTest {
                                 .withBody(TASK_SUBSCRIPTION_REQUEST_TEST_RESPONSE)
                 );
 
-        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001");
+        JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         TaskIdParams taskIdParams = new TaskIdParams("task-1234");
 
         AtomicReference<StreamingEventKind> receivedEvent = new AtomicReference<>();
@@ -168,4 +167,4 @@ public class JSONRPCTransportStreamingTest {
         assertTrue(part instanceof TextPart);
         assertEquals("Why did the chicken cross the road? To get to the other side!", ((TextPart) part).text());
     }
-} 
+}

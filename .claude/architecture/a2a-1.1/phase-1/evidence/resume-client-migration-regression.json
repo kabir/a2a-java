@@ -1,0 +1,19 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/base",
+    "-am",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T18:46:17.414898+00:00",
+  "deadline_seconds": 360,
+  "pid": 15298,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 21.409,
+  "end": "2026-11-10T18:46:38.821644+00:00"
+}

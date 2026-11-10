@@ -3,15 +3,23 @@ package org.a2aproject.sdk.compat03.transport.grpc.handler;
 import static org.a2aproject.sdk.compat03.grpc.utils.ProtoUtils_v0_3.FromProto;
 import static org.a2aproject.sdk.compat03.grpc.utils.ProtoUtils_v0_3.ToProto;
 
-import jakarta.enterprise.inject.Vetoed;
-
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
+import java.util.function.UnaryOperator;
+
+import jakarta.enterprise.inject.Vetoed;
 
 import com.google.protobuf.Empty;
+import io.grpc.Context;
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
+import org.a2aproject.sdk.common.A2AErrorMessages;
 import org.a2aproject.sdk.compat03.conversion.A2AProtocol_v0_3;
 import org.a2aproject.sdk.compat03.conversion.Convert_v0_3_To10RequestHandler;
 import org.a2aproject.sdk.compat03.conversion.ErrorConverter_v0_3;
@@ -31,26 +39,20 @@ import org.a2aproject.sdk.compat03.spec.MessageSendParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.MethodNotFoundError_v0_3;
 import org.a2aproject.sdk.compat03.spec.PushNotificationNotSupportedError_v0_3;
 import org.a2aproject.sdk.compat03.spec.StreamingEventKind_v0_3;
-import org.a2aproject.sdk.compat03.spec.Task_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskIdParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskNotCancelableError_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskNotFoundError_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskPushNotificationConfig_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskQueryParams_v0_3;
+import org.a2aproject.sdk.compat03.spec.Task_v0_3;
 import org.a2aproject.sdk.compat03.spec.UnsupportedOperationError_v0_3;
+import org.a2aproject.sdk.compat03.transport.grpc.context.GrpcContextKeys_v0_3;
 import org.a2aproject.sdk.server.ServerCallContext;
-import org.a2aproject.sdk.common.A2AErrorMessages;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.spec.A2AError;
-import io.grpc.Context;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.UnaryOperator;
+import org.a2aproject.sdk.spec.TransportProtocol;
 
 /**
  * Abstract gRPC handler for v0.3 protocol with translation layer to v1.0.
@@ -375,16 +377,38 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
 
     private <V> ServerCallContext createCallContext(StreamObserver<V> responseObserver) {
         CallContextFactory_v0_3 factory = getCallContextFactory();
+        ServerCallContext context;
         if (factory == null) {
             // Default implementation when no custom CallContextFactory is provided
             User user = UnauthenticatedUser.INSTANCE;
             Map<String, Object> state = new HashMap<>();
             state.put("grpc_response_observer", responseObserver);
             Set<String> requestedExtensions = new HashSet<>();
-            return new ServerCallContext(user, state, requestedExtensions, A2AProtocol_v0_3.PROTOCOL_VERSION);
+            context = new ServerCallContext(user, state, requestedExtensions, A2AProtocol_v0_3.PROTOCOL_VERSION);
         } else {
-            return factory.create(responseObserver);
+            context = factory.create(responseObserver);
         }
+        InterfaceRegistration registration = GrpcContextKeys_v0_3.INTERFACE_REGISTRATION_KEY.get();
+        if (registration != null) {
+            if (!A2AProtocol_v0_3.PROTOCOL_VERSION.equals(context.getRequestedProtocolVersion())) {
+                throw new InvalidParamsError_v0_3("Call context cannot override the original 0.3 protocol version");
+            }
+            Object binding = context.getState().get(ServerCallContext.TRANSPORT_KEY);
+            if (binding != null && binding != TransportProtocol.GRPC) {
+                throw new InvalidParamsError_v0_3("Call context cannot override the gRPC request binding");
+            }
+            InterfaceRegistration attached = context.getInterfaceRegistration();
+            if (attached != null && !attached.equals(registration)) {
+                throw new InvalidParamsError_v0_3("Call context cannot override the admitted interface registration");
+            }
+            if (registration.binding() != TransportProtocol.GRPC || registration.tenant() != null) {
+                throw new InvalidParamsError_v0_3("Admitted registration does not match the native 0.3 gRPC interface");
+            }
+            registration.select(A2AProtocol_v0_3.PROTOCOL_VERSION);
+            context.getState().put(ServerCallContext.TRANSPORT_KEY, TransportProtocol.GRPC);
+            context.attachInterfaceRegistration(registration);
+        }
+        return context;
     }
 
     private <V> void handleError(StreamObserver<V> responseObserver, JSONRPCError_v0_3 error) {

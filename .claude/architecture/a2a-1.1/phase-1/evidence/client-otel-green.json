@@ -1,0 +1,20 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-fae",
+    "-pl",
+    "client/base,client/transport/jsonrpc,client/transport/rest,client/transport/grpc,extras/opentelemetry/client,extras/opentelemetry/client-propagation",
+    "-am",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:07:58.886682+00:00",
+  "deadline_seconds": 600,
+  "pid": 19047,
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 18.563,
+  "end": "2026-11-10T15:08:17.449637+00:00"
+}

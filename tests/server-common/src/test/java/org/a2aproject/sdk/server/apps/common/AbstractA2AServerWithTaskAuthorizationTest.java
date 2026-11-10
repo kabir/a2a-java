@@ -14,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +42,7 @@ import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TextPart;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -50,6 +52,13 @@ import org.junit.jupiter.api.Test;
  * is enforced end-to-end through the transport layer with two distinct users.
  */
 public abstract class AbstractA2AServerWithTaskAuthorizationTest {
+    private final List<Client> createdClients = new ArrayList<>();
+
+    @AfterEach
+    void closeSdkClients() {
+        createdClients.forEach(Client::close);
+        createdClients.clear();
+    }
 
     protected static final String USER_A = "testuser";
     protected static final String USER_A_PASSWORD = "testpass";
@@ -65,10 +74,12 @@ public abstract class AbstractA2AServerWithTaskAuthorizationTest {
 
     protected Client createClient(String username, String password) throws A2AClientException {
         AgentCard agentCard = fetchAgentCardFromServer();
-        ClientConfig clientConfig = new ClientConfig.Builder().setStreaming(false).build();
+        ClientConfig clientConfig = new ClientConfig.Builder().setProtocolVersion("1.0").setStreaming(false).build();
         ClientBuilder clientBuilder = Client.builder(agentCard).clientConfig(clientConfig);
         configureTransportWithCredentials(clientBuilder, username, password);
-        return clientBuilder.build();
+        Client client = clientBuilder.build();
+        createdClients.add(client);
+        return client;
     }
 
     protected AgentCard fetchAgentCardFromServer() {

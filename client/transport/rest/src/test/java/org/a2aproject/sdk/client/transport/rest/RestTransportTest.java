@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
@@ -32,8 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-
-import com.google.gson.Gson;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallInterceptor;
 import org.a2aproject.sdk.client.transport.spi.interceptors.PayloadAndHeaders;
@@ -150,7 +149,7 @@ public class RestTransportTest {
         MessageSendParams messageSendParams = new MessageSendParams(message, null, null, "");
         ClientCallContext context = null;
         
-        RestTransport instance = new RestTransport(CARD);
+        RestTransport instance = new RestTransport(CARD, "1.0");
         EventKind result = instance.sendMessage(messageSendParams, context);
         assertEquals("task", result.kind());
         Task task = (Task) result;
@@ -191,7 +190,7 @@ public class RestTransportTest {
                                 .withBody(CANCEL_TASK_TEST_RESPONSE)
                 );
         ClientCallContext context = null;
-        RestTransport instance = new RestTransport(CARD);
+        RestTransport instance = new RestTransport(CARD, "1.0");
         Task task = instance.cancelTask(new CancelTaskParams("de38c76d-d54c-436c-8b9f-4c2703648d64"), context);
         assertEquals("de38c76d-d54c-436c-8b9f-4c2703648d64", task.id());
         assertEquals(TaskState.TASK_STATE_CANCELED, task.status().state());
@@ -218,7 +217,7 @@ public class RestTransportTest {
                 );
         ClientCallContext context = null;
         TaskQueryParams request = new TaskQueryParams("de38c76d-d54c-436c-8b9f-4c2703648d64", 5);
-        RestTransport instance = new RestTransport(CARD);
+        RestTransport instance = new RestTransport(CARD, "1.0");
         Task task = instance.getTask(request, context);
         assertEquals("de38c76d-d54c-436c-8b9f-4c2703648d64", task.id());
         assertEquals(TaskState.TASK_STATE_COMPLETED, task.status().state());
@@ -271,7 +270,7 @@ public class RestTransportTest {
                                 .withBody(SEND_MESSAGE_STREAMING_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("tell me some jokes")))
@@ -321,7 +320,7 @@ public class RestTransportTest {
                                 .withStatusCode(200)
                                 .withBody(SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
                 );
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         TaskPushNotificationConfig pushedConfig = TaskPushNotificationConfig.builder()
                 .id("default-config-id")
                 .taskId("de38c76d-d54c-436c-8b9f-4c2703648d64")
@@ -352,7 +351,7 @@ public class RestTransportTest {
                                 .withBody(GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         TaskPushNotificationConfig taskPushNotificationConfig = client.getTaskPushNotificationConfiguration(
                 new GetTaskPushNotificationConfigParams("de38c76d-d54c-436c-8b9f-4c2703648d64", "10"), null);
         assertNotNull(taskPushNotificationConfig);
@@ -382,7 +381,7 @@ public class RestTransportTest {
                         .withStatusCode(200)
                         .withBody(GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE));
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         TaskPushNotificationConfig config = client.getTaskPushNotificationConfiguration(params, null);
 
         assertEquals("https://example.com/callback", config.url());
@@ -404,7 +403,7 @@ public class RestTransportTest {
                                 .withBody(LIST_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         ListTaskPushNotificationConfigsResult result = client.listTaskPushNotificationConfigurations(
                 new ListTaskPushNotificationConfigsParams("de38c76d-d54c-436c-8b9f-4c2703648d64"), null);
         assertEquals(2, result.configs().size());
@@ -439,7 +438,7 @@ public class RestTransportTest {
                                 .withStatusCode(200)
                 );
         ClientCallContext context = null;
-        RestTransport instance = new RestTransport(CARD);
+        RestTransport instance = new RestTransport(CARD, "1.0");
         instance.deleteTaskPushNotificationConfigurations(new DeleteTaskPushNotificationConfigParams("de38c76d-d54c-436c-8b9f-4c2703648d64", "10"), context);
     }
 
@@ -462,7 +461,7 @@ public class RestTransportTest {
                                 .withBody(TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         TaskIdParams taskIdParams = new TaskIdParams("task-1234");
 
         AtomicReference<StreamingEventKind> receivedEvent = new AtomicReference<>();
@@ -512,7 +511,7 @@ public class RestTransportTest {
                                 .withBody(SEND_MESSAGE_STREAMING_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("tell me some jokes")))
@@ -559,7 +558,7 @@ public class RestTransportTest {
                                 .withBody(TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         TaskIdParams taskIdParams = new TaskIdParams("task-1234");
 
         CountDownLatch eventLatch = new CountDownLatch(1);
@@ -604,7 +603,7 @@ public class RestTransportTest {
                                 .withBody(errorResponseBody)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("test message")))
@@ -652,7 +651,7 @@ public class RestTransportTest {
                                 .withBody(errorResponseBody)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("test message")))
@@ -699,7 +698,7 @@ public class RestTransportTest {
                                 .withBody(streamResponseBody)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
                 .parts(Collections.singletonList(new TextPart("test message")))
@@ -834,7 +833,7 @@ public class RestTransportTest {
                                 .withBody(LIST_TASKS_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         ListTasksParams params = ListTasksParams.builder()
                 .statusTimestampAfter(cutoff)
                 .build();
@@ -864,7 +863,7 @@ public class RestTransportTest {
                                 .withBody(LIST_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
                 );
 
-        RestTransport client = new RestTransport(CARD);
+        RestTransport client = new RestTransport(CARD, "1.0");
         ListTaskPushNotificationConfigsParams params = ListTaskPushNotificationConfigsParams.builder()
                 .id("de38c76d-d54c-436c-8b9f-4c2703648d64")
                 .pageSize(10)
@@ -896,7 +895,7 @@ public class RestTransportTest {
         server.when(request().withMethod("GET").withPath("/tasks"))
                 .respond(response().withStatusCode(200).withBody(resultJson));
 
-        var result = new RestTransport(CARD).listTasks(new ListTasksParams(), null);
+        var result = new RestTransport(CARD, "1.0").listTasks(new ListTasksParams(), null);
 
         assertEquals(1, result.tasks().size());
         assertEquals(Collections.singletonMap("optional", null), result.tasks().get(0).metadata());

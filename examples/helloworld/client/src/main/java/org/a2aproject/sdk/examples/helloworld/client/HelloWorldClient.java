@@ -16,9 +16,11 @@ import org.a2aproject.sdk.A2A;
 
 import org.a2aproject.sdk.client.Client;
 import org.a2aproject.sdk.client.ClientBuilder;
+import org.a2aproject.sdk.client.config.ClientConfig;
 import org.a2aproject.sdk.client.ClientEvent;
 import org.a2aproject.sdk.client.MessageEvent;
 import org.a2aproject.sdk.client.http.A2ACardResolver;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
@@ -31,8 +33,6 @@ import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.TextPart;
-import io.grpc.Channel;
-import io.grpc.ManagedChannelBuilder;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
@@ -43,7 +43,6 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import java.util.function.Function;
 
 /**
  * A simple example of using the A2A Java SDK to communicate with an A2A server.
@@ -95,30 +94,32 @@ public class HelloWorldClient {
 
             ClientBuilder clientBuilder = Client
                     .builder(publicAgentCard)
+                    .clientConfig(ClientConfig.builder().setProtocolVersion("1.0").build())
                     .addConsumers(consumers)
                     .streamingErrorHandler(streamingErrorHandler);
             configureTransport(clientBuilder, openTelemetrySdk);
-             Client client = clientBuilder.build();
+            try (Client client = clientBuilder.build()) {
 
-            if (publicAgentCard.capabilities().extendedAgentCard()) {
-                // The client uses the extended card for the calls that follow
-                AgentCard extendedAgentCard = client.getExtendedAgentCard();
-                System.out.println("Successfully fetched extended agent card:");
-                System.out.println(JsonUtil.toJson(extendedAgentCard));
-            } else {
-                System.out.println("Public card does not indicate support for an extended card. Using public card.");
-            }
+                if (publicAgentCard.capabilities().extendedAgentCard()) {
+                    // The client uses the extended card for the calls that follow
+                    AgentCard extendedAgentCard = client.getExtendedAgentCard();
+                    System.out.println("Successfully fetched extended agent card:");
+                    System.out.println(JsonUtil.toJson(extendedAgentCard));
+                } else {
+                    System.out.println("Public card does not indicate support for an extended card. Using public card.");
+                }
 
-            Message message = A2A.toUserMessage(MESSAGE_TEXT); // the message ID will be automatically generated for you
-            try {
-                System.out.println("Sending message: " + MESSAGE_TEXT);
-                client.sendMessage(message);
-                System.out.println("Message sent successfully. Responses will be handled by the configured consumers.");
+                Message message = A2A.toUserMessage(MESSAGE_TEXT); // the message ID will be automatically generated for you
+                try {
+                    System.out.println("Sending message: " + MESSAGE_TEXT);
+                    client.sendMessage(message);
+                    System.out.println("Message sent successfully. Responses will be handled by the configured consumers.");
 
-                String responseText = messageResponse.get();
-                System.out.println("Response: " + responseText);
-            } catch (Exception e) {
-                System.err.println("Failed to get response: " + e.getMessage());
+                    String responseText = messageResponse.get();
+                    System.out.println("Response: " + responseText);
+                } catch (Exception e) {
+                    System.err.println("Failed to get response: " + e.getMessage());
+                }
             }
         } catch (Exception e) {
             System.err.println("An error occurred: " + e.getMessage());
@@ -167,14 +168,9 @@ public class HelloWorldClient {
         ClientTransportConfig transportConfig;
         switch(System.getProperty("quarkus.agentcard.protocol", "JSONRPC")) {
             case "GRPC":
-                Function<String, Channel> channelFactory = url -> {
-                    // Extract "localhost:9999" from "http://localhost:9999"
-                    String target = url.replaceAll("^https?://", "");
-                    return ManagedChannelBuilder.forTarget(target)
-                            .usePlaintext() // No TLS
-                            .build();
-                };
-                transportConfig = new GrpcTransportConfigBuilder().channelFactory(channelFactory).build();
+                transportConfig = new GrpcTransportConfigBuilder()
+                        .managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build())
+                        .build();
                 updateTransportConfig(transportConfig, openTelemetrySdk);
                 clientBuilder.withTransport(GrpcTransport.class, transportConfig);
                 break;

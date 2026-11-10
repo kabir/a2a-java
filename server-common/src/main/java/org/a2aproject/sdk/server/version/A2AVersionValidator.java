@@ -39,6 +39,21 @@ public class A2AVersionValidator {
             requestedVersion = "0.3";
         }
 
+        InterfaceRegistration registration = context.getInterfaceRegistration();
+        if (registration != null) {
+            ServerVersionPolicy selected = registration.select(requestedVersion);
+            boolean reachable = agentCard.supportedInterfaces().stream()
+                    .anyMatch(descriptor -> registration.matches(descriptor)
+                            && selected.protocolVersion().equals(descriptor.protocolVersion()));
+            if (!reachable) {
+                throw new VersionNotSupportedError(null,
+                        "No matching provisioned interface for binding, endpoint, tenant and version '"
+                                + selected.protocolVersion() + "'", null);
+            }
+            return;
+        }
+
+        // Legacy entry points retain patch compatibility and their historical card validation.
         // Collect all unique protocol versions from all supported interfaces
         List<String> supportedVersions = agentCard.supportedInterfaces().stream()
                 .map(AgentInterface::protocolVersion)

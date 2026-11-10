@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
 import org.a2aproject.sdk.server.version.A2AVersionValidator;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.util.Assert;
@@ -22,6 +23,7 @@ public final class AgentCardRequestPolicy {
         String normalizedTenant = normalizeTenant(tenant);
         AgentCard card = resolver.resolveEffectiveCardForNormalizedTenant(normalizedTenant);
         validator.validate(card);
+        validateRegistrationTenant(normalizedTenant, context);
         validateContext(card, context);
         validateCapability(card, operation);
         return attach(card, normalizedTenant, context);
@@ -39,8 +41,17 @@ public final class AgentCardRequestPolicy {
     public EffectiveAgentCard validateContextAndAttach(AgentCard card, @Nullable String tenant,
             ServerCallContext context) {
         String normalizedTenant = normalizeTenant(tenant);
+        validateRegistrationTenant(normalizedTenant, context);
         validateContext(card, context);
         return attach(card, normalizedTenant, context);
+    }
+
+    private static void validateRegistrationTenant(@Nullable String tenant, ServerCallContext context) {
+        InterfaceRegistration registration = context.getInterfaceRegistration();
+        if (registration != null && !Objects.equals(tenant, registration.tenant())) {
+            throw new org.a2aproject.sdk.spec.VersionNotSupportedError(null,
+                    "No provisioned interface for the effective tenant", null);
+        }
     }
 
     private static void validateContext(AgentCard card, ServerCallContext context) {

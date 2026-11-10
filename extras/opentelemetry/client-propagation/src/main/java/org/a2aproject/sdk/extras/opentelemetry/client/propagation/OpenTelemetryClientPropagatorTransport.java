@@ -1,6 +1,16 @@
 package org.a2aproject.sdk.extras.opentelemetry.client.propagation;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapSetter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import org.a2aproject.sdk.client.transport.spi.ClientFeature;
+import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.spec.A2AClientException;
@@ -19,16 +29,13 @@ import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.propagation.TextMapSetter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 
-public class OpenTelemetryClientPropagatorTransport implements ClientTransport {
+/** Retains the delegate's immutable protocol profile while propagating ordinary call context. */
+public class OpenTelemetryClientPropagatorTransport implements VersionedClientTransport {
 
+    private final String protocolVersion;
+    private final Set<ClientFeature> capabilities;
     private final OpenTelemetry openTelemetry;
     private final ClientTransport delegate;
 
@@ -43,7 +50,21 @@ public class OpenTelemetryClientPropagatorTransport implements ClientTransport {
 
     public OpenTelemetryClientPropagatorTransport(ClientTransport delegate, OpenTelemetry openTelemetry) {
         this.delegate = delegate;
+        this.protocolVersion = delegate instanceof VersionedClientTransport versioned
+                ? ClientProtocolVersion.validate(versioned.protocolVersion()) : "1.0";
+        this.capabilities = delegate instanceof VersionedClientTransport versioned
+                ? Set.copyOf(versioned.capabilities()) : Set.of(ClientFeature.ORDINARY);
         this.openTelemetry = openTelemetry;
+    }
+
+    @Override
+    public String protocolVersion() {
+        return protocolVersion;
+    }
+
+    @Override
+    public Set<ClientFeature> capabilities() {
+        return capabilities;
     }
 
     private ClientCallContext propagateContext(@Nullable ClientCallContext context) {

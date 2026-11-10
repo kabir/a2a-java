@@ -5,13 +5,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.a2aproject.sdk.client.config.ClientConfig;
+import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportConfig;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportConfigBuilder;
@@ -24,28 +27,28 @@ import org.a2aproject.sdk.spec.TransportProtocol;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Builder for creating instances of {@link Client} to communicate with A2A agents.
  * <p>
  * ClientBuilder provides a fluent API for configuring and creating client instances that
- * communicate with A2A agents. It handles transport negotiation, event consumer registration,
+ * communicate with A2A agents. It handles exact-version transport selection, event consumer registration,
  * and client configuration in a type-safe manner.
  * <p>
  * <b>Key responsibilities:</b>
  * <ul>
- *   <li>Transport selection and negotiation between client and server capabilities</li>
+ *   <li>Exact-version interface selection followed by binding preference</li>
  *   <li>Event consumer registration for processing agent responses</li>
  *   <li>Error handler configuration for streaming scenarios</li>
  *   <li>Client behavior configuration (streaming, polling, preferences)</li>
  * </ul>
  * <p>
- * <b>Transport Selection:</b> The builder automatically negotiates the best transport protocol
- * based on the agent's {@link AgentCard} and the client's configured transports. By default,
- * the server's preferred transport (first in {@link AgentCard#supportedInterfaces()}) is used.
+ * <b>Transport Selection:</b> The builder first filters the agent's {@link AgentCard} by the immutable
+ * {@link ClientConfig#getProtocolVersion()} (default 1.1) and any endpoint or tenant selector.
+ * It then selects among matching configured bindings. By default, the first matching
+ * binding in {@link AgentCard#supportedInterfaces()} is used.
  * This can be changed by setting {@link ClientConfig#isUseClientPreference()} to {@code true}.
+ * An unavailable version fails construction; there is no version negotiation or fallback.
  * <p>
  * <b>Typical usage pattern:</b>
  * <pre>{@code
@@ -68,11 +71,11 @@ import org.slf4j.LoggerFactory;
  * client.sendMessage(A2A.toUserMessage("Hello agent!"));
  * }</pre>
  * <p>
- * <b>Multiple transports:</b> You can configure multiple transports for fallback:
+ * <b>Multiple transports:</b> You can configure multiple bindings for selection at the chosen version:
  * <pre>{@code
  * Client client = Client.builder(card)
  *     .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()
- *         .channelFactory(ManagedChannelBuilder::forAddress))
+ *         .managedChannel(GrpcManagedChannelOptions.builder().build()))
  *     .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder())
  *     .clientConfig(new ClientConfig.Builder()
  *         .setUseClientPreference(true)  // Try client's preferred order
@@ -102,7 +105,6 @@ public class ClientBuilder {
 
     private static final Map<String, ClientTransportProvider<? extends ClientTransport, ? extends ClientTransportConfig<?>>> transportProviderRegistry = new HashMap<>();
     private static final Map<Class<? extends ClientTransport>, String> transportProtocolMapping = new HashMap<>();
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientBuilder.class);
 
     static {
         ServiceLoader<ClientTransportProvider> loader = ServiceLoader.load(ClientTransportProvider.class);
@@ -132,8 +134,8 @@ public class ClientBuilder {
     /**
      * Configure a transport protocol using a builder for type-safe configuration.
      * <p>
-     * Multiple transports can be configured to support fallback scenarios. The actual transport
-     * used is negotiated based on the agent's capabilities and the {@link ClientConfig}.
+     * Multiple bindings can be configured. The actual transport is selected from exact
+     * version matches using the preferences in {@link ClientConfig}.
      * <p>
      * Example:
      * <pre>{@code
@@ -155,8 +157,8 @@ public class ClientBuilder {
     /**
      * Configure a transport protocol with a pre-built configuration.
      * <p>
-     * Multiple transports can be configured to support fallback scenarios. The actual transport
-     * used is negotiated based on the agent's capabilities and the {@link ClientConfig}.
+     * Multiple bindings can be configured. The actual transport is selected from exact
+     * version matches using the preferences in {@link ClientConfig}.
      * <p>
      * Example:
      * <pre>{@code
@@ -325,7 +327,23 @@ public class ClientBuilder {
             throw new A2AClientException("Missing required TransportConfig for " + agentInterface.protocolBinding());
         }
 
-        return wrap(clientTransportProvider.create(clientTransportConfig, agentCard, agentInterface), clientTransportConfig);
+        Set<ClientFeature> features;
+        try {
+            Map<String, Set<ClientFeature>> profiles = clientTransportProvider.capabilities();
+            Set<ClientFeature> declared = profiles.get(clientConfig.getProtocolVersion());
+            if (declared == null || !declared.contains(ClientFeature.ORDINARY)) {
+                throw new A2AClientException("Provider " + clientTransportProvider.getClass().getName()
+                        + " does not support protocol version " + clientConfig.getProtocolVersion());
+            }
+            features = Set.copyOf(declared);
+        } catch (A2AClientException failure) {
+            throw failure;
+        } catch (RuntimeException failure) {
+            throw new A2AClientException("Invalid provider capability declaration from "
+                    + clientTransportProvider.getClass().getName(), failure);
+        }
+        return wrap(clientTransportProvider.create(clientTransportConfig, agentCard, agentInterface), clientTransportConfig,
+                Set.copyOf(features));
     }
 
     private Map<String, AgentInterface> getServerInterfacesMap() throws A2AClientException {
@@ -333,10 +351,14 @@ public class ClientBuilder {
         if (serverInterfaces == null || serverInterfaces.isEmpty()) {
             throw new A2AClientException("No server interface available in the AgentCard");
         }
-        // If there are multiple interfaces with the same protocol binding, only the first is considered
+        // Apply exact version and scope selection before binding preference/deduplication.
         Map<String, AgentInterface> serverInterfacesMap = new LinkedHashMap<>();
         for (AgentInterface iface : serverInterfaces) {
-            serverInterfacesMap.putIfAbsent(iface.protocolBinding(), iface);
+            if (clientConfig.getProtocolVersion().equals(iface.protocolVersion())
+                    && (clientConfig.getEndpoint() == null || clientConfig.getEndpoint().equals(iface.url()))
+                    && (clientConfig.getTenant() == null || Objects.equals(clientConfig.getTenant(), iface.tenant()))) {
+                serverInterfacesMap.putIfAbsent(iface.protocolBinding(), iface);
+            }
         }
         return serverInterfacesMap;
     }
@@ -396,39 +418,11 @@ public class ClientBuilder {
      * @param clientTransportConfig the transport configuration
      * @return the wrapped transport (or original if no wrappers are available/applicable)
      */
-    private ClientTransport wrap(ClientTransport transport, ClientTransportConfig<? extends ClientTransport> clientTransportConfig) {
-        ServiceLoader<ClientTransportWrapper> wrapperLoader = ServiceLoader.load(ClientTransportWrapper.class);
-
-        // Collect all wrappers, sort by priority, then reverse for stack application
-        List<ClientTransportWrapper> wrappers = wrapperLoader.stream().map(Provider::get)
-                .sorted()
-                .collect(Collectors.toList());
-
-        if (wrappers.isEmpty()) {
-            LOGGER.debug("No client transport wrappers found via ServiceLoader");
-            return transport;
-        } 
-        LOGGER.debug(wrappers.size() + " client transport wrappers found via ServiceLoader");
-
-        // Reverse to apply lowest priority first (building stack with highest priority outermost)
+    private ClientTransport wrap(ClientTransport transport, ClientTransportConfig<? extends ClientTransport> config,
+            Set<ClientFeature> providerFeatures) throws A2AClientException {
+        ServiceLoader<ClientTransportWrapper> loader = ServiceLoader.load(ClientTransportWrapper.class);
+        List<ClientTransportWrapper> wrappers = loader.stream().map(Provider::get).sorted().collect(Collectors.toList());
         java.util.Collections.reverse(wrappers);
-
-        // Apply wrappers to build stack
-        ClientTransport wrapped = transport;
-        for (ClientTransportWrapper wrapper : wrappers) {
-            try {
-                ClientTransport newWrapped = wrapper.wrap(wrapped, clientTransportConfig);
-                if (newWrapped != wrapped) {
-                    LOGGER.debug("Applied transport wrapper: {} (priority: {})",
-                            wrapper.getClass().getName(), wrapper.priority());
-                }
-                wrapped = newWrapped;
-            } catch (Exception e) {
-                LOGGER.warn("Failed to apply transport wrapper {}: {}",
-                        wrapper.getClass().getName(), e.getMessage(), e);
-            }
-        }
-
-        return wrapped;
+        return ClientTransportPolicy.wrap(transport, config, clientConfig.getProtocolVersion(), providerFeatures, wrappers);
     }
 }

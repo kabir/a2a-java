@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "client/transport/rest",
+    "-am",
+    "-Dtest=RestSubscribeIndependentPeerTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T17:40:10.362668+00:00",
+  "deadline_seconds": 600,
+  "pid": 86576,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 2.084,
+  "end": "2026-11-10T17:40:12.446729+00:00"
+}

@@ -1,0 +1,24 @@
+{
+  "source_revision": "e468dd70a415d17c19ae70d75750b6464d983ad1 before Phase1 installs",
+  "kind": "new representative old-API sources compiled against unchanged Phase0-installed jars; not a claim of released provider provenance",
+  "compile": [
+    "javac",
+    "--release",
+    "17",
+    "-cp",
+    "frozen11-SDK-jar classpath",
+    "-d",
+    "legacy-provider-classes",
+    "LegacyConstantProvider.java",
+    "LegacyImplicitProvider.java",
+    "LegacyWrapper.java"
+  ],
+  "response_source": ".claude/architecture/a2a-1.1/phase-0/fixtures/expected/1.0/rpc-GET_TASK_TEST_RESPONSE.json",
+  "files": {
+    ".claude/architecture/a2a-1.1/phase-1/compatibility/LegacyWrapper.java": "319f12f286dd030f9fc937c74e1b59eb96707ae9df7af02b5d66cf373d29a2c9",
+    ".claude/architecture/a2a-1.1/phase-1/compatibility/LegacyConstantProvider.java": "d56e63c90055e1f157684a9407f2fab461ce70d965a5da88eb0a1abbff108162",
+    ".claude/architecture/a2a-1.1/phase-1/compatibility/LegacyImplicitProvider.java": "f3f16f9b338af4a21061b89ec3a56b8da96e31cda4b88dad8331d0bfc919b68f",
+    "client/base/src/test/resources/legacy-providers/get-task-response.json": "68f1bba65d478bda96f78d5da4a9fd79e2a26b76cf2180b7953ed540ddbb2949",
+    "client/base/src/test/resources/legacy-providers/legacy-providers.jar": "1960be1e1250724e2f2c39e7da33fcb31246d71cb459e6a36ea208073224654d"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "tests/multiversion/rest",
+    "-am",
+    "-Dtest=Native03*Test,InterfaceRegistrationTest",
+    "-Dsurefire.failIfNoSpecifiedTests=false",
+    "verify"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T15:46:42.593657+00:00",
+  "deadline_seconds": 600,
+  "pid": 41800,
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 41.022,
+  "end": "2026-11-10T15:47:23.616040+00:00"
+}

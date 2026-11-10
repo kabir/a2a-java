@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.a2aproject.sdk.client.Client;
 import org.a2aproject.sdk.client.ClientEvent;
 import org.a2aproject.sdk.client.TaskEvent;
@@ -41,7 +42,6 @@ import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.testutils.docker.RequiresDocker;
-import io.quarkus.test.junit.QuarkusTest;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.junit.jupiter.api.AfterEach;
@@ -78,7 +78,7 @@ public class KafkaReplicationIntegrationTest {
     @BeforeEach
     public void setup() throws A2AClientException {
         // Create non-streaming client for initial task creation
-        ClientConfig nonStreamingConfig = new ClientConfig.Builder()
+        ClientConfig nonStreamingConfig = new ClientConfig.Builder().setProtocolVersion("1.0")
                 .setStreaming(false)
                 .build();
 
@@ -88,7 +88,7 @@ public class KafkaReplicationIntegrationTest {
                 .build();
 
         // Create streaming client for resubscription
-        ClientConfig streamingConfig = new ClientConfig.Builder()
+        ClientConfig streamingConfig = new ClientConfig.Builder().setProtocolVersion("1.0")
                 .setStreaming(true)
                 .build();
 
@@ -98,7 +98,7 @@ public class KafkaReplicationIntegrationTest {
                 .build();
 
         // Create polling client for non-blocking operations
-        ClientConfig pollingConfig = new ClientConfig.Builder()
+        ClientConfig pollingConfig = new ClientConfig.Builder().setProtocolVersion("1.0")
                 .setStreaming(false)
                 .setPolling(true)
                 .build();

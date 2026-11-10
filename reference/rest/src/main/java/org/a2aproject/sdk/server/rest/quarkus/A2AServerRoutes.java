@@ -1,13 +1,23 @@
 package org.a2aproject.sdk.server.rest.quarkus;
 
+import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.a2aproject.sdk.common.MediaType.APPLICATION_A2A_JSON;
 import static org.a2aproject.sdk.server.ServerCallContext.TRANSPORT_KEY;
 import static org.a2aproject.sdk.spec.A2AMethods.CANCEL_TASK_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.GET_TASK_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.LIST_TASK_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.SEND_MESSAGE_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 import static org.a2aproject.sdk.transport.rest.context.RestContextKeys.HEADERS_KEY;
 import static org.a2aproject.sdk.transport.rest.context.RestContextKeys.METHOD_NAME_KEY;
-import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.a2aproject.sdk.transport.rest.context.RestContextKeys.TENANT_KEY;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,21 +28,35 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-import org.a2aproject.sdk.server.util.sse.SseFormatter;
-
 import jakarta.annotation.Priority;
+import jakarta.annotation.security.PermitAll;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.UnauthorizedException;
+import io.smallrye.mutiny.Multi;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.AuthenticatedUser;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
+import org.a2aproject.sdk.server.common.quarkus.SseResponseWriter;
+import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
+import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
 import org.a2aproject.sdk.server.util.async.Internal;
+import org.a2aproject.sdk.server.util.sse.SseFormatter;
+import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.ContentTypeNotSupportedError;
 import org.a2aproject.sdk.spec.InternalError;
@@ -41,32 +65,9 @@ import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.transport.rest.handler.RestHandler;
 import org.a2aproject.sdk.transport.rest.handler.RestHandler.HTTPRestResponse;
 import org.a2aproject.sdk.transport.rest.handler.RestHandler.HTTPRestStreamingResponse;
-import org.a2aproject.sdk.server.common.quarkus.SseResponseWriter;
-import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
-import io.quarkus.security.Authenticated;
-import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.UnauthorizedException;
-import io.smallrye.mutiny.Multi;
-import jakarta.annotation.security.PermitAll;
-import io.vertx.core.Handler;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.a2aproject.sdk.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.GET_TASK_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.LIST_TASK_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.SEND_MESSAGE_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
-
-import static org.a2aproject.sdk.transport.rest.context.RestContextKeys.TENANT_KEY;
 
 /**
  * Vert.x Web Router routes for A2A protocol REST endpoints.
@@ -83,7 +84,8 @@ import static org.a2aproject.sdk.transport.rest.context.RestContextKeys.TENANT_K
  * GET    /{tenant}/tasks                  → listTasks()
  * GET    /{tenant}/tasks/{taskId}         → getTask()
  * POST   /{tenant}/tasks/{taskId}:cancel  → cancelTask()
- * POST   /{tenant}/tasks/{taskId}:subscribe → subscribeToTask()
+ * GET    /{tenant}/tasks/{taskId}:subscribe → subscribeToTask() (1.1)
+ * POST   /{tenant}/tasks/{taskId}:subscribe → subscribeToTask() (1.0)
  * GET    /.well-known/agent-card.json     → getAgentCard()
  * GET    /{tenant}/extendedAgentCard      → getExtendedAgentCard()
  * </pre>
@@ -149,6 +151,9 @@ public class A2AServerRoutes {
     Instance<CallContextFactory> callContextFactory;
 
     @Inject
+    Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
+
+    @Inject
     VertxSecurityHelper vertxSecurityHelper;
 
     /**
@@ -160,6 +165,7 @@ public class A2AServerRoutes {
      * @param router the Vert.x router to configure
      */
     void setupRouter(@Observes @Priority(10) Router router) {
+        VersionRouter.validateDefaultRegistration(interfaceRegistrationResolvers, TransportProtocol.HTTP_JSON);
         // Don't add a global BodyHandler - it interferes with gRPC routes
         // Instead, BodyHandler is added per-route below
 
@@ -205,6 +211,11 @@ public class A2AServerRoutes {
                 String body = extractBody(ctx);
                 cancelTask(body, ctx);
             }), false);
+
+        // GET is the 1.1 subscription verb; POST preserves the historical 1.0 contract.
+        router.getWithRegex("^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^/]+):subscribe$")
+            .order(1)
+            .blockingHandler(authenticatedStreaming(this::subscribeToTask), false);
 
         // POST /{tenant}/tasks/{taskId}:subscribe - Subscribe to task updates (SSE)
         router.postWithRegex("^\\/(?<tenant>[^\\/]*\\/?)tasks\\/(?<taskId>[^/]+):subscribe$")
@@ -264,6 +275,8 @@ public class A2AServerRoutes {
                 vertxSecurityHelper.runInRequestContext(ctx, () -> action.accept(ctx));
             } catch (UnauthorizedException | ForbiddenException e) {
                 vertxSecurityHelper.handleAuthError(ctx, e);
+            } catch (A2AError e) {
+                sendResponse(ctx, createVersionedErrorResponse(e, ctx));
             } catch (Exception e) {
                 VertxSecurityHelper.handleGenericError(ctx);
             }
@@ -276,6 +289,8 @@ public class A2AServerRoutes {
                 vertxSecurityHelper.runInRequestContextDeferred(ctx, () -> action.accept(ctx));
             } catch (UnauthorizedException | ForbiddenException e) {
                 vertxSecurityHelper.handleAuthError(ctx, e);
+            } catch (A2AError e) {
+                sendResponse(ctx, createVersionedErrorResponse(e, ctx));
             } catch (Exception e) {
                 VertxSecurityHelper.handleGenericError(ctx);
             }
@@ -497,7 +512,8 @@ public class A2AServerRoutes {
     /**
      * Subscribes to task updates via Server-Sent Events.
      *
-     * <p>Maps {@code POST /{tenant}/tasks/{taskId}:subscribe} to {@link RestHandler#subscribeToTask}.
+     * <p>Maps {@code GET /{tenant}/tasks/{taskId}:subscribe} for 1.1 and the historical
+     * {@code POST} verb for 1.0 to {@link RestHandler#subscribeToTask}.
      * Returns a stream of task events allowing clients to reconnect to ongoing tasks.
      *
      * <p><b>URL Pattern:</b> {@code /tasks/{taskId}:subscribe}
@@ -515,6 +531,11 @@ public class A2AServerRoutes {
     public void subscribeToTask(RoutingContext rc) {
         String taskId = rc.pathParam("taskId");
         ServerCallContext context = createCallContext(rc, SUBSCRIBE_TO_TASK_METHOD);
+        HttpMethod allowedMethod = context.getVersionPolicy() == ServerVersionPolicy.V1_1 ? HttpMethod.GET : HttpMethod.POST;
+        if (!allowedMethod.equals(rc.request().method())) {
+            rc.response().setStatusCode(405).putHeader("Allow", allowedMethod.name()).end();
+            return;
+        }
         HTTPRestStreamingResponse streamingResponse = null;
         HTTPRestResponse error = null;
         try {
@@ -702,11 +723,18 @@ public class A2AServerRoutes {
      * @param rc the routing context
      * @return true if the content type is one of those - false otherwise.
      */
+    private HTTPRestResponse createVersionedErrorResponse(A2AError error, RoutingContext rc) {
+        ServerVersionPolicy policy = ServerVersionPolicy.forRequest(VersionRouter.resolveVersion(rc));
+        return policy == ServerVersionPolicy.V1_1
+                ? jsonRestHandler.createErrorResponse(error, policy)
+                : jsonRestHandler.createErrorResponse(error);
+    }
+
     private boolean validateContentType(RoutingContext rc) {
         String contentType = rc.request().getHeader(CONTENT_TYPE);
         if (contentType == null || !(contentType.trim().startsWith(APPLICATION_JSON)
                 || contentType.trim().startsWith(APPLICATION_A2A_JSON))) {
-            sendResponse(rc, jsonRestHandler.createErrorResponse(new ContentTypeNotSupportedError(null, null, null)));
+            sendResponse(rc, createVersionedErrorResponse(new ContentTypeNotSupportedError(null, null, null), rc));
             return false;
         }
         return true;
@@ -843,6 +871,18 @@ public class A2AServerRoutes {
      * @see ServerCallContext
      */
     private ServerCallContext createCallContext(RoutingContext rc, String jsonRpcMethodName) {
+        ServerCallContext context = createRawCallContext(rc, jsonRpcMethodName);
+        VersionRouter.attachRegistration(context, interfaceRegistrationResolvers, TransportProtocol.HTTP_JSON,
+                extractTenant(rc), VersionRouter.resolveVersion(rc));
+        if (context.getInterfaceRegistration() != null
+                && context.getVersionPolicy() == ServerVersionPolicy.V0_3) {
+            throw new org.a2aproject.sdk.spec.VersionNotSupportedError(null,
+                    "The shared 1.x endpoint cannot provide the 0.3 contract", null);
+        }
+        return context;
+    }
+
+    private ServerCallContext createRawCallContext(RoutingContext rc, String jsonRpcMethodName) {
         if (callContextFactory.isUnsatisfied()) {
             User user;
             if (rc.user() == null) {
@@ -862,7 +902,7 @@ public class A2AServerRoutes {
             state.put(TRANSPORT_KEY, TransportProtocol.HTTP_JSON);
 
             // Extract requested protocol version from A2A-Version header
-            String requestedVersion = rc.request().getHeader(A2AHeaders.A2A_VERSION);
+            String requestedVersion = VersionRouter.resolveVersion(rc);
 
             // Extract requested extensions from A2A-Extensions header
             List<String> extensionHeaderValues = rc.request().headers().getAll(A2AHeaders.A2A_EXTENSIONS);

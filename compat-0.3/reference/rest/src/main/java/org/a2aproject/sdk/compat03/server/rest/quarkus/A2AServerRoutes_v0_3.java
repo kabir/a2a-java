@@ -48,9 +48,12 @@ import org.a2aproject.sdk.server.auth.AuthenticatedUser;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
 import org.a2aproject.sdk.server.common.quarkus.SseResponseWriter;
+import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.TransportProtocol;
 import org.jspecify.annotations.Nullable;
 
 @Singleton
@@ -353,6 +356,19 @@ public class A2AServerRoutes_v0_3 {
     }
 
     private ServerCallContext createCallContext(RoutingContext rc, String jsonRpcMethodName) {
+        ServerCallContext context = createRawCallContext(rc, jsonRpcMethodName);
+        InterfaceRegistration registration = rc.get(VersionRouter.REGISTRATION_KEY);
+        if (registration != null) {
+            VersionRouter.validateContextVersion(context, VersionRouter.resolveVersion(rc));
+            registration.select(context.getRequestedProtocolVersion());
+            context.getState().put(ServerCallContext.TRANSPORT_KEY, TransportProtocol.HTTP_JSON);
+            context.getState().put("tenant", registration.tenant() == null ? "" : registration.tenant());
+            context.attachInterfaceRegistration(registration);
+        }
+        return context;
+    }
+
+    private ServerCallContext createRawCallContext(RoutingContext rc, String jsonRpcMethodName) {
         if (callContextFactory.isUnsatisfied()) {
             User user;
             if (rc.user() == null) {

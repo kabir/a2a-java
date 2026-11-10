@@ -1,11 +1,10 @@
 package org.a2aproject.sdk.transport.grpc.handler;
 
+import static org.a2aproject.sdk.grpc.utils.ProtoUtils.FromProto;
+import static org.a2aproject.sdk.grpc.utils.ProtoUtils.ToProto;
 import static org.a2aproject.sdk.server.AgentCardOperation.EXTENDED_CARD;
 import static org.a2aproject.sdk.server.AgentCardOperation.PUSH_NOTIFICATIONS;
 import static org.a2aproject.sdk.server.AgentCardOperation.STREAMING;
-
-import static org.a2aproject.sdk.grpc.utils.ProtoUtils.FromProto;
-import static org.a2aproject.sdk.grpc.utils.ProtoUtils.ToProto;
 import static org.a2aproject.sdk.server.ServerCallContext.TRANSPORT_KEY;
 
 import java.util.HashMap;
@@ -24,6 +23,11 @@ import java.util.logging.Logger;
 import jakarta.enterprise.inject.Vetoed;
 
 import com.google.protobuf.Empty;
+import io.grpc.Context;
+import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.protobuf.StatusProto;
+import io.grpc.stub.StreamObserver;
 import org.a2aproject.sdk.common.A2AErrorMessages;
 import org.a2aproject.sdk.grpc.A2AServiceGrpc;
 import org.a2aproject.sdk.grpc.StreamResponse;
@@ -42,6 +46,8 @@ import org.a2aproject.sdk.server.extensions.A2AExtensions;
 import org.a2aproject.sdk.server.multitenancy.AgentCardRouter;
 import org.a2aproject.sdk.server.multitenancy.TenantNotFoundException;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.A2AErrorCodes;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -72,11 +78,6 @@ import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.spec.VersionNotSupportedError;
 import org.a2aproject.sdk.spec.util.Utils;
 import org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys;
-import io.grpc.Context;
-import io.grpc.Metadata;
-import io.grpc.Status;
-import io.grpc.protobuf.StatusProto;
-import io.grpc.stub.StreamObserver;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -559,7 +560,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
                         subscription.cancel();
                      }
                     if (throwable instanceof A2AError jsonrpcError) {
-                        handleError(responseObserver, jsonrpcError);
+                        handleError(responseObserver, jsonrpcError, context.getVersionPolicy());
                     } else {
                         handleInternalError(responseObserver, throwable);
                     }
@@ -587,11 +588,9 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             String tenant = request.getTenant();
             Utils.validateTenant(tenant);
+            ServerCallContext context = createCallContext(responseObserver, tenant, EXTENDED_CARD);
             AgentCardResolver resolver = getAgentCardResolver();
-            AgentCardRequestPolicy policy = getRequestPolicy();
-            AgentCard card = policy.resolveAndValidateCapability(tenant, transportValidator, EXTENDED_CARD);
-            ServerCallContext context = createRawCallContext(responseObserver);
-            String normalizedTenant = policy.validateContextAndAttach(card, tenant, context).tenant();
+            String normalizedTenant = Objects.requireNonNull(context.getEffectiveAgentCard()).tenant();
             AgentCard extendedAgentCard = resolver.resolveExtendedDiscoveryCard(normalizedTenant);
             if (extendedAgentCard != null) {
                 responseObserver.onNext(ToProto.agentCard(extendedAgentCard));
@@ -715,7 +714,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             }
             
             // Extract requested protocol version from gRPC context (set by interceptor)
-            // Default to current version since gRPC only handles 1.0 protocol
+            // Missing metadata retains the protocol default 0.3, regardless of service name.
             String requestedVersion = getVersionFromContext();
 
             // Extract requested extensions from gRPC context (set by interceptor)
@@ -736,7 +735,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     }
 
     private <V> ServerCallContext createCallContext(StreamObserver<V> responseObserver, @Nullable String tenant) {
-        ServerCallContext context = createRawCallContext(responseObserver);
+        ServerCallContext context = createRegisteredCallContext(responseObserver, tenant);
         getRequestPolicy().preflight(
                 tenant, context, transportValidator, AgentCardOperation.none());
         return context;
@@ -745,9 +744,47 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
     private <V> ServerCallContext createCallContext(StreamObserver<V> responseObserver, @Nullable String tenant,
             AgentCardOperation operation) {
         AgentCardRequestPolicy policy = getRequestPolicy();
+        InterfaceRegistration registration = getInterfaceRegistration(tenant);
+        ServerCallContext context = registration == null ? null
+                : createRegisteredCallContext(responseObserver, tenant, registration);
         AgentCard card = policy.resolveAndValidateCapability(tenant, transportValidator, operation);
-        ServerCallContext context = createRawCallContext(responseObserver);
+        if (context == null) {
+            context = createRawCallContext(responseObserver);
+        }
         policy.validateContextAndAttach(card, tenant, context);
+        return context;
+    }
+
+    /** Optional explicit registration for this configured gRPC server endpoint. */
+    protected @Nullable InterfaceRegistration getInterfaceRegistration(@Nullable String tenant) {
+        return null;
+    }
+
+    private <V> ServerCallContext createRegisteredCallContext(StreamObserver<V> responseObserver,
+            @Nullable String tenant) {
+        return createRegisteredCallContext(responseObserver, tenant, getInterfaceRegistration(tenant));
+    }
+
+    private <V> ServerCallContext createRegisteredCallContext(StreamObserver<V> responseObserver,
+            @Nullable String tenant, @Nullable InterfaceRegistration registration) {
+        ServerCallContext context = createRawCallContext(responseObserver);
+        if (registration != null) {
+            if (registration.binding() != TransportProtocol.GRPC
+                    || !Objects.equals(registration.tenant(), AgentCardResolver.normalizeTenantForResolution(tenant))) {
+                throw new VersionNotSupportedError(null, "No provisioned interface for this gRPC binding and tenant", null);
+            }
+            String inboundVersion = ServerVersionPolicy.resolveVersion(getVersionFromContext());
+            if (!inboundVersion.equals(ServerVersionPolicy.resolveVersion(context.getRequestedProtocolVersion()))) {
+                throw new InvalidParamsError("Call context cannot override the requested protocol version");
+            }
+            ServerVersionPolicy selected = registration.select(inboundVersion);
+            if (selected == ServerVersionPolicy.V0_3) {
+                throw new VersionNotSupportedError(null,
+                        "The shared lf.a2a.v1 service cannot provide the separate a2a.v1 0.3 contract", null);
+            }
+            context.getState().put(TRANSPORT_KEY, TransportProtocol.GRPC);
+            context.attachInterfaceRegistration(registration);
+        }
         return context;
     }
 
@@ -805,8 +842,12 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
      * @param error the A2A protocol error
      */
     private <V> void handleError(StreamObserver<V> responseObserver, A2AError error) {
+        handleError(responseObserver, error, ServerVersionPolicy.forRequest(getVersionFromContext()));
+    }
+
+    private <V> void handleError(StreamObserver<V> responseObserver, A2AError error, ServerVersionPolicy policy) {
         A2AErrorCodes errorCode = A2AErrorCodes.fromCode(error.getCode());
-        String grpcStatusName = errorCode != null ? errorCode.grpcStatus() : "UNKNOWN";
+        String grpcStatusName = policy.grpcStatus(error.getCode());
         String reason = errorCode != null ? errorCode.name() : "UNKNOWN";
         int grpcCode = Status.Code.valueOf(grpcStatusName).value();
 

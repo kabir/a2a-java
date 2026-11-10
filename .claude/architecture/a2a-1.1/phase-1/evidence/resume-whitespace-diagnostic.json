@@ -1,0 +1,19 @@
+{
+  "command": [
+    "mvn",
+    "-B",
+    "-ntp",
+    "-pl",
+    "tests/multiversion/grpc",
+    "-Dtest=GrpcProvisioningSubset1Test",
+    "test"
+  ],
+  "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+  "start": "2026-11-10T19:12:13.010168+00:00",
+  "deadline_seconds": 180,
+  "pid": 22504,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 7.103,
+  "end": "2026-11-10T19:12:20.113377+00:00"
+}

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.a2aproject.sdk.client.config.ClientConfig;
 import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
@@ -59,9 +60,9 @@ public class ClientBuilderTest {
         A2AClientException exception = Assertions.assertThrows(A2AClientException.class,
                 () -> Client
                         .builder(card)
-                        .clientConfig(new ClientConfig.Builder().setUseClientPreference(true).build())
+                        .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setUseClientPreference(true).build())
                         .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()
-                                .channelFactory(s -> null))
+                                .managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()))
                         .build());
 
         Assertions.assertTrue(exception.getMessage() != null && exception.getMessage().contains("No compatible transport found"));
@@ -72,7 +73,7 @@ public class ClientBuilderTest {
         A2AClientException exception = Assertions.assertThrows(A2AClientException.class,
                 () -> Client
                         .builder(card)
-                        .clientConfig(new ClientConfig.Builder().setUseClientPreference(true).build())
+                        .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setUseClientPreference(true).build())
                         .build());
 
         Assertions.assertTrue(exception.getMessage() != null && exception.getMessage().startsWith("Missing required TransportConfig for"));
@@ -82,7 +83,7 @@ public class ClientBuilderTest {
     public void shouldCreateJSONRPCClient() throws A2AClientException {
         Client client = Client
                 .builder(card)
-                .clientConfig(new ClientConfig.Builder().setUseClientPreference(true).build())
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setUseClientPreference(true).build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder()
                         .addInterceptor(null)
                         .httpClient(null))
@@ -95,6 +96,7 @@ public class ClientBuilderTest {
     public void shouldCreateClient_differentConfigurations() throws A2AClientException {
         Client client = Client
                 .builder(card)
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfig(A2AHttpClientFactory.create()))
                 .build();
@@ -106,6 +108,7 @@ public class ClientBuilderTest {
     public void shouldPreserveTenantFromAgentInterface() throws A2AClientException {
         ClientBuilder builder = Client
                 .builder(cardWithTenant)
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder());
 
         AgentInterface selectedInterface = builder.findBestClientTransport();
@@ -119,6 +122,7 @@ public class ClientBuilderTest {
     public void shouldPreserveProtocolVersionFromAgentInterface() throws A2AClientException {
         ClientBuilder builder = Client
                 .builder(cardWithMultipleInterfaces)
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder());
 
         AgentInterface selectedInterface = builder.findBestClientTransport();
@@ -134,7 +138,8 @@ public class ClientBuilderTest {
         // Client supports both GRPC and JSONRPC, so GRPC should be selected (server's first choice)
         ClientBuilder builder = Client
                 .builder(cardWithMultipleInterfaces)
-                .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(s -> null))
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").build())
+                .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()))
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder());
 
         AgentInterface selectedInterface = builder.findBestClientTransport();
@@ -151,9 +156,9 @@ public class ClientBuilderTest {
         // Server supports both, so JSONRPC should be selected (client's first choice)
         ClientBuilder builder = Client
                 .builder(cardWithMultipleInterfaces)
-                .clientConfig(new ClientConfig.Builder().setUseClientPreference(true).build())
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setUseClientPreference(true).build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder())
-                .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(s -> null));
+                .withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()));
 
         AgentInterface selectedInterface = builder.findBestClientTransport();
 
@@ -166,6 +171,7 @@ public class ClientBuilderTest {
     public void shouldHaveNullTenantWhenNotSet() throws A2AClientException {
         ClientBuilder builder = Client
                 .builder(card)
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder());
 
         AgentInterface selectedInterface = builder.findBestClientTransport();

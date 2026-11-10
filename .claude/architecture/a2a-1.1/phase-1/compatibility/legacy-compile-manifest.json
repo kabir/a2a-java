@@ -1,0 +1,68 @@
+[
+  {
+    "artifact": "a2a-java-sdk-client",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-client/1.5.1.Final-SNAPSHOT/a2a-java-sdk-client-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-client-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "a858d6d1bcb8cf4d7cd89f495f79df6f91d7a294fb15ef7a73bf1237f3776266"
+  },
+  {
+    "artifact": "a2a-java-sdk-http-client",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-http-client/1.5.1.Final-SNAPSHOT/a2a-java-sdk-http-client-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-http-client-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "db4f695a3af77ebc59a6c1e88e7c8584d7d09c2e9d964a5ae04064aba15d04ca"
+  },
+  {
+    "artifact": "a2a-java-sdk-http-client-vertx",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-http-client-vertx/1.5.1.Final-SNAPSHOT/a2a-java-sdk-http-client-vertx-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-http-client-vertx-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "769fa9a8f89373e3703ab2c45b5b9a685ca7ff98698ad427888d37453f82dab6"
+  },
+  {
+    "artifact": "a2a-java-sdk-client-transport-spi",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-client-transport-spi/1.5.1.Final-SNAPSHOT/a2a-java-sdk-client-transport-spi-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-client-transport-spi-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "40094e486190c717cea4040bfa0c41afe95e46b25b4365f7e3a6dc2f1190b9fa"
+  },
+  {
+    "artifact": "a2a-java-sdk-jsonrpc-common",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-jsonrpc-common/1.5.1.Final-SNAPSHOT/a2a-java-sdk-jsonrpc-common-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-jsonrpc-common-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "d3b1cb2236a866e27f09bed237e3866d982cc4ecc2777f93fefc711d3610fd2c"
+  },
+  {
+    "artifact": "a2a-java-sdk-client-transport-jsonrpc",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-client-transport-jsonrpc/1.5.1.Final-SNAPSHOT/a2a-java-sdk-client-transport-jsonrpc-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-client-transport-jsonrpc-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "83756a3864225621480b5d21f0be81c1d197f51ce6f9eba51e746e34c2dcdc91"
+  },
+  {
+    "artifact": "a2a-java-sdk-client-transport-grpc",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-client-transport-grpc/1.5.1.Final-SNAPSHOT/a2a-java-sdk-client-transport-grpc-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-client-transport-grpc-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "873e589f4be917143a58005fcb671d16cc3f81469d578e4fbccfc92589e0f6d1"
+  },
+  {
+    "artifact": "a2a-java-sdk-client-transport-rest",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-client-transport-rest/1.5.1.Final-SNAPSHOT/a2a-java-sdk-client-transport-rest-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-client-transport-rest-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "43799ad05f541487d829b8c6598509086be44b9b0abef10eb7595c5445becb3b"
+  },
+  {
+    "artifact": "a2a-java-sdk-common",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-common/1.5.1.Final-SNAPSHOT/a2a-java-sdk-common-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-common-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "80efb2bdd477b3410926bcf8e2d6d824b929d3493bb732bc294a380b49096f61"
+  },
+  {
+    "artifact": "a2a-java-sdk-spec",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-spec/1.5.1.Final-SNAPSHOT/a2a-java-sdk-spec-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-spec-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "e0a32803a319ce08b7a27a5ed0b1b1eb19cde3206422b73f71bc2b5a42cb140c"
+  },
+  {
+    "artifact": "a2a-java-sdk-spec-grpc",
+    "path": "/Users/kabir/.m2/repository/org/a2aproject/sdk/a2a-java-sdk-spec-grpc/1.5.1.Final-SNAPSHOT/a2a-java-sdk-spec-grpc-1.5.1.Final-SNAPSHOT.jar",
+    "frozen": "/tmp/a2a-phase1-run/legacy-compile-sdk/a2a-java-sdk-spec-grpc-1.5.1.Final-SNAPSHOT.jar",
+    "sha256": "50809f1943780f0ba1c0ed9fafd052a9517d2e3a457d525cdcf8473b29e16df8"
+  }
+]

@@ -1,0 +1,108 @@
+{
+  "purpose": "Exact pinned upstream source entries referenced by independent provider reviews; original /tmp source links can be resolved by extracting these entries. Selected source audit, not whole-library proof.",
+  "grpc_version": "1.81.0",
+  "archive": "resume-audited-grpc-source.tar.gz",
+  "archive_sha256": "bf27f3341cd5e46846d4ae344e20aea749feac4fb199736e8d467f111febadf0",
+  "original_extract_root": "/tmp/a2a-phase1-run/grpc-source-review",
+  "source_archives": [
+    {
+      "path": "/Users/kabir/.m2/repository/io/grpc/grpc-api/1.81.0/grpc-api-1.81.0-sources.jar",
+      "sha256": "997363465fde902cafb0b500b2e4dddc8163ca443aba7b2738f63711d133dc1c"
+    },
+    {
+      "path": "/Users/kabir/.m2/repository/io/grpc/grpc-core/1.81.0/grpc-core-1.81.0-sources.jar",
+      "sha256": "d6fd286c3a94a16cab65fb48eba50250081891538f6031fc0756f55660670e87"
+    },
+    {
+      "path": "/Users/kabir/.m2/repository/io/grpc/grpc-netty/1.81.0/grpc-netty-1.81.0-sources.jar",
+      "sha256": "9568deab9aee56f4a0e298f32d65f12af28bcb03e89db6f0f64aae70b33f5610"
+    }
+  ],
+  "files": [
+    {
+      "entry": "io/grpc/LoadBalancer.java",
+      "sha256": "ab0264379ddea25645deced952bc03b0b4432900b14ed803a46876b1d50e10ac",
+      "source_archive": "grpc-api-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/LoadBalancerRegistry.java",
+      "sha256": "f90b20909fc43d203ec080154cd58e565d41867806554557206f6e7c148f6e0b",
+      "source_archive": "grpc-api-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/ManagedChannelBuilder.java",
+      "sha256": "4cd6ef7a3919cdbcdd7dd11afc41088fe7421c8a9caa088490266dc02904c0b0",
+      "source_archive": "grpc-api-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/AutoConfiguredLoadBalancerFactory.java",
+      "sha256": "96d5da3ec3496a5483f2a40d067c38b19b149c3ce979fde7668a8bba7e23341c",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/ClientTransport.java",
+      "sha256": "6dcc2046b56cb18a576ff172e747964da650721132997fdd4c6688e6eedaa6f8",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/ClientTransportFactory.java",
+      "sha256": "5d6afde4907634a62103e0e970127592ff9dd75c863000b17f5638c30aafdab0",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/DnsNameResolver.java",
+      "sha256": "c7556b6f4c04e3d0bc48da4c9a65fa36936ca51b590d42c9e2b5821f339387a0",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/GrpcUtil.java",
+      "sha256": "e536f2a5a091fb685e39df1eed7df0eacc653ad948d5affb984b344c0fa2e65b",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/ManagedChannelImpl.java",
+      "sha256": "a91b36c8253cc2b506a242dc2620f8a0416fc92e4c3a658fe59b892996311a17",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/ManagedChannelImplBuilder.java",
+      "sha256": "16e20fb00ead71b9226b5c61a2c96318fe24d10af28628f59f5b62523f3c6a18",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/PickFirstLoadBalancerProvider.java",
+      "sha256": "765fcdf2a4b8b44f9518df8b7b1d32004a76236e704a6066a03359289c4995b6",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/ProxyDetectorImpl.java",
+      "sha256": "95a4265f264a1befed4a01776e8c0a493e11707351f972c0e10686ed926bab2c",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/ServiceConfigUtil.java",
+      "sha256": "8e788663c5a8340a5db7b69add6c3065c533b5e847b949eb8022f6dc7613fb43",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/internal/StatsTraceContext.java",
+      "sha256": "e066b292c636433b7d5a3589900949377b9b1e45ec8937ebd937d431a63effa5",
+      "source_archive": "grpc-core-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/netty/InternalNettyChannelBuilder.java",
+      "sha256": "4492ce06223cca2f0cca43f8f92267f7ecb3a13d5331884e51f1d31a929ff428",
+      "source_archive": "grpc-netty-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/netty/NettyChannelBuilder.java",
+      "sha256": "647dd1c090ef4ed33f34c8db5d95596412b5ea0294ba22f899038bd9624a7af2",
+      "source_archive": "grpc-netty-1.81.0-sources.jar"
+    },
+    {
+      "entry": "io/grpc/netty/NettyClientHandler.java",
+      "sha256": "881d58c4e7f32e5da36f5a3261f0d06c524b0dcf41a3847e67631a609c15ba4b",
+      "source_archive": "grpc-netty-1.81.0-sources.jar"
+    }
+  ]
+}

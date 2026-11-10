@@ -1,0 +1,15 @@
+{
+  "checked_utc": "2026-11-10T17:32:28.272555+00:00",
+  "branch": "support/a2a-1.1.0",
+  "HEAD": "e468dd70a415d17c19ae70d75750b6464d983ad1",
+  "index_clean": true,
+  "phase0_and_authoritative_inputs_unchanged": true,
+  "fixture_hashes_checked": 120,
+  "phase1_fixture_hashes_checked": 5,
+  "frozen_response_byte_identity": true,
+  "old_sdk_archive_hashes_checked": 11,
+  "CURRENT_PROTOCOL_VERSION": "1.0",
+  "tracked_whitespace_check": "passed",
+  "phase1_local_markdown_links_checked": 47,
+  "errors": []
+}

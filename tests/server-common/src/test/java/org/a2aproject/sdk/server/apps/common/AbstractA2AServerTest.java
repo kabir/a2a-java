@@ -38,13 +38,13 @@ import io.restassured.RestAssured;
 import io.restassured.config.ObjectMapperConfig;
 import io.restassured.specification.RequestSpecification;
 import org.a2aproject.sdk.client.Client;
-import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.client.ClientBuilder;
 import org.a2aproject.sdk.client.ClientEvent;
 import org.a2aproject.sdk.client.MessageEvent;
 import org.a2aproject.sdk.client.TaskEvent;
 import org.a2aproject.sdk.client.TaskUpdateEvent;
 import org.a2aproject.sdk.client.config.ClientConfig;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.grpc.utils.JSONRPCUtils;
 import org.a2aproject.sdk.grpc.utils.ProtoUtils;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
@@ -87,6 +87,7 @@ import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.spec.UpdateEvent;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -97,6 +98,21 @@ import org.junit.jupiter.api.Timeout;
  * which delegates to {@link TestUtilsBean}.
  */
 public abstract class AbstractA2AServerTest {
+    @AfterEach
+    void closeSdkClients() {
+        if (client != null) {
+            client.close();
+            client = null;
+        }
+        if (nonStreamingClient != null) {
+            nonStreamingClient.close();
+            nonStreamingClient = null;
+        }
+        if (pollingClient != null) {
+            pollingClient.close();
+            pollingClient = null;
+        }
+    }
 
     protected static final Task MINIMAL_TASK = Task.builder()
             .id("task-123")
@@ -131,11 +147,10 @@ public abstract class AbstractA2AServerTest {
 
     public static RequestSpecification given() {
     return RestAssured.given()
-        .header(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION)
+        .header(A2AHeaders.A2A_VERSION, "1.0")
         .config(RestAssured.config()
             .objectMapperConfig(new ObjectMapperConfig(A2AGsonObjectMapper.INSTANCE)));
 }
-
 
     protected final int serverPort;
     private Client client;
@@ -2462,7 +2477,7 @@ public abstract class AbstractA2AServerTest {
                 .uri(URI.create("http://localhost:" + serverPort + "/"))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .header("Content-Type", APPLICATION_JSON)
-                .header(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION);
+                .header(A2AHeaders.A2A_VERSION, "1.0");
         if (mediaType != null) {
             builder.header("Accept", mediaType);
         }
@@ -2747,7 +2762,7 @@ public abstract class AbstractA2AServerTest {
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text"))
                 .skills(List.of())
-                .supportedInterfaces(List.of(new AgentInterface(getTransportProtocol(), getTransportUrl())))
+                .supportedInterfaces(List.of(new AgentInterface(getTransportProtocol(), getTransportUrl(), null, "1.0")))
                 .build();
     }
 
@@ -2756,6 +2771,7 @@ public abstract class AbstractA2AServerTest {
      */
     private ClientConfig createClientConfig(boolean streaming) {
         return new ClientConfig.Builder()
+                .setProtocolVersion("1.0")
                 .setStreaming(streaming)
                 .build();
     }
@@ -2766,6 +2782,7 @@ public abstract class AbstractA2AServerTest {
     private Client createPollingClient() throws A2AClientException {
         AgentCard agentCard = createTestAgentCard();
         ClientConfig clientConfig = new ClientConfig.Builder()
+                .setProtocolVersion("1.0")
                 .setStreaming(false) // Non-streaming
                 .setPolling(true) // Polling mode (translates to returnImmediately=true on server)
                 .build();

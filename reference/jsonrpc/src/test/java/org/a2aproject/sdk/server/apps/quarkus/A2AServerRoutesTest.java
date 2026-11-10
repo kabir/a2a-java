@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -29,6 +30,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 
@@ -44,6 +47,7 @@ import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigRequest;
@@ -69,17 +73,22 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import org.a2aproject.sdk.server.AgentCardCacheMetadata;
 import org.a2aproject.sdk.server.FixedInstance;
 import org.a2aproject.sdk.server.ServerCallContext;
+import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.multitenancy.AgentCardRouter;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
+import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.AuthenticationInfo;
+import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
+import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -136,6 +145,25 @@ public class A2AServerRoutesTest {
         when(mockHttpResponse.end(anyString())).thenReturn(null);
         when(mockHttpResponse.setChunked(any(Boolean.class))).thenReturn(mockHttpResponse);
         when(mockHttpResponse.headers()).thenReturn(mockHeaders);
+    }
+
+    @Test
+    public void explicitRegistrationRejectsCustomFactoryVersionOverrideBeforeHandling() {
+        for (Set<String> versions : List.of(Set.of("1.0"), Set.of("1.0", "1.1"))) {
+            for (String header : List.of("1.1", "  ")) {
+                setUp();
+                InterfaceRegistration registration = new InterfaceRegistration(TransportProtocol.JSONRPC,
+                        "http://localhost:9999", null, versions, true);
+                InterfaceRegistrationResolver resolver = (selectedBinding, tenant) -> registration;
+                setField(routes, "interfaceRegistrationResolvers", new FixedInstance<>(resolver));
+                CallContextFactory factory = rc -> new ServerCallContext(UnauthenticatedUser.INSTANCE,
+                        Map.of(), Set.of(), "1.0");
+                setField(routes, "callContextFactory", new FixedInstance<>(factory));
+                when(mockRequest.getHeader(A2AHeaders.A2A_VERSION)).thenReturn(header);
+                when(mockRequest.getParam(A2AHeaders.A2A_VERSION)).thenReturn("1.1");
+                assertThrows(InvalidParamsError.class, () -> routes.invokeJSONRPCHandler("{}", mockRoutingContext));
+            }
+        }
     }
 
     @Test

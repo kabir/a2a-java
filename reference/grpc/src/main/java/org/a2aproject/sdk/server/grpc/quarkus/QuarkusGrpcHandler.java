@@ -2,23 +2,31 @@ package org.a2aproject.sdk.server.grpc.quarkus;
 
 import java.util.concurrent.Executor;
 
+import jakarta.annotation.security.PermitAll;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import org.a2aproject.sdk.server.ExtendedAgentCard;
-import org.a2aproject.sdk.server.PublicAgentCard;
-import org.a2aproject.sdk.server.multitenancy.AgentCardRouter;
-import org.a2aproject.sdk.server.util.CdiUtils;
-import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
-import org.a2aproject.sdk.server.util.async.Internal;
-import org.a2aproject.sdk.spec.AgentCard;
-import org.a2aproject.sdk.transport.grpc.handler.CallContextFactory;
-import org.a2aproject.sdk.transport.grpc.handler.GrpcHandler;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.RegisterInterceptor;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.security.Authenticated;
 import io.smallrye.common.annotation.Blocking;
+import org.a2aproject.sdk.server.ExtendedAgentCard;
+import org.a2aproject.sdk.server.PublicAgentCard;
+import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
+import org.a2aproject.sdk.server.multitenancy.AgentCardRouter;
+import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.util.CdiUtils;
+import org.a2aproject.sdk.server.util.async.Internal;
+import org.a2aproject.sdk.server.version.InterfaceRegistration;
+import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.TransportProtocol;
+import org.a2aproject.sdk.spec.VersionNotSupportedError;
+import org.a2aproject.sdk.transport.grpc.handler.CallContextFactory;
+import org.a2aproject.sdk.transport.grpc.handler.GrpcHandler;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -85,6 +93,9 @@ public class QuarkusGrpcHandler extends GrpcHandler {
 
     private @Nullable AgentCardRouter agentCardRouter;
 
+    @Inject
+    @Nullable Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
+
     /**
      * Constructs a new QuarkusGrpcHandler with CDI-injected dependencies.
      *
@@ -125,6 +136,25 @@ public class QuarkusGrpcHandler extends GrpcHandler {
         this.callContextFactoryInstance = callContextFactoryInstance;
         this.executor = executor;
         this.agentCardRouter = CdiUtils.getIfResolvable(agentCardRouterInstance);
+    }
+
+    @PermitAll
+    void validateRegistrationAtStartup(@Observes StartupEvent event) {
+        VersionRouter.validateDefaultRegistration(interfaceRegistrationResolvers, TransportProtocol.GRPC);
+    }
+
+    @Override
+    protected @Nullable InterfaceRegistration getInterfaceRegistration(@Nullable String tenant) {
+        Instance<InterfaceRegistrationResolver> resolvers = interfaceRegistrationResolvers;
+        if (resolvers == null || resolvers.isUnsatisfied()) {
+            return null;
+        }
+        InterfaceRegistration registration = resolvers.get().resolve(TransportProtocol.GRPC, tenant);
+        if (registration == null) {
+            throw new VersionNotSupportedError(null, "No provisioned gRPC interface for this tenant", null);
+        }
+        VersionRouter.requireAvailableAdapters(registration);
+        return registration;
     }
 
     @Override

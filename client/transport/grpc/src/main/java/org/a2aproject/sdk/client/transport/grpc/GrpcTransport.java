@@ -13,17 +13,24 @@ import static org.a2aproject.sdk.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONF
 import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 import static org.a2aproject.sdk.util.Assert.checkNotNullParam;
 
+import io.grpc.Channel;
+import io.grpc.Metadata;
+import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.MetadataUtils;
+import io.grpc.stub.StreamObserver;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.ClientFeature;
+import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
+import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallInterceptor;
 import org.a2aproject.sdk.client.transport.spi.interceptors.PayloadAndHeaders;
-import org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptor;
-import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.grpc.A2AServiceGrpc;
 import org.a2aproject.sdk.grpc.A2AServiceGrpc.A2AServiceBlockingV2Stub;
 import org.a2aproject.sdk.grpc.A2AServiceGrpc.A2AServiceStub;
@@ -49,46 +56,94 @@ import org.a2aproject.sdk.spec.TaskIdParams;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.util.Utils;
-import io.grpc.Channel;
-import io.grpc.Metadata;
-import io.grpc.StatusException;
-import io.grpc.StatusRuntimeException;
-import io.grpc.stub.MetadataUtils;
-import io.grpc.stub.StreamObserver;
 import org.jspecify.annotations.Nullable;
 
-public class GrpcTransport implements ClientTransport {
+public class GrpcTransport implements VersionedClientTransport {
 
-    private static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of(
-            AuthInterceptor.AUTHORIZATION,
-            Metadata.ASCII_STRING_MARSHALLER);
-    private static final Metadata.Key<String> EXTENSIONS_KEY = Metadata.Key.of(
-            A2AHeaders.A2A_EXTENSIONS.toLowerCase(),
-            Metadata.ASCII_STRING_MARSHALLER);
-    private static final Metadata.Key<String> VERSION_KEY = Metadata.Key.of(
-            A2AHeaders.A2A_VERSION.toLowerCase(),
-            Metadata.ASCII_STRING_MARSHALLER);
+    private final String protocolVersion;
+    private final OwnedGrpcChannel ownedChannel;
     private final A2AServiceBlockingV2Stub blockingStub;
     private final A2AServiceStub asyncStub;
     private final @Nullable List<ClientCallInterceptor> interceptors;
     private final AgentCard agentCard;
     private final String agentTenant;
 
+    /** Creates a transport using protocol 1.1. Use the version overload to select 1.0. */
     public GrpcTransport(Channel channel, AgentCard agentCard) {
-        this(channel, agentCard, "", null);
+        this(channel, agentCard, ClientProtocolVersion.DEFAULT);
+    }
+
+    public GrpcTransport(Channel channel, AgentCard agentCard, String protocolVersion) {
+        this(channel, ClientProtocolVersion.selectInterface(agentCard, "GRPC", protocolVersion), agentCard, null);
     }
 
     public GrpcTransport(Channel channel, AgentCard agentCard, @Nullable String agentTenant, @Nullable List<ClientCallInterceptor> interceptors) {
+        this(channel, agentCard, agentTenant, interceptors, ClientProtocolVersion.DEFAULT);
+    }
+
+    public GrpcTransport(Channel channel, AgentCard agentCard, @Nullable String agentTenant,
+            @Nullable List<ClientCallInterceptor> interceptors, String protocolVersion) {
+        this(channel, selectTenantInterface(agentCard, agentTenant, protocolVersion), agentCard, interceptors);
+    }
+
+    /** Creates a transport using the supplied descriptor without selecting another card interface. */
+    public static GrpcTransport forInterface(Channel channel, AgentCard agentCard, AgentInterface agentInterface,
+            @Nullable List<ClientCallInterceptor> interceptors) {
+        return new GrpcTransport(channel, agentInterface, agentCard, interceptors);
+    }
+
+    /** Creates a dedicated SDK-owned channel using protocol 1.1. */
+    public static GrpcTransport createManaged(GrpcManagedChannelOptions options, AgentCard agentCard) {
+        return createManaged(options, agentCard, ClientProtocolVersion.DEFAULT);
+    }
+
+    /** Creates a dedicated SDK-owned channel for the exact selected card interface. */
+    public static GrpcTransport createManaged(GrpcManagedChannelOptions options, AgentCard agentCard, String protocolVersion) {
+        checkNotNullParam("options", options);
+        AgentInterface selected = ClientProtocolVersion.selectInterface(agentCard, "GRPC", protocolVersion);
+        Utils.validateTenant(selected.tenant());
+        Channel channel = OwnedGrpcChannel.factory(options).apply(selected.url());
+        return new GrpcTransport(channel, selected, agentCard, null);
+    }
+
+    private GrpcTransport(Channel channel, AgentInterface agentInterface, AgentCard agentCard,
+            @Nullable List<ClientCallInterceptor> interceptors) {
+        this.protocolVersion = ClientProtocolVersion.validate(agentInterface.protocolVersion());
         checkNotNullParam("channel", channel);
         checkNotNullParam("agentCard", agentCard);
-        this.asyncStub = A2AServiceGrpc.newStub(channel);
-        this.blockingStub = A2AServiceGrpc.newBlockingV2Stub(channel);
+        Utils.validateTenant(agentInterface.tenant());
+        this.ownedChannel = OwnedGrpcChannel.claim(channel, agentInterface.url(), protocolVersion);
+        this.asyncStub = A2AServiceGrpc.newStub(ownedChannel).withOption(OwnedGrpcChannel.VERSION_OPTION, protocolVersion);
+        this.blockingStub = A2AServiceGrpc.newBlockingV2Stub(ownedChannel).withOption(OwnedGrpcChannel.VERSION_OPTION, protocolVersion);
         this.agentCard = agentCard;
         this.interceptors = interceptors;
-        if (agentTenant != null && !agentTenant.isBlank()) {
-            Utils.validateTenant(agentTenant);
-        }
-        this.agentTenant = agentTenant == null || agentTenant.isBlank() ? "" : agentTenant;
+        Utils.validateTenant(agentInterface.tenant());
+        this.agentTenant = normalizeTenant(agentInterface.tenant());
+    }
+
+    private static AgentInterface selectTenantInterface(AgentCard card, @Nullable String tenant, String protocolVersion) {
+        ClientProtocolVersion.validate(protocolVersion);
+        Utils.validateTenant(tenant);
+        String selectedTenant = normalizeTenant(tenant);
+        return card.supportedInterfaces().stream()
+                .filter(iface -> "GRPC".equals(iface.protocolBinding()) && protocolVersion.equals(iface.protocolVersion())
+                        && selectedTenant.equals(normalizeTenant(iface.tenant())))
+                .findFirst().orElseThrow(() -> new A2AClientException(
+                        "No compatible GRPC interface for protocol version " + protocolVersion + " and tenant " + selectedTenant));
+    }
+
+    private static String normalizeTenant(@Nullable String tenant) {
+        return tenant == null || tenant.isBlank() ? "" : tenant;
+    }
+
+    @Override
+    public String protocolVersion() {
+        return protocolVersion;
+    }
+
+    @Override
+    public Set<ClientFeature> capabilities() {
+        return Set.of(ClientFeature.ORDINARY);
     }
 
     /**
@@ -373,6 +428,7 @@ public class GrpcTransport implements ClientTransport {
 
     @Override
     public void close() {
+        ownedChannel.close();
     }
 
     private org.a2aproject.sdk.grpc.SendMessageRequest createGrpcSendMessageRequest(MessageSendParams messageSendParams, @Nullable ClientCallContext context) {
@@ -388,44 +444,15 @@ public class GrpcTransport implements ClientTransport {
      * @return the gRPC metadata
      */
     private Metadata createGrpcMetadata(@Nullable ClientCallContext context, @Nullable PayloadAndHeaders payloadAndHeaders) {
+        Map<String, String> headers = payloadAndHeaders == null
+                ? ClientProtocolVersion.normalizeHeaders(context == null ? Map.of() : context.getHeaders(), protocolVersion)
+                : ClientProtocolVersion.normalizeHeaders(payloadAndHeaders.getHeaders(), protocolVersion);
         Metadata metadata = new Metadata();
-        metadata.put(VERSION_KEY, AgentInterface.CURRENT_PROTOCOL_VERSION);
-
-        if (context != null && context.getHeaders() != null) {
-            // Set a2a-version and a2a-extensions headers if present, ignoring case
-            for (Map.Entry<String, String> header : context.getHeaders().entrySet()) {
-                if (A2AHeaders.A2A_VERSION.equalsIgnoreCase(header.getKey())) {
-                    if (header.getValue() != null) {
-                        metadata.put(VERSION_KEY, header.getValue());
-                    }
-                } else if (A2AHeaders.A2A_EXTENSIONS.equalsIgnoreCase(header.getKey())) {
-                    if (header.getValue() != null) {
-                        metadata.put(EXTENSIONS_KEY, header.getValue());
-                    }
-                }
-            }
-
-            // Add other headers as needed in the future
-        }
-        if (payloadAndHeaders != null && payloadAndHeaders.getHeaders() != null) {
-            // Handle all headers from interceptors (including auth headers)
-            for (Map.Entry<String, String> headerEntry : payloadAndHeaders.getHeaders().entrySet()) {
-                String headerName = headerEntry.getKey();
-                String headerValue = headerEntry.getValue();
-
-                if (headerValue != null) {
-                    // Use static key for common Authorization header, create dynamic keys for others
-                    if (AuthInterceptor.AUTHORIZATION.equals(headerName)) {
-                        metadata.put(AUTHORIZATION_METADATA_KEY, headerValue);
-                    } else {
-                        // Create a metadata key dynamically for API keys and other custom headers
-                        Metadata.Key<String> metadataKey = Metadata.Key.of(headerName, Metadata.ASCII_STRING_MARSHALLER);
-                        metadata.put(metadataKey, headerValue);
-                    }
-                }
+        for (Map.Entry<String, String> header : headers.entrySet()) {
+            if (header.getValue() != null) {
+                metadata.put(Metadata.Key.of(header.getKey().toLowerCase(Locale.ROOT), Metadata.ASCII_STRING_MARSHALLER), header.getValue());
             }
         }
-
         return metadata;
     }
 
@@ -458,11 +485,13 @@ public class GrpcTransport implements ClientTransport {
     private PayloadAndHeaders applyInterceptors(String methodName, Object payload,
             AgentCard agentCard, @Nullable ClientCallContext clientCallContext) {
         PayloadAndHeaders payloadAndHeaders = new PayloadAndHeaders(payload,
-                clientCallContext != null ? clientCallContext.getHeaders() : null);
+                ClientProtocolVersion.normalizeHeaders(clientCallContext != null ? clientCallContext.getHeaders() : Map.of(), protocolVersion));
         if (interceptors != null && !interceptors.isEmpty()) {
             for (ClientCallInterceptor interceptor : interceptors) {
                 payloadAndHeaders = interceptor.intercept(methodName, payloadAndHeaders.getPayload(),
                         payloadAndHeaders.getHeaders(), agentCard, clientCallContext);
+                payloadAndHeaders = new PayloadAndHeaders(payloadAndHeaders.getPayload(),
+                        ClientProtocolVersion.normalizeHeaders(payloadAndHeaders.getHeaders(), protocolVersion));
             }
         }
         return payloadAndHeaders;

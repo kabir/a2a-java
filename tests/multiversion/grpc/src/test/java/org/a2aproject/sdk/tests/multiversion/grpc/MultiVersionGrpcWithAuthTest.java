@@ -1,13 +1,10 @@
 package org.a2aproject.sdk.tests.multiversion.grpc;
 
-import java.util.concurrent.TimeUnit;
-
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.a2aproject.sdk.client.ClientBuilder;
+import org.a2aproject.sdk.client.transport.grpc.GrpcManagedChannelOptions;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransport;
 import org.a2aproject.sdk.client.transport.grpc.GrpcTransportConfigBuilder;
 import org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptor;
@@ -15,7 +12,6 @@ import org.a2aproject.sdk.server.PublicAgentCard;
 import org.a2aproject.sdk.server.apps.common.AbstractA2AServerWithAuthTest;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.TransportProtocol;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -26,9 +22,6 @@ public class MultiVersionGrpcWithAuthTest extends AbstractA2AServerWithAuthTest 
     @Inject
     @PublicAgentCard
     AgentCard agentCard;
-
-    private static ManagedChannel authenticatedChannel;
-    private static ManagedChannel unauthenticatedChannel;
 
     public MultiVersionGrpcWithAuthTest() {
         super(8081);
@@ -51,45 +44,13 @@ public class MultiVersionGrpcWithAuthTest extends AbstractA2AServerWithAuthTest 
         );
 
         builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder()
-                .channelFactory(target -> {
-                    authenticatedChannel = ManagedChannelBuilder
-                            .forTarget(target)
-                            .usePlaintext()
-                            .build();
-                    return authenticatedChannel;
-                })
+                .managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build())
                 .addInterceptor(authInterceptor));
     }
 
     @Override
     protected void configureTransport(ClientBuilder builder) {
-        builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().channelFactory(target -> {
-            unauthenticatedChannel = ManagedChannelBuilder
-                    .forTarget(target)
-                    .usePlaintext()
-                    .build();
-            return unauthenticatedChannel;
-        }));
-    }
-
-    @AfterAll
-    public static void closeChannels() {
-        if (authenticatedChannel != null) {
-            authenticatedChannel.shutdownNow();
-            try {
-                authenticatedChannel.awaitTermination(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        if (unauthenticatedChannel != null) {
-            unauthenticatedChannel.shutdownNow();
-            try {
-                unauthenticatedChannel.awaitTermination(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
+        builder.withTransport(GrpcTransport.class, new GrpcTransportConfigBuilder().managedChannel(GrpcManagedChannelOptions.builder().usePlaintext().build()));
     }
 
     @Override

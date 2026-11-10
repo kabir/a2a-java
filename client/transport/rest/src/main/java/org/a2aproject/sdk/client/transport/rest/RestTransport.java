@@ -13,28 +13,29 @@ import static org.a2aproject.sdk.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONF
 import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 import static org.a2aproject.sdk.util.Assert.checkNotNullParam;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.MessageOrBuilder;
+import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.MessageOrBuilder;
-import com.google.protobuf.util.JsonFormat;
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.http.A2AHttpClientConfiguration;
 import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
-import org.a2aproject.sdk.common.A2AHeaders;
+import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.client.transport.rest.sse.SSEEventListener;
-import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.ClientFeature;
+import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
+import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallInterceptor;
 import org.a2aproject.sdk.client.transport.spi.interceptors.PayloadAndHeaders;
@@ -64,17 +65,23 @@ import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.util.Utils;
 import org.jspecify.annotations.Nullable;
 
-public class RestTransport implements ClientTransport {
+public class RestTransport implements VersionedClientTransport {
 
     private static final Logger LOGGER = Logger.getLogger(RestTransport.class.getName());
+    private final String protocolVersion;
     private final A2AHttpClient httpClient;
     private final AgentInterface agentInterface;
     private @Nullable final List<ClientCallInterceptor> interceptors;
     private final AgentCard agentCard;
     private final boolean followRedirects;
 
+    /** Selects an advertised REST interface with protocol 1.1. */
     public RestTransport(AgentCard agentCard) {
-        this(null, agentCard, Utils.getFavoriteInterface(agentCard), null);
+        this(agentCard, ClientProtocolVersion.DEFAULT);
+    }
+
+    public RestTransport(AgentCard agentCard, String protocolVersion) {
+        this(null, agentCard, ClientProtocolVersion.selectInterface(agentCard, "HTTP+JSON", protocolVersion), null);
     }
 
     public RestTransport(@Nullable A2AHttpClient httpClient, AgentCard agentCard,
@@ -85,11 +92,22 @@ public class RestTransport implements ClientTransport {
     public RestTransport(@Nullable A2AHttpClient httpClient, AgentCard agentCard,
             AgentInterface agentInterface, @Nullable List<ClientCallInterceptor> interceptors,
             boolean followRedirects) {
+        this.protocolVersion = ClientProtocolVersion.validate(agentInterface.protocolVersion());
         this.httpClient = httpClient == null ? A2AHttpClientFactory.create(A2AHttpClientConfiguration.DEFAULT) : httpClient;
         this.agentCard = agentCard;
         this.agentInterface = agentInterface;
         this.interceptors = interceptors;
         this.followRedirects = followRedirects;
+    }
+
+    @Override
+    public String protocolVersion() {
+        return protocolVersion;
+    }
+
+    @Override
+    public Set<ClientFeature> capabilities() {
+        return Set.of(ClientFeature.ORDINARY);
     }
 
     @Override
@@ -421,14 +439,16 @@ public class RestTransport implements ClientTransport {
         SSEEventListener sseEventListener = new SSEEventListener(eventConsumer, errorConsumer);
         try {
             String url = Utils.buildBaseUrl(agentInterface, request.tenant()) + String.format("/tasks/%1s:subscribe", request.id());
-            A2AHttpClient.PostBuilder postBuilder = createPostBuilder(url, payloadAndHeaders, false);
-            ref.set(postBuilder.postAsyncSSE(
-                    event -> sseEventListener.onMessage(event, ref.get()),
-                    throwable -> sseEventListener.onError(throwable, ref.get()),
-                    () -> {
-                        // Signal normal stream completion to error handler (null error means success)
-                        sseEventListener.onComplete();
-                    }));
+            Consumer<ServerSentEvent> messageConsumer = event -> sseEventListener.onMessage(event, ref.get());
+            Consumer<Throwable> failureConsumer = throwable -> sseEventListener.onError(throwable, ref.get());
+            if ("1.1".equals(protocolVersion)) {
+                A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
+                addStandardHeaders(getBuilder, payloadAndHeaders);
+                ref.set(getBuilder.getAsyncSSE(messageConsumer, failureConsumer, sseEventListener::onComplete));
+            } else {
+                A2AHttpClient.PostBuilder postBuilder = createPostBuilder(url, payloadAndHeaders, false);
+                ref.set(postBuilder.postAsyncSSE(messageConsumer, failureConsumer, sseEventListener::onComplete));
+            }
         } catch (IOException e) {
             throw new A2AClientException("Failed to send streaming message request: " + e, e);
         } catch (InterruptedException e) {
@@ -465,11 +485,13 @@ public class RestTransport implements ClientTransport {
 
     private PayloadAndHeaders applyInterceptors(String methodName, @Nullable MessageOrBuilder payload,
             AgentCard agentCard, @Nullable ClientCallContext clientCallContext) {
-        PayloadAndHeaders payloadAndHeaders = new PayloadAndHeaders(payload, getHttpHeaders(clientCallContext));
+        PayloadAndHeaders payloadAndHeaders = new PayloadAndHeaders(payload, ClientProtocolVersion.normalizeHeaders(getHttpHeaders(clientCallContext), protocolVersion));
         if (interceptors != null && !interceptors.isEmpty()) {
             for (ClientCallInterceptor interceptor : interceptors) {
                 payloadAndHeaders = interceptor.intercept(methodName, payloadAndHeaders.getPayload(),
                         payloadAndHeaders.getHeaders(), agentCard, clientCallContext);
+                payloadAndHeaders = new PayloadAndHeaders(payloadAndHeaders.getPayload(),
+                        ClientProtocolVersion.normalizeHeaders(payloadAndHeaders.getHeaders(), protocolVersion));
             }
         }
         return payloadAndHeaders;
@@ -508,7 +530,6 @@ public class RestTransport implements ClientTransport {
         A2AHttpClient.PostBuilder postBuilder = httpClient.createPost()
                 .url(url)
                 .addHeader("Content-Type", "application/json")
-                .addHeader(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION)
                 .followRedirects(followRedirects)
                 .body(body);
 
@@ -521,7 +542,6 @@ public class RestTransport implements ClientTransport {
     }
 
     private static <T extends A2AHttpClient.Builder<T>> void addStandardHeaders(T builder, PayloadAndHeaders payloadAndHeaders) {
-        builder.addHeader(A2AHeaders.A2A_VERSION, AgentInterface.CURRENT_PROTOCOL_VERSION);
         if (payloadAndHeaders.getHeaders() != null) {
             for (Map.Entry<String, String> entry : payloadAndHeaders.getHeaders().entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
@@ -530,6 +550,6 @@ public class RestTransport implements ClientTransport {
     }
 
     private Map<String, String> getHttpHeaders(@Nullable ClientCallContext context) {
-        return context != null ? context.getHeaders() : Collections.emptyMap();
+        return context != null ? context.getHeaders() : Map.of();
     }
 }

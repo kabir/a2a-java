@@ -7,10 +7,14 @@ import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.GENA
 import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.STREAMING_END_SUFFIX;
 import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.STREAMING_EVENT_SUFFIX;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.opentelemetry.api.trace.SpanKind;
 import org.a2aproject.sdk.A2A;
 import org.a2aproject.sdk.client.Client;
 import org.a2aproject.sdk.client.config.ClientConfig;
@@ -25,7 +29,6 @@ import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
-import io.opentelemetry.api.trace.SpanKind;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -63,7 +66,7 @@ abstract class OpenTelemetryA2ABaseTest extends BaseTest {
 
     @BeforeEach
     void setUp() throws A2AClientException {
-        ClientConfig clientConfig = new ClientConfig.Builder()
+        ClientConfig clientConfig = new ClientConfig.Builder().setProtocolVersion("1.0")
                 .setStreaming(false)
                 .build();
 
@@ -274,7 +277,7 @@ abstract class OpenTelemetryA2ABaseTest extends BaseTest {
         given().get("/reset-metrics").then().statusCode(HTTP_OK);
 
         Client streamingClient = Client.builder(A2A.getAgentCard("http://localhost:" + serverPort))
-                .clientConfig(new ClientConfig.Builder().setStreaming(true).build())
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setStreaming(true).build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder())
                 .build();
 
@@ -325,7 +328,7 @@ abstract class OpenTelemetryA2ABaseTest extends BaseTest {
         given().get("/reset-metrics").then().statusCode(HTTP_OK);
 
         Client streamingClient = Client.builder(A2A.getAgentCard("http://localhost:" + serverPort))
-                .clientConfig(new ClientConfig.Builder().setStreaming(true).build())
+                .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").setStreaming(true).build())
                 .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfigBuilder())
                 .build();
 
