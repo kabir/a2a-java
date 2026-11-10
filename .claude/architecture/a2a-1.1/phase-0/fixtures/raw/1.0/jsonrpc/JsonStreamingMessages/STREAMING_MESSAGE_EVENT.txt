@@ -1,0 +1,16 @@
+data: {
+      "jsonrpc": "2.0",
+      "id": "1234",
+      "result": {
+        "message": {
+          "role": "ROLE_AGENT",
+          "messageId": "msg-123",
+          "contextId": "context-456",
+          "parts": [
+            {
+              "text": "Hello, world!"
+            }
+          ]
+        }
+      }
+}

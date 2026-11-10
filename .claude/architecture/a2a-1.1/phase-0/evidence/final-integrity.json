@@ -1,0 +1,12 @@
+{
+  "checked_utc": "2026-11-10T14:24:56.378670+00:00",
+  "scope": "Read-only artifact integrity; no probe preparation, compile, capture, wire comparison or build executed",
+  "user_inputs_preserved": 7,
+  "local_markdown_links_checked": 99,
+  "fixture_hashes": 226,
+  "original_non_document_fixture_hashes_preserved": 198,
+  "upstream_hashes": 18,
+  "original_0.3_archive_bytes_promoted": 26,
+  "frozen_sdk_file_hashes": 555,
+  "errors": []
+}

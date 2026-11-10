@@ -1,0 +1,11 @@
+{
+  "checked_utc": "2026-11-10T14:19:02.045269+00:00",
+  "authority": "Original pre-STOP capture archived before resumed verification; not expectations generated from candidate changes",
+  "expected_archive_sha256": "952804a568a7938a9450379167decaa27d7523eb91008b1527a1861a75fef422",
+  "files": 26,
+  "positive_comparisons": 24,
+  "known_failure_fingerprints": 2,
+  "comparison": "JSON semantic equality; protobuf binary byte equality; exact expected/actual file set",
+  "failures": [],
+  "scope": "Selected historical codec cases only, not complete lifecycle/binding conformance"
+}

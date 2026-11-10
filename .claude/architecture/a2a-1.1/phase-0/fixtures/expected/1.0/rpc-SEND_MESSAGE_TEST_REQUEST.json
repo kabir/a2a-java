@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"SendMessage","params":{"message":{"role":"ROLE_USER","parts":[{"text":"tell me a joke"}],"messageId":"message-1234","contextId":"context-1234"}}}

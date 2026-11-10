@@ -1,0 +1,3247 @@
+{
+  "build": {
+    "command": [
+      "mvn",
+      "-B",
+      "-ntp",
+      "clean",
+      "install"
+    ],
+    "cwd": "/Users/kabir/.codex-api/worktrees/3053/a2a-java",
+    "start": "2026-11-10T13:19:16.151765+00:00",
+    "deadline_seconds": 1200,
+    "pid": 67363,
+    "timed_out": false,
+    "exit_code": 0,
+    "elapsed_seconds": 597.21,
+    "end": "2026-11-10T13:29:13.361176+00:00"
+  },
+  "totals": {
+    "tests": 3844,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 123
+  },
+  "suite_reports": 248,
+  "suites": [
+    {
+      "module": "client/base",
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.A2ATest.xml",
+      "suite": "org.a2aproject.sdk.A2ATest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/base",
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.AuthenticationAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.client.AuthenticationAuthorizationTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/base",
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientBuilderTest.xml",
+      "suite": "org.a2aproject.sdk.client.ClientBuilderTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/base",
+      "report": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.ClientTaskManagerTest.xml",
+      "suite": "org.a2aproject.sdk.client.ClientTaskManagerTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/grpc",
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.EventStreamObserverTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.EventStreamObserverTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/grpc",
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcErrorMapperTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.GrpcErrorMapperTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/grpc",
+      "report": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcTransportTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.grpc.GrpcTransportTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/jsonrpc",
+      "report": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportStreamingTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportStreamingTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/jsonrpc",
+      "report": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/jsonrpc",
+      "report": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListenerTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.jsonrpc.sse.SSEEventListenerTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/rest",
+      "report": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestErrorMapperTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.rest.RestErrorMapperTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/rest",
+      "report": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.RestTransportTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.rest.RestTransportTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/rest",
+      "report": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.sse.SSEEventListenerTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.rest.sse.SSEEventListenerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/spi",
+      "report": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptorTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.spi.interceptors.auth.AuthInterceptorTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "client/transport/spi",
+      "report": "client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.spi.sse.SSEEventListenerTest.xml",
+      "suite": "org.a2aproject.sdk.client.transport.spi.sse.SSEEventListenerTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "common",
+      "report": "common/target/surefire-reports/TEST-org.a2aproject.sdk.util.AssertTest.xml",
+      "suite": "org.a2aproject.sdk.util.AssertTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "common",
+      "report": "common/target/surefire-reports/TEST-org.a2aproject.sdk.util.HtmlEscapeUtilsTest.xml",
+      "suite": "org.a2aproject.sdk.util.HtmlEscapeUtilsTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/base",
+      "report": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.A2A_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.A2A_v0_3_Test",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/base",
+      "report": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.AuthenticationAuthorization_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.AuthenticationAuthorization_v0_3_Test",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/base",
+      "report": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.ClientBuilder_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.ClientBuilder_v0_3_Test",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/base",
+      "report": "compat-0.3/client/base/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.ClientTaskManager_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.ClientTaskManager_v0_3_Test",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/grpc",
+      "report": "compat-0.3/client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.grpc.EventStreamObserver_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.grpc.EventStreamObserver_v0_3_Test",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/grpc",
+      "report": "compat-0.3/client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.grpc.GrpcErrorMapper_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.grpc.GrpcErrorMapper_v0_3_Test",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/jsonrpc",
+      "report": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransportStreamingCancel_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransportStreamingCancel_v0_3_Test",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/jsonrpc",
+      "report": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransportStreaming_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransportStreaming_v0_3_Test",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/jsonrpc",
+      "report": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransport_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.jsonrpc.JSONRPCTransport_v0_3_Test",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/jsonrpc",
+      "report": "compat-0.3/client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.jsonrpc.sse.SSEEventListener_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.jsonrpc.sse.SSEEventListener_v0_3_Test",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/rest",
+      "report": "compat-0.3/client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.rest.RestTransportStreamingCancel_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.rest.RestTransportStreamingCancel_v0_3_Test",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/rest",
+      "report": "compat-0.3/client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.rest.RestTransport_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.rest.RestTransport_v0_3_Test",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/rest",
+      "report": "compat-0.3/client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.rest.sse.RestSSEEventListener_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.rest.sse.RestSSEEventListener_v0_3_Test",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/spi",
+      "report": "compat-0.3/client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.http.A2ACardResolver_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.http.A2ACardResolver_v0_3_Test",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/client/transport/spi",
+      "report": "compat-0.3/client/transport/spi/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.client.transport.spi.interceptors.auth.AuthInterceptor_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.client.transport.spi.interceptors.auth.AuthInterceptor_v0_3_Test",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "report": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "report": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "report": "compat-0.3/reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithTaskAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithTaskAuthorizationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.A2AServerRoutes_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.A2AServerRoutes_v0_3_Test",
+      "tests": 64,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_AndroidTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_AndroidTest",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_JdkTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_JdkTest",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_VertxTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_VertxTest",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthAndroidTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthAndroidTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthVertxTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithAuthVertxTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/jsonrpc",
+      "report": "compat-0.3/reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithTaskAuthorizationVertxTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.apps.quarkus.QuarkusA2AJSONRPC_v0_3_WithTaskAuthorizationVertxTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.A2AServerRoutes_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.A2AServerRoutes_v0_3_Test",
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthAndroidTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthAndroidTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthVertxTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithAuthVertxTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "report": "compat-0.3/reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithTaskAuthorizationVertxTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_WithTaskAuthorizationVertxTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/server-conversion",
+      "report": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.PushNotificationPayloadFormatter_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.conversion.PushNotificationPayloadFormatter_v0_3_Test",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/server-conversion",
+      "report": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.FileContentMapper_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.conversion.mappers.domain.FileContentMapper_v0_3_Test",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/server-conversion",
+      "report": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.NullData_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.conversion.mappers.domain.NullData_v0_3_Test",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/server-conversion",
+      "report": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskMapper_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskMapper_v0_3_Test",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/server-conversion",
+      "report": "compat-0.3/server-conversion/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskStatusUpdateEventMapper_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskStatusUpdateEventMapper_v0_3_Test",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec",
+      "report": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.json.ThrowableDeserializationSecurityTest.xml",
+      "suite": "org.a2aproject.sdk.compat03.json.ThrowableDeserializationSecurityTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec",
+      "report": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.JSONRPCErrorSerialization_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.spec.JSONRPCErrorSerialization_v0_3_Test",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec",
+      "report": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.NullValues_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.spec.NullValues_v0_3_Test",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec",
+      "report": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.SubTypeSerialization_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.spec.SubTypeSerialization_v0_3_Test",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec",
+      "report": "compat-0.3/spec/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.spec.TaskSerialization_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.spec.TaskSerialization_v0_3_Test",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec-grpc",
+      "report": "compat-0.3/spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.grpc.utils.NullValues_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.grpc.utils.NullValues_v0_3_Test",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec-grpc",
+      "report": "compat-0.3/spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.grpc.utils.ProtoJsonUtils_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.grpc.utils.ProtoJsonUtils_v0_3_Test",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/spec-grpc",
+      "report": "compat-0.3/spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.grpc.utils.ToProto_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.grpc.utils.ToProto_v0_3_Test",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/transport/grpc",
+      "report": "compat-0.3/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.grpc.handler.GrpcHandler_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.transport.grpc.handler.GrpcHandler_v0_3_Test",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/transport/jsonrpc",
+      "report": "compat-0.3/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.jsonrpc.handler.JSONRPCHandler_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.transport.jsonrpc.handler.JSONRPCHandler_v0_3_Test",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/transport/jsonrpc",
+      "report": "compat-0.3/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.jsonrpc.handler.JSONRPCRequestDecoder_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.transport.jsonrpc.handler.JSONRPCRequestDecoder_v0_3_Test",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "compat-0.3/transport/rest",
+      "report": "compat-0.3/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.compat03.transport.rest.handler.RestHandler_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.compat03.transport.rest.handler.RestHandler_v0_3_Test",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "examples/stream-lifecycle/server",
+      "report": "examples/stream-lifecycle/server/target/surefire-reports/TEST-org.a2aproject.sdk.examples.streamlifecycle.server.StreamLifecycleTest.xml",
+      "suite": "org.a2aproject.sdk.examples.streamlifecycle.server.StreamLifecycleTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientFactoryTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientFactoryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientIntegrationTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientIntegrationTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientProviderTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientProviderTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientRedirectTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientRedirectTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientSSETest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientSSETest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidA2AHttpClientTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.AndroidBoundedLineReaderTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.AndroidBoundedLineReaderTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientIntegrationTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientIntegrationTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientRedirectTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientRedirectTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientSSETest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientSSETest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpA2AHttpClientTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-android",
+      "report": "extras/http-client-android/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.android.OkHttpPostRedirectHeaderLeakTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.android.OkHttpPostRedirectHeaderLeakTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-cdi",
+      "report": "extras/http-client-cdi/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.cdi.CdiA2AHttpClientFactoryTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.cdi.CdiA2AHttpClientFactoryTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-cdi",
+      "report": "extras/http-client-cdi/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.cdi.CdiA2AHttpClientProviderTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.cdi.CdiA2AHttpClientProviderTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientFactoryTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientFactoryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientIntegrationTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientIntegrationTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientRedirectTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientRedirectTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest.xml",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "report": "extras/http-client-vertx/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/multitenancy/tests/grpc",
+      "report": "extras/multitenancy/tests/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.tests.grpc.MultiTenantGrpcTest.xml",
+      "suite": "org.a2aproject.sdk.extras.multitenancy.tests.grpc.MultiTenantGrpcTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/multitenancy/tests/jsonrpc",
+      "report": "extras/multitenancy/tests/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.tests.jsonrpc.MultiTenantJSONRPCTest.xml",
+      "suite": "org.a2aproject.sdk.extras.multitenancy.tests.jsonrpc.MultiTenantJSONRPCTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/multitenancy/tests/rest",
+      "report": "extras/multitenancy/tests/rest/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.tests.rest.MultiTenantRestTest.xml",
+      "suite": "org.a2aproject.sdk.extras.multitenancy.tests.rest.MultiTenantRestTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/multitenancy/tests/router-unit",
+      "report": "extras/multitenancy/tests/router-unit/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.CdiAgentCardRouterTest.xml",
+      "suite": "org.a2aproject.sdk.extras.multitenancy.CdiAgentCardRouterTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/multitenancy/tests/router-unit",
+      "report": "extras/multitenancy/tests/router-unit/target/surefire-reports/TEST-org.a2aproject.sdk.extras.multitenancy.CdiAgentExecutorRouterTest.xml",
+      "suite": "org.a2aproject.sdk.extras.multitenancy.CdiAgentExecutorRouterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/client",
+      "report": "extras/opentelemetry/client/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.client.OpenTelemetryClientTransportTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.client.OpenTelemetryClientTransportTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/common",
+      "report": "extras/opentelemetry/common/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.StreamingEventAttributesTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.StreamingEventAttributesTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/integration-tests",
+      "report": "extras/opentelemetry/integration-tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.A2ATestRoutesTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.it.A2ATestRoutesTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/integration-tests",
+      "report": "extras/opentelemetry/integration-tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryA2ATest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryA2ATest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/integration-tests",
+      "report": "extras/opentelemetry/integration-tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/server",
+      "report": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryA2AHttpClientTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryA2AHttpClientTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/server",
+      "report": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryHttpClientProducerTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryHttpClientProducerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/server",
+      "report": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryPushNotificationSenderDecoratorTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryPushNotificationSenderDecoratorTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/server",
+      "report": "extras/opentelemetry/server/target/surefire-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryRequestHandlerDecoratorTest.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryRequestHandlerDecoratorTest",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/push-notification-config-store-database-jpa",
+      "report": "extras/push-notification-config-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaDatabasePushNotificationConfigStoreIntegrationTest.xml",
+      "suite": "org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaDatabasePushNotificationConfigStoreIntegrationTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/push-notification-config-store-database-jpa",
+      "report": "extras/push-notification-config-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfigStoreTest.xml",
+      "suite": "org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfigStoreTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    {
+      "module": "extras/queue-manager-replicated/core",
+      "report": "extras/queue-manager-replicated/core/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.core.EventSerializationTest.xml",
+      "suite": "org.a2aproject.sdk.extras.queuemanager.replicated.core.EventSerializationTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/queue-manager-replicated/core",
+      "report": "extras/queue-manager-replicated/core/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest.xml",
+      "suite": "org.a2aproject.sdk.extras.queuemanager.replicated.core.ReplicatedQueueManagerTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/queue-manager-replicated/replication-mp-reactive",
+      "report": "extras/queue-manager-replicated/replication-mp-reactive/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.mp_reactive.ReactiveMessagingReplicationStrategyTest.xml",
+      "suite": "org.a2aproject.sdk.extras.queuemanager.replicated.mp_reactive.ReactiveMessagingReplicationStrategyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/queue-manager-replicated/tests-multi-instance/tests",
+      "report": "extras/queue-manager-replicated/tests-multi-instance/tests/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.tests.multiinstance.MultiInstanceReplicationTest.xml",
+      "suite": "org.a2aproject.sdk.extras.queuemanager.replicated.tests.multiinstance.MultiInstanceReplicationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/queue-manager-replicated/tests-single-instance",
+      "report": "extras/queue-manager-replicated/tests-single-instance/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.tests.KafkaReplicationIntegrationTest.xml",
+      "suite": "org.a2aproject.sdk.extras.queuemanager.replicated.tests.KafkaReplicationIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/queue-manager-replicated/tests-single-instance",
+      "report": "extras/queue-manager-replicated/tests-single-instance/target/surefire-reports/TEST-org.a2aproject.sdk.extras.queuemanager.replicated.tests.ReplicatedQueueManagerTest.xml",
+      "suite": "org.a2aproject.sdk.extras.queuemanager.replicated.tests.ReplicatedQueueManagerTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreAuthorizationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreConfigTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreConfigTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreIntegrationTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaDatabaseTaskStoreTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaSubjectKeyTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaSubjectKeyTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationCdiTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationCdiTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationMySqlTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationMySqlTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationPostgresTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationPostgresTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationQueryTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskAuthorizationQueryTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/task-store-database-jpa",
+      "report": "extras/task-store-database-jpa/target/surefire-reports/TEST-org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwnershipTest.xml",
+      "suite": "org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwnershipTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2ACardResolverTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.A2ACardResolverTest",
+      "tests": 44,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2AHttpClientFactoryTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.A2AHttpClientFactoryTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.A2AHttpClientProviderTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.A2AHttpClientProviderTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.BoundedLineBodySubscriberTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.BoundedLineBodySubscriberTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientRedirectTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.JdkA2AHttpClientRedirectTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientSSETest.xml",
+      "suite": "org.a2aproject.sdk.client.http.JdkA2AHttpClientSSETest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.JdkA2AHttpClientTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.JdkA2AHttpClientTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.RedirectHeaderPolicyTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.RedirectHeaderPolicyTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "http-client",
+      "report": "http-client/target/surefire-reports/TEST-org.a2aproject.sdk.client.http.ServerSentEventParserTest.xml",
+      "suite": "org.a2aproject.sdk.client.http.ServerSentEventParserTest",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "integrations/microprofile-config",
+      "report": "integrations/microprofile-config/target/surefire-reports/TEST-org.a2aproject.sdk.integrations.microprofile.MicroProfileConfigProviderTest.xml",
+      "suite": "org.a2aproject.sdk.integrations.microprofile.MicroProfileConfigProviderTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.A2AErrorSerializationTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.A2AErrorSerializationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.JsonUtilTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.JsonUtilTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.NullDataTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.NullDataTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.PartSerializationTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.PartSerializationTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.SecurityRequirementSerializationTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.SecurityRequirementSerializationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.SecuritySchemeSerializationTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.SecuritySchemeSerializationTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.StreamingEventKindSerializationTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.StreamingEventKindSerializationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.json.TaskSerializationTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.json.TaskSerializationTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "jsonrpc-common",
+      "report": "jsonrpc-common/target/surefire-reports/TEST-org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequestTest.xml",
+      "suite": "org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequestTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/common",
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.AsyncManagedExecutorProducerTest.xml",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.AsyncManagedExecutorProducerTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/common",
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.SseResponseWriterTest.xml",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.SseResponseWriterTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/common",
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.VersionRouterTest.xml",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.VersionRouterTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/common",
+      "report": "reference/common/target/surefire-reports/TEST-org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelperTest.xml",
+      "suite": "org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelperTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/grpc",
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest.xml",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "tests": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "reference/grpc",
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    {
+      "module": "reference/grpc",
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithTaskAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithTaskAuthorizationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/grpc",
+      "report": "reference/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.grpc.quarkus.QuarkusGrpcHandlerLazyResolutionTest.xml",
+      "suite": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusGrpcHandlerLazyResolutionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.A2AServerRoutesTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.A2AServerRoutesTest",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCAndroidTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCAndroidTest",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCJdkTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCJdkTest",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCVertxTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCVertxTest",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthAndroidTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthAndroidTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthJdkTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthJdkTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthVertxTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithAuthVertxTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/jsonrpc",
+      "report": "reference/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithTaskAuthorizationVertxTest.xml",
+      "suite": "org.a2aproject.sdk.server.apps.quarkus.QuarkusA2AJSONRPCWithTaskAuthorizationVertxTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.A2AServerRoutesTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.A2AServerRoutesTest",
+      "tests": 83,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthAndroidTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthAndroidTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthJdkTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthJdkTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthVertxTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithAuthVertxTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "reference/rest",
+      "report": "reference/rest/target/surefire-reports/TEST-org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithTaskAuthorizationVertxTest.xml",
+      "suite": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestWithTaskAuthorizationVertxTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardRequestPolicyTest.xml",
+      "suite": "org.a2aproject.sdk.server.AgentCardRequestPolicyTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardResolverTest.xml",
+      "suite": "org.a2aproject.sdk.server.AgentCardResolverTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.AgentCardValidatorTest.xml",
+      "suite": "org.a2aproject.sdk.server.AgentCardValidatorTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.ServerCallContextTest.xml",
+      "suite": "org.a2aproject.sdk.server.ServerCallContextTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.agentexecution.RequestContextTest.xml",
+      "suite": "org.a2aproject.sdk.server.agentexecution.RequestContextTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.agentexecution.SimpleRequestContextBuilderTest.xml",
+      "suite": "org.a2aproject.sdk.server.agentexecution.SimpleRequestContextBuilderTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.auth.TaskAuthorizationCapabilityTest.xml",
+      "suite": "org.a2aproject.sdk.server.auth.TaskAuthorizationCapabilityTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EnhancedRunnableTest.xml",
+      "suite": "org.a2aproject.sdk.server.events.EnhancedRunnableTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EventConsumerTest.xml",
+      "suite": "org.a2aproject.sdk.server.events.EventConsumerTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.EventQueueTest.xml",
+      "suite": "org.a2aproject.sdk.server.events.EventQueueTest",
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.InMemoryQueueManagerTest.xml",
+      "suite": "org.a2aproject.sdk.server.events.InMemoryQueueManagerTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.MainEventBusProcessorExceptionTest.xml",
+      "suite": "org.a2aproject.sdk.server.events.MainEventBusProcessorExceptionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.events.MainEventBusProcessorPushNotificationOrderTest.xml",
+      "suite": "org.a2aproject.sdk.server.events.MainEventBusProcessorPushNotificationOrderTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.extensions.A2AExtensionsTest.xml",
+      "suite": "org.a2aproject.sdk.server.extensions.A2AExtensionsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerBuilderAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerBuilderAuthorizationTest",
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerReferenceTaskAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerReferenceTaskAuthorizationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerTest.xml",
+      "suite": "org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandlerTest",
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.AgentEmitterConcurrencyTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.AgentEmitterConcurrencyTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.AgentEmitterTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.AgentEmitterTest",
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStoreTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStoreTest",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryTaskStoreAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.InMemoryTaskStoreAuthorizationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.InMemoryTaskStoreTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.InMemoryTaskStoreTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.PushNotificationSenderTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.PushNotificationSenderTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.PushNotificationUrlValidatorTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.PushNotificationUrlValidatorTest",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.ResultAggregatorTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.ResultAggregatorTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskManagerSnapshotTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskManagerSnapshotTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskManagerTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskManagerTest",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskPersistenceExceptionTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskPersistenceExceptionTest",
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskSerializationExceptionTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskSerializationExceptionTest",
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskStoreAuthorizationFallbackTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskStoreAuthorizationFallbackTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.tasks.TaskStoreExceptionTest.xml",
+      "suite": "org.a2aproject.sdk.server.tasks.TaskStoreExceptionTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.util.ArtifactUtilsTest.xml",
+      "suite": "org.a2aproject.sdk.server.util.ArtifactUtilsTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.util.async.AsyncUtilsTest.xml",
+      "suite": "org.a2aproject.sdk.server.util.async.AsyncUtilsTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server-common",
+      "report": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.version.A2AVersionValidatorTest.xml",
+      "suite": "org.a2aproject.sdk.server.version.A2AVersionValidatorTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCapabilitiesTest.xml",
+      "suite": "org.a2aproject.sdk.spec.AgentCapabilitiesTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCardSignatureTest.xml",
+      "suite": "org.a2aproject.sdk.spec.AgentCardSignatureTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentCardTest.xml",
+      "suite": "org.a2aproject.sdk.spec.AgentCardTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentExtensionTest.xml",
+      "suite": "org.a2aproject.sdk.spec.AgentExtensionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AgentSkillTest.xml",
+      "suite": "org.a2aproject.sdk.spec.AgentSkillTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.ArtifactTest.xml",
+      "suite": "org.a2aproject.sdk.spec.ArtifactTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.AuthorizationCodeOAuthFlowTest.xml",
+      "suite": "org.a2aproject.sdk.spec.AuthorizationCodeOAuthFlowTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.CancelTaskParamsTest.xml",
+      "suite": "org.a2aproject.sdk.spec.CancelTaskParamsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.ClientCredentialsOAuthFlowTest.xml",
+      "suite": "org.a2aproject.sdk.spec.ClientCredentialsOAuthFlowTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.DataPartTest.xml",
+      "suite": "org.a2aproject.sdk.spec.DataPartTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.DeviceCodeOAuthFlowTest.xml",
+      "suite": "org.a2aproject.sdk.spec.DeviceCodeOAuthFlowTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.FilePartTest.xml",
+      "suite": "org.a2aproject.sdk.spec.FilePartTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.FileWithBytesTest.xml",
+      "suite": "org.a2aproject.sdk.spec.FileWithBytesTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParamsTest.xml",
+      "suite": "org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParamsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.MessageSendConfigurationTest.xml",
+      "suite": "org.a2aproject.sdk.spec.MessageSendConfigurationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.MessageSendParamsTest.xml",
+      "suite": "org.a2aproject.sdk.spec.MessageSendParamsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.SecurityRequirementTest.xml",
+      "suite": "org.a2aproject.sdk.spec.SecurityRequirementTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskArtifactUpdateEventTest.xml",
+      "suite": "org.a2aproject.sdk.spec.TaskArtifactUpdateEventTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskPushNotificationConfigTest.xml",
+      "suite": "org.a2aproject.sdk.spec.TaskPushNotificationConfigTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TaskStatusUpdateEventTest.xml",
+      "suite": "org.a2aproject.sdk.spec.TaskStatusUpdateEventTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.TextPartTest.xml",
+      "suite": "org.a2aproject.sdk.spec.TextPartTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.util.PageTokenTest.xml",
+      "suite": "org.a2aproject.sdk.spec.util.PageTokenTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec",
+      "report": "spec/target/surefire-reports/TEST-org.a2aproject.sdk.spec.util.UtilsTest.xml",
+      "suite": "org.a2aproject.sdk.spec.util.UtilsTest",
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.A2ACommonFieldMapperTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.mapper.A2ACommonFieldMapperTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.ListTasksParamsMapperTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.mapper.ListTasksParamsMapperTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.PartMapperTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.mapper.PartMapperTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.mapper.StreamResponseMapperTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.mapper.StreamResponseMapperTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.JSONRPCUtilsTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.utils.JSONRPCUtilsTest",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ListTasksNullDataTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.utils.ListTasksNullDataTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.PartTypeAdapterTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.utils.PartTypeAdapterTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ProtoJsonUtilsTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.utils.ProtoJsonUtilsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "spec-grpc",
+      "report": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.ToProtoTest.xml",
+      "suite": "org.a2aproject.sdk.grpc.utils.ToProtoTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "tests": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithTaskAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithTaskAuthorizationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "report": "tests/multiversion/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    {
+      "module": "tests/multiversion/jsonrpc",
+      "report": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCTest",
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/jsonrpc",
+      "report": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCWithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCWithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/jsonrpc",
+      "report": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCWithTaskAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPCWithTaskAuthorizationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/jsonrpc",
+      "report": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPC_v0_3_Test.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPC_v0_3_Test",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/jsonrpc",
+      "report": "tests/multiversion/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPC_v0_3_WithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.jsonrpc.MultiVersionJSONRPC_v0_3_WithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "report": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "report": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestWithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestWithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "report": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestWithTaskAuthorizationTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestWithTaskAuthorizationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "report": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "report": "tests/multiversion/rest/target/surefire-reports/TEST-org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestWithAuthTest.xml",
+      "suite": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestWithAuthTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "transport/grpc",
+      "report": "transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.grpc.handler.GrpcHandlerTest.xml",
+      "suite": "org.a2aproject.sdk.transport.grpc.handler.GrpcHandlerTest",
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "transport/jsonrpc",
+      "report": "transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest.xml",
+      "suite": "org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest",
+      "tests": 73,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    {
+      "module": "transport/rest",
+      "report": "transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.transport.rest.handler.RestHandlerTest.xml",
+      "suite": "org.a2aproject.sdk.transport.rest.handler.RestHandlerTest",
+      "tests": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "extras/opentelemetry/integration-tests",
+      "report": "extras/opentelemetry/integration-tests/target/failsafe-reports/TEST-org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryA2AIT.xml",
+      "suite": "org.a2aproject.sdk.extras.opentelemetry.it.OpenTelemetryA2AIT",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "skips": [
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1344)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidParamsJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1221)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerServerTest_v0_3.java:1300)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testMalformedJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1200)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1352)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1361)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerServerTest_v0_3.java:1322)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerServerTest_v0_3.java:1253)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_Test",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerServerTest_v0_3.java:1278)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest",
+      "test": "testGetAgentCardIsPublic",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest.testGetAgentCardIsPublic() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "compat-0.3/reference/grpc",
+      "class": "org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest",
+      "test": "testBasicAuthWorksViaHttp",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.compat03.server.grpc.quarkus.QuarkusA2AGrpc_v0_3_WithAuthTest.testBasicAuthWorksViaHttp() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1344)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidParamsJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1221)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerServerTest_v0_3.java:1300)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testMalformedJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1200)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1352)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1361)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerServerTest_v0_3.java:1322)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerServerTest_v0_3.java:1253)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_AndroidTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerServerTest_v0_3.java:1278)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1344)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidParamsJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1221)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerServerTest_v0_3.java:1300)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testMalformedJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1200)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1352)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1361)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerServerTest_v0_3.java:1322)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerServerTest_v0_3.java:1253)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_JdkTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerServerTest_v0_3.java:1278)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1344)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidParamsJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1221)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerServerTest_v0_3.java:1300)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testMalformedJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1200)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1352)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1361)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerServerTest_v0_3.java:1322)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerServerTest_v0_3.java:1253)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "compat-0.3/reference/rest",
+      "class": "org.a2aproject.sdk.compat03.server.rest.quarkus.QuarkusA2ARest_v0_3_VertxTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerServerTest_v0_3.java:1278)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "test": "testCustomSSEParserConfigAcceptsLineWithinLimit",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: Implementation does not support SSEParserConfig\n\tat org.a2aproject.sdk.client.http.AbstractA2AHttpClientSSETest.testCustomSSEParserConfigAcceptsLineWithinLimit(AbstractA2AHttpClientSSETest.java:430)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "test": "testCustomSSEParserConfigRejectsOversizedLine",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: Implementation does not support SSEParserConfig\n\tat org.a2aproject.sdk.client.http.AbstractA2AHttpClientSSETest.testCustomSSEParserConfigRejectsOversizedLine(AbstractA2AHttpClientSSETest.java:395)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "test": "testSSEOversizedLineRejectedBeforeMemoryExhaustion",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: Implementation does not support SSEParserConfig\n\tat org.a2aproject.sdk.client.http.AbstractA2AHttpClientSSETest.testSSEOversizedLineRejectedBeforeMemoryExhaustion(AbstractA2AHttpClientSSETest.java:537)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "test": "testSSEEventIdAndLastEventId",
+      "type": "skipped",
+      "message": "Vert.x BodyCodec.sseStream() does not propagate last event ID to subsequent events",
+      "reason": ""
+    },
+    {
+      "module": "extras/http-client-vertx",
+      "class": "org.a2aproject.sdk.client.http.vertx.VertxA2AHttpClientSSETest",
+      "test": "testSSEStreamEndingWithoutTrailingEmptyLine",
+      "type": "skipped",
+      "message": "Vert.x BodyCodec.sseStream() has no flush() equivalent for streams ending without a trailing blank line",
+      "reason": ""
+    },
+    {
+      "module": "extras/push-notification-config-store-database-jpa",
+      "class": "org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfigStoreTest",
+      "test": "testSendNotificationWithToken",
+      "type": "skipped",
+      "message": "Token authentication is not yet implemented in BasePushNotificationSender (TODO auth)",
+      "reason": ""
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+      "test": "testGetAgentCardIsPublic",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest.testGetAgentCardIsPublic() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "reference/grpc",
+      "class": "org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest",
+      "test": "testBasicAuthWorksViaHttp",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.server.grpc.quarkus.QuarkusA2AGrpcWithAuthTest.testBasicAuthWorksViaHttp() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestAndroidTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestJdkTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "reference/rest",
+      "class": "org.a2aproject.sdk.server.rest.quarkus.QuarkusA2ARestVertxTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest",
+      "test": "testGetAgentCardIsPublic",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest.testGetAgentCardIsPublic() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest",
+      "test": "testBasicAuthWorksViaHttp",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.tests.multiversion.grpc.MultiVersionGrpcWithAuthTest.testBasicAuthWorksViaHttp() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1344)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidParamsJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1221)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerServerTest_v0_3.java:1300)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testMalformedJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1200)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1352)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1361)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerServerTest_v0_3.java:1322)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerServerTest_v0_3.java:1253)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerServerTest_v0_3.java:1278)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest",
+      "test": "testGetAgentCardIsPublic",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest.testGetAgentCardIsPublic() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "tests/multiversion/grpc",
+      "class": "org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest",
+      "test": "testBasicAuthWorksViaHttp",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.tests.multiversion.grpc.MultiVersion_v0_3_GrpcWithAuthTest.testBasicAuthWorksViaHttp() is @Disabled",
+      "reason": ""
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2315)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidParamsJSONRPCRequest(AbstractA2AServerTest.java:2192)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerTest.java:2271)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testMalformedJSONRPCRequest(AbstractA2AServerTest.java:2171)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithAcceptHeader(AbstractA2AServerTest.java:2323)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerTest.java:2332)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerTest.java:2293)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerTest.java:2224)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersionRestTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerTest.java:2249)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testNonStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testNonStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1344)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testInvalidParamsJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidParamsJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1221)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testInvalidJSONRPCRequestInvalidId",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestInvalidId(AbstractA2AServerServerTest_v0_3.java:1300)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testMalformedJSONRPCRequest",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testMalformedJSONRPCRequest(AbstractA2AServerServerTest_v0_3.java:1200)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testStreamingMethodWithAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1352)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testStreamingMethodWithoutAcceptHeader",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testStreamingMethodWithoutAcceptHeader(AbstractA2AServerServerTest_v0_3.java:1361)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testInvalidJSONRPCRequestNonExistentMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestNonExistentMethod(AbstractA2AServerServerTest_v0_3.java:1322)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testInvalidJSONRPCRequestMissingJsonrpc",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingJsonrpc(AbstractA2AServerServerTest_v0_3.java:1253)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "tests/multiversion/rest",
+      "class": "org.a2aproject.sdk.tests.multiversion.rest.MultiVersion_v0_3_RestTest",
+      "test": "testInvalidJSONRPCRequestMissingMethod",
+      "type": "skipped",
+      "message": "",
+      "reason": "org.opentest4j.TestAbortedException: Assumption failed: JSONRPC-specific test\n\tat org.a2aproject.sdk.compat03.conversion.AbstractA2AServerServerTest_v0_3.testInvalidJSONRPCRequestMissingMethod(AbstractA2AServerServerTest_v0_3.java:1278)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat io.quarkus.test.junit.QuarkusTestExtension.runExtensionMethod(QuarkusTestExtension.java:1005)\n\tat io.quarkus.test.junit.QuarkusTestExtension.interceptTestMethod(QuarkusTestExtension.java:852)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)"
+    },
+    {
+      "module": "transport/jsonrpc",
+      "class": "org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest",
+      "test": "testDefaultRequestHandlerWithCustomComponents",
+      "type": "skipped",
+      "message": "public void org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandlerTest.testDefaultRequestHandlerWithCustomComponents() is @Disabled",
+      "reason": ""
+    }
+  ],
+  "problems": []
+}

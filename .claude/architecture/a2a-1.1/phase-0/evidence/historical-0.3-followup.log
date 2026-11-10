@@ -1,0 +1,3 @@
+BASELINE FAILURE 0.3/rest-send-params: {"exception":"com.google.gson.JsonSyntaxException","message":"StreamingEventKind must have a 'kind' field"}
+BASELINE FAILURE 0.3/rest-task: {"exception":"com.google.gson.JsonSyntaxException","message":"StreamingEventKind must have a 'kind' field"}
+0.3: wrote 26 historical wire outputs to /private/tmp/a2a-phase0-03-followup

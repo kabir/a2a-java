@@ -1,0 +1,18 @@
+{
+  "command": [
+    "python3",
+    "/tmp/a2a-phase0-deliverable/fixtures/run.py",
+    "--version",
+    "1.0",
+    "--classpath-file",
+    "/tmp/a2a-phase0-frozen-runtime/classpath-1.0.txt"
+  ],
+  "cwd": "/Users/kabir/sourcecontrol/AI/a2a-java",
+  "start": "2026-11-10T14:18:39.094095+00:00",
+  "deadline_seconds": 180,
+  "pid": 93958,
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 0.704,
+  "end": "2026-11-10T14:18:39.797725+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "message": {
+    "role": "ROLE_USER",
+    "content": [
+      {
+        "text": "tell me some jokes"
+      }
+    ],
+    "messageId": "message-1234",
+    "contextId": "context-1234"
+  },
+  "configuration": {
+    "acceptedOutputModes": ["text"]
+  }
+}

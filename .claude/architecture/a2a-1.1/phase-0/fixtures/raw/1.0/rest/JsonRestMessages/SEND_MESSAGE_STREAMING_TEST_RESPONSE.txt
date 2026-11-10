@@ -1,0 +1,3 @@
+event: message
+data: {"task":{"id":"2","contextId":"context-1234","status":{"state":"TASK_STATE_SUBMITTED"},"artifacts":[{"artifactId":"artifact-1","name":"joke","parts":[{"text":"Why did the chicken cross the road? To get to the other side!"}]}],"metadata":{}}}
+

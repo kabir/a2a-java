@@ -1,0 +1,9 @@
+{
+  "kind": "task",
+  "id": "task-123",
+  "contextId": "context-456",
+  "status": {
+    "state": "working",
+    "timestamp": "2026-01-01T00:00:00Z"
+  }
+}

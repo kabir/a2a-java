@@ -1,0 +1,22 @@
+{
+ "jsonrpc": "2.0",
+ "method": "message/send",
+ "params": {
+  "message": {
+   "role": "user",
+   "parts": [
+    {
+     "kind": "text",
+     "text": "tell me a joke"
+    }
+   ],
+   "messageId": "message-1234",
+   "contextId": "context-1234",
+   "kind": "message"
+  },
+  "configuration": {
+    "acceptedOutputModes": ["text"],
+    "blocking": true
+  },
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "jsonrpc": "2.0",
+ "method": "tasks/pushNotificationConfig/set",
+ "params": {
+  "taskId": "de38c76d-d54c-436c-8b9f-4c2703648d64",
+  "pushNotificationConfig": {
+   "url": "https://example.com/callback",
+   "authentication": {
+    "schemes": ["jwt"]
+   }
+  }
+ }
+}

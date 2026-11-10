@@ -1,0 +1,27 @@
+{
+  "jsonrpc":"2.0",
+  "id": "cd4c76de-d54c-436c-8b9f-4c2703648d64",
+  "result":{
+    "task":{
+      "id":"de38c76d-d54c-436c-8b9f-4c2703648d64",
+      "contextId":"c295ea44-7543-4f78-b524-7a38915ad6e4",
+      "status":{
+        "state":"TASK_STATE_COMPLETED"
+      },
+      "artifacts":[
+        {
+          "artifactId":"artifact-1",
+          "name":"image-analysis",
+          "parts":[
+            {
+              "text":"This is an image of a cat sitting on a windowsill."
+            }
+          ]
+        }
+      ],
+      "metadata":{
+        "test":"metadata-test"
+      }
+    }
+  }
+}

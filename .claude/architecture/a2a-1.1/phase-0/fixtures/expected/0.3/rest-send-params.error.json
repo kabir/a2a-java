@@ -1,0 +1,1 @@
+{"exception":"com.google.gson.JsonSyntaxException","message":"StreamingEventKind must have a 'kind' field"}

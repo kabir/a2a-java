@@ -1,0 +1,38 @@
+{
+ "jsonrpc": "2.0",
+ "method": "message/send",
+ "params": {
+  "message": {
+   "role": "user",
+   "parts": [
+    {
+     "kind": "text",
+     "text": "analyze this data and image"
+    },
+    {
+     "kind": "file",
+     "file": {
+      "bytes": "aGVsbG8=",
+      "name": "chart.png",
+      "mimeType": "image/png"
+     }
+    },
+    {
+     "kind": "data",
+     "data": {
+      "chartType": "bar",
+      "dataPoints": [10, 20, 30, 40],
+      "labels": ["Q1", "Q2", "Q3", "Q4"]
+     }
+    }
+   ],
+   "messageId": "message-1234-with-mixed",
+   "contextId": "context-1234",
+   "kind": "message"
+  },
+  "configuration": {
+    "acceptedOutputModes": ["text"],
+    "blocking": true
+  }
+ }
+}

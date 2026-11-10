@@ -1,0 +1,13 @@
+data: {
+      "jsonrpc": "2.0",
+      "id": "1234",
+      "result": {
+        "statusUpdate": {
+          "taskId": "1",
+          "contextId": "2",
+          "status": {
+            "state": "TASK_STATE_COMPLETED"
+          }
+        }
+      }
+}

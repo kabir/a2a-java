@@ -1,16 +1,79 @@
-# A2A 1.1 server support investigation
+# A2A 1.1 client and server architecture
 
-Status: research and proposed direction; no runtime implementation.
+Status: reviewed server direction with a proposed client scope revision; no runtime implementation.
+
+## Architecture review and implementation handoff
+
+The user clarified the outcome on 2026-11-09: a reviewed architecture and a
+concrete prompt for a later implementation loop. One instance must serve the
+distinct 0.3, 1.0, and 1.1 server interfaces when provisioned; explicit requests
+must not silently select another version. Preserve common Java APIs, allowing
+documented custom-store/executor changes required by 1.1.
+
+- [Proposed architecture](architecture.md): provisioning, protocol policies,
+  storage/replication, migration, live execution, and specification gates.
+- [Implementation-loop prompt](implementation-loop.md): copyable scope, phase
+  deliverables, evidence requirements, and completion criteria.
+- [Acceptance and run limits](acceptance.md): fourteen evidence-based criteria,
+  agreed iteration/time/attempt limits, and checkpoint behavior.
+
+The user-supplied review confirmed the shared-core direction; its requested
+clarifications have been incorporated. This is a reviewed proposal and handoff,
+not an implemented feature. The documents below retain the original research
+baseline. Where a previously open design choice now has a proposed
+answer, consult the architecture; specification ambiguities remain explicit
+preflight gates. No implementation or conformance is claimed.
+
+The architecture now explicitly covers ordinary direct-Message responses without
+task persistence, revision-checked full Task output from executors, and defaults
+for new interface registrations versus existing deployment entry points. These
+address architectural review findings; no runtime failure or production fix is
+claimed.
+
+A further independent review corrected the proposed gRPC missing-version default
+to the specified 0.3 and strengthened executor completion channels, initial
+webhook enrollment, bounded observation recovery, and mixed-binary migration.
+These contracts and their regression obligations are included in the architecture,
+acceptance criteria, and implementation prompt. The temporary review report is
+not part of the retained handoff.
+
+## Client scope revision — 2026-11-10
+
+The user expanded the handoff to include production public SDK client support
+alongside each server capability, over all three bindings. The client default is
+**1.1**; explicit 1.0 clients keep 1.0 semantics. Rebuilt applications using an
+implicit default intentionally change selection and can pin 1.0 before upgrading.
+This does not change server missing-version defaults or optional 0.3 behavior.
+The 0.3 client stays separate in its existing optional modules with its own API
+and transports. Automatic version negotiation/fallback remains outside scope.
+
+The [client architecture](architecture.md#production-client-architecture) covers
+instance selection, API/SPI changes, codecs, state reduction, live lifecycle and
+extensibility within existing modules. The revised phases require public-client
+integration evidence as features arrive, alongside unchanged historical peers
+and raw fixtures. No new production Maven module or duplicate 1.0 client stack
+is proposed. Prior review conclusions apply to the server design; the client
+revision still needs independent review. The agreed run limits remain unchanged.
+
+The follow-up contract review now has recommended public observation/live/input
+handles, raw SPI companion interfaces and provider/wrapper capability checks.
+TaskView synchronization is explicitly as-of and separate from limited or missing
+history. Lifecycle tables distinguish readiness, admission, commit, delivery and
+indeterminate cancellation. The legacy constant stays 1.0 independently of the
+1.1 client default; custom compatibility requires actual source/binary/wire
+checks. No public operation-status lookup or executor-delivery receipt is assumed.
+Missing binding correlation remains a specification gate, not a new protocol.
 
 ## Scope and conclusion
 
-Support a 1.1 client using a 1.1 server interface alongside the existing 1.0 and
-0.3 server interfaces. Each interface must preserve its version's semantics.
-Client negotiation and teaching a 1.1 client to use a 1.0 server are outside this
-investigation.
+Deliver a production 1.1 SDK client using a 1.1 server interface alongside explicit
+1.0 clients and the existing optional 0.3 clients on one server instance. Each
+client and interface preserves its selected version's semantics. Automatic
+negotiation and fallback to a different protocol version remain outside scope.
 
 The recommended direction is to evolve `spec/`, `server-common/`, and
-`transport/` to a 1.1-capable internal model, retain the existing 0.3 translation
+`transport/` to a 1.1-capable internal model, extend existing `client/` modules,
+retain the existing 0.3 translation
 boundary, and implement explicit 1.0 and 1.1 policies in the shared server
 transport pipeline. The inspected changes do not justify duplicating the 1.0
 domain model, generated service, or server implementation in `compat-1.0/`.
@@ -25,7 +88,7 @@ event replay are substantial core changes whichever packaging approach is used.
 
 ## Documents
 
-- [Specification changes](spec-delta.md): changes relevant to server support,
+- [Specification changes](spec-delta.md): original server research with client consequences,
   including the corrections inherited from 1.0.1.
 - [Compatibility design assessment](compatibility.md): current architecture,
   options, recommended boundaries, and how 0.3 would reach the newer core.

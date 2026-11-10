@@ -1,0 +1,12 @@
+data: {
+      "jsonrpc": "2.0",
+      "id": "1234",
+      "result": {
+        "kind": "task",
+        "id": "task-123",
+        "contextId": "context-456",
+        "status": {
+          "state": "working"
+        }
+      }
+}

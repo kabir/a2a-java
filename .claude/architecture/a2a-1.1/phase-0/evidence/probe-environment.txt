@@ -1,0 +1,11 @@
+Fresh environment verification after resumed probes, 2026-11-10 around14:24UTC.
+
+$ java -version
+openjdk version "17.0.18" 2026-01-20
+OpenJDK Runtime Environment Temurin-17.0.18+8 (build 17.0.18+8)
+OpenJDK 64-Bit Server VM Temurin-17.0.18+8 (build 17.0.18+8, mixed mode, sharing)
+exit_code=0
+
+$ javac -version
+javac 17.0.18
+exit_code=0

@@ -1,0 +1,333 @@
+[
+  {
+    "id": "1.0/rpc-SEND_MESSAGE_TEST_REQUEST",
+    "version": "1.0",
+    "input": "inputs/1.0/rpc-SEND_MESSAGE_TEST_REQUEST.json",
+    "class": "org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest",
+    "proto_method": "",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_TEST_REQUEST.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rpc-SEND_MESSAGE_TEST_RESPONSE",
+    "version": "1.0",
+    "input": "inputs/1.0/rpc-SEND_MESSAGE_TEST_RESPONSE.json",
+    "class": "org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse",
+    "proto_method": "",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rpc-GET_TASK_TEST_REQUEST",
+    "version": "1.0",
+    "input": "inputs/1.0/rpc-GET_TASK_TEST_REQUEST.json",
+    "class": "org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskRequest",
+    "proto_method": "",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/GET_TASK_TEST_REQUEST.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rpc-GET_TASK_TEST_RESPONSE",
+    "version": "1.0",
+    "input": "inputs/1.0/rpc-GET_TASK_TEST_RESPONSE.json",
+    "class": "org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskResponse",
+    "proto_method": "",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/GET_TASK_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rpc-CANCEL_TASK_TEST_REQUEST",
+    "version": "1.0",
+    "input": "inputs/1.0/rpc-CANCEL_TASK_TEST_REQUEST.json",
+    "class": "org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskRequest",
+    "proto_method": "",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/CANCEL_TASK_TEST_REQUEST.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rpc-CANCEL_TASK_TEST_RESPONSE",
+    "version": "1.0",
+    "input": "inputs/1.0/rpc-CANCEL_TASK_TEST_RESPONSE.json",
+    "class": "org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskResponse",
+    "proto_method": "",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/CANCEL_TASK_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rpc-error",
+    "version": "1.0",
+    "input": "inputs/1.0/rpc-error.json",
+    "class": "org.a2aproject.sdk.jsonrpc.common.wrappers.A2AErrorResponse",
+    "proto_method": "",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_ERROR_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/jsonrpc-send-params",
+    "version": "1.0",
+    "input": "inputs/1.0/jsonrpc-send-params.json",
+    "class": "org.a2aproject.sdk.spec.MessageSendParams",
+    "proto_method": "sendMessageRequest",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_TEST_REQUEST.txt",
+    "selector": [
+      "params"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/jsonrpc-task",
+    "version": "1.0",
+    "input": "inputs/1.0/jsonrpc-task.json",
+    "class": "org.a2aproject.sdk.spec.Task",
+    "proto_method": "task",
+    "source_fixture": "raw/1.0/jsonrpc/JsonMessages/GET_TASK_TEST_RESPONSE.txt",
+    "selector": [
+      "result"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rest-send-params",
+    "version": "1.0",
+    "input": "inputs/1.0/rest-send-params.json",
+    "class": "org.a2aproject.sdk.spec.MessageSendParams",
+    "proto_method": "sendMessageRequest",
+    "source_fixture": "raw/1.0/rest/JsonRestMessages/SEND_MESSAGE_TEST_REQUEST.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/rest-task",
+    "version": "1.0",
+    "input": "inputs/1.0/rest-task.json",
+    "class": "org.a2aproject.sdk.spec.Task",
+    "proto_method": "task",
+    "source_fixture": "raw/1.0/rest/JsonRestMessages/GET_TASK_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/event-task",
+    "version": "1.0",
+    "input": "inputs/1.0/event-task.json",
+    "class": "org.a2aproject.sdk.spec.Task",
+    "proto_method": "task",
+    "source_fixture": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_TASK_EVENT.txt",
+    "selector": [
+      "result",
+      "task"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/event-message",
+    "version": "1.0",
+    "input": "inputs/1.0/event-message.json",
+    "class": "org.a2aproject.sdk.spec.Message",
+    "proto_method": "message",
+    "source_fixture": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_MESSAGE_EVENT.txt",
+    "selector": [
+      "result",
+      "message"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/event-status_update",
+    "version": "1.0",
+    "input": "inputs/1.0/event-status_update.json",
+    "class": "org.a2aproject.sdk.spec.TaskStatusUpdateEvent",
+    "proto_method": "taskStatusUpdateEvent",
+    "source_fixture": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_STATUS_UPDATE_EVENT.txt",
+    "selector": [
+      "result",
+      "statusUpdate"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/event-status_update_event_final",
+    "version": "1.0",
+    "input": "inputs/1.0/event-status_update_event_final.json",
+    "class": "org.a2aproject.sdk.spec.TaskStatusUpdateEvent",
+    "proto_method": "taskStatusUpdateEvent",
+    "source_fixture": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_STATUS_UPDATE_EVENT_FINAL.txt",
+    "selector": [
+      "result",
+      "statusUpdate"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "1.0/event-artifact_update",
+    "version": "1.0",
+    "input": "inputs/1.0/event-artifact_update.json",
+    "class": "org.a2aproject.sdk.spec.TaskArtifactUpdateEvent",
+    "proto_method": "taskArtifactUpdateEvent",
+    "source_fixture": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_ARTIFACT_UPDATE_EVENT.txt",
+    "selector": [
+      "result",
+      "artifactUpdate"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rpc-SEND_MESSAGE_TEST_RESPONSE",
+    "version": "0.3",
+    "input": "inputs/0.3/rpc-SEND_MESSAGE_TEST_RESPONSE.json",
+    "class": "org.a2aproject.sdk.compat03.spec.SendMessageResponse_v0_3",
+    "proto_method": "",
+    "source_fixture": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rpc-GET_TASK_TEST_REQUEST",
+    "version": "0.3",
+    "input": "inputs/0.3/rpc-GET_TASK_TEST_REQUEST.json",
+    "class": "org.a2aproject.sdk.compat03.spec.GetTaskRequest_v0_3",
+    "proto_method": "",
+    "source_fixture": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_TASK_TEST_REQUEST.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rpc-GET_TASK_TEST_RESPONSE",
+    "version": "0.3",
+    "input": "inputs/0.3/rpc-GET_TASK_TEST_RESPONSE.json",
+    "class": "org.a2aproject.sdk.compat03.spec.GetTaskResponse_v0_3",
+    "proto_method": "",
+    "source_fixture": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_TASK_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rpc-CANCEL_TASK_TEST_REQUEST",
+    "version": "0.3",
+    "input": "inputs/0.3/rpc-CANCEL_TASK_TEST_REQUEST.json",
+    "class": "org.a2aproject.sdk.compat03.spec.CancelTaskRequest_v0_3",
+    "proto_method": "",
+    "source_fixture": "raw/0.3/jsonrpc/JsonMessages_v0_3/CANCEL_TASK_TEST_REQUEST.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rpc-CANCEL_TASK_TEST_RESPONSE",
+    "version": "0.3",
+    "input": "inputs/0.3/rpc-CANCEL_TASK_TEST_RESPONSE.json",
+    "class": "org.a2aproject.sdk.compat03.spec.CancelTaskResponse_v0_3",
+    "proto_method": "",
+    "source_fixture": "raw/0.3/jsonrpc/JsonMessages_v0_3/CANCEL_TASK_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rpc-error",
+    "version": "0.3",
+    "input": "inputs/0.3/rpc-error.json",
+    "class": "org.a2aproject.sdk.compat03.spec.JSONRPCErrorResponse_v0_3",
+    "proto_method": "",
+    "source_fixture": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_ERROR_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/jsonrpc-task",
+    "version": "0.3",
+    "input": "inputs/0.3/jsonrpc-task.json",
+    "class": "org.a2aproject.sdk.compat03.spec.Task_v0_3",
+    "proto_method": "task",
+    "source_fixture": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_TASK_TEST_RESPONSE.txt",
+    "selector": [
+      "result"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rest-send-params",
+    "version": "0.3",
+    "input": "inputs/0.3/rest-send-params.json",
+    "class": "org.a2aproject.sdk.compat03.spec.MessageSendParams_v0_3",
+    "proto_method": "sendMessageRequest",
+    "source_fixture": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_TEST_REQUEST.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/rest-task",
+    "version": "0.3",
+    "input": "inputs/0.3/rest-task.json",
+    "class": "org.a2aproject.sdk.compat03.spec.Task_v0_3",
+    "proto_method": "task",
+    "source_fixture": "raw/0.3/rest/JsonRestMessages_v0_3/GET_TASK_TEST_RESPONSE.txt",
+    "selector": [],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/event-task",
+    "version": "0.3",
+    "input": "inputs/0.3/event-task.json",
+    "class": "org.a2aproject.sdk.compat03.spec.Task_v0_3",
+    "proto_method": "task",
+    "source_fixture": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_TASK_EVENT.txt",
+    "selector": [
+      "result"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/event-message",
+    "version": "0.3",
+    "input": "inputs/0.3/event-message.json",
+    "class": "org.a2aproject.sdk.compat03.spec.Message_v0_3",
+    "proto_method": "message",
+    "source_fixture": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_MESSAGE_EVENT.txt",
+    "selector": [
+      "result"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/event-status_update",
+    "version": "0.3",
+    "input": "inputs/0.3/event-status_update.json",
+    "class": "org.a2aproject.sdk.compat03.spec.TaskStatusUpdateEvent_v0_3",
+    "proto_method": "taskStatusUpdateEvent",
+    "source_fixture": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_STATUS_UPDATE_EVENT.txt",
+    "selector": [
+      "result"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/event-status_update_event_final",
+    "version": "0.3",
+    "input": "inputs/0.3/event-status_update_event_final.json",
+    "class": "org.a2aproject.sdk.compat03.spec.TaskStatusUpdateEvent_v0_3",
+    "proto_method": "taskStatusUpdateEvent",
+    "source_fixture": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_STATUS_UPDATE_EVENT_FINAL.txt",
+    "selector": [
+      "result"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  },
+  {
+    "id": "0.3/event-artifact_update",
+    "version": "0.3",
+    "input": "inputs/0.3/event-artifact_update.json",
+    "class": "org.a2aproject.sdk.compat03.spec.TaskArtifactUpdateEvent_v0_3",
+    "proto_method": "taskArtifactUpdateEvent",
+    "source_fixture": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_ARTIFACT_UPDATE_EVENT.txt",
+    "selector": [
+      "result"
+    ],
+    "derivation": "Remove leading data: for one SSE event; parse JSON; select keys listed; add fixed 2026-01-01T00:00:00Z timestamp to each status object only where absent (historical constructors otherwise use current time); pretty-print JSON"
+  }
+]

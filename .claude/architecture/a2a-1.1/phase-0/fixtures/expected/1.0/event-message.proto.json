@@ -1,0 +1,12 @@
+{
+  "messageId": "msg-123",
+  "contextId": "context-456",
+  "role": "ROLE_AGENT",
+  "parts": [{
+    "text": "Hello, world!",
+    "metadata": {
+    }
+  }],
+  "metadata": {
+  }
+}

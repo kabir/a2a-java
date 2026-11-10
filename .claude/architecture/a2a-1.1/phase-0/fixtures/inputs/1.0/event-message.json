@@ -1,0 +1,10 @@
+{
+  "role": "ROLE_AGENT",
+  "messageId": "msg-123",
+  "contextId": "context-456",
+  "parts": [
+    {
+      "text": "Hello, world!"
+    }
+  ]
+}

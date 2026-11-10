@@ -1,0 +1,16 @@
+{
+  "kind": "artifact-update",
+  "taskId": "1",
+  "contextId": "2",
+  "append": false,
+  "lastChunk": true,
+  "artifact": {
+    "artifactId": "artifact-1",
+    "parts": [
+      {
+        "kind": "text",
+        "text": "Why did the chicken cross the road? To get to the other side!"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "jsonrpc":"2.0",
+  "id":1,
+  "result":{
+    "message": {
+      "messageId":"msg-456",
+      "contextId":"context-1234",
+      "role":"ROLE_AGENT",
+      "parts":[
+        {
+          "text":"Why did the chicken cross the road? To get to the other side!"
+        }
+      ],
+      "metadata":{
+      }
+    }
+  }
+}

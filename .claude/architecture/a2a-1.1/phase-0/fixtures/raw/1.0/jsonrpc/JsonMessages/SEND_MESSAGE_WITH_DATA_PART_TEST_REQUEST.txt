@@ -1,0 +1,29 @@
+{
+  "jsonrpc":"2.0",
+  "method":"SendMessage",
+  "params":{
+    "message":{
+      "messageId":"message-1234-with-data",
+      "contextId":"context-1234",
+      "role":"ROLE_USER",
+      "parts":[
+        {
+          "text":"process this data"
+        },
+        {
+          "data":{
+            "temperature":25.5,
+            "humidity":60.2,
+            "location":"San Francisco",
+            "timestamp":"2024-01-15T10:30:00Z"
+          }
+        }
+      ]
+    },
+    "configuration":{
+      "acceptedOutputModes":[
+        "text"
+      ]
+    }
+  }
+}

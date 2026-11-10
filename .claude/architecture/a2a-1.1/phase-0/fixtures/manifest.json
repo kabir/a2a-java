@@ -1,0 +1,959 @@
+{
+  "commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+  "source_repository": "https://github.com/a2aproject/a2a-java",
+  "extraction": "git show COMMIT:PATH; javac unmodified Java fixture constants; reflection obtains exact runtime text-block values",
+  "files": [
+    {
+      "file": "sources/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "sha256": "83dbfadca4398a3087796c4c93c92c757e6595f31202ca5de2e149cec63361e9",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "unmodified historical source"
+    },
+    {
+      "file": "sources/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "sha256": "219c07c49228098df5a5239250d83fdb5ab4ba01f6feeff528a0daba18787d49",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "unmodified historical source"
+    },
+    {
+      "file": "sources/client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "sha256": "ae8697324c2189f86fa019c8d3ce2756e5c8873b23ccbcf4c56d127d61cefba7",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "unmodified historical source"
+    },
+    {
+      "file": "sources/compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "sha256": "a66fcb157d9fa60fbef5166152d29c993c9ee8a146e0135a075345e9780c1a0f",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "unmodified historical source"
+    },
+    {
+      "file": "sources/compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "sha256": "94e438adfbb192e629e28553fc76acd14f8d7a822fff810f72446ce0d04474b7",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "unmodified historical source"
+    },
+    {
+      "file": "sources/compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "sha256": "8bd53c127c4007c50b3ae53ab4f7374e9c3d9588b67270dd2d389dd7221b932b",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "unmodified historical source"
+    },
+    {
+      "file": "sources/spec-grpc/src/main/proto/a2a.proto",
+      "sha256": "aeef74cb64413da4639993f9cad159bccd0775961842fcfc752c6bc49f46fe68",
+      "source_path": "spec-grpc/src/main/proto/a2a.proto",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "historical locally adapted upstream proto; upstream tag declared in source"
+    },
+    {
+      "file": "sources/compat-0.3/spec-grpc/src/main/proto/a2a.proto",
+      "sha256": "005e091f8771e7c0c9224294f79676fd7da750b5fd311925f566869950a2fa19",
+      "source_path": "compat-0.3/spec-grpc/src/main/proto/a2a.proto",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "kind": "historical locally adapted upstream proto; upstream tag declared in source"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/AGENT_CARD.txt",
+      "sha256": "99c9c4c1f69326317d9411cb661e31bd7810bc198d5ac1df8e9665d8c09c66d9",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_TEST_REQUEST.txt",
+      "sha256": "add3e6bdb08125c5e7676b7b28d9d21ba90702fc5d477add021afb4c8175e1a0",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_TEST_RESPONSE.txt",
+      "sha256": "c39a4b34b06a44e6d7e6e95152c515770b551181b011c5ca3dfe6536e665d371",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_TEST_REQUEST_WITH_MESSAGE_RESPONSE.txt",
+      "sha256": "e8eb6f46faca32803e4707aa634ab7a724ee51cba93dc1f309b516ada2788e10",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_REQUEST_WITH_MESSAGE_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE.txt",
+      "sha256": "6df8bc22caa7cab9d6eb4df2ae2d12e5aa02f797e8f51779a0d83e51a58abc6b",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_WITH_ERROR_TEST_REQUEST.txt",
+      "sha256": "e8eb6f46faca32803e4707aa634ab7a724ee51cba93dc1f309b516ada2788e10",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_ERROR_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_ERROR_TEST_RESPONSE.txt",
+      "sha256": "f617171d901c44729b3c76d80defa8e57cae6d1d32dcee1aaf9919e70538c445",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_ERROR_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/GET_TASK_TEST_REQUEST.txt",
+      "sha256": "2d575a79d4526110f42e01a71a9aa2e1e7d99289731ce448ab4e3f5058304575",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/GET_TASK_TEST_RESPONSE.txt",
+      "sha256": "a006f81485a104500c54b2e0087f6ef46b23cfc6fbb2459391776f390b3eeb1f",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/CANCEL_TASK_TEST_REQUEST.txt",
+      "sha256": "f7afd5aa5db6e7df24d8e7c8e4c44314175e2dad8a90e2455646879a190e267a",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/CANCEL_TASK_TEST_RESPONSE.txt",
+      "sha256": "1357de7995bb8a1a5efc8fb3c1d93981d3c8b2cb6415fdda346418557a0be2fb",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST.txt",
+      "sha256": "d9a82e988ff80d10996620bcfa54e5afa521d3a51814811536fd6e5f9ebd2ab8",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "685da0a44b84d720c92cf9c39dd695053af1cce8309f077cfbdb83cd51875951",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST.txt",
+      "sha256": "a8293fa011e589dd7b5977141a1b28174fa1d2854c82d546c5fff2f3f6ca70e9",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "bcf32f58fee9408c8ad39ec2798361ab1ac4dd733fdfac548c63d7c7657fbec6",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_WITH_FILE_PART_TEST_REQUEST.txt",
+      "sha256": "631719f98248c247601638781127ba8b5419bddfa64d30b3e28b56e37ebf0378",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_FILE_PART_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE.txt",
+      "sha256": "06c4f63f706f91b32904e6d468a036e3a6cb615975b7cbdcd315ccfb97c4fbcf",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_WITH_DATA_PART_TEST_REQUEST.txt",
+      "sha256": "0559a3e48050a62531827d961e2d8cfdbfd26114f264cec2906c7856136d3b3d",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_DATA_PART_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE.txt",
+      "sha256": "ef119d4de6f08be9db44d97e1d910309e6382baaf791a1ee4e0b4a8e62680395",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_WITH_MIXED_PARTS_TEST_REQUEST.txt",
+      "sha256": "7450525aeb1d39ac5e621571cf65d71387ad2a84b794603ae31b48caf83c8ee9",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_MIXED_PARTS_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE.txt",
+      "sha256": "64a85a6560bf7ddebc03152d2cd8a27fdab324442140651ea556c31d02c49db0",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/GET_AUTHENTICATED_EXTENDED_AGENT_CARD_REQUEST.txt",
+      "sha256": "39b406e1e6eba4679bea4c8bbbf12c24d361d831b0492b733c5d424c8c6b36b0",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_AUTHENTICATED_EXTENDED_AGENT_CARD_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/GET_AUTHENTICATED_EXTENDED_AGENT_CARD_RESPONSE.txt",
+      "sha256": "593433ea6473f0db5c5f2b9ee864acbcb200a8d954b00adbe0343cd098b63b2f",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_AUTHENTICATED_EXTENDED_AGENT_CARD_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonMessages/AGENT_CARD_SUPPORTS_EXTENDED.txt",
+      "sha256": "69e60774253a6032093d853341ba7ab4e97ec4e0358b51fa96f36199380899f8",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD_SUPPORTS_EXTENDED",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_TASK_EVENT.txt",
+      "sha256": "dcfebfaee4151cdeb2870aef4aebc61b6502e1ff4e9f606ce77096701e00d126",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_TASK_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_MESSAGE_EVENT.txt",
+      "sha256": "7600d052e9bc94760c6f44857d22949983748e5ecf10a677e2bbe625f669581b",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_MESSAGE_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_STATUS_UPDATE_EVENT.txt",
+      "sha256": "527601245a2070a35dedb01c5b75e73d5bd6f2953afafd7e2c8931f25afd8bd2",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_STATUS_UPDATE_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_STATUS_UPDATE_EVENT_FINAL.txt",
+      "sha256": "2fc9c2940d509065cbabc82071ce230f6d79f5b808bc783666784093724eaff1",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_STATUS_UPDATE_EVENT_FINAL",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_ARTIFACT_UPDATE_EVENT.txt",
+      "sha256": "46e5d578225647bda334fab700383d661bd5091047e9ad93a1a0d2af80be6500",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_ARTIFACT_UPDATE_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/STREAMING_ERROR_EVENT.txt",
+      "sha256": "038e269e26225ee0d2fb9875b8c0b9d2928758e68e791532f1e99db59304317d",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_ERROR_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/SEND_MESSAGE_STREAMING_TEST_REQUEST.txt",
+      "sha256": "66cb6f84923000ff1c8c5e5f3b358e7db5df50b588410fe79942f419832a0be8",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/SEND_MESSAGE_STREAMING_TEST_RESPONSE.txt",
+      "sha256": "e901ee1e9be720793a2729ceeed6a4a5522b65a93acfc3b72649d14ef55e4f59",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/TASK_SUBSCRIPTION_REQUEST_TEST_RESPONSE.txt",
+      "sha256": "e901ee1e9be720793a2729ceeed6a4a5522b65a93acfc3b72649d14ef55e4f59",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_SUBSCRIPTION_REQUEST_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/jsonrpc/JsonStreamingMessages/TASK_SUBSCRIPTION_TEST_REQUEST.txt",
+      "sha256": "e56d735858a2cd63ec1ef866faebab3b7b78d13535aafdb63b8689be2d6113c2",
+      "source_path": "client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/client/transport/jsonrpc/JsonStreamingMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_SUBSCRIPTION_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/SEND_MESSAGE_TEST_REQUEST.txt",
+      "sha256": "769e8d5528c924185288150d47f4364b13b77e5c89244389d109bf1aa8de02c4",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/SEND_MESSAGE_TEST_RESPONSE.txt",
+      "sha256": "be5d79f5b18227edcc63d49fa5375013a69ad8210512963df168ab7ea2e2ef7b",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/CANCEL_TASK_TEST_REQUEST.txt",
+      "sha256": "490fc028b751526bf4cd0f5d4a15bd3c8003d04d9ffe32adf1b4045c68413a7e",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/CANCEL_TASK_TEST_RESPONSE.txt",
+      "sha256": "46fa5d125e2f880b51e25f85c12f0d58b1ce60a044d8f73eb18c952bce16419a",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/GET_TASK_TEST_RESPONSE.txt",
+      "sha256": "f0f861154215f369e309d276ec7c29afca6bd18c312394085dfed0cf25ed7bf9",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/AGENT_CARD.txt",
+      "sha256": "61dff8f664d68069a9357a962ed8eb65bf8771cbaebd2e7dd7bdb2c82654bf85",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/AGENT_CARD_SUPPORTS_EXTENDED.txt",
+      "sha256": "e5c1e58dd48e92a51ab1d35b6698d63d93f188b9812831af93a40aa2b7e6d31c",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD_SUPPORTS_EXTENDED",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/AUTHENTICATION_EXTENDED_AGENT_CARD.txt",
+      "sha256": "f0919b0c90b1fcc5adebaf1eb9d14b0b980dc7f2f2ff2f5dad5932e38f3b4dcd",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AUTHENTICATION_EXTENDED_AGENT_CARD",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "8b85b228cdff5a8aa773f912df3b158715ccd09d2a66e889c566c03c99d19668",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/LIST_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "918b595327bfca7e8ce56e5ea23238d142a83f3a7ae193bd7baed4c7fa5d8732",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "LIST_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST.txt",
+      "sha256": "d55b7a990d49c55599ba781a35b808358a9bf35b8531002b68b9522c6f6a5ff5",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "8b85b228cdff5a8aa773f912df3b158715ccd09d2a66e889c566c03c99d19668",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/SEND_MESSAGE_STREAMING_TEST_REQUEST.txt",
+      "sha256": "6fc8231ba950945c497dd3e187c1d7cc1e01f02924c83ef3d49007c5572ed1cf",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/SEND_MESSAGE_STREAMING_TEST_RESPONSE.txt",
+      "sha256": "ee5bcec79bcb7d16ab375bb64232fe1f0d6f17de57f3ba75f6e156df23c77350",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE.txt",
+      "sha256": "c644f1084ceb7a2fa9888d51fd17672ebb8ac141ab679e2c18fe05630bdc99aa",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/TASK_RESUBSCRIPTION_TEST_REQUEST.txt",
+      "sha256": "48e5e8ed6e120245ec19a3cf6b6bcef8ac92cff53935ab8be82cad89e57bea76",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_RESUBSCRIPTION_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/1.0/rest/JsonRestMessages/LIST_TASKS_TEST_RESPONSE.txt",
+      "sha256": "55a6a48b98175afca216827f8dc70360260667cbcaf5f4c4b972a14427a43336",
+      "source_path": "client/transport/rest/src/test/java/org/a2aproject/sdk/client/transport/rest/JsonRestMessages.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "LIST_TASKS_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/AGENT_CARD.txt",
+      "sha256": "cb9bb69a168eb810eb4671260dc5f2fe7a5a8c6520f5758133bc72e9f66ce923",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/AUTHENTICATION_EXTENDED_AGENT_CARD.txt",
+      "sha256": "43bd07047750f4fa38bc04edde0ad030ab447f99e6f6c97c2f0316e3816f0785",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AUTHENTICATION_EXTENDED_AGENT_CARD",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_TEST_REQUEST.txt",
+      "sha256": "31c2381e25c18bfa853afcb74f7d6fd620a126e7811ec87aa9efbbd49920cc2f",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_REQUEST",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_TEST_RESPONSE.txt",
+      "sha256": "a6fc1ffacee9aaea2c7964d8032834382216e3ed71d89d20a12d0dbd4d34c364",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_TEST_REQUEST_WITH_MESSAGE_RESPONSE.txt",
+      "sha256": "31c2381e25c18bfa853afcb74f7d6fd620a126e7811ec87aa9efbbd49920cc2f",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_REQUEST_WITH_MESSAGE_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE.txt",
+      "sha256": "9f33b687bba778c58ac02941fefcaad50167dbbfc46fb272af7e55536f495fa2",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_WITH_ERROR_TEST_REQUEST.txt",
+      "sha256": "31c2381e25c18bfa853afcb74f7d6fd620a126e7811ec87aa9efbbd49920cc2f",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_ERROR_TEST_REQUEST",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_ERROR_TEST_RESPONSE.txt",
+      "sha256": "242a54dffc55d85f9f715d25850e50626b58ea57a2bfec8c1f32d2a2fab0ccc3",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_ERROR_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_TASK_TEST_REQUEST.txt",
+      "sha256": "5efbf1e43a0c1cbd5c3c62f99287f80ea89c45b45d27c455610ee0399887374e",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_TASK_TEST_RESPONSE.txt",
+      "sha256": "2394d823bc040fdc4f2c4cc233bbe93e02305b2e4d351b6c0856705ba538864f",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/CANCEL_TASK_TEST_REQUEST.txt",
+      "sha256": "d647252f1f7bd8209c844ecb58eed8fb0f6e35f90d18a1ea97f81281794917f8",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/CANCEL_TASK_TEST_RESPONSE.txt",
+      "sha256": "509f4fee0f39849b6c7cf1a74c845cd53194e57f4f05d8a775a4192906abf362",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST.txt",
+      "sha256": "692734ef54a180dc46706fd016ed8a6f56a4b25cc2d1c1ada35598c8fb76c6fd",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "fc0d1f13d0eee358b4326ca50c8b988db8914dfefe9986b45ce8befca0974bcb",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST.txt",
+      "sha256": "1c32e583ac50cb6de20a61bc628369777cee5b70a9bb27bd2f586aedeafd2a16",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "fc0d1f13d0eee358b4326ca50c8b988db8914dfefe9986b45ce8befca0974bcb",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_WITH_FILE_PART_TEST_REQUEST.txt",
+      "sha256": "20d79f503395c480634a7364b9a9180f447d4d134cebc55ffc65aa1a31edf1f8",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_FILE_PART_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE.txt",
+      "sha256": "d4816907436d855d5ebca22138f8d428a1bdb3d105acf69617cb9d89f18c495a",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_WITH_DATA_PART_TEST_REQUEST.txt",
+      "sha256": "9194841e3453e59e2bfdb8b385e3e2be7474df89882b70b01e90aa69fcb16423",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_DATA_PART_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE.txt",
+      "sha256": "1772a8550fc5d5bb10aeca0f9caed7b7fd518ee7d7ca7fb7c4c3688e88b2a9b2",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_WITH_MIXED_PARTS_TEST_REQUEST.txt",
+      "sha256": "d82ba682dc3643726db16273bc568b35c6421fb81b41e3acb53aed0803c2f0fe",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_MIXED_PARTS_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE.txt",
+      "sha256": "1fb2040b366456572dc7d5ddb4a58241177d8de203dd7ff4a48432527fac9273",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_AUTHENTICATED_EXTENDED_AGENT_CARD_REQUEST.txt",
+      "sha256": "e8aed5b72735396c5f588045e99faa0e2e901805feec0132af439e5d1d68b3cf",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_AUTHENTICATED_EXTENDED_AGENT_CARD_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/GET_AUTHENTICATED_EXTENDED_AGENT_CARD_RESPONSE.txt",
+      "sha256": "69668b1e51ddf1865827a04fff553296eea157c14c790671d16ffb3d1014b023",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_AUTHENTICATED_EXTENDED_AGENT_CARD_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonMessages_v0_3/AGENT_CARD_SUPPORTS_EXTENDED.txt",
+      "sha256": "928972fe3fd6f775de3461e9dd1145bc8bbb34ec2e47a64c565f37b017712b29",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD_SUPPORTS_EXTENDED",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_TASK_EVENT.txt",
+      "sha256": "3e55cff7d9b8216d7e8063180a98cf13a1610136af47cedc33ed039fb379d5ea",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_TASK_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_MESSAGE_EVENT.txt",
+      "sha256": "58eda78f4850a7f579b4366c1f6811f7f37eda896f763af59c47a824fc48e14f",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_MESSAGE_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_STATUS_UPDATE_EVENT.txt",
+      "sha256": "3b24168cb02e6ca95b4d2dffa3e9ea57743ce9d77b7bf99478ccb67ef128b892",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_STATUS_UPDATE_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_STATUS_UPDATE_EVENT_FINAL.txt",
+      "sha256": "f9416a0595d7f9662e44c5a77e3c8788466ea24b81f26f23947a0d829400e0ae",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_STATUS_UPDATE_EVENT_FINAL",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_ARTIFACT_UPDATE_EVENT.txt",
+      "sha256": "9fbf372d124aa409d46fc1bc95a0cc58261bd83742e65786fbe64a1f42679919",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_ARTIFACT_UPDATE_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/STREAMING_ERROR_EVENT.txt",
+      "sha256": "2f231d2ffc7c846c653286f2500fb117cef56585ad7d1bc5652aa87c90ba879e",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "STREAMING_ERROR_EVENT",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/SEND_MESSAGE_STREAMING_TEST_REQUEST.txt",
+      "sha256": "f88f71712e096134d858c66d23864f14a308f70364ac9790183682f9cbd55572",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_REQUEST",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/SEND_MESSAGE_STREAMING_TEST_RESPONSE.txt",
+      "sha256": "2a1aed491d85348dc6cc03b4d558f64974f706d82a2631ca3f2ea903a77dfff5",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE.txt",
+      "sha256": "2a1aed491d85348dc6cc03b4d558f64974f706d82a2631ca3f2ea903a77dfff5",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/jsonrpc/JsonStreamingMessages_v0_3/TASK_RESUBSCRIPTION_TEST_REQUEST.txt",
+      "sha256": "b9be611778777c94552574e1ba76b7084b94d23aa584aee0744fd9c74659b04f",
+      "source_path": "compat-0.3/client/transport/jsonrpc/src/test/java/org/a2aproject/sdk/compat03/client/transport/jsonrpc/JsonStreamingMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_RESUBSCRIPTION_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_TEST_REQUEST.txt",
+      "sha256": "e192dcb20ddbf0ec823343b7d75ae881a375ea98147b365f1a1635cc1a317670",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_TEST_RESPONSE.txt",
+      "sha256": "64484dd3098b7a88b2c3f891c081e1e41db2e7544fb1b65c5a42989fac2a6b1b",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/CANCEL_TASK_TEST_REQUEST.txt",
+      "sha256": "65f33bc93a7c703286b0608f24383b716af03eafc34256e908735ea86041a695",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/CANCEL_TASK_TEST_RESPONSE.txt",
+      "sha256": "05aac099fa7dde05ca3d0a454a4fad2918b2d0d5b8c7e091e8768eaded482187",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "CANCEL_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/GET_TASK_TEST_RESPONSE.txt",
+      "sha256": "11521f6e655b1ad2584a6e94841407147dca6a0166ce985849cb9b22937da72f",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/AGENT_CARD.txt",
+      "sha256": "2703ddea1970b1870594d273fa9b7067e5eee0806a8ae9c3264448b698e4ce64",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/AGENT_CARD_SUPPORTS_EXTENDED.txt",
+      "sha256": "928972fe3fd6f775de3461e9dd1145bc8bbb34ec2e47a64c565f37b017712b29",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AGENT_CARD_SUPPORTS_EXTENDED",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/AUTHENTICATION_EXTENDED_AGENT_CARD.txt",
+      "sha256": "4d1afb777d0eb07b01aa400ddfefb5c1d534c8f0fbe03453e721fc49de46348e",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "AUTHENTICATION_EXTENDED_AGENT_CARD",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_TEST_REQUEST_WITH_MESSAGE_RESPONSE.txt",
+      "sha256": "31c2381e25c18bfa853afcb74f7d6fd620a126e7811ec87aa9efbbd49920cc2f",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_REQUEST_WITH_MESSAGE_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE.txt",
+      "sha256": "9f33b687bba778c58ac02941fefcaad50167dbbfc46fb272af7e55536f495fa2",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_WITH_ERROR_TEST_REQUEST.txt",
+      "sha256": "31c2381e25c18bfa853afcb74f7d6fd620a126e7811ec87aa9efbbd49920cc2f",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_ERROR_TEST_REQUEST",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_ERROR_TEST_RESPONSE.txt",
+      "sha256": "242a54dffc55d85f9f715d25850e50626b58ea57a2bfec8c1f32d2a2fab0ccc3",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_ERROR_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "34f8833b903a4569c188a218c1ad988f27587304538fcb2e2e1dfba6df7a0617",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/LIST_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "3e8d6a10b665cf82542a8fb7631005a51256e878f220c6b216cb4bbb9a55af82",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "LIST_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST.txt",
+      "sha256": "6a9596952c155463ff9c8110220cd0fca31e9042970dc6da5bf054a314a67e8c",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE.txt",
+      "sha256": "34f8833b903a4569c188a218c1ad988f27587304538fcb2e2e1dfba6df7a0617",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_WITH_FILE_PART_TEST_REQUEST.txt",
+      "sha256": "20d79f503395c480634a7364b9a9180f447d4d134cebc55ffc65aa1a31edf1f8",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_FILE_PART_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE.txt",
+      "sha256": "d4816907436d855d5ebca22138f8d428a1bdb3d105acf69617cb9d89f18c495a",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_WITH_DATA_PART_TEST_REQUEST.txt",
+      "sha256": "9194841e3453e59e2bfdb8b385e3e2be7474df89882b70b01e90aa69fcb16423",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_DATA_PART_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE.txt",
+      "sha256": "1772a8550fc5d5bb10aeca0f9caed7b7fd518ee7d7ca7fb7c4c3688e88b2a9b2",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_WITH_MIXED_PARTS_TEST_REQUEST.txt",
+      "sha256": "d82ba682dc3643726db16273bc568b35c6421fb81b41e3acb53aed0803c2f0fe",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_MIXED_PARTS_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE.txt",
+      "sha256": "1fb2040b366456572dc7d5ddb4a58241177d8de203dd7ff4a48432527fac9273",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_STREAMING_TEST_REQUEST.txt",
+      "sha256": "bacc88f4af2baafaa938912159d2a42f53a3df9bf1e658289fa0eddaa2032137",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_REQUEST",
+      "kind": "JSON"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/SEND_MESSAGE_STREAMING_TEST_RESPONSE.txt",
+      "sha256": "ee5bcec79bcb7d16ab375bb64232fe1f0d6f17de57f3ba75f6e156df23c77350",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "SEND_MESSAGE_STREAMING_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE.txt",
+      "sha256": "c644f1084ceb7a2fa9888d51fd17672ebb8ac141ab679e2c18fe05630bdc99aa",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_RESUBSCRIPTION_REQUEST_TEST_RESPONSE",
+      "kind": "SSE stream text"
+    },
+    {
+      "file": "raw/0.3/rest/JsonRestMessages_v0_3/TASK_RESUBSCRIPTION_TEST_REQUEST.txt",
+      "sha256": "b9be611778777c94552574e1ba76b7084b94d23aa584aee0744fd9c74659b04f",
+      "source_path": "compat-0.3/client/transport/rest/src/test/java/org/a2aproject/sdk/compat03/client/transport/rest/JsonRestMessages_v0_3.java",
+      "source_commit": "2817ed78d02d9a6e609dafdf7f5129484edef017",
+      "constant": "TASK_RESUBSCRIPTION_TEST_REQUEST",
+      "kind": "JSON"
+    }
+  ]
+}

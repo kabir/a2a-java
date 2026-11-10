@@ -1,0 +1,20 @@
+ data: {
+      "jsonrpc": "2.0",
+      "id": "1234",
+      "result": {
+        "artifactUpdate": {
+          "taskId": "1",
+          "contextId": "2",
+          "append": false,
+          "lastChunk": true,
+          "artifact": {
+            "artifactId": "artifact-1",
+            "parts": [
+              {
+                "text": "Why did the chicken cross the road? To get to the other side!"
+              }
+            ]
+          }
+        }
+      }
+}

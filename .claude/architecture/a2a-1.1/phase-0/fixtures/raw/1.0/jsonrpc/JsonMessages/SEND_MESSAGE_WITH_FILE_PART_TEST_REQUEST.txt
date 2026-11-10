@@ -1,0 +1,25 @@
+{
+  "jsonrpc":"2.0",
+  "method":"SendMessage",
+  "params":{
+    "message":{
+      "messageId":"message-1234-with-file",
+      "contextId":"context-1234",
+      "role":"ROLE_USER",
+      "parts":[
+        {
+          "text":"analyze this image"
+        },
+        {
+          "url":"file:///path/to/image.jpg",
+          "mediaType":"image/jpeg"
+        }
+      ]
+    },
+    "configuration":{
+      "acceptedOutputModes":[
+        "text"
+      ]
+    }
+  }
+}

@@ -1,7 +1,28 @@
-# Server-relevant changes from A2A 1.0.0 to 1.1 RC
+# Protocol changes from A2A 1.0.0 to 1.1 RC
 
 This inventory accompanies the [server compatibility assessment](compatibility.md).
 Revisions and source links are recorded in the [research index](README.md).
+
+## Client consequences added to the original server inventory
+
+The [current architecture](architecture.md#production-client-architecture) includes
+production client support. Each row below also requires public client parameter,
+codec, response/event, error and lifecycle handling: preconditions on input,
+generation/timeline on results, long-poll parameters, cursor subscription,
+artifact-only input, per-config delivery versions, and task-bound live sessions.
+A model field or generated duplex RPC alone is not a usable client capability.
+Unknown stream variants and timeline-entry kinds need version-aware skip behavior
+before state reduction. Keep explicit 1.0 wire semantics on the shared model;
+1.1 is the intentional construction default, never an ambient runtime upgrade.
+All details here remain pinned RC evidence; this revision does not assert that
+upstream has released a final 1.1 specification or resolve the existing gates.
+
+Client handle semantics are SDK contracts, not additional fields or RPCs in this
+pinned schema. In particular getTask/cursor replay can refresh current state but
+cannot generally resolve an exact input outcome; no universal status lookup or
+executor-delivery receipt is assumed. Pin binding-specific positive correlation
+before claiming definitive live-input acceptance. History/timeline limits and
+skipped unknown entries do not justify a full-history completeness claim.
 
 ## Size and wire structure
 

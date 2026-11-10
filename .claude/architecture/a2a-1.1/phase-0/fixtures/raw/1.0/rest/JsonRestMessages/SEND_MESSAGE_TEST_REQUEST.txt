@@ -1,0 +1,13 @@
+{
+  "message":
+    {
+      "messageId": "message-1234",
+      "contextId": "context-1234",
+      "role": "ROLE_USER",
+      "parts": [{
+        "text": "tell me a joke"
+      }],
+      "metadata": {
+      }
+  }
+}

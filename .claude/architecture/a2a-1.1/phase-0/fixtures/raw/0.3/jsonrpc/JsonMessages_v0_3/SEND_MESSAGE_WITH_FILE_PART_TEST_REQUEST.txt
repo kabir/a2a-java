@@ -1,0 +1,29 @@
+{
+ "jsonrpc": "2.0",
+ "method": "message/send",
+ "params": {
+  "message": {
+   "role": "user",
+   "parts": [
+    {
+     "kind": "text",
+     "text": "analyze this image"
+    },
+    {
+     "kind": "file",
+     "file": {
+      "uri": "file:///path/to/image.jpg",
+      "mimeType": "image/jpeg"
+     }
+    }
+   ],
+   "messageId": "message-1234-with-file",
+   "contextId": "context-1234",
+   "kind": "message"
+  },
+  "configuration": {
+    "acceptedOutputModes": ["text"],
+    "blocking": true
+  }
+ }
+}

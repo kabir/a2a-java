@@ -1,0 +1,23 @@
+{
+  "task": {
+    "id": "9b511af4-b27c-47fa-aecf-2a93c08a44f8",
+    "contextId": "context-1234",
+    "status": {
+      "state": "TASK_STATE_SUBMITTED"
+    },
+    "history": [
+      {
+        "messageId": "message-1234",
+        "contextId": "context-1234",
+        "taskId": "9b511af4-b27c-47fa-aecf-2a93c08a44f8",
+        "role": "ROLE_USER",
+        "parts": [
+          {
+            "text": "tell me a joke"
+          }
+        ],
+        "metadata": {}
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+ "jsonrpc": "2.0",
+ "id": 1,
+ "result": {
+  "role": "agent",
+    "parts": [
+     {
+      "kind": "text",
+      "text": "Why did the chicken cross the road? To get to the other side!"
+     }
+    ],
+    "messageId": "msg-456",
+    "kind": "message"
+ }
+}

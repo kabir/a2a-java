@@ -7,9 +7,35 @@ and a 0.3 server? Yes, based on the current architecture and the RC diff. The
 recommended design shares the internal model and execution pipeline, keeps 0.3
 conversion, and adds explicit minor-version policy to the 1.x boundary.
 
-This is server coexistence. It does not assume that a 1.0 client sends 1.1
-requests, or require new client negotiation machinery. Existing 1.0 and 0.3
-clients remain useful as regression-test peers.
+This section records the original server coexistence assessment. The scope was
+expanded on 2026-11-10 to production 1.1 public client APIs and all built-in
+transports; see the [client architecture](architecture.md#production-client-architecture).
+Explicit 1.0 clients still send 1.0 requests. New client instances default to 1.1;
+there is no automatic negotiation/fallback. Historical unchanged 1.0 and 0.3
+clients or frozen independent fixtures remain required regression peers.
+
+## Client compatibility boundary
+
+Extend `client/base`, `client/transport/spi` and the existing three transport
+modules using the shared 1.x model/codecs. Instance version policy must govern
+emission and interpretation, not a current-version constant. Preserve common
+signatures with additive APIs; document the intentional implicit-default change
+to 1.1 and provide an explicit 1.0 migration. Inventory sealed update types and
+custom transport/provider/wrapper implications before changing SPI contracts.
+Pure version/model/codec helpers may be shared with servers; client policy must
+not depend on server stores, authorization or projection machinery. No separate
+client stack or production module is justified merely by supporting two minors.
+Public-client integration cases and historical peers provide different evidence;
+the former cannot replace the latter.
+
+The recommended companion transport interface and capability intersection are
+specified in [the concrete client contract](architecture.md#recommended-api-and-spi-contracts).
+The old public version constant stays frozen at 1.0; new client default selection
+is separately 1.1. Unchanged providers using that constant retain their wire
+version, while providers delegating to changed implicit constructors may require
+an adapter. Default methods alone do not prove compatibility. Synchronized client
+views are as-of projections, never an assertion of full historical data; input
+commit evidence and executor delivery are separate.
 
 ## Options
 

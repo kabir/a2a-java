@@ -1,0 +1,11 @@
+{
+  "taskId": "1",
+  "contextId": "2",
+  "artifact": {
+    "artifactId": "artifact-1",
+    "parts": [{
+      "text": "Why did the chicken cross the road? To get to the other side!"
+    }]
+  },
+  "lastChunk": true
+}

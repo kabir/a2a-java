@@ -1,0 +1,44 @@
+{
+  "id": "de38c76d-d54c-436c-8b9f-4c2703648d64",
+  "contextId": "c295ea44-7543-4f78-b524-7a38915ad6e4",
+  "status": {
+    "state": "TASK_STATE_COMPLETED",
+    "timestamp": "2026-01-01T00:00:00Z"
+  },
+  "artifacts": [
+    {
+      "artifactId": "artifact-1",
+      "parts": [
+        {
+          "text": "Why did the chicken cross the road? To get to the other side!"
+        }
+      ]
+    }
+  ],
+  "history": [
+    {
+      "role": "ROLE_USER",
+      "content": [
+        {
+          "text": "tell me a joke"
+        },
+        {
+          "file": {
+            "file_with_uri": "file:///path/to/file.txt",
+            "mimeType": "text/plain",
+            "name": "file.txt"
+          }
+        },
+        {
+          "file": {
+            "file_with_bytes": "aGVsbG8=",
+            "mimeType": "text/plain",
+            "name": "greeting.txt"
+          }
+        }
+      ],
+      "messageId": "message-123"
+    }
+  ],
+  "metadata": {}
+}
