@@ -262,7 +262,8 @@ public class ToProtoTest {
                 result.getMetadata().getFieldsOrThrow("optional").getKindCase());
         assertEquals(Value.KindCase.NULL_VALUE,
                 result.getArtifacts(0).getMetadata().getFieldsOrThrow("optional").getKindCase());
-        assertEquals(task, ProtoUtils.FromProto.task(result));
+        Task expected = Task.builder(task).timeline(List.of()).build();
+        assertEquals(expected, ProtoUtils.FromProto.task(result));
     }
 
     private Message messageWithExplicitNulls() {

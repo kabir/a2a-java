@@ -1107,16 +1107,7 @@ public class JSONRPCHandler_v0_3_Test extends AbstractA2ARequestHandlerTest_v0_3
                 httpClient.events.size() + " push notifications. Latch count: " + latch.getCount());
             System.out.println("Push notifications received:");
             for (int i = 0; i < httpClient.events.size(); i++) {
-                org.a2aproject.sdk.spec.StreamingEventKind event = httpClient.events.get(i);
-                if (event instanceof org.a2aproject.sdk.spec.Task) {
-                    System.out.println("  [" + i + "] Task");
-                } else if (event instanceof org.a2aproject.sdk.spec.TaskArtifactUpdateEvent) {
-                    System.out.println("  [" + i + "] TaskArtifactUpdateEvent");
-                } else if (event instanceof org.a2aproject.sdk.spec.TaskStatusUpdateEvent) {
-                    System.out.println("  [" + i + "] TaskStatusUpdateEvent");
-                } else if (event instanceof org.a2aproject.sdk.spec.Message) {
-                    System.out.println("  [" + i + "] Message");
-                }
+                System.out.println("  [" + i + "] Task snapshot: " + httpClient.events.get(i).status().state());
             }
         }
         assertTrue(!timedOut, "Test timed out waiting for events. Received " + results.size() + " streaming responses, " +
@@ -1126,36 +1117,30 @@ public class JSONRPCHandler_v0_3_Test extends AbstractA2ARequestHandlerTest_v0_3
         // Verify streaming responses (v0.3 format)
         assertEquals(3, results.size());
 
-        // Verify push notifications were sent (v1.0 StreamingEventKind format)
+        // v0.3 webhooks carry a task snapshot for each supported event.
         assertEquals(3, httpClient.events.size());
 
-        // First event: task
-        org.a2aproject.sdk.spec.StreamingEventKind pushEvent0 = httpClient.events.get(0);
-        assertTrue(pushEvent0 instanceof org.a2aproject.sdk.spec.Task);
-        org.a2aproject.sdk.spec.Task v10PushedTask0 = (org.a2aproject.sdk.spec.Task) pushEvent0;
+        // First snapshot: task creation
+        org.a2aproject.sdk.spec.Task v10PushedTask0 = httpClient.events.get(0);
         assertEquals(MINIMAL_TASK.id(), v10PushedTask0.id());
         assertEquals(MINIMAL_TASK.contextId(), v10PushedTask0.contextId());
         // v0.3 SUBMITTED maps to v1.0 TASK_STATE_SUBMITTED
         assertEquals(org.a2aproject.sdk.spec.TaskState.TASK_STATE_SUBMITTED, v10PushedTask0.status().state());
         assertTrue(v10PushedTask0.artifacts() == null || v10PushedTask0.artifacts().isEmpty());
 
-        // Second event: artifact update
-        org.a2aproject.sdk.spec.StreamingEventKind pushEvent1 = httpClient.events.get(1);
-        assertTrue(pushEvent1 instanceof org.a2aproject.sdk.spec.TaskArtifactUpdateEvent);
-        org.a2aproject.sdk.spec.TaskArtifactUpdateEvent v10ArtifactUpdate = (org.a2aproject.sdk.spec.TaskArtifactUpdateEvent) pushEvent1;
-        assertEquals(MINIMAL_TASK.id(), v10ArtifactUpdate.taskId());
-        assertEquals(MINIMAL_TASK.contextId(), v10ArtifactUpdate.contextId());
-        assertNotNull(v10ArtifactUpdate.artifact());
-        assertEquals(1, v10ArtifactUpdate.artifact().parts().size());
-        assertEquals("text", ((org.a2aproject.sdk.spec.TextPart) v10ArtifactUpdate.artifact().parts().get(0)).text());
+        // Second snapshot includes the generated artifact.
+        org.a2aproject.sdk.spec.Task v10PushedTask1 = httpClient.events.get(1);
+        assertEquals(MINIMAL_TASK.id(), v10PushedTask1.id());
+        assertEquals(MINIMAL_TASK.contextId(), v10PushedTask1.contextId());
+        assertEquals(1, v10PushedTask1.artifacts().size());
+        assertEquals("text", ((org.a2aproject.sdk.spec.TextPart)
+                v10PushedTask1.artifacts().get(0).parts().get(0)).text());
 
-        // Third event: status update
-        org.a2aproject.sdk.spec.StreamingEventKind pushEvent2 = httpClient.events.get(2);
-        assertTrue(pushEvent2 instanceof org.a2aproject.sdk.spec.TaskStatusUpdateEvent);
-        org.a2aproject.sdk.spec.TaskStatusUpdateEvent v10StatusUpdate = (org.a2aproject.sdk.spec.TaskStatusUpdateEvent) pushEvent2;
-        assertEquals(MINIMAL_TASK.id(), v10StatusUpdate.taskId());
-        assertEquals(MINIMAL_TASK.contextId(), v10StatusUpdate.contextId());
-        assertEquals(org.a2aproject.sdk.spec.TaskState.TASK_STATE_COMPLETED, v10StatusUpdate.status().state());
+        // Third snapshot reflects terminal status.
+        org.a2aproject.sdk.spec.Task v10PushedTask2 = httpClient.events.get(2);
+        assertEquals(MINIMAL_TASK.id(), v10PushedTask2.id());
+        assertEquals(MINIMAL_TASK.contextId(), v10PushedTask2.contextId());
+        assertEquals(org.a2aproject.sdk.spec.TaskState.TASK_STATE_COMPLETED, v10PushedTask2.status().state());
         } finally {
             // Reset push notification executor to async
             mainEventBusProcessor.setPushNotificationExecutor(null);

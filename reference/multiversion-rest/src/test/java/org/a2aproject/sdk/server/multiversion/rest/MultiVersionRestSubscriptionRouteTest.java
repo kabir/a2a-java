@@ -51,7 +51,7 @@ class MultiVersionRestSubscriptionRouteTest {
             return null;
         }).when(security).runInRequestContextDeferred(any(), any());
         RestHandler handler = mock(RestHandler.class);
-        when(handler.subscribeToTask(any(), anyString(), anyString())).thenAnswer(invocation -> {
+        when(handler.subscribeToTask(any(), anyString(), anyString(), any())).thenAnswer(invocation -> {
             coreCalls.incrementAndGet();
             ServerCallContext context = invocation.getArgument(0);
             return new HTTPRestResponse(200, "text/event-stream", "data: admitted-" + context.getRequestedProtocolVersion() + "\n\n");

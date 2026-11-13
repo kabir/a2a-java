@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -196,7 +197,8 @@ public class A2AServerRoutesTest {
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
         when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{test:value}");
-        when(mockRestHandler.getTask(any(ServerCallContext.class), anyString(), anyString(), any())).thenReturn(mockHttpResponse);
+        when(mockRestHandler.getTask(any(ServerCallContext.class), anyString(), anyString(), any(), any(), any()))
+                .thenReturn(mockHttpResponse);
 
         ArgumentCaptor<ServerCallContext> contextCaptor = ArgumentCaptor.forClass(ServerCallContext.class);
 
@@ -204,7 +206,8 @@ public class A2AServerRoutesTest {
         routes.getTask(mockRoutingContext);
 
         // Assert
-        verify(mockRestHandler).getTask(contextCaptor.capture(), anyString(), eq("task123"), any());
+        verify(mockRestHandler).getTask(contextCaptor.capture(), anyString(), eq("task123"), any(), isNull(),
+                isNull());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
         assertEquals(GET_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
@@ -387,7 +390,7 @@ public class A2AServerRoutesTest {
         when(mockHttpResponse.getStatusCode()).thenReturn(200);
         when(mockHttpResponse.getContentType()).thenReturn(APPLICATION_JSON);
         when(mockHttpResponse.getBody()).thenReturn("{}");
-        when(mockRestHandler.subscribeToTask(any(ServerCallContext.class), anyString(), anyString()))
+        when(mockRestHandler.subscribeToTask(any(ServerCallContext.class), anyString(), anyString(), isNull()))
                 .thenReturn(mockHttpResponse);
 
         ArgumentCaptor<ServerCallContext> contextCaptor = ArgumentCaptor.forClass(ServerCallContext.class);
@@ -396,7 +399,7 @@ public class A2AServerRoutesTest {
         routes.subscribeToTask(mockRoutingContext);
 
         // Assert
-        verify(mockRestHandler).subscribeToTask(contextCaptor.capture(), anyString(), eq("task123"));
+        verify(mockRestHandler).subscribeToTask(contextCaptor.capture(), anyString(), eq("task123"), isNull());
         ServerCallContext capturedContext = contextCaptor.getValue();
         assertNotNull(capturedContext);
         assertEquals(SUBSCRIBE_TO_TASK_METHOD, capturedContext.getState().get(METHOD_NAME_KEY));
@@ -803,14 +806,14 @@ public class A2AServerRoutesTest {
         setUp();
         when(mockRoutingContext.pathParam("taskId")).thenReturn(taskId);
         if (raw != null) {
-            mockParams.set("historyLength", raw);
+            mockParams.set("historyLength", raw).set("timelineLength", raw).set("currentGeneration", raw);
         }
         HTTPRestResponse error = rawForwardingError();
-        when(mockRestHandler.getTask(any(), anyString(), eq(taskId), eq(raw))).thenReturn(error);
+        when(mockRestHandler.getTask(any(), anyString(), eq(taskId), eq(raw), eq(raw), eq(raw))).thenReturn(error);
 
         routes.getTask(mockRoutingContext);
 
-        verify(mockRestHandler).getTask(any(), anyString(), eq(taskId), eq(raw));
+        verify(mockRestHandler).getTask(any(), anyString(), eq(taskId), eq(raw), eq(raw), eq(raw));
         verifyNoMoreInteractions(mockRestHandler);
         assertRawForwardingResponse(error);
     }
@@ -822,16 +825,19 @@ public class A2AServerRoutesTest {
         if (raw != null) {
             mockParams.set("pageSize", raw).set("pageToken", raw).set("historyLength", raw)
                     .set("status", "task_state_submitted")
-                    .set("includeArtifacts", raw).set("contextId", raw).set("statusTimestampAfter", raw);
+                    .set("includeArtifacts", raw).set("contextId", raw).set("statusTimestampAfter", raw)
+                    .set("timelineLength", raw);
         }
         String status = raw == null ? null : "task_state_submitted";
         HTTPRestResponse error = rawForwardingError();
-        when(mockRestHandler.listTasks(any(), anyString(), eq(raw), eq(status), eq(raw), eq(raw), eq(raw), eq(raw), eq(raw)))
+        when(mockRestHandler.listTasks(any(), anyString(), eq(raw), eq(status), eq(raw), eq(raw), eq(raw), eq(raw),
+                eq(raw), eq(raw)))
                 .thenReturn(error);
 
         routes.listTasks(mockRoutingContext);
 
-        verify(mockRestHandler).listTasks(any(), anyString(), eq(raw), eq(status), eq(raw), eq(raw), eq(raw), eq(raw), eq(raw));
+        verify(mockRestHandler).listTasks(any(), anyString(), eq(raw), eq(status), eq(raw), eq(raw), eq(raw), eq(raw),
+                eq(raw), eq(raw));
         verifyNoMoreInteractions(mockRestHandler);
         assertRawForwardingResponse(error);
     }
@@ -857,11 +863,11 @@ public class A2AServerRoutesTest {
         setUp();
         when(mockRoutingContext.pathParam("taskId")).thenReturn(taskId);
         HTTPRestResponse error = rawForwardingError();
-        when(mockRestHandler.subscribeToTask(any(), anyString(), eq(taskId))).thenReturn(error);
+        when(mockRestHandler.subscribeToTask(any(), anyString(), eq(taskId), isNull())).thenReturn(error);
 
         routes.subscribeToTask(mockRoutingContext);
 
-        verify(mockRestHandler).subscribeToTask(any(), anyString(), eq(taskId));
+        verify(mockRestHandler).subscribeToTask(any(), anyString(), eq(taskId), isNull());
         verifyNoMoreInteractions(mockRestHandler);
         assertRawForwardingResponse(error);
     }

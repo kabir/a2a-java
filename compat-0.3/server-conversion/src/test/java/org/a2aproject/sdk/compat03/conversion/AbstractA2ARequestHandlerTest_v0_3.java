@@ -16,8 +16,6 @@ import jakarta.enterprise.context.Dependent;
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.client.http.ServerSentEvent;
-import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
-import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
 import org.a2aproject.sdk.server.events.EventQueueUtil;
@@ -33,12 +31,15 @@ import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationUrlValidator;
 import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.spec.A2AError;
-import org.a2aproject.sdk.spec.StreamingEventKind;
+import org.a2aproject.sdk.spec.Task;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import io.quarkus.arc.profile.IfBuildProfile;
 
 // V0.3 imports for test fixtures
+import org.a2aproject.sdk.compat03.conversion.mappers.domain.TaskMapper_v0_3;
+import org.a2aproject.sdk.compat03.json.JsonProcessingException_v0_3;
+import org.a2aproject.sdk.compat03.json.JsonUtil_v0_3;
 import org.a2aproject.sdk.compat03.spec.AgentCapabilities_v0_3;
 import org.a2aproject.sdk.compat03.spec.AgentCard_v0_3;
 import org.a2aproject.sdk.compat03.spec.Message_v0_3;
@@ -127,7 +128,8 @@ public abstract class AbstractA2ARequestHandlerTest_v0_3 {
         // Create push notification components BEFORE MainEventBusProcessor
         httpClient = new TestHttpClient();
         PushNotificationConfigStore pushConfigStore = new InMemoryPushNotificationConfigStore();
-        BasePushNotificationSender pushSender = new BasePushNotificationSender(pushConfigStore, httpClient, PushNotificationUrlValidator.ALLOW_ALL);
+        BasePushNotificationSender pushSender = new BasePushNotificationSender(pushConfigStore, httpClient,
+                List.of(new PushNotificationPayloadFormatter_v0_3()), PushNotificationUrlValidator.ALLOW_ALL);
 
         // Create MainEventBus and MainEventBusProcessor (production code path)
         mainEventBus = new MainEventBus();
@@ -207,7 +209,7 @@ public abstract class AbstractA2ARequestHandlerTest_v0_3 {
     @Dependent
     @IfBuildProfile("test")
     protected static class TestHttpClient implements A2AHttpClient {
-        public final List<StreamingEventKind> events = Collections.synchronizedList(new ArrayList<>());
+        public final List<Task> events = Collections.synchronizedList(new ArrayList<>());
         public volatile CountDownLatch latch;
 
         @Override
@@ -237,10 +239,9 @@ public abstract class AbstractA2ARequestHandlerTest_v0_3 {
             @Override
             public A2AHttpResponse post() throws IOException, InterruptedException {
                 try {
-                    // Parse StreamResponse format to extract the streaming event
-                    // The body contains a wrapper with one of: task, message, statusUpdate, artifactUpdate
-                    StreamingEventKind event = JsonUtil.fromJson(body, StreamingEventKind.class);
-                    events.add(event);
+                    // Legacy v0.3 push notifications carry the task snapshot directly.
+                    Task_v0_3 legacyTask = JsonUtil_v0_3.fromJson(body, Task_v0_3.class);
+                    events.add(TaskMapper_v0_3.INSTANCE.toV10(legacyTask));
                     return new A2AHttpResponse() {
                         @Override
                         public int status() {
@@ -257,8 +258,8 @@ public abstract class AbstractA2ARequestHandlerTest_v0_3 {
                             return "";
                         }
                     };
-                } catch (JsonProcessingException e) {
-                    throw new IOException("Failed to parse StreamingEventKind JSON", e);
+                } catch (JsonProcessingException_v0_3 e) {
+                    throw new IOException("Failed to parse v0.3 Task JSON", e);
                 } finally {
                     if (latch != null) {
                         latch.countDown();

@@ -1,6 +1,7 @@
 package org.a2aproject.sdk.client.transport.rest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
@@ -74,12 +76,19 @@ class ProtocolVersionTest {
     @Test
     void selectedDescriptorVersionReachesEveryUnaryAndStreamingOperation() {
         ClientTransport transport = transport("1.1", null);
-        for (Consumer<ClientCallContext> operation : operations(transport)) {
+        AtomicReference<Throwable> subscribeFailure = new AtomicReference<>();
+        List<Operation> operations = operations(transport, subscribeFailure);
+        for (Operation operation : operations) {
             emittedHeaders.clear();
-            assertThrows(A2AClientException.class, () -> operation.accept(null));
+            if (operation.asyncFailure()) {
+                operation.call().accept(null);
+                assertInstanceOf(A2AClientException.class, subscribeFailure.get());
+            } else {
+                assertThrows(A2AClientException.class, () -> operation.call().accept(null));
+            }
             assertEquals(List.of("1.1"), versionHeaders());
         }
-        assertEquals(11, exchanges);
+        assertEquals(10, exchanges);
     }
 
     @Test
@@ -102,8 +111,8 @@ class ProtocolVersionTest {
     @Test
     void conflictingContextVersionFailsBeforeExchangeForEveryOperation() {
         ClientCallContext context = new ClientCallContext(Map.of(), Map.of("a2a-VERSION", "1.0"));
-        for (Consumer<ClientCallContext> operation : operations(transport("1.1", null))) {
-            assertThrows(A2AClientException.class, () -> operation.accept(context));
+        for (Operation operation : operations(transport("1.1", null), new AtomicReference<>())) {
+            assertThrows(A2AClientException.class, () -> operation.call().accept(context));
         }
         assertEquals(0, exchanges);
     }
@@ -155,21 +164,24 @@ class ProtocolVersionTest {
                 .defaultInputModes(List.of("text")).defaultOutputModes(List.of("text")).skills(List.of()).build();
     }
 
-    private static List<Consumer<ClientCallContext>> operations(ClientTransport transport) {
+    private static List<Operation> operations(ClientTransport transport, AtomicReference<Throwable> subscribeFailure) {
         MessageSendParams message = MessageSendParams.builder().message(Message.builder()
                 .messageId("message").role(Message.Role.ROLE_USER).parts(List.of(new TextPart("hello"))).build()).build();
         return List.of(
-                context -> transport.sendMessage(message, context),
-                context -> transport.sendMessageStreaming(message, event -> { }, error -> { }, context),
-                context -> transport.getTask(new TaskQueryParams("task"), context),
-                context -> transport.cancelTask(new CancelTaskParams("task"), context),
-                context -> transport.listTasks(new ListTasksParams(), context),
-                context -> transport.createTaskPushNotificationConfiguration(TaskPushNotificationConfig.builder()
-                        .taskId("task").url("https://callback.example").build(), context),
-                context -> transport.getTaskPushNotificationConfiguration(new GetTaskPushNotificationConfigParams("task"), context),
-                context -> transport.listTaskPushNotificationConfigurations(new ListTaskPushNotificationConfigsParams("task"), context),
-                context -> transport.deleteTaskPushNotificationConfigurations(new DeleteTaskPushNotificationConfigParams("task", "config"), context),
-                context -> transport.subscribeToTask(new TaskIdParams("task"), event -> { }, error -> { }, context),
-                context -> transport.getExtendedAgentCard(new GetExtendedAgentCardParams(null), context));
+                new Operation(context -> transport.sendMessage(message, context), false),
+                new Operation(context -> transport.sendMessageStreaming(message, event -> { }, error -> { }, context), false),
+                new Operation(context -> transport.getTask(new TaskQueryParams("task"), context), false),
+                new Operation(context -> transport.cancelTask(new CancelTaskParams("task"), context), false),
+                new Operation(context -> transport.listTasks(new ListTasksParams(), context), false),
+                new Operation(context -> transport.createTaskPushNotificationConfiguration(TaskPushNotificationConfig.builder()
+                        .taskId("task").url("https://callback.example").build(), context), false),
+                new Operation(context -> transport.getTaskPushNotificationConfiguration(new GetTaskPushNotificationConfigParams("task"), context), false),
+                new Operation(context -> transport.listTaskPushNotificationConfigurations(new ListTaskPushNotificationConfigsParams("task"), context), false),
+                new Operation(context -> transport.deleteTaskPushNotificationConfigurations(new DeleteTaskPushNotificationConfigParams("task", "config"), context), false),
+                new Operation(context -> transport.subscribeToTask(new TaskIdParams("task"), event -> { }, subscribeFailure::set, context), true),
+                new Operation(context -> transport.getExtendedAgentCard(new GetExtendedAgentCardParams(null), context), false));
+    }
+
+    private record Operation(Consumer<ClientCallContext> call, boolean asyncFailure) {
     }
 }

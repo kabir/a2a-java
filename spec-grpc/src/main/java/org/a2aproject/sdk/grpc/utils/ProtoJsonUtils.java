@@ -46,7 +46,7 @@ public final class ProtoJsonUtils {
     /** Serializes a protobuf response while omitting Phase 2 fields from legacy JSON contracts. */
     public static String toJsonForVersion(JsonFormat.Printer printer, @Nullable MessageOrBuilder proto,
             String protocolVersion) throws InvalidProtocolBufferException {
-        if (!"1.0".equals(protocolVersion) && !"1.1".equals(protocolVersion)) {
+        if (!"0.3".equals(protocolVersion) && !"1.0".equals(protocolVersion) && !"1.1".equals(protocolVersion)) {
             throw new IllegalArgumentException("Unsupported protocol version for protobuf JSON encoding: "
                     + protocolVersion);
         }

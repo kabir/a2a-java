@@ -49,6 +49,7 @@ public class A2AServerRoutes_v0_3_Test {
     private void fixture(boolean capabilities) {
         routes = new A2AServerRoutes_v0_3();
         handler = mock(RequestHandler.class);
+        when(handler.onGetTask(any(), any())).thenThrow(new org.a2aproject.sdk.spec.TaskNotFoundError());
         AgentCard_v0_3 card = new AgentCard_v0_3.Builder().name("validation").description("Validation baseline")
                 .url("http://localhost:9999").version("1").protocolVersion("0.3")
                 .capabilities(new AgentCapabilities_v0_3(capabilities, capabilities, false, null))

@@ -211,7 +211,12 @@ public class JSONRPCUtils {
         }
         String version = getAndValidateJsonrpc(jsonRpc);
         Object id = getAndValidateId(jsonRpc);
-        String method = jsonRpc.get("method").getAsString();
+        JsonElement methodElement = jsonRpc.get("method");
+        if (!methodElement.isJsonPrimitive() || !methodElement.getAsJsonPrimitive().isString()) {
+            throw new IdJsonMappingException("Invalid JSON-RPC request: missing or invalid 'method' field",
+                    getIdIfPossible(jsonRpc));
+        }
+        String method = methodElement.getAsString();
         JsonElement paramsNode = jsonRpc.get("params");
         try {
             return parseMethodRequest(version, id, method, paramsNode, tenant);
@@ -271,7 +276,12 @@ public class JSONRPCUtils {
             return;
         }
         JsonObject request = element.getAsJsonObject();
-        String method = request.has("method") ? request.get("method").getAsString() : "";
+        JsonElement methodElement = request.get("method");
+        if (methodElement == null || !methodElement.isJsonPrimitive()
+                || !methodElement.getAsJsonPrimitive().isString()) {
+            return;
+        }
+        String method = methodElement.getAsString();
         if (SUBSCRIBE_TO_TASK_METHOD.equals(method)) {
             JsonElement params = request.get("params");
             if (params != null && params.isJsonObject()
@@ -299,6 +309,9 @@ public class JSONRPCUtils {
             if (hasAdvancedInput(input)) {
                 throw new org.a2aproject.sdk.spec.UnsupportedOperationError();
             }
+        } catch (org.a2aproject.sdk.spec.InvalidParamsError e) {
+            throw new InvalidParamsJsonMappingException(
+                    Utils.defaultIfNull(e.getMessage(), "Invalid parameters"), id);
         } catch (IllegalArgumentException e) {
             // Let the legacy parser retain its existing message-required validation.
             if (builder.hasMessage()) {
