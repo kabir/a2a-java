@@ -35,7 +35,14 @@ import java.util.List;
 public record AgentCapabilities(boolean streaming,
                                 boolean pushNotifications,
                                 boolean extendedAgentCard,
-                                @Nullable List<AgentExtension> extensions) {
+                                @Nullable List<AgentExtension> extensions,
+                                boolean userArtifacts) {
+
+    /** Preserves the legacy constructor with the new capability disabled. */
+    public AgentCapabilities(boolean streaming, boolean pushNotifications, boolean extendedAgentCard,
+            @Nullable List<AgentExtension> extensions) {
+        this(streaming, pushNotifications, extendedAgentCard, extensions, false);
+    }
 
     public AgentCapabilities {
         extensions = CollectionCopies.immutableNullableList(extensions);
@@ -69,6 +76,7 @@ public record AgentCapabilities(boolean streaming,
         private boolean pushNotifications;
         private boolean extendedAgentCard;
         private @Nullable List<AgentExtension> extensions;
+        private boolean userArtifacts;
 
         /**
          * Creates a new Builder with all capabilities set to false by default.
@@ -131,13 +139,19 @@ public record AgentCapabilities(boolean streaming,
             return this;
         }
 
+        /** Sets whether the agent accepts client-originated artifact updates. */
+        public Builder userArtifacts(boolean userArtifacts) {
+            this.userArtifacts = userArtifacts;
+            return this;
+        }
+
         /**
          * Builds an immutable {@link AgentCapabilities} from the current builder state.
          *
          * @return a new AgentCapabilities instance
          */
         public AgentCapabilities build() {
-            return new AgentCapabilities(streaming, pushNotifications, extendedAgentCard, extensions);
+            return new AgentCapabilities(streaming, pushNotifications, extendedAgentCard, extensions, userArtifacts);
         }
     }
 }

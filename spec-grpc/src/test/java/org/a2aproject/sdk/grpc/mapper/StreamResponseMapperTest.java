@@ -14,6 +14,7 @@ import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
 import org.junit.jupiter.api.Test;
@@ -223,6 +224,35 @@ public class StreamResponseMapperTest {
             StreamResponseMapper.INSTANCE.fromProto(proto);
         });
         assertEquals("StreamResponse payload oneof field not set", exception.getMessage());
+    }
+
+    @Test
+    void testConvertTaskMessageUpdateEvent_Roundtrip() {
+        TaskMessageUpdateEvent original = new TaskMessageUpdateEvent("task", "context",
+                Message.builder().messageId("input").role(Message.Role.ROLE_USER)
+                        .parts(Collections.singletonList(new TextPart("hello"))).build(),
+                java.util.Map.of("source", "client"), Long.MAX_VALUE);
+
+        org.a2aproject.sdk.grpc.StreamResponse proto = StreamResponseMapper.INSTANCE.toProto(original);
+        assertEquals(org.a2aproject.sdk.grpc.StreamResponse.PayloadCase.MESSAGE_UPDATE, proto.getPayloadCase());
+        assertEquals(Long.MAX_VALUE, proto.getMessageUpdate().getGeneration());
+        assertEquals("client", proto.getMessageUpdate().getMetadata().getFieldsOrThrow("source").getStringValue());
+
+        StreamingEventKind decoded = StreamResponseMapper.INSTANCE.fromProto(proto);
+        assertInstanceOf(TaskMessageUpdateEvent.class, decoded);
+        TaskMessageUpdateEvent update = (TaskMessageUpdateEvent) decoded;
+        assertEquals(original.taskId(), update.taskId());
+        assertEquals(original.contextId(), update.contextId());
+        assertEquals(original.message().messageId(), update.message().messageId());
+        assertEquals(original.generation(), update.generation());
+        assertEquals(original.metadata(), update.metadata());
+    }
+
+    @Test
+    void testStreamErrorIsNotConvertedIntoTaskEvent() {
+        org.a2aproject.sdk.grpc.StreamResponse proto = org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
+                .setError(org.a2aproject.sdk.grpc.StreamError.newBuilder().setCode("ABORTED").build()).build();
+        assertThrows(IllegalArgumentException.class, () -> StreamResponseMapper.INSTANCE.fromProto(proto));
     }
 
     @Test

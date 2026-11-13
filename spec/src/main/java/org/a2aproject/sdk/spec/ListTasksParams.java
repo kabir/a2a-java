@@ -25,11 +25,19 @@ public record ListTasksParams(
         @Nullable Integer historyLength,
         @Nullable Instant statusTimestampAfter,
         @Nullable Boolean includeArtifacts,
-        @Nullable String tenant
+        @Nullable String tenant,
+        @Nullable Integer timelineLength
 ) {
     private static final int MIN_PAGE_SIZE = 1;
     private static final int MAX_PAGE_SIZE = 100;
     private static final int DEFAULT_PAGE_SIZE = 50;
+
+    /** Preserves the legacy constructor and leaves the new timeline limit absent. */
+    public ListTasksParams(@Nullable String contextId, @Nullable TaskState status, @Nullable Integer pageSize,
+            @Nullable String pageToken, @Nullable Integer historyLength, @Nullable Instant statusTimestampAfter,
+            @Nullable Boolean includeArtifacts, @Nullable String tenant) {
+        this(contextId, status, pageSize, pageToken, historyLength, statusTimestampAfter, includeArtifacts, tenant, null);
+    }
     /**
      * Compact constructor for validation.
      * Validates that the tenant parameter is not null and parameters are within valid ranges.
@@ -56,6 +64,10 @@ public record ListTasksParams(
         if (historyLength != null && historyLength < 0) {
             throw new InvalidParamsError(null,
                 "historyLength must be non-negative, got: " + historyLength, null);
+        }
+        if (timelineLength != null && timelineLength < 0) {
+            throw new InvalidParamsError(null,
+                "timelineLength must be non-negative, got: " + timelineLength, null);
         }
     }
     /**
@@ -125,6 +137,7 @@ public record ListTasksParams(
         private @Nullable Instant statusTimestampAfter;
         private @Nullable Boolean includeArtifacts;
         private @Nullable String tenant;
+        private @Nullable Integer timelineLength;
 
         /**
          * Creates a new Builder with all fields unset.
@@ -220,6 +233,12 @@ public record ListTasksParams(
             return this;
         }
 
+        /** Sets the maximum number of timeline entries included for each task. */
+        public Builder timelineLength(@Nullable Integer timelineLength) {
+            this.timelineLength = timelineLength;
+            return this;
+        }
+
         /**
          * Builds the ListTasksParams.
          *
@@ -227,7 +246,7 @@ public record ListTasksParams(
          */
         public ListTasksParams build() {
             return new ListTasksParams(contextId, status, pageSize, pageToken, historyLength,
-                    statusTimestampAfter, includeArtifacts, tenant);
+                    statusTimestampAfter, includeArtifacts, tenant, timelineLength);
         }
     }
 }

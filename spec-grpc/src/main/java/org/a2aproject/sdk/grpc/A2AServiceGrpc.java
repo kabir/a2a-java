@@ -77,6 +77,37 @@ public final class A2AServiceGrpc {
     return getSendStreamingMessageMethod;
   }
 
+  private static volatile io.grpc.MethodDescriptor<org.a2aproject.sdk.grpc.StreamRequest,
+      org.a2aproject.sdk.grpc.StreamResponse> getSendLiveMessageMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "SendLiveMessage",
+      requestType = org.a2aproject.sdk.grpc.StreamRequest.class,
+      responseType = org.a2aproject.sdk.grpc.StreamResponse.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING)
+  public static io.grpc.MethodDescriptor<org.a2aproject.sdk.grpc.StreamRequest,
+      org.a2aproject.sdk.grpc.StreamResponse> getSendLiveMessageMethod() {
+    io.grpc.MethodDescriptor<org.a2aproject.sdk.grpc.StreamRequest, org.a2aproject.sdk.grpc.StreamResponse> getSendLiveMessageMethod;
+    if ((getSendLiveMessageMethod = A2AServiceGrpc.getSendLiveMessageMethod) == null) {
+      synchronized (A2AServiceGrpc.class) {
+        if ((getSendLiveMessageMethod = A2AServiceGrpc.getSendLiveMessageMethod) == null) {
+          A2AServiceGrpc.getSendLiveMessageMethod = getSendLiveMessageMethod =
+              io.grpc.MethodDescriptor.<org.a2aproject.sdk.grpc.StreamRequest, org.a2aproject.sdk.grpc.StreamResponse>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "SendLiveMessage"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  org.a2aproject.sdk.grpc.StreamRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  org.a2aproject.sdk.grpc.StreamResponse.getDefaultInstance()))
+              .setSchemaDescriptor(new A2AServiceMethodDescriptorSupplier("SendLiveMessage"))
+              .build();
+        }
+      }
+    }
+    return getSendLiveMessageMethod;
+  }
+
   private static volatile io.grpc.MethodDescriptor<org.a2aproject.sdk.grpc.GetTaskRequest,
       org.a2aproject.sdk.grpc.Task> getGetTaskMethod;
 
@@ -445,6 +476,16 @@ public final class A2AServiceGrpc {
 
     /**
      * <pre>
+     * Establishes a bidirectional stream for live interaction.
+     * </pre>
+     */
+    default io.grpc.stub.StreamObserver<org.a2aproject.sdk.grpc.StreamRequest> sendLiveMessage(
+        io.grpc.stub.StreamObserver<org.a2aproject.sdk.grpc.StreamResponse> responseObserver) {
+      return io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall(getSendLiveMessageMethod(), responseObserver);
+    }
+
+    /**
+     * <pre>
      * Gets the latest state of a task.
      * </pre>
      */
@@ -597,6 +638,17 @@ public final class A2AServiceGrpc {
 
     /**
      * <pre>
+     * Establishes a bidirectional stream for live interaction.
+     * </pre>
+     */
+    public io.grpc.stub.StreamObserver<org.a2aproject.sdk.grpc.StreamRequest> sendLiveMessage(
+        io.grpc.stub.StreamObserver<org.a2aproject.sdk.grpc.StreamResponse> responseObserver) {
+      return io.grpc.stub.ClientCalls.asyncBidiStreamingCall(
+          getChannel().newCall(getSendLiveMessageMethod(), getCallOptions()), responseObserver);
+    }
+
+    /**
+     * <pre>
      * Gets the latest state of a task.
      * </pre>
      */
@@ -740,6 +792,18 @@ public final class A2AServiceGrpc {
         sendStreamingMessage(org.a2aproject.sdk.grpc.SendMessageRequest request) {
       return io.grpc.stub.ClientCalls.blockingV2ServerStreamingCall(
           getChannel(), getSendStreamingMessageMethod(), getCallOptions(), request);
+    }
+
+    /**
+     * <pre>
+     * Establishes a bidirectional stream for live interaction.
+     * </pre>
+     */
+    @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/10918")
+    public io.grpc.stub.BlockingClientCall<org.a2aproject.sdk.grpc.StreamRequest, org.a2aproject.sdk.grpc.StreamResponse>
+        sendLiveMessage() {
+      return io.grpc.stub.ClientCalls.blockingBidiStreamingCall(
+          getChannel(), getSendLiveMessageMethod(), getCallOptions());
     }
 
     /**
@@ -1112,6 +1176,7 @@ public final class A2AServiceGrpc {
   private static final int METHODID_LIST_TASK_PUSH_NOTIFICATION_CONFIGS = 8;
   private static final int METHODID_GET_EXTENDED_AGENT_CARD = 9;
   private static final int METHODID_DELETE_TASK_PUSH_NOTIFICATION_CONFIG = 10;
+  private static final int METHODID_SEND_LIVE_MESSAGE = 11;
 
   private static final class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
@@ -1184,6 +1249,9 @@ public final class A2AServiceGrpc {
     public io.grpc.stub.StreamObserver<Req> invoke(
         io.grpc.stub.StreamObserver<Resp> responseObserver) {
       switch (methodId) {
+        case METHODID_SEND_LIVE_MESSAGE:
+          return (io.grpc.stub.StreamObserver<Req>) serviceImpl.sendLiveMessage(
+              (io.grpc.stub.StreamObserver<org.a2aproject.sdk.grpc.StreamResponse>) responseObserver);
         default:
           throw new AssertionError();
       }
@@ -1206,6 +1274,13 @@ public final class A2AServiceGrpc {
               org.a2aproject.sdk.grpc.SendMessageRequest,
               org.a2aproject.sdk.grpc.StreamResponse>(
                 service, METHODID_SEND_STREAMING_MESSAGE)))
+        .addMethod(
+          getSendLiveMessageMethod(),
+          io.grpc.stub.ServerCalls.asyncBidiStreamingCall(
+            new MethodHandlers<
+              org.a2aproject.sdk.grpc.StreamRequest,
+              org.a2aproject.sdk.grpc.StreamResponse>(
+                service, METHODID_SEND_LIVE_MESSAGE)))
         .addMethod(
           getGetTaskMethod(),
           io.grpc.stub.ServerCalls.asyncUnaryCall(
@@ -1319,6 +1394,7 @@ public final class A2AServiceGrpc {
               .setSchemaDescriptor(new A2AServiceFileDescriptorSupplier())
               .addMethod(getSendMessageMethod())
               .addMethod(getSendStreamingMessageMethod())
+              .addMethod(getSendLiveMessageMethod())
               .addMethod(getGetTaskMethod())
               .addMethod(getListTasksMethod())
               .addMethod(getCancelTaskMethod())

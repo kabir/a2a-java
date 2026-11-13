@@ -139,6 +139,11 @@ public interface A2AHttpClient {
          */
         A2AHttpResponse get() throws IOException, InterruptedException;
 
+        /** Starts an asynchronous GET and returns its complete status-aware response. */
+        default AsyncGetCall getAsyncResponse() throws IOException, InterruptedException {
+            throw new UnsupportedOperationException("Status-aware asynchronous GET is not supported");
+        }
+
         /**
          * Executes an asynchronous GET request expecting Server-Sent Events (SSE).
          *
@@ -156,6 +161,14 @@ public interface A2AHttpClient {
                 Consumer<ServerSentEvent> messageConsumer,
                 Consumer<Throwable> errorConsumer,
                 Runnable completeRunnable) throws IOException, InterruptedException;
+
+        /** Starts a cancellable GET SSE request and rejects non-2xx responses before SSE decoding. */
+        default AsyncSSECall getAsyncSSECallStatusAware(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) throws IOException, InterruptedException {
+            throw new UnsupportedOperationException("Status-aware asynchronous GET SSE is not supported");
+        }
     }
 
     /**
@@ -221,6 +234,65 @@ public interface A2AHttpClient {
                 Consumer<ServerSentEvent> messageConsumer,
                 Consumer<Throwable> errorConsumer,
                 Runnable completeRunnable) throws IOException, InterruptedException;
+
+        /** Starts an SSE POST with an explicit handle that must cancel the underlying read. */
+        default AsyncSSECall postAsyncSSECall(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) throws IOException, InterruptedException {
+            throw new UnsupportedOperationException("Cancellable asynchronous SSE is not supported");
+        }
+
+        /** Starts a cancellable SSE POST that rejects every non-2xx HTTP status before body decoding. */
+        default AsyncSSECall postAsyncSSECallStatusAware(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) throws IOException, InterruptedException {
+            throw new UnsupportedOperationException("Status-aware asynchronous SSE is not supported");
+        }
+
+
+        /**
+         * Executes an asynchronous POST and returns the complete HTTP response. The returned
+         * handle exposes an explicit cancellation operation that must detach the underlying
+         * request, rather than only cancelling a dependent completion stage.
+         *
+         * <p>Implementations that cannot provide status-aware cancellation may keep source
+         * compatibility by inheriting this unsupported default. Existing SSE methods retain
+         * their callback and completion behavior.
+         *
+         * @return a handle for the response and underlying request cancellation
+         */
+        default AsyncPostCall postAsyncResponse() throws IOException, InterruptedException {
+            throw new UnsupportedOperationException("Status-aware asynchronous POST is not supported");
+        }
+    }
+
+    /** A status-aware asynchronous GET response with explicit underlying-request cancellation. */
+    interface AsyncGetCall {
+        /** Returns the response result, including non-2xx status and body. */
+        CompletableFuture<A2AHttpResponse> response();
+
+        /** Detaches the underlying HTTP request and cancels the response result. */
+        void cancel();
+    }
+
+    /** A status-aware asynchronous POST response with explicit underlying-request cancellation. */
+    interface AsyncPostCall {
+        /** Returns the response result. */
+        CompletableFuture<A2AHttpResponse> response();
+
+        /** Detaches the underlying HTTP request and cancels the response result. */
+        void cancel();
+    }
+
+    /** A streaming SSE POST and cancellation of its underlying HTTP request. */
+    interface AsyncSSECall {
+        /** Completes when streaming ends. */
+        CompletableFuture<Void> completion();
+
+        /** Detaches the underlying streaming HTTP request. */
+        void cancel();
     }
 
     /**

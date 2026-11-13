@@ -24,7 +24,14 @@ import org.jspecify.annotations.Nullable;
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 public record MessageSendConfiguration(@Nullable List<String> acceptedOutputModes, @Nullable Integer historyLength,
-        @Nullable TaskPushNotificationConfig taskPushNotificationConfig, Boolean returnImmediately) {
+        @Nullable TaskPushNotificationConfig taskPushNotificationConfig, Boolean returnImmediately,
+        @Nullable Long ifGenerationMatch, @Nullable Integer timelineLength) {
+
+    /** Preserves the legacy constructor and leaves the new optional values absent. */
+    public MessageSendConfiguration(@Nullable List<String> acceptedOutputModes, @Nullable Integer historyLength,
+            @Nullable TaskPushNotificationConfig taskPushNotificationConfig, Boolean returnImmediately) {
+        this(acceptedOutputModes, historyLength, taskPushNotificationConfig, returnImmediately, null, null);
+    }
 
     /**
      * Compact constructor for validation.
@@ -40,6 +47,9 @@ public record MessageSendConfiguration(@Nullable List<String> acceptedOutputMode
         acceptedOutputModes = CollectionCopies.immutableNullableList(acceptedOutputModes);
         if (historyLength != null && historyLength < 0) {
             throw new IllegalArgumentException("Invalid history length");
+        }
+        if (timelineLength != null && timelineLength < 0) {
+            throw new IllegalArgumentException("Invalid timeline length");
         }
     }
 
@@ -63,6 +73,8 @@ public record MessageSendConfiguration(@Nullable List<String> acceptedOutputMode
         @Nullable Integer historyLength;
         @Nullable TaskPushNotificationConfig taskPushNotificationConfig;
         Boolean returnImmediately = false;
+        @Nullable Long ifGenerationMatch;
+        @Nullable Integer timelineLength;
 
         /**
          * Creates a new Builder with all fields unset.
@@ -119,6 +131,21 @@ public record MessageSendConfiguration(@Nullable List<String> acceptedOutputMode
             return this;
         }
 
+        /** Sets the expected task generation for conditional input. */
+        public Builder ifGenerationMatch(@Nullable Long ifGenerationMatch) {
+            this.ifGenerationMatch = ifGenerationMatch;
+            return this;
+        }
+
+        /** Sets the maximum number of timeline entries to include. */
+        public Builder timelineLength(@Nullable Integer timelineLength) {
+            if (timelineLength != null && timelineLength < 0) {
+                throw new IllegalArgumentException("Invalid timeline length");
+            }
+            this.timelineLength = timelineLength;
+            return this;
+        }
+
         /**
          * Builds the {@link MessageSendConfiguration}.
          *
@@ -129,7 +156,9 @@ public record MessageSendConfiguration(@Nullable List<String> acceptedOutputMode
                     acceptedOutputModes,
                     historyLength,
                     taskPushNotificationConfig,
-                    returnImmediately);
+                    returnImmediately,
+                    ifGenerationMatch,
+                    timelineLength);
         }
     }
 }

@@ -7,12 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.gson.JsonParser;
 import org.a2aproject.sdk.spec.Artifact;
+import org.a2aproject.sdk.spec.DataPart;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
@@ -26,6 +30,47 @@ import org.junit.jupiter.api.Test;
  * serialize using wrapper member names (e.g., {"task": {...}}) and do not contain "kind" fields.
  */
 class StreamingEventKindSerializationTest {
+
+    @Test
+    void legacyVersionedSerializationOmitsOnlyTaskSchemaFields() throws Exception {
+        Artifact artifact = new Artifact("a", null, null,
+                List.of(new DataPart(Map.of("startGeneration", 71, "role", "payload"))),
+                Map.of("startGeneration", 72, "endGeneration", 73, "role", "metadata"), List.of(),
+                4, 9, Message.Role.ROLE_AGENT);
+        Task task = new Task("t", "c", new TaskStatus(TaskState.TASK_STATE_WORKING), List.of(artifact), null,
+                Map.of("generation", 74, "timeline", "metadata"), 10, List.of());
+
+        com.google.gson.JsonObject result = JsonParser.parseString(
+                JsonUtil.toJsonStreamingEvent(task, "1.0")).getAsJsonObject().getAsJsonObject("task");
+
+        assertFalse(result.has("generation"));
+        assertFalse(result.has("timeline"));
+        assertFalse(result.getAsJsonArray("artifacts").get(0).getAsJsonObject().has("startGeneration"));
+        assertFalse(result.getAsJsonArray("artifacts").get(0).getAsJsonObject().has("endGeneration"));
+        assertFalse(result.getAsJsonArray("artifacts").get(0).getAsJsonObject().has("role"));
+        assertEquals(74, result.getAsJsonObject("metadata").get("generation").getAsInt());
+        assertEquals(72, result.getAsJsonArray("artifacts").get(0).getAsJsonObject()
+                .getAsJsonObject("metadata").get("startGeneration").getAsInt());
+        assertEquals(71, result.getAsJsonArray("artifacts").get(0).getAsJsonObject()
+                .getAsJsonArray("parts").get(0).getAsJsonObject().getAsJsonObject("data")
+                .get("startGeneration").getAsInt());
+    }
+
+    @Test
+    void onePointOneSerializationRetainsNewFieldsAndLegacyRejectsMessageUpdates() throws Exception {
+        Task task = new Task("t", "c", new TaskStatus(TaskState.TASK_STATE_WORKING), List.of(), null,
+                null, 0, List.of());
+        com.google.gson.JsonObject serialized = JsonParser.parseString(
+                JsonUtil.toJsonStreamingEvent(task, "1.1")).getAsJsonObject().getAsJsonObject("task");
+
+        assertEquals(0, serialized.get("generation").getAsInt());
+        assertTrue(serialized.has("timeline"));
+        TaskMessageUpdateEvent update = new TaskMessageUpdateEvent("t", "c",
+                Message.builder().role(Message.Role.ROLE_AGENT).parts(new org.a2aproject.sdk.spec.TextPart("x"))
+                        .messageId("m").build(), null, 0);
+        org.junit.jupiter.api.Assertions.assertThrows(JsonProcessingException.class,
+                () -> JsonUtil.toJsonStreamingEvent(update, "1.0"));
+    }
 
     @Test
     void testTaskSerialization() throws JsonProcessingException {

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>phase2probe</groupId>
+    <artifactId>a2a-phase2-api-probes</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <error-prone.version>2.42.0</error-prone.version>
+        <nullaway.version>0.12.10</nullaway.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_core</artifactId>
+            <version>${error-prone.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.uber.nullaway</groupId>
+            <artifactId>nullaway</artifactId>
+            <version>${nullaway.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.16.0</version>
+                <configuration>
+                    <skipMain>true</skipMain>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>compile-isolated-api-probes</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <fail unless="phase2.sdk.classpathFile"
+                                      message="Set -Dphase2.sdk.classpathFile to an isolated classpath file" />
+                                <loadfile property="phase2.sdk.classpath"
+                                          srcFile="${phase2.sdk.classpathFile}" />
+                                <fail unless="phase2.processor.classpathFile"
+                                      message="Set -Dphase2.processor.classpathFile to the Error Prone/NullAway processor classpath file" />
+                                <loadfile property="phase2.processor.classpath"
+                                          srcFile="${phase2.processor.classpathFile}" />
+                                <mkdir dir="${project.build.outputDirectory}" />
+                                <exec executable="${java.home}/bin/javac" failonerror="true">
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED" />
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED" />
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED" />
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED" />
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED" />
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED" />
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED" />
+                                    <arg value="-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED" />
+                                    <arg value="-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED" />
+                                    <arg value="-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED" />
+                                    <arg value="--enable-preview" />
+                                    <arg value="--release" />
+                                    <arg value="17" />
+                                    <arg value="-XDcompilePolicy=simple" />
+                                    <arg value="--should-stop=ifError=FLOW" />
+                                    <arg value="-parameters" />
+                                    <arg value="-classpath" />
+                                    <arg value="${phase2.sdk.classpath}" />
+                                    <arg value="-processorpath" />
+                                    <arg value="${phase2.processor.classpath}" />
+                                    <arg value="-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:JSpecifyMode=true -XepDisableWarningsInGeneratedCode" />
+                                    <arg value="-d" />
+                                    <arg value="${project.build.outputDirectory}" />
+                                    <arg file="${project.basedir}/src/main/java/phase2probe/LegacyCaller.java" />
+                                    <arg file="${project.basedir}/src/main/java/phase2probe/LegacySwitch.java" />
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

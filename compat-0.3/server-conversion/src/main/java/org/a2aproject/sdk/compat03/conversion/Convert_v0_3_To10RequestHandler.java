@@ -27,6 +27,9 @@ import org.a2aproject.sdk.compat03.spec.TaskQueryParams_v0_3;
 import org.a2aproject.sdk.compat03.spec.Task_v0_3;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.util.async.ProjectingPublisher;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
+import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.CancelTaskParams;
 import org.a2aproject.sdk.spec.DeleteTaskPushNotificationConfigParams;
@@ -104,7 +107,8 @@ public class Convert_v0_3_To10RequestHandler {
         Task v10Result = v10Handler.onGetTask(v10Params, context);
 
         // Convert v1.0 result → v0.3 result
-        return TaskMapper_v0_3.INSTANCE.fromV10(v10Result);
+        return TaskMapper_v0_3.INSTANCE.fromV10(
+                VersionedOutputProjector.projectTask(v10Result, ServerVersionPolicy.V0_3));
     }
 
     /**
@@ -128,7 +132,8 @@ public class Convert_v0_3_To10RequestHandler {
         Task v10Result = v10Handler.onCancelTask(v10Params, context);
 
         // Convert v1.0 result → v0.3 result
-        return TaskMapper_v0_3.INSTANCE.fromV10(v10Result);
+        return TaskMapper_v0_3.INSTANCE.fromV10(
+                VersionedOutputProjector.projectTask(v10Result, ServerVersionPolicy.V0_3));
     }
 
     /**
@@ -156,7 +161,9 @@ public class Convert_v0_3_To10RequestHandler {
         EventKind v10Result = v10Handler.onMessageSend(v10Params, context);
 
         // Convert v1.0 result → v0.3 result
-        return EventKindMapper_v0_3.INSTANCE.fromV10(v10Result);
+        EventKind projected = v10Result instanceof Task task
+                ? VersionedOutputProjector.projectTask(task, ServerVersionPolicy.V0_3) : v10Result;
+        return EventKindMapper_v0_3.INSTANCE.fromV10(projected);
     }
 
     /**
@@ -185,7 +192,9 @@ public class Convert_v0_3_To10RequestHandler {
             v10Handler.onMessageSendStream(v10Params, context);
 
         // Convert each event using a mapping processor
-        return convertPublisher(v10Publisher, StreamingEventKindMapper_v0_3.INSTANCE::fromV10);
+        Flow.Publisher<StreamingEventKind> projected = ProjectingPublisher.mapNotNull(v10Publisher,
+                event -> VersionedOutputProjector.projectEvent(event, ServerVersionPolicy.V0_3));
+        return convertPublisher(projected, StreamingEventKindMapper_v0_3.INSTANCE::fromV10);
     }
 
     /**
@@ -212,7 +221,8 @@ public class Convert_v0_3_To10RequestHandler {
             v10Handler.onCreateTaskPushNotificationConfig(v10Config, context);
 
         // Convert v1.0 result → v0.3 result
-        return TaskPushNotificationConfigMapper_v0_3.INSTANCE.fromV10(v10Result);
+        return TaskPushNotificationConfigMapper_v0_3.INSTANCE.fromV10(
+                VersionedOutputProjector.projectConfig(v10Result, ServerVersionPolicy.V0_3));
     }
 
     /**
@@ -266,7 +276,8 @@ public class Convert_v0_3_To10RequestHandler {
         }
 
         // Convert v1.0 result → v0.3 result
-        return TaskPushNotificationConfigMapper_v0_3.INSTANCE.fromV10(v10Result);
+        return TaskPushNotificationConfigMapper_v0_3.INSTANCE.fromV10(
+                VersionedOutputProjector.projectConfig(v10Result, ServerVersionPolicy.V0_3));
     }
 
     /**
@@ -292,7 +303,9 @@ public class Convert_v0_3_To10RequestHandler {
             v10Handler.onSubscribeToTask(v10Params, context);
 
         // Convert each event using a mapping processor
-        return convertPublisher(v10Publisher, StreamingEventKindMapper_v0_3.INSTANCE::fromV10);
+        Flow.Publisher<StreamingEventKind> projected = ProjectingPublisher.mapNotNull(v10Publisher,
+                event -> VersionedOutputProjector.projectEvent(event, ServerVersionPolicy.V0_3));
+        return convertPublisher(projected, StreamingEventKindMapper_v0_3.INSTANCE::fromV10);
     }
 
     /**
@@ -324,7 +337,10 @@ public class Convert_v0_3_To10RequestHandler {
             v10Handler.onListTaskPushNotificationConfigs(v10Params, context);
 
         // Convert v1.0 result → v0.3 result (extract list from result wrapper)
-        return ListTaskPushNotificationConfigsResultMapper_v0_3.INSTANCE.fromV10(v10Result);
+        ListTaskPushNotificationConfigsResult projected = new ListTaskPushNotificationConfigsResult(
+                v10Result.configs().stream().map(config -> VersionedOutputProjector.projectConfig(config,
+                        ServerVersionPolicy.V0_3)).toList(), v10Result.nextPageToken());
+        return ListTaskPushNotificationConfigsResultMapper_v0_3.INSTANCE.fromV10(projected);
     }
 
     /**

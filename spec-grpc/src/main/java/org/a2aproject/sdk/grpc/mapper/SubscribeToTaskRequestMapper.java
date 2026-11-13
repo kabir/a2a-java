@@ -45,8 +45,11 @@ public interface SubscribeToTaskRequestMapper {
      * @return the domain SubscribeToTaskRequest
      */
     default SubscribeToTaskRequest fromProto(org.a2aproject.sdk.grpc.SubscribeToTaskRequest proto) {
-        if (proto == null || proto.getId()== null) {
+        if (proto == null) {
             return null;
+        }
+        if (proto.hasLastSeenGeneration()) {
+            throw new IllegalArgumentException("Subscription cursors require the ObserveTaskParams companion type");
         }
         return SubscribeToTaskRequest.builder()
                 .params(new org.a2aproject.sdk.spec.TaskIdParams(proto.getId()))

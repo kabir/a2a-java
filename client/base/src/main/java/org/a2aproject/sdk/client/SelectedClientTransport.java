@@ -6,6 +6,10 @@ import java.util.function.Consumer;
 import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
 import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TransportCall;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
+import org.a2aproject.sdk.client.transport.spi.TransportResult;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.spec.A2AClientException;
@@ -13,6 +17,8 @@ import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.CancelTaskParams;
 import org.a2aproject.sdk.spec.DeleteTaskPushNotificationConfigParams;
 import org.a2aproject.sdk.spec.EventKind;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.GetExtendedAgentCardParams;
 import org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
@@ -46,6 +52,48 @@ final class SelectedClientTransport implements VersionedClientTransport {
     @Override
     public Set<ClientFeature> capabilities() {
         return features;
+    }
+
+    @Override
+    public TransportCall<TransportResult<EventKind>> sendInput(SendInputParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return delegateVersioned().sendInput(params, options, context);
+    }
+
+    @Override
+    public TransportObservation streamInput(SendInputParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return delegateVersioned().streamInput(params, options, context);
+    }
+
+    @Override
+    public TransportObservation observe(ObserveTaskParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return delegateVersioned().observe(params, options, context);
+    }
+
+    @Override
+    public TransportCall<TransportResult<Task>> getTaskAsync(TaskQueryParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return delegateVersioned().getTaskAsync(params, options, context);
+    }
+
+    @Override
+    public TransportResult<Task> getTaskDecoded(TaskQueryParams params, @Nullable ClientCallContext context) {
+        return delegateVersioned().getTaskDecoded(params, context);
+    }
+
+    @Override
+    public TransportResult<ListTasksResult> listTasksDecoded(ListTasksParams params,
+            @Nullable ClientCallContext context) {
+        return delegateVersioned().listTasksDecoded(params, context);
+    }
+
+    private VersionedClientTransport delegateVersioned() {
+        if (!(delegate instanceof VersionedClientTransport versioned)) {
+            throw new UnsupportedOperationException("Selected transport is not versioned");
+        }
+        return versioned;
     }
 
     @Override

@@ -45,7 +45,8 @@ public interface TaskArtifactUpdateEventMapper_v0_3 {
             v03.contextId(),
             v03.append(),
             v03.lastChunk(),
-            v03.metadata()
+            v03.metadata(),
+            0
         );
     }
 

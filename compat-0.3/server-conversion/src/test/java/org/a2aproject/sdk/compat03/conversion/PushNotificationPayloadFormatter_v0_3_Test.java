@@ -9,6 +9,9 @@ import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
+import org.a2aproject.sdk.spec.Artifact;
+import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +81,29 @@ class PushNotificationPayloadFormatter_v0_3_Test {
         String payload = formatter.formatPayload(message, snapshot);
 
         assertNull(payload);
+    }
+
+    @Test
+    void skipsMessageUpdateEventsEvenWhenSnapshotIsAvailable() {
+        Task snapshot = Task.builder().id("t1").contextId("c1")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build();
+        Message update = Message.builder().messageId("m1").role(Message.Role.ROLE_AGENT)
+                .parts(new TextPart("update")).build();
+        TaskMessageUpdateEvent event = new TaskMessageUpdateEvent("t1", "c1", update, null, 3);
+
+        assertNull(formatter.formatPayload(event, snapshot));
+    }
+
+    @Test
+    void skipsUserArtifactUpdatesEvenWhenSnapshotIsAvailable() {
+        Task snapshot = Task.builder().id("t1").contextId("c1")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build();
+        Artifact userArtifact = new Artifact("a1", null, null, java.util.List.of(new TextPart("private")),
+                null, null, 1, 3, Message.Role.ROLE_USER);
+        TaskArtifactUpdateEvent event = new TaskArtifactUpdateEvent("t1", userArtifact, "c1", false, true,
+                null, 3);
+
+        assertNull(formatter.formatPayload(event, snapshot));
     }
 
     @Test

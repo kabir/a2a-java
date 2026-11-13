@@ -45,6 +45,9 @@ public enum A2AErrorCodes {
      * is not supported by the agent (-32009). */
     VERSION_NOT_SUPPORTED(-32009, "UNIMPLEMENTED", 400),
 
+    /** Error code for an optimistic generation precondition mismatch. */
+    TASK_GENERATION_MISMATCH(-32010, "ABORTED", 409),
+
     /** JSON-RPC error code for invalid request structure (-32600). */
     INVALID_REQUEST(-32600, "INVALID_ARGUMENT", 400),
 

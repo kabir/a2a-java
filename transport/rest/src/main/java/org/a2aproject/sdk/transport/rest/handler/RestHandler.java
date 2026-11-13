@@ -52,6 +52,7 @@ import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
 import org.a2aproject.sdk.server.util.CdiUtils;
 import org.a2aproject.sdk.server.util.async.Internal;
 import org.a2aproject.sdk.server.version.ServerVersionPolicy;
+import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.A2AErrorCodes;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -68,6 +69,8 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
@@ -244,8 +247,21 @@ public class RestHandler {
             org.a2aproject.sdk.grpc.SendMessageRequest.Builder request = org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder();
             parseRequestBody(body, request);
             request.setTenant(Utils.defaultIfNull(effectiveCard.tenant(), ""));
-            EventKind result = requestHandler.onMessageSend(ProtoUtils.FromProto.messageSendParams(request), context);
-            return createSuccessResponse(200, org.a2aproject.sdk.grpc.SendMessageResponse.newBuilder(ProtoUtils.ToProto.taskOrMessage(result)));
+            EventKind result;
+            if (context.getVersionPolicy().supportsPhase2Output()) {
+                SendInputParams params = ProtoUtils.FromProto.sendInputParams(request);
+                rejectUnsupportedInputOptions(params);
+                result = requestHandler.onSendInput(params, context);
+            } else {
+                if (context.getVersionPolicy() == ServerVersionPolicy.V1_0) {
+                    rejectVersion10AdvancedInput(ProtoUtils.FromProto.sendInputParams(request));
+                }
+                result = requestHandler.onMessageSend(ProtoUtils.FromProto.messageSendParams(request), context);
+            }
+            EventKind projectedResult = result instanceof Task task
+                    ? VersionedOutputProjector.projectTask(task, context.getVersionPolicy()) : result;
+            return createSuccessResponse(200, org.a2aproject.sdk.grpc.SendMessageResponse.newBuilder(ProtoUtils.ToProto.taskOrMessage(projectedResult)),
+                    context.getVersionPolicy());
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
         } catch (Throwable throwable) {
@@ -313,13 +329,29 @@ public class RestHandler {
             org.a2aproject.sdk.grpc.SendMessageRequest.Builder request = org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder();
             parseRequestBody(body, request);
             request.setTenant(Utils.defaultIfNull(effectiveCard.tenant(), ""));
-            MessageSendParams params = ProtoUtils.FromProto.messageSendParams(request);
-            try {
-                requestHandler.authorizeTaskAccess(params.message().taskId(), context, TaskOperation.MESSAGE_SEND_STREAM);
-            } catch (A2AError e) {
-                return createErrorResponse(e, context.getVersionPolicy());
+            Flow.Publisher<StreamingEventKind> publisher;
+            if (context.getVersionPolicy().supportsPhase2Output()) {
+                SendInputParams params = ProtoUtils.FromProto.sendInputParams(request);
+                rejectUnsupportedStreamingInput(params);
+                String taskId = params.message() != null ? params.message().taskId() : params.artifactUpdates().get(0).taskId();
+                try {
+                    requestHandler.authorizeTaskAccess(taskId, context, TaskOperation.MESSAGE_SEND_STREAM);
+                } catch (A2AError e) {
+                    return createErrorResponse(e, context.getVersionPolicy());
+                }
+                publisher = requestHandler.onSendInputStream(params, context);
+            } else {
+                if (context.getVersionPolicy() == ServerVersionPolicy.V1_0) {
+                    rejectVersion10AdvancedInput(ProtoUtils.FromProto.sendInputParams(request));
+                }
+                MessageSendParams params = ProtoUtils.FromProto.messageSendParams(request);
+                try {
+                    requestHandler.authorizeTaskAccess(params.message().taskId(), context, TaskOperation.MESSAGE_SEND_STREAM);
+                } catch (A2AError e) {
+                    return createErrorResponse(e, context.getVersionPolicy());
+                }
+                publisher = requestHandler.onMessageSendStream(params, context);
             }
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(params, context);
             return createStreamingResponse(publisher, context.getVersionPolicy());
         } catch (A2AError e) {
             return new HTTPRestStreamingResponse(ZeroPublisher.fromItems(new HTTPRestErrorResponse(e, context.getVersionPolicy()).toJson()));
@@ -363,7 +395,8 @@ public class RestHandler {
             CancelTaskParams params = CancelTaskParams.builder().id(requiredTaskId).tenant(effectiveCard.tenant()).metadata(metadata).build();
             Task task = requestHandler.onCancelTask(params, context);
             if (task != null) {
-                return createSuccessResponse(200, org.a2aproject.sdk.grpc.Task.newBuilder(ProtoUtils.ToProto.task(task)));
+                return createSuccessResponse(200, org.a2aproject.sdk.grpc.Task.newBuilder(ProtoUtils.ToProto.task(
+                        VersionedOutputProjector.projectTask(task, context.getVersionPolicy()))), context.getVersionPolicy());
             }
             throw new UnsupportedOperationError();
         } catch (A2AError e) {
@@ -398,8 +431,12 @@ public class RestHandler {
             }
             builder.setTenant(Utils.defaultIfNull(effectiveCard.tenant(), ""));
             builder.setTaskId(requiredTaskId);
-            TaskPushNotificationConfig result = requestHandler.onCreateTaskPushNotificationConfig(ProtoUtils.FromProto.createTaskPushNotificationConfig(builder), context);
-            return createSuccessResponse(201, org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder(ProtoUtils.ToProto.taskPushNotificationConfig(result)));
+            TaskPushNotificationConfig config = ProtoUtils.FromProto.createTaskPushNotificationConfig(builder);
+            rejectDeliveryVersion(config);
+            TaskPushNotificationConfig result = requestHandler.onCreateTaskPushNotificationConfig(config, context);
+            return createSuccessResponse(201, org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder(
+                    ProtoUtils.ToProto.taskPushNotificationConfig(
+                            VersionedOutputProjector.projectConfig(result, context.getVersionPolicy()))), context.getVersionPolicy());
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
         } catch (Throwable throwable) {
@@ -440,9 +477,28 @@ public class RestHandler {
      * @see #sendStreamingMessage(ServerCallContext, String, String)
      */
     public HTTPRestResponse subscribeToTask(ServerCallContext context, String tenant, @Nullable String taskId) {
+        return subscribeToTask(context, tenant, taskId, null);
+    }
+
+    public HTTPRestResponse subscribeToTask(ServerCallContext context, String tenant, @Nullable String taskId,
+            @Nullable String lastSeenGeneration) {
         String requiredTaskId = requireNonBlankParam(taskId);
         if (requiredTaskId == null) {
             return createErrorResponse(new InvalidParamsError("bad task id"), context.getVersionPolicy());
+        }
+        Long parsedCursor = null;
+        try {
+            if (lastSeenGeneration != null && !lastSeenGeneration.isEmpty()) {
+                parsedCursor = Long.valueOf(lastSeenGeneration);
+                if (parsedCursor < 0) {
+                    throw new NumberFormatException("negative cursor");
+                }
+            }
+        } catch (NumberFormatException e) {
+            return createErrorResponse(new InvalidParamsError("bad lastSeenGeneration"), context.getVersionPolicy());
+        }
+        if (parsedCursor != null) {
+            return createErrorResponse(new UnsupportedOperationError(), context.getVersionPolicy());
         }
         try {
             EffectiveAgentCard effectiveCard;
@@ -457,7 +513,9 @@ public class RestHandler {
             } catch (A2AError e) {
                 return createErrorResponse(e, context.getVersionPolicy());
             }
-            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onSubscribeToTask(params, context);
+            Flow.Publisher<StreamingEventKind> publisher = context.getVersionPolicy().supportsPhase2Output()
+                    ? requestHandler.onObserveTask(new ObserveTaskParams(requiredTaskId, null, effectiveCard.tenant()), context)
+                    : requestHandler.onSubscribeToTask(params, context);
             return createStreamingResponse(publisher, context.getVersionPolicy());
         } catch (A2AError e) {
             return new HTTPRestStreamingResponse(ZeroPublisher.fromItems(new HTTPRestErrorResponse(e, context.getVersionPolicy()).toJson()));
@@ -475,12 +533,20 @@ public class RestHandler {
      * @param historyLength the maximum number of history entries to include
      * @return the HTTP response containing the task
      */
-    public HTTPRestResponse getTask(ServerCallContext context, String tenant, @Nullable String taskId, @Nullable String historyLength) {
+    public HTTPRestResponse getTask(ServerCallContext context, String tenant, @Nullable String taskId,
+            @Nullable String historyLength) {
+        return getTask(context, tenant, taskId, historyLength, null, null);
+    }
+
+    public HTTPRestResponse getTask(ServerCallContext context, String tenant, @Nullable String taskId,
+            @Nullable String historyLength, @Nullable String timelineLength, @Nullable String currentGeneration) {
         String requiredTaskId = requireNonBlankParam(taskId);
         if (requiredTaskId == null) {
             return createErrorResponse(new InvalidParamsError("bad task id"), context.getVersionPolicy());
         }
         Integer parsedHistoryLength = null;
+        Integer parsedTimelineLength = null;
+        Long parsedCurrentGeneration = null;
         try {
             if (historyLength != null) {
                 parsedHistoryLength = Integer.valueOf(historyLength);
@@ -489,11 +555,30 @@ public class RestHandler {
             return createErrorResponse(new InvalidParamsError("bad historyLength"), context.getVersionPolicy());
         }
         try {
+            if (timelineLength != null) {
+                parsedTimelineLength = Integer.valueOf(timelineLength);
+                if (parsedTimelineLength < 0) {
+                    throw new NumberFormatException("negative timelineLength");
+                }
+            }
+            if (currentGeneration != null) {
+                parsedCurrentGeneration = Long.valueOf(currentGeneration);
+                if (parsedCurrentGeneration < 0) {
+                    throw new NumberFormatException("negative currentGeneration");
+                }
+            }
+        } catch (NumberFormatException e) {
+            return createErrorResponse(new InvalidParamsError("bad task query option"), context.getVersionPolicy());
+        }
+        try {
             EffectiveAgentCard effectiveCard = preflight(tenant, context, AgentCardOperation.none());
-            TaskQueryParams params = new TaskQueryParams(requiredTaskId, parsedHistoryLength, effectiveCard.tenant());
+            TaskQueryParams params = new TaskQueryParams(requiredTaskId, parsedHistoryLength, effectiveCard.tenant(),
+                    parsedCurrentGeneration, parsedTimelineLength);
+            rejectUnsupportedQuery(params);
             Task task = requestHandler.onGetTask(params, context);
             if (task != null) {
-                return createSuccessResponse(200, org.a2aproject.sdk.grpc.Task.newBuilder(ProtoUtils.ToProto.task(task)));
+                return createSuccessResponse(200, org.a2aproject.sdk.grpc.Task.newBuilder(ProtoUtils.ToProto.task(
+                        VersionedOutputProjector.projectTask(task, context.getVersionPolicy()))), context.getVersionPolicy());
             }
             throw new TaskNotFoundError();
         } catch (IllegalArgumentException e) {
@@ -550,8 +635,18 @@ public class RestHandler {
             @Nullable String pageSize, @Nullable String pageToken,
             @Nullable String historyLength, @Nullable String statusTimestampAfter,
             @Nullable String includeArtifacts) {
+        return listTasks(context, tenant, contextId, status, pageSize, pageToken, historyLength,
+                statusTimestampAfter, includeArtifacts, null);
+    }
+
+    public HTTPRestResponse listTasks(ServerCallContext context, String tenant,
+            @Nullable String contextId, @Nullable String status,
+            @Nullable String pageSize, @Nullable String pageToken,
+            @Nullable String historyLength, @Nullable String statusTimestampAfter,
+            @Nullable String includeArtifacts, @Nullable String timelineLength) {
         Integer parsedPageSize = null;
         Integer parsedHistoryLength = null;
+        Integer parsedTimelineLength = null;
         Boolean parsedIncludeArtifacts = null;
         try {
             if (status != null && !status.isEmpty()) {
@@ -565,6 +660,9 @@ public class RestHandler {
             }
             if (includeArtifacts != null && !includeArtifacts.isEmpty()) {
                 parsedIncludeArtifacts = Boolean.valueOf(includeArtifacts);
+            }
+            if (timelineLength != null && !timelineLength.isEmpty()) {
+                parsedTimelineLength = Integer.valueOf(timelineLength);
             }
         } catch (NumberFormatException e) {
             return createErrorResponse(new InvalidParamsError("Invalid number format in parameters"), context.getVersionPolicy());
@@ -618,10 +716,18 @@ public class RestHandler {
             if (parsedIncludeArtifacts != null) {
                 paramsBuilder.includeArtifacts(parsedIncludeArtifacts);
             }
+            if (parsedTimelineLength != null) {
+                paramsBuilder.timelineLength(parsedTimelineLength);
+            }
             ListTasksParams params = paramsBuilder.build();
+            rejectUnsupportedListOptions(params);
 
             ListTasksResult result = requestHandler.onListTasks(params, context);
-            return createSuccessResponse(200, org.a2aproject.sdk.grpc.ListTasksResponse.newBuilder(ProtoUtils.ToProto.listTasksResult(result)));
+            ListTasksResult projected = new ListTasksResult(result.tasks().stream()
+                    .map(task -> VersionedOutputProjector.projectTask(task, context.getVersionPolicy())).toList(),
+                    result.totalSize(), result.pageSize(), result.nextPageToken());
+            return createSuccessResponse(200, org.a2aproject.sdk.grpc.ListTasksResponse.newBuilder(
+                    ProtoUtils.ToProto.listTasksResult(projected)), context.getVersionPolicy());
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
         } catch (Throwable throwable) {
@@ -651,7 +757,9 @@ public class RestHandler {
             EffectiveAgentCard effectiveCard = preflight(tenant, context, PUSH_NOTIFICATIONS);
             GetTaskPushNotificationConfigParams params = new GetTaskPushNotificationConfigParams(requiredTaskId, requiredConfigId, effectiveCard.tenant());
             TaskPushNotificationConfig config = requestHandler.onGetTaskPushNotificationConfig(params, context);
-            return createSuccessResponse(200, org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder(ProtoUtils.ToProto.taskPushNotificationConfig(config)));
+            return createSuccessResponse(200, org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder(
+                    ProtoUtils.ToProto.taskPushNotificationConfig(
+                            VersionedOutputProjector.projectConfig(config, context.getVersionPolicy()))), context.getVersionPolicy());
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
         } catch (Throwable throwable) {
@@ -687,7 +795,11 @@ public class RestHandler {
             EffectiveAgentCard effectiveCard = preflight(tenant, context, PUSH_NOTIFICATIONS);
             ListTaskPushNotificationConfigsParams params = new ListTaskPushNotificationConfigsParams(requiredTaskId, parsedPageSize, normalizedPageToken, effectiveCard.tenant());
             ListTaskPushNotificationConfigsResult result = requestHandler.onListTaskPushNotificationConfigs(params, context);
-            return createSuccessResponse(200, org.a2aproject.sdk.grpc.ListTaskPushNotificationConfigsResponse.newBuilder(ProtoUtils.ToProto.listTaskPushNotificationConfigsResponse(result)));
+            ListTaskPushNotificationConfigsResult projected = new ListTaskPushNotificationConfigsResult(
+                    result.configs().stream().map(config -> VersionedOutputProjector.projectConfig(config,
+                            context.getVersionPolicy())).toList(), result.nextPageToken());
+            return createSuccessResponse(200, org.a2aproject.sdk.grpc.ListTaskPushNotificationConfigsResponse.newBuilder(
+                    ProtoUtils.ToProto.listTaskPushNotificationConfigsResponse(projected)), context.getVersionPolicy());
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
         } catch (Throwable throwable) {
@@ -775,10 +887,12 @@ public class RestHandler {
         }
     }
 
-    private HTTPRestResponse createSuccessResponse(int statusCode, com.google.protobuf.Message.Builder builder) {
+    private HTTPRestResponse createSuccessResponse(int statusCode, com.google.protobuf.Message.Builder builder,
+            ServerVersionPolicy policy) {
         try {
             // Include default value fields to ensure empty arrays, zeros, etc. are present in JSON
-            String jsonBody = ProtoJsonUtils.toJson(JsonFormat.printer().alwaysPrintFieldsWithNoPresence(), builder);
+            String jsonBody = ProtoJsonUtils.toJsonForVersion(
+                    JsonFormat.printer().alwaysPrintFieldsWithNoPresence(), builder, policy.protocolVersion());
             return new HTTPRestResponse(statusCode, APPLICATION_JSON, jsonBody);
         } catch (InvalidProtocolBufferException e) {
             LOGGER.log(Level.SEVERE, "Failed to serialize response", e);
@@ -821,13 +935,64 @@ public class RestHandler {
      * @param t the unexpected exception
      * @return a sanitized internal error with a generic message
      */
+    private static void rejectUnsupportedInputOptions(SendInputParams params) throws UnsupportedOperationError {
+        if (params.configuration() != null
+                && (params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectUnsupportedStreamingInput(SendInputParams params) throws UnsupportedOperationError {
+        if (!params.artifactUpdates().isEmpty() || hasAdvancedConfiguration(params)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectVersion10AdvancedInput(SendInputParams params) throws UnsupportedOperationError {
+        if (!params.artifactUpdates().isEmpty() || hasAdvancedConfiguration(params)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static boolean hasAdvancedConfiguration(SendInputParams params) {
+        return params.configuration() != null
+                && (params.configuration().ifGenerationMatch() != null
+                        || params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null);
+    }
+
+    private static void rejectUnsupportedQuery(TaskQueryParams params) throws A2AError {
+        if (params.currentGeneration() != null && params.currentGeneration() < 0) {
+            throw new InvalidParamsError("currentGeneration must be non-negative");
+        }
+        if (params.currentGeneration() != null || params.timelineLength() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectUnsupportedListOptions(ListTasksParams params) throws UnsupportedOperationError {
+        if (params.timelineLength() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectDeliveryVersion(TaskPushNotificationConfig config) throws UnsupportedOperationError {
+        if (config.protocolVersion() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
     private static InternalError internalError(Throwable t) {
         LOGGER.log(Level.SEVERE, "Internal error while processing request", t);
         return new InternalError("Internal error");
     }
 
     private HTTPRestStreamingResponse createStreamingResponse(Flow.Publisher<StreamingEventKind> publisher, ServerVersionPolicy policy) {
-        return new HTTPRestStreamingResponse(convertToSendStreamingMessageResponse(publisher, policy));
+        Flow.Publisher<StreamingEventKind> projected = VersionedOutputProjector.projectStream(publisher, policy);
+        return new HTTPRestStreamingResponse(convertToSendStreamingMessageResponse(projected, policy));
     }
 
     @SuppressWarnings("FutureReturnValueIgnored")
@@ -854,8 +1019,9 @@ public class RestHandler {
                     public void onNext(StreamingEventKind item) {
                         LOGGER.log(Level.FINE, "REST: onNext called with event: {0}", item.getClass().getSimpleName());
                         try {
-                            String payload = ProtoJsonUtils.toJson(
-                                    JsonFormat.printer().omittingInsignificantWhitespace(), ProtoUtils.ToProto.taskOrMessageStream(item));
+                            String payload = ProtoJsonUtils.toJsonForVersion(
+                                    JsonFormat.printer().omittingInsignificantWhitespace(),
+                                    ProtoUtils.ToProto.taskOrMessageStream(item), policy.protocolVersion());
                             LOGGER.log(Level.FINE, "REST: Converted to JSON, sending via tube: {0}", payload.substring(0, Math.min(100, payload.length())));
                             tube.send(payload);
                             LOGGER.log(Level.FINE, "REST: tube.send() completed, requesting next event from EventConsumer");

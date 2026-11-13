@@ -29,8 +29,7 @@ import org.a2aproject.sdk.spec.StreamingEventKind;
  * @see StreamingEventKind
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
-public abstract sealed class StreamingJSONRPCRequest<T> extends A2ARequest<T> permits SubscribeToTaskRequest,
-        SendStreamingMessageRequest {
+public abstract sealed class StreamingJSONRPCRequest<T> extends A2ARequest<T> permits SubscribeToTaskRequest, SendStreamingMessageRequest, SendInputStreamingRequest, ObserveTaskRequest {
 
     StreamingJSONRPCRequest() {
     }

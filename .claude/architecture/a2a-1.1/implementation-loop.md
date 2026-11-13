@@ -99,30 +99,95 @@ authorization and applicable skills; do not add redundant approval requests.
   examples and an explicit decision for unavoidable SPI breaks. Unsupported
   legacy providers must fail clearly rather than drop 1.1 parameters.
 
+## Model selection and token-cost policy
+
+Standing user preference: use cheaper implementation models and Sol for planning
+and review. Apply this in every new phase session and continuation; the user
+should not need to repeat it. This policy overrides model-selection and escalation
+defaults in skills, including automatic selection of the most capable model for
+final review. It does not weaken acceptance, verification, or the existing run
+limits, and does not by itself authorize extra agents or broader task scope.
+
+**Astra is prohibited**, not merely discouraged. Do not use any Astra model or
+alias for this work, including research, implementation, reviews, final reviews,
+retries, nested subagents or separate tasks. Skill escalation rules cannot override
+this explicit user restriction. If allowed models are unavailable or inadequate,
+checkpoint/report rather than falling back to Astra. If the current session is
+known to use Astra, stop task work and request an allowed-model session. This is
+an instruction policy; it does not change the app's selectable model list or
+install a technical model allowlist.
+
+| Role/work | Model policy |
+| --- | --- |
+| Phase planning, public API/SPI decisions and specification ambiguities | Sol; produce a focused plan and task briefs for implementation. |
+| Bounded implementation, mechanical model/codec changes, adapters, focused tests and documentation | Luna by default. Terra is an allowed alternative for scoped implementation when available; assess actual results rather than assuming it is cheaper per completed task. |
+| Concurrency, atomic mutation, publication ordering, replay races and live lifecycle decisions; difficult fixes | Sol where the task needs that judgment, within the existing budget/attempt limits. |
+| Independent task/phase reviews, including final review | Sol. Astra is prohibited, including for final review and escalation. |
+
+Set delegated-agent models explicitly when supported; do not let every worker
+inherit an expensive controller model. Use the available model identifier matching
+these roles. If the requested model cannot be selected, report that limitation
+and provide a handoff rather than silently substituting a more expensive one.
+Any other model-policy change requires an explicit user instruction.
+
+At phase start, report the controller model when observable and record each
+worker/reviewer role plus the exact requested model ID in the progress record.
+Record observed runtime metadata when available and distinguish it from a request
+or self-report. Include model choices/escalations in the checkpoint report so
+future audits can detect inherited expensive models; do not claim exact billing
+or allowance use from model identity or turn counts alone.
+
+Control context and repeated work as well as model choice:
+
+- The phase owner reads the authoritative inputs and gives each worker a focused
+  brief containing the relevant requirements, files, acceptance IDs and checks.
+  Workers inspect necessary code/context, but need not reread all architecture
+  documents for every mechanical task. Preserve all applicable constraints.
+- Retain the original worker for fixes where practical. Review the fix diff and
+  affected requirements; do not restart an entire phase review unnecessarily.
+- Use one independent review per task/review gate; avoid duplicate reviewers
+  inspecting the same diff. Retain the required phase/final review coverage.
+- Reuse successful verification evidence for unchanged code. Rerun affected
+  checks after relevant edits or when a concrete unresolved concern justifies it;
+  retain the required phase and final build checks.
+- Escalate a stuck implementation task to Sol when evidence shows it needs
+  stronger reasoning, rather than repeating unproductive cheaper-model cycles.
+  Record the reason and retain coherent-iteration counts, raw attempt history
+  and per-defect no-progress streaks; switching
+  models never resets them or grants a fresh budget.
+- Keep fresh sessions per phase, with the progress record carrying decisions,
+  evidence, counters and next actions. Record model choices and useful escalation
+  evidence there; do not invent token/allowance measurements unavailable to tools.
+
 ## Loop mechanics and progress record
 
-Use the fourteen acceptance IDs and run limits in `acceptance.md`. Unless the
-user changes the budget, cap this run at ten focused iterations or two hours,
-whichever comes first. Stop dependent work after three attempts at the same
-failing criterion. Include the proposed safeguard of stopping after two
-consecutive iterations without meaningful progress in the architecture review;
-apply it if approved. Each iteration names its acceptance target and records
-verification/new evidence. The phases below are dependency groups, not permission
-for an unlimited number of iterations. A budget stop means checkpoint and report
-incomplete work; it never means success or an automatic fresh run. Follow the
-environment's goal-status rules when recording the stop.
+Use the fourteen acceptance IDs and current run limits in `acceptance.md`.
+The 2026-11-11 user clarification supersedes blanket three-attempt stops and the
+older proposed two-no-progress rule. Keep the authorized ten coherent iterations
+or two-hour limit, whichever first. Routine compile/setup corrections within one
+objective and expected RED tests are not automatically new iterations or failed
+substantive attempts. Record them honestly; elapsed time always counts.
+
+After three consecutive substantive no-progress attempts on the same underlying
+defect, checkpoint dependent work for Sol diagnosis. Use recorded evidence to
+separate actual progress from repeated blind compiler/setup fixes. This is not an
+automatic architectural failure or permission to use Astra, spawn unauthorized
+agents or reset the run budget. Continue safe independent planned work when
+possible. A budget stop means incomplete checkpoint, never completion.
 
 Maintain `.claude/architecture/a2a-1.1/implementation-progress.md` with target
 spec SHA, architecture approval reference, phase state, relevant files,
 decisions, exact commands/results, current blockers, and next action. Do not
 mark a phase verified based on a plan, a comment, or a skipped test.
 Record the run start timestamp, authorized budget, completed iteration count,
-per-criterion attempt counts, and any exhausted-budget flag before beginning
+raw attempt history, per-defect consecutive no-progress streaks, and any
+exhausted-budget flag before beginning
 work. Check these on every continuation. Automatic continuation is not a fresh
 budget authorization; after exhaustion require an explicit user budget decision.
-Count every materially distinct fix/verify cycle as an attempt, including
-multiple cycles inside one iteration. A speculative edit without demonstrated
-advancement or useful narrowing evidence does not reset the no-progress counter.
+Count coherent objectives and substantive no-progress attempts using acceptance.md's
+accounting table. A routine compiler repair is not automatically a new attempt;
+repeated compiler fixes without useful narrowing still trigger diagnosis.
+Preserve historical failures and streaks through model/session changes.
 Apply the proposed finite-command safeguard from `acceptance.md`: a local
 build/test deadline is at most 20 minutes and the remaining run budget, plus
 30 seconds of controlled cleanup. Record timeouts as incomplete verification,

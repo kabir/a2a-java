@@ -60,7 +60,7 @@ public interface TaskQueryParamsMapper_v0_3 {
         }
         // Convert historyLength: 0 (default) → null, non-zero → Integer
         Integer historyLength = v03.historyLength() == 0 ? null : v03.historyLength();
-        return new TaskQueryParams(v03.id(), historyLength, "");
+        return new TaskQueryParams(v03.id(), historyLength, "", null, null);
     }
 
     /**

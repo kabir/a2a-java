@@ -20,5 +20,5 @@ package org.a2aproject.sdk.spec;
  * @see TaskStatusUpdateEvent
  * @see TaskArtifactUpdateEvent
  */
-public sealed interface UpdateEvent permits TaskStatusUpdateEvent, TaskArtifactUpdateEvent {
+public sealed interface UpdateEvent permits TaskStatusUpdateEvent, TaskArtifactUpdateEvent, TaskMessageUpdateEvent {
 }

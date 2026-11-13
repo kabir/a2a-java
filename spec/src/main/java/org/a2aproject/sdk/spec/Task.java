@@ -45,12 +45,19 @@ import org.jspecify.annotations.Nullable;
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 public record Task(String id, String contextId, TaskStatus status, @Nullable List<Artifact> artifacts,
-        @Nullable List<Message> history, @Nullable Map<String, Object> metadata) implements EventKind, StreamingEventKind {
+        @Nullable List<Message> history, @Nullable Map<String, Object> metadata, long generation,
+        @Nullable List<TimelineEntry> timeline) implements EventKind, StreamingEventKind {
 
     /**
      * The identifier when used in streaming responses
      */
     public static final String STREAMING_EVENT_ID = "task";
+
+    /** Preserves the legacy constructor and represents an unversioned task snapshot. */
+    public Task(String id, String contextId, TaskStatus status, @Nullable List<Artifact> artifacts,
+            @Nullable List<Message> history, @Nullable Map<String, Object> metadata) {
+        this(id, contextId, status, artifacts, history, metadata, 0, null);
+    }
 
     /**
      * Compact constructor with validation and defensive copying.
@@ -70,6 +77,7 @@ public record Task(String id, String contextId, TaskStatus status, @Nullable Lis
         artifacts = CollectionCopies.immutableListOrEmpty(artifacts);
         history = CollectionCopies.immutableListOrEmpty(history);
         metadata = CollectionCopies.unmodifiableNullableShallowMap(metadata);
+        timeline = CollectionCopies.immutableNullableList(timeline);
     }
 
     @Override
@@ -126,6 +134,8 @@ public record Task(String id, String contextId, TaskStatus status, @Nullable Lis
         private @Nullable List<Artifact> artifacts;
         private @Nullable List<Message> history;
         private @Nullable Map<String, Object> metadata;
+        private long generation;
+        private @Nullable List<TimelineEntry> timeline;
 
         /**
          * Creates a new Builder with all fields unset.
@@ -145,6 +155,8 @@ public record Task(String id, String contextId, TaskStatus status, @Nullable Lis
             artifacts = task.artifacts();
             history = task.history();
             metadata = task.metadata();
+            generation = task.generation();
+            timeline = task.timeline();
 
         }
 
@@ -247,6 +259,18 @@ public record Task(String id, String contextId, TaskStatus status, @Nullable Lis
             return this;
         }
 
+        /** Sets the task generation received from the protocol. */
+        public Builder generation(long generation) {
+            this.generation = generation;
+            return this;
+        }
+
+        /** Sets the task timeline. */
+        public Builder timeline(@Nullable List<TimelineEntry> timeline) {
+            this.timeline = timeline;
+            return this;
+        }
+
         /**
          * Builds an immutable {@link Task} from the current builder state.
          *
@@ -260,7 +284,9 @@ public record Task(String id, String contextId, TaskStatus status, @Nullable Lis
                     Assert.checkNotNullParam("status", status),
                     artifacts,
                     history,
-                    metadata);
+                    metadata,
+                    generation,
+                    timeline);
         }
     }
 }

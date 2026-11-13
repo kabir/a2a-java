@@ -33,7 +33,13 @@ import org.jspecify.annotations.Nullable;
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 public record TaskPushNotificationConfig(@Nullable String id, @Nullable String taskId, String url, @Nullable String token,
-        @Nullable AuthenticationInfo authentication, @Nullable String tenant) {
+        @Nullable AuthenticationInfo authentication, @Nullable String tenant, @Nullable String protocolVersion) {
+
+    /** Preserves the legacy constructor without inventing delivery-version metadata. */
+    public TaskPushNotificationConfig(@Nullable String id, @Nullable String taskId, String url,
+            @Nullable String token, @Nullable AuthenticationInfo authentication, @Nullable String tenant) {
+        this(id, taskId, url, token, authentication, tenant, null);
+    }
 
     /**
      * Compact constructor for validation.
@@ -83,6 +89,7 @@ public record TaskPushNotificationConfig(@Nullable String id, @Nullable String t
         private @Nullable String token;
         private @Nullable AuthenticationInfo authentication;
         private @Nullable String tenant;
+        private @Nullable String protocolVersion;
 
         /** Creates an empty builder. */
         private Builder() {
@@ -100,6 +107,7 @@ public record TaskPushNotificationConfig(@Nullable String id, @Nullable String t
             this.token = config.token;
             this.authentication = config.authentication;
             this.tenant = config.tenant;
+            this.protocolVersion = config.protocolVersion();
         }
 
         /**
@@ -168,6 +176,12 @@ public record TaskPushNotificationConfig(@Nullable String id, @Nullable String t
             return this;
         }
 
+        /** Sets the protocol version used to format notifications for this configuration. */
+        public Builder protocolVersion(@Nullable String protocolVersion) {
+            this.protocolVersion = protocolVersion;
+            return this;
+        }
+
         /**
          * Builds the {@link TaskPushNotificationConfig}.
          *
@@ -181,7 +195,8 @@ public record TaskPushNotificationConfig(@Nullable String id, @Nullable String t
                     Assert.checkNotNullParam("url", url),
                     token,
                     authentication,
-                    tenant);
+                    tenant,
+                    protocolVersion);
         }
     }
 }

@@ -43,7 +43,10 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTaskPushNotificationConfig
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.ObserveTaskRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputStreamingRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageResponse;
@@ -79,6 +82,8 @@ import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.PushNotificationNotSupportedError;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -90,6 +95,7 @@ import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
+import org.a2aproject.sdk.spec.TimelineEntry;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.spec.VersionNotSupportedError;
@@ -110,6 +116,73 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 .acceptedOutputModes(List.of())
                 .returnImmediately(true)
                 .build();
+    }
+
+    @Test
+    void selected11ArtifactOnlyInputUsesCompanionBoundaryBeforeLegacyHandler() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = AgentCard.builder(CARD)
+                .supportedInterfaces(List.of(new AgentInterface("JSONRPC", "http://localhost:9999", null, "1.1")))
+                .build();
+        JSONRPCHandler handler = new JSONRPCHandler(card11, customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        TaskArtifactUpdateEvent update = Mockito.mock(TaskArtifactUpdateEvent.class);
+        Mockito.when(update.taskId()).thenReturn(MINIMAL_TASK.id());
+        Mockito.when(update.contextId()).thenReturn(MINIMAL_TASK.contextId());
+        SendInputParams params = SendInputParams.builder().artifactUpdates(List.of(update)).tenant("tenant-a").build();
+
+        SendMessageResponse response = handler.onSendInput(new SendInputRequest("2.0", "input-1", params), context);
+
+        assertInstanceOf(UnsupportedOperationError.class, response.getError());
+        Mockito.verify(customHandler).onSendInput(params, context);
+        Mockito.verify(customHandler, Mockito.never()).onMessageSend(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void selected11StreamingArtifactsAndGuardsStopBeforeAuthorization() throws InterruptedException {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = AgentCard.builder(CARD)
+                .supportedInterfaces(List.of(new AgentInterface("JSONRPC", "http://localhost:9999", null, "1.1")))
+                .build();
+        JSONRPCHandler handler = new JSONRPCHandler(card11, customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        TaskArtifactUpdateEvent update = Mockito.mock(TaskArtifactUpdateEvent.class);
+        Mockito.when(update.taskId()).thenReturn(MINIMAL_TASK.id());
+        Mockito.when(update.contextId()).thenReturn(MINIMAL_TASK.contextId());
+        List<SendInputParams> inputs = List.of(
+                SendInputParams.builder().artifactUpdates(List.of(update)).build(),
+                SendInputParams.builder()
+                        .message(Message.builder(MESSAGE).taskId(MINIMAL_TASK.id()).contextId(MINIMAL_TASK.contextId()).build())
+                        .configuration(MessageSendConfiguration.builder().ifGenerationMatch(0L).build())
+                        .build());
+
+        for (SendInputParams input : inputs) {
+            List<SendStreamingMessageResponse> responses = drainStream(handler.onSendInputStream(
+                    new SendInputStreamingRequest("2.0", "stream-input", input), context));
+            assertEquals(1, responses.size());
+            assertInstanceOf(UnsupportedOperationError.class, responses.get(0).getError());
+        }
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
+    void selected11UnsupportedInputOptionsAndCursorStopBeforeCustomHandler() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = AgentCard.builder(CARD)
+                .supportedInterfaces(List.of(new AgentInterface("JSONRPC", "http://localhost:9999", null, "1.1")))
+                .build();
+        JSONRPCHandler handler = new JSONRPCHandler(card11, customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        SendInputParams params = SendInputParams.builder()
+                .message(MESSAGE)
+                .configuration(MessageSendConfiguration.builder().timelineLength(5).build())
+                .build();
+
+        SendMessageResponse response = handler.onSendInput(new SendInputRequest("2.0", "input-2", params), context);
+        handler.onObserveTask(new ObserveTaskRequest("2.0", "observe-1", new ObserveTaskParams("task-1", 3L, null)), context);
+
+        assertInstanceOf(UnsupportedOperationError.class, response.getError());
+        Mockito.verifyNoInteractions(customHandler);
     }
 
     @Test
@@ -318,8 +391,43 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
         GetTaskRequest request = new GetTaskRequest("1", new TaskQueryParams(MINIMAL_TASK.id()));
         GetTaskResponse response = handler.onGetTask(request, callContext);
         assertEquals(request.getId(), response.getId());
-        Assertions.assertSame(MINIMAL_TASK, response.getResult());
+        assertEquals(MINIMAL_TASK, response.getResult());
         assertNull(response.getError());
+    }
+
+    @Test
+    void legacyTaskOutputsAreProjectedAcrossUnaryListAndStreamBoundaries() throws InterruptedException {
+        Task canonical = Task.builder(MINIMAL_TASK)
+                .generation(7)
+                .timeline(List.of(new TimelineEntry(7, new TimelineEntry.StatusValue(MINIMAL_TASK.status()))))
+                .build();
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class);
+        Mockito.when(customHandler.onMessageSend(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onGetTask(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onCancelTask(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onListTasks(Mockito.any(), Mockito.any()))
+                .thenReturn(new ListTasksResult(List.of(canonical)));
+        Mockito.when(customHandler.onSubscribeToTask(Mockito.any(), Mockito.any()))
+                .thenReturn(ZeroPublisher.fromItems(canonical));
+        JSONRPCHandler handler = new JSONRPCHandler(CARD, customHandler, internalExecutor);
+
+        Task sent = (Task) handler.onMessageSend(new SendMessageRequest("send", new MessageSendParams(MESSAGE, null, null)),
+                callContext).getResult();
+        Task fetched = handler.onGetTask(new GetTaskRequest("get", new TaskQueryParams(MINIMAL_TASK.id())),
+                callContext).getResult();
+        Task cancelled = handler.onCancelTask(new CancelTaskRequest("cancel", new CancelTaskParams(MINIMAL_TASK.id())),
+                callContext).getResult();
+        ListTasksParams listParams = ListTasksParams.builder().contextId("ctx").build();
+        Task listed = handler.onListTasks(new ListTasksRequest("list", listParams), callContext)
+                .getResult().tasks().get(0);
+        List<SendStreamingMessageResponse> streamed = drainStream(handler.onSubscribeToTask(
+                new SubscribeToTaskRequest("stream", new TaskIdParams(MINIMAL_TASK.id())), callContext));
+        Task snapshot = (Task) streamed.get(0).getResult();
+
+        for (Task projected : List.of(sent, fetched, cancelled, listed, snapshot)) {
+            assertEquals(0, projected.generation());
+            assertNull(projected.timeline());
+        }
     }
 
     @Test

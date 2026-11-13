@@ -10,6 +10,10 @@ import java.util.function.Consumer;
 import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TransportCall;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
+import org.a2aproject.sdk.client.transport.spi.TransportResult;
 import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
@@ -24,6 +28,8 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
@@ -87,6 +93,48 @@ public class OpenTelemetryClientPropagatorTransport implements VersionedClientTr
     public void sendMessageStreaming(MessageSendParams request, Consumer<StreamingEventKind> eventConsumer,
             Consumer<Throwable> errorConsumer, @Nullable ClientCallContext context) throws A2AClientException {
         delegate.sendMessageStreaming(request, eventConsumer, errorConsumer, propagateContext(context));
+    }
+
+    @Override
+    public TransportCall<TransportResult<EventKind>> sendInput(SendInputParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return requireVersionedDelegate().sendInput(params, options, propagateContext(context));
+    }
+
+    @Override
+    public TransportObservation streamInput(SendInputParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return requireVersionedDelegate().streamInput(params, options, propagateContext(context));
+    }
+
+    @Override
+    public TransportObservation observe(ObserveTaskParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return requireVersionedDelegate().observe(params, options, propagateContext(context));
+    }
+
+    @Override
+    public TransportCall<TransportResult<Task>> getTaskAsync(TaskQueryParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return requireVersionedDelegate().getTaskAsync(params, options, propagateContext(context));
+    }
+
+    @Override
+    public TransportResult<Task> getTaskDecoded(TaskQueryParams params, @Nullable ClientCallContext context) {
+        return requireVersionedDelegate().getTaskDecoded(params, propagateContext(context));
+    }
+
+    @Override
+    public TransportResult<ListTasksResult> listTasksDecoded(ListTasksParams params,
+            @Nullable ClientCallContext context) {
+        return requireVersionedDelegate().listTasksDecoded(params, propagateContext(context));
+    }
+
+    private VersionedClientTransport requireVersionedDelegate() {
+        if (delegate instanceof VersionedClientTransport versioned) {
+            return versioned;
+        }
+        throw new UnsupportedOperationException("Transport does not support Phase 2 client operations");
     }
 
     @Override

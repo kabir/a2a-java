@@ -16,12 +16,18 @@ import java.util.Map;
  * @param metadata additional metadata (optional)
  */
 public record TaskStatusUpdateEvent(String taskId, TaskStatus status, String contextId,
-        @Nullable Map<String, Object> metadata) implements EventKind, StreamingEventKind, UpdateEvent {
+        @Nullable Map<String, Object> metadata, long generation) implements EventKind, StreamingEventKind, UpdateEvent {
 
     /**
      * The identifier when used in streaming responses
      */
     public static final String STREAMING_EVENT_ID = "statusUpdate";
+
+    /** Preserves the legacy constructor with an unversioned event stamp. */
+    public TaskStatusUpdateEvent(String taskId, TaskStatus status, String contextId,
+            @Nullable Map<String, Object> metadata) {
+        this(taskId, status, contextId, metadata, 0);
+    }
 
     /**
      * Compact constructor with validation.
@@ -88,6 +94,7 @@ public record TaskStatusUpdateEvent(String taskId, TaskStatus status, String con
         private @Nullable TaskStatus status;
         private @Nullable String contextId;
         private @Nullable Map<String, Object> metadata;
+        private long generation;
 
         private Builder() {
         }
@@ -97,6 +104,7 @@ public record TaskStatusUpdateEvent(String taskId, TaskStatus status, String con
             this.status = existingTaskStatusUpdateEvent.status;
             this.contextId = existingTaskStatusUpdateEvent.contextId;
             this.metadata = existingTaskStatusUpdateEvent.metadata;
+            this.generation = existingTaskStatusUpdateEvent.generation();
         }
 
         /**
@@ -143,6 +151,12 @@ public record TaskStatusUpdateEvent(String taskId, TaskStatus status, String con
             return this;
         }
 
+        /** Sets the generation assigned to this status update. */
+        public Builder generation(long generation) {
+            this.generation = generation;
+            return this;
+        }
+
         /**
          * Builds the TaskStatusUpdateEvent.
          *
@@ -153,7 +167,8 @@ public record TaskStatusUpdateEvent(String taskId, TaskStatus status, String con
                     Assert.checkNotNullParam("taskId", taskId),
                     Assert.checkNotNullParam("status", status),
                     Assert.checkNotNullParam("contextId", contextId),
-                    metadata);
+                    metadata,
+                    generation);
         }
     }
 }

@@ -42,10 +42,17 @@ public interface TaskIdParamsMapper {
      * Converts proto SubscribeToTaskRequest to domain TaskIdParams.
      * Extracts task ID from the resource name.
      */
+    default TaskIdParams fromProtoSubscribeToTaskRequest(org.a2aproject.sdk.grpc.SubscribeToTaskRequest proto) {
+        if (proto.hasLastSeenGeneration()) {
+            throw new IllegalArgumentException("Subscription cursors require the ObserveTaskParams companion type");
+        }
+        return fromProtoSubscribeToTaskRequestLegacy(proto);
+    }
+
     @BeanMapping(builder = @Builder(buildMethod = "build"))
     @Mapping(target = "id", source = "id")
     @Mapping(target = "tenant", source = "tenant", qualifiedByName = "emptyToNull")
-    TaskIdParams fromProtoSubscribeToTaskRequest(org.a2aproject.sdk.grpc.SubscribeToTaskRequest proto);
+    TaskIdParams fromProtoSubscribeToTaskRequestLegacy(org.a2aproject.sdk.grpc.SubscribeToTaskRequest proto);
 
     /**
      * Converts domain TaskIdParams to proto SubscribeToTaskRequest.
@@ -54,5 +61,6 @@ public interface TaskIdParamsMapper {
     @BeanMapping(builder = @Builder(buildMethod = "build"))
     @Mapping(target = "id", source = "id")
     @Mapping(target = "tenant", source = "tenant", conditionExpression = "java(domain.tenant() != null)")
+    @org.mapstruct.Mapping(target = "lastSeenGeneration", ignore = true)
     org.a2aproject.sdk.grpc.SubscribeToTaskRequest toProtoSubscribeToTaskRequest(TaskIdParams domain);
 }

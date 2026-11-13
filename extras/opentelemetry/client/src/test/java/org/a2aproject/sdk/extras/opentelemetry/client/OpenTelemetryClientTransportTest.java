@@ -13,6 +13,7 @@ import static org.a2aproject.sdk.extras.opentelemetry.OtelSpanMocks.mockEventSpa
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -38,9 +39,20 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TaskDecodeEvidence;
+import org.a2aproject.sdk.client.transport.spi.TransportCall;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
+import org.a2aproject.sdk.client.transport.spi.TransportResult;
+import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.spec.A2AClientException;
@@ -56,6 +68,8 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
@@ -135,6 +149,111 @@ class OpenTelemetryClientTransportTest {
         verify(span).setStatus(StatusCode.OK);
         verify(span).end();
         verify(scope).close();
+    }
+
+    @Test
+    void forwardsPhase2OperationsAndPreservesResultEnvelopes() {
+        VersionedClientTransport versionedDelegate = mock(VersionedClientTransport.class);
+        when(versionedDelegate.protocolVersion()).thenReturn("1.1");
+        when(versionedDelegate.capabilities()).thenReturn(Set.of());
+        OpenTelemetryClientTransport versionedTransport = new OpenTelemetryClientTransport(versionedDelegate, tracer);
+        ClientCallContext callContext = new ClientCallContext(Map.of("tenant", "acme"), Map.of("Authorization", "Bearer token"));
+        SpiCallOptions options = new SpiCallOptions(Instant.now().plusSeconds(5), 4, 1024);
+        SendInputParams input = new SendInputParams(
+                Message.builder().messageId("input").role(Message.Role.ROLE_USER).parts(List.of(new TextPart("hello"))).build(),
+                List.of(), null, null, "acme");
+        ObserveTaskParams observeParams = new ObserveTaskParams("task", 2L, "acme");
+        TaskQueryParams taskParams = new TaskQueryParams("task", null, "acme");
+        ListTasksParams listParams = new ListTasksParams(null, null, null, null, null, null, null, "acme");
+
+        TransportResult<EventKind> sendEnvelope = new TransportResult<>(
+                Message.builder().messageId("result").role(Message.Role.ROLE_AGENT).parts(List.of(new TextPart("done"))).build(), List.of());
+        TransportCall<TransportResult<EventKind>> sendCall = TransportCall.create(() -> { });
+        when(versionedDelegate.sendInput(eq(input), eq(options), any(ClientCallContext.class))).thenReturn(sendCall);
+        TransportCall<TransportResult<Task>> getCall = TransportCall.create(() -> { });
+        Task task = new Task("task", "context", new org.a2aproject.sdk.spec.TaskStatus(
+                org.a2aproject.sdk.spec.TaskState.TASK_STATE_WORKING), null, null, null);
+        TransportResult<Task> taskEnvelope = new TransportResult<>(task,
+                List.of(new TaskDecodeEvidence("task", List.of(3L), true)));
+        when(versionedDelegate.getTaskAsync(eq(taskParams), eq(options), any(ClientCallContext.class))).thenReturn(getCall);
+
+        TransportObservation stream = TransportObservation.create(options, () -> { });
+        TransportObservation observation = TransportObservation.create(options, () -> { });
+        when(versionedDelegate.streamInput(eq(input), eq(options), any(ClientCallContext.class))).thenReturn(stream);
+        when(versionedDelegate.observe(eq(observeParams), eq(options), any(ClientCallContext.class))).thenReturn(observation);
+        when(versionedDelegate.getTaskDecoded(eq(taskParams), any(ClientCallContext.class))).thenReturn(taskEnvelope);
+        TransportResult<ListTasksResult> listEnvelope = new TransportResult<>(new ListTasksResult(List.of()), List.of());
+        when(versionedDelegate.listTasksDecoded(eq(listParams), any(ClientCallContext.class))).thenReturn(listEnvelope);
+
+        TransportCall<TransportResult<EventKind>> tracedSendCall = versionedTransport.sendInput(input, options, callContext);
+        assertSame(stream, versionedTransport.streamInput(input, options, callContext));
+        assertSame(observation, versionedTransport.observe(observeParams, options, callContext));
+        TransportCall<TransportResult<Task>> tracedGetCall = versionedTransport.getTaskAsync(taskParams, options, callContext);
+        assertSame(taskEnvelope, versionedTransport.getTaskDecoded(taskParams, callContext));
+        assertSame(listEnvelope, versionedTransport.listTasksDecoded(listParams, callContext));
+
+        sendCall.complete(sendEnvelope);
+        getCall.complete(taskEnvelope);
+        assertSame(sendEnvelope, tracedSendCall.result().toCompletableFuture().join());
+        assertSame(taskEnvelope, tracedGetCall.result().toCompletableFuture().join());
+        stream.complete();
+        observation.complete();
+
+        verify(versionedDelegate).sendInput(eq(input), eq(options), any(ClientCallContext.class));
+        verify(versionedDelegate).streamInput(eq(input), eq(options), any(ClientCallContext.class));
+        verify(versionedDelegate).observe(eq(observeParams), eq(options), any(ClientCallContext.class));
+        verify(versionedDelegate).getTaskAsync(eq(taskParams), eq(options), any(ClientCallContext.class));
+        verify(versionedDelegate).getTaskDecoded(eq(taskParams), any(ClientCallContext.class));
+        verify(versionedDelegate).listTasksDecoded(eq(listParams), any(ClientCallContext.class));
+        verify(span, org.mockito.Mockito.times(6)).end();
+    }
+
+    @Test
+    void asyncOperationSpanClosesOnCancellationAndFailure() {
+        VersionedClientTransport versionedDelegate = mock(VersionedClientTransport.class);
+        when(versionedDelegate.protocolVersion()).thenReturn("1.1");
+        when(versionedDelegate.capabilities()).thenReturn(Set.of());
+        OpenTelemetryClientTransport versionedTransport = new OpenTelemetryClientTransport(versionedDelegate, tracer);
+        ClientCallContext callContext = new ClientCallContext(Map.of(), Map.of());
+        SpiCallOptions options = SpiCallOptions.defaults();
+        TaskQueryParams params = new TaskQueryParams("task");
+        AtomicInteger cancelCount = new AtomicInteger();
+        TransportCall<TransportResult<Task>> pending = TransportCall.create(cancelCount::incrementAndGet);
+        TransportCall<TransportResult<Task>> failing = TransportCall.create(() -> { });
+        when(versionedDelegate.getTaskAsync(eq(params), eq(options), any(ClientCallContext.class))).thenReturn(pending, failing);
+
+        TransportCall<TransportResult<Task>> traced = versionedTransport.getTaskAsync(params, options, callContext);
+        traced.cancel();
+
+        assertEquals(1, cancelCount.get());
+        assertThrows(CompletionException.class, () -> traced.result().toCompletableFuture().join());
+
+        RuntimeException failure = new RuntimeException("read failed");
+        TransportCall<TransportResult<Task>> tracedFailure = versionedTransport.getTaskAsync(params, options, callContext);
+        failing.fail(failure);
+        assertThrows(CompletionException.class, () -> tracedFailure.result().toCompletableFuture().join());
+        verify(span, org.mockito.Mockito.times(2)).end();
+    }
+
+    @Test
+    void observationSpanClosesOnCancellationAndFailure() {
+        VersionedClientTransport versionedDelegate = mock(VersionedClientTransport.class);
+        when(versionedDelegate.protocolVersion()).thenReturn("1.1");
+        when(versionedDelegate.capabilities()).thenReturn(Set.of());
+        OpenTelemetryClientTransport versionedTransport = new OpenTelemetryClientTransport(versionedDelegate, tracer);
+        ClientCallContext callContext = new ClientCallContext(Map.of(), Map.of());
+        SpiCallOptions options = SpiCallOptions.defaults();
+        ObserveTaskParams params = new ObserveTaskParams("task", null, null);
+        TransportObservation cancelled = TransportObservation.create(options, () -> { });
+        TransportObservation failed = TransportObservation.create(options, () -> { });
+        when(versionedDelegate.observe(eq(params), eq(options), any(ClientCallContext.class)))
+                .thenReturn(cancelled, failed);
+
+        versionedTransport.observe(params, options, callContext).cancel();
+        versionedTransport.observe(params, options, callContext);
+        failed.fail(new RuntimeException("observation failed"));
+
+        verify(span, org.mockito.Mockito.times(2)).end();
     }
 
     @Test

@@ -157,59 +157,73 @@ merely copying the expected result into the progress record is not evidence.
 
 ## Run limits
 
-The user agreed to the ten-iteration, two-hour, three-attempt limits on
-2026-11-09. They remain adjustable explicitly before a later implementation run:
+Current user-approved clarification, 2026-11-11: replace the blanket three-attempt
+cap with a **three-consecutive-no-progress diagnostic checkpoint**. This supersedes
+the original three-attempt rule and the proposed two-no-progress safeguard in
+older prompts, plans and skill guidance. Historical evidence and failures remain
+intact; a policy change does not make a failed command pass.
 
-- Maximum **10 focused iterations per run**.
-- Maximum **2 hours of elapsed work per run**. Start no new iteration once the
-  limit is reached; finish/report the current operation at a safe boundary.
-- Proposed command safeguard: local build/test commands have a finite deadline
-  of at most 20 minutes and no more than the remaining run budget, with at most
-  30 seconds for controlled termination/cleanup. Record process handles and
-  timeout evidence; a timeout is not a passing check. This makes a hung local
-  command bounded as well as bounding iteration scheduling. External CI jobs
-  may continue under their own deadlines; report/reuse their handles.
-- Maximum **3 implementation attempts at the same failing criterion** before
-  stopping dependent work and reporting the obstacle. Preserve attempt counts
-  across checkpoints; renaming the criterion or opening another run does not
-  erase a repeated failure. A user decision can authorize a new approach/budget.
-- Additional proposed safeguard: stop early after **2 consecutive iterations
-  with no meaningful progress**.
-  Progress means demonstrating criterion advancement, verifying a necessary
-  change, or obtaining evidence that materially narrows the next action.
-  A speculative edit alone does not reset this counter. Restating plans or
-  rerunning an unchanged failing command is not progress.
+- Maximum **10 focused iterations per authorized run**, or **2 hours elapsed**,
+  whichever comes first. One iteration is a coherent planned implementation and
+  verification objective (or focused investigation), not each command or compiler
+  failure. It can include several necessary compile/test corrections. Do not
+  group unrelated tasks or repeated blind fixes to evade the limit.
+- Proposed command safeguard remains: local builds/tests have a deadline of at
+  most 20 minutes and the remaining authorized time, plus at most 30 seconds
+  controlled cleanup. Reuse recorded process handles; a timeout is incomplete
+  verification, not passing evidence. External CI has its own reported deadlines.
+- After **3 consecutive substantive attempts without meaningful progress on the
+  same underlying defect**, checkpoint that defect for Sol diagnosis. Do not use
+  a broad acceptance ID such as A04 to aggregate unrelated compiler/setup issues.
+  Continue independent authorized tasks where safe. This is a diagnosis/escalation
+  trigger, not proof that the architecture is wrong or the whole phase must stop.
+  Use an authorized Sol review path; if spawning is prohibited, save the handoff
+  for a separate Sol session rather than creating an unauthorized agent. Astra
+  remains prohibited. Sol diagnosis uses the remaining allowance; no new time,
+  iteration budget or extra review loop is implied. Stop dependent implementation
+  until the diagnostic checkpoint records an evidence-based next approach.
 
-An iteration has one named criterion or narrowly related set, one hypothesis or
-implementation objective, a bounded edit/investigation, verification, and a
-recorded result. The seven phases (0 through 6) are dependency groups, not seven
-unbounded iterations. Short status messages and polling a confirmed live build
-do not consume another implementation attempt, but elapsed time still counts.
+### Counting work and progress
 
-An implementation attempt is one materially distinct fix followed by
-verification against the failing criterion. Count every fix/verify cycle, even
-when several occur inside one iteration; three cycles cannot be labeled one
-attempt. After the third attempt, continue only if the criterion passed;
-otherwise stop dependent work and report. Investigations without a fix still
-consume iteration/time budget and require recorded findings.
+| Work or outcome | Accounting |
+| --- | --- |
+| Expected RED test proving missing planned behavior | Normal development, not a failed substantive attempt. |
+| Import, signature, generated-code, compiler-option or classpath correction | Record command/result; consumes elapsed time within the current objective, not automatically another iteration or a substantive retry. |
+| Corrected compile error followed by a materially different diagnostic | Evidence of progress if the previous cause is actually resolved or the next action is materially narrowed. A different error alone is not automatic progress. |
+| New verified behavior, resolved root cause, or useful narrowing evidence | Meaningful progress; reset the consecutive no-progress streak for that defect, preserving all raw failure history. |
+| Distinct substantive fix tested against the same unresolved defect with no advancement | Increment that defect's no-progress streak. |
+| Repeated compiler error or setup change without useful narrowing | Not exempt merely because it is a compile issue; count an unproductive diagnostic/fix cycle toward the no-progress checkpoint. |
+| Status update, polling a known live build, or context/session/model change | No new iteration/attempt; elapsed time still counts and counters do not reset. |
 
-At a limit, stop scheduling new work and report a checkpoint. Do not declare
-success, silently increase the budget, weaken acceptance, or automatically start
-another run. Preserve work and record any live process/session handles; do not
-launch a duplicate process because a wait timed out. Follow the environment's
-goal-status rules: a run limit is not itself authorization to mark a goal
-complete, paused, or blocked.
+An expected RED assertion is different from a broken test harness: record setup
+failures honestly. Do not count every local edit/build command as a separate
+substantive hypothesis, but do not hide repeated failed hypotheses inside one
+nominal iteration. A speculative edit, restated plan or unchanged failing rerun
+does not establish progress. Never skip required checks, weaken acceptance or
+invent success to avoid a checkpoint.
 
-Persist the run start timestamp, budget, iteration/attempt counters, and exhausted
-status. A resumed context or automatic continuation reads these same counters;
-it does not grant a fresh run. Obtain an explicit user budget decision after
-exhaustion rather than looping through successive nominal runs.
+### Continuations and historical counters
+
+Keep raw command/fix history and substantive-attempt counts for audit; the old
+raw three-attempt totals no longer impose a stop by themselves. Record the current
+underlying defect, evidence of progress and consecutive no-progress streak.
+Classify current work using available evidence; do not rerun historical checks or
+rewrite old ledgers solely to fit this new policy. Unknown progress is not a pass.
+
+Persist run start/deadline, completed coherent iterations, defect streaks and
+exhaustion state across tasks, clean sessions, compaction and model escalation.
+The clarification neither renews an expired run nor erases historical breaches.
+At the iteration/time limit, stop scheduling work and report a checkpoint; a fresh
+session is not fresh authorization. Obtain an explicit budget decision after
+exhaustion. Follow environment goal-status rules: a checkpoint is not success or
+permission to mark a goal complete, paused or blocked.
 
 ## Checkpoint report
 
 Every bounded run ends with:
 
-1. Iterations/attempts and elapsed time used; reason for stopping.
+1. Coherent iterations, raw attempt history, defect no-progress streaks and
+   elapsed time used; reason for stopping or diagnostic escalation.
 2. Acceptance IDs passed, with evidence; IDs still incomplete or blocked.
 3. Changed files and tests/build results, including failures and skips.
 4. A concrete obstacle or unresolved decision, if any, and what evidence rules

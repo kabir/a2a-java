@@ -25,6 +25,8 @@ import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.server.Instrumented;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
+import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.AuthenticationInfo;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
@@ -32,6 +34,7 @@ import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
@@ -196,6 +199,9 @@ public class BasePushNotificationSender implements PushNotificationSender {
     @Override
     public boolean sendNotification(StreamingEventKind event, @Nullable Task taskSnapshot) {
         String taskId = extractTaskId(event);
+        if (taskId == null && event instanceof Message && taskSnapshot != null) {
+            taskId = taskSnapshot.id();
+        }
         if (taskId == null) {
             throw new IllegalArgumentException("Cannot send push notification: event does not contain taskId");
         }
@@ -263,6 +269,9 @@ public class BasePushNotificationSender implements PushNotificationSender {
         if (event instanceof TaskArtifactUpdateEvent artifactUpdate) {
             return artifactUpdate.taskId();
         }
+        if (event instanceof TaskMessageUpdateEvent messageUpdate) {
+            return messageUpdate.taskId();
+        }
         throw new IllegalStateException("Unknown StreamingEventKind: " + event);
     }
 
@@ -278,6 +287,28 @@ public class BasePushNotificationSender implements PushNotificationSender {
                                           @Nullable Task taskSnapshot,
                                           TaskPushNotificationConfig pushInfo,
                                           Map<String, String> versionsByConfigId) {
+        String version = versionsByConfigId.get(pushInfo.id());
+        if (version == null) {
+            version = "1.0";
+        }
+        ServerVersionPolicy policy = switch (version) {
+            case "0.3" -> ServerVersionPolicy.V0_3;
+            case "1.0" -> ServerVersionPolicy.V1_0;
+            case "1.1" -> ServerVersionPolicy.V1_1;
+            default -> null;
+        };
+        if (policy == null) {
+            LOGGER.error("No webhook formatter is available for protocol version {}", version);
+            return false;
+        }
+        StreamingEventKind projectedEvent = VersionedOutputProjector.projectEvent(event, policy);
+        if (projectedEvent == null) {
+            LOGGER.debug("Suppressing {} webhook event for protocol version {}", event.kind(), version);
+            return true;
+        }
+        @Nullable Task projectedSnapshot = taskSnapshot == null ? null
+                : VersionedOutputProjector.projectTask(taskSnapshot, policy);
+
         String url = pushInfo.url();
 
         try {
@@ -289,14 +320,15 @@ public class BasePushNotificationSender implements PushNotificationSender {
 
         String token = pushInfo.token();
 
-        String version = versionsByConfigId.get(pushInfo.id());
-        PushNotificationPayloadFormatter formatter = version != null
-                ? formattersByVersion.get(version) : null;
-
         String body;
-        if (formatter != null) {
+        if ("0.3".equals(version)) {
+            PushNotificationPayloadFormatter formatter = formattersByVersion.get(version);
+            if (formatter == null) {
+                LOGGER.error("No webhook formatter is registered for protocol version {}", version);
+                return false;
+            }
             try {
-                body = formatter.formatPayload(event, taskSnapshot);
+                body = formatter.formatPayload(projectedEvent, projectedSnapshot);
             } catch (Throwable throwable) {
                 LOGGER.error("Error formatting payload with {} formatter: {}",
                         version, throwable.getMessage(), throwable);
@@ -309,7 +341,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
             }
         } else {
             try {
-                body = JsonUtil.toJsonStreamingEvent(event);
+                body = JsonUtil.toJsonStreamingEvent(projectedEvent, version);
             } catch (Throwable throwable) {
                 LOGGER.error("Error serializing StreamingEventKind to JSON: {}", throwable.getMessage(), throwable);
                 return false;

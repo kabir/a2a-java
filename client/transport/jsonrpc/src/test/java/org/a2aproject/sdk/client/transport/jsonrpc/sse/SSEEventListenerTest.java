@@ -18,9 +18,16 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Flow;
 
 import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.client.transport.jsonrpc.JsonStreamingMessages;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TransportFrame;
+import org.a2aproject.sdk.client.transport.spi.TransportEnd;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.Message;
@@ -187,6 +194,176 @@ public class SSEEventListenerTest {
         assertTrue(failureHandlerCalled.get());
         // Verify it got cancelled
         assertTrue(future.cancelHandlerCalled);
+    }
+
+    @Test
+    public void versionedReaderKeepsKnownEventsAndMarksFutureVariantsWithoutInventingEvents() {
+        TransportObservation observation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+        observation.markReady();
+        List<TransportFrame> frames = new ArrayList<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        observation.frames().subscribe(new Flow.Subscriber<>() {
+            @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+            @Override public void onNext(TransportFrame frame) { frames.add(frame); }
+            @Override public void onError(Throwable throwable) { failure.set(throwable); }
+            @Override public void onComplete() { }
+        });
+        SSEEventListener listener = new SSEEventListener("1.1", "1", observation);
+
+        listener.onMessage(event("task", """
+                {"id":"task-1","contextId":"context-1","status":{"state":"TASK_STATE_WORKING"}}
+                """), null);
+        listener.onMessage(event("messageUpdate", """
+                {"taskId":"task-1","contextId":"context-1","message":{"role":"ROLE_AGENT","messageId":"m1","contextId":"context-1","parts":[{"text":"update"}]},"generation":"2"}
+                """), null);
+        listener.onMessage(event("futureEvent", "{\"value\":\"ignored\"}"), null);
+        listener.onMessage(event("statusUpdate", """
+                {"taskId":"task-1","contextId":"context-1","status":{"state":"TASK_STATE_SUBMITTED"}}
+                """), null);
+        listener.onMessage(event("artifactUpdate", """
+                {"taskId":"task-1","contextId":"context-1","artifact":{"artifactId":"a1","parts":[{"text":"artifact"}]},"append":false,"lastChunk":false}
+                """), null);
+        listener.onComplete();
+
+        assertNull(failure.get());
+        assertEquals(5, frames.size());
+        assertInstanceOf(Task.class, frames.get(0).event());
+        assertInstanceOf(org.a2aproject.sdk.spec.TaskMessageUpdateEvent.class, frames.get(1).event());
+        assertNull(frames.get(2).event());
+        assertTrue(frames.get(2).unknownSkipped());
+        assertTrue(frames.get(3).event() instanceof TaskStatusUpdateEvent);
+        assertTrue(frames.get(4).event() instanceof TaskArtifactUpdateEvent);
+    }
+
+    @Test
+    public void versionedReaderRejectsMalformedKnownPayloadAndValidatesJsonRpcEnvelope() {
+        TransportObservation observation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+        observation.markReady();
+        AtomicInteger errorCount = new AtomicInteger();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        observation.frames().subscribe(new Flow.Subscriber<>() {
+            @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+            @Override public void onNext(TransportFrame frame) { }
+            @Override public void onError(Throwable throwable) { errorCount.incrementAndGet(); failure.set(throwable); }
+            @Override public void onComplete() { }
+        });
+        SSEEventListener listener = new SSEEventListener("1.1", "1", observation);
+
+        listener.onMessage(new ServerSentEvent("""
+                {"jsonrpc":"2.0","id":"1","result":{"messageUpdate":{"taskId":"task-1","contextId":"context-1"}}}
+                """), null);
+        listener.onComplete();
+
+        assertEquals(1, errorCount.get());
+        assertNotNull(failure.get());
+    }
+
+    @Test
+    public void versionedReaderRejectsMissingResponseIdAndJsonRpcErrorEnvelopes() {
+        for (String envelope : List.of(
+                "{\"jsonrpc\":\"2.0\",\"result\":{\"futureEvent\":{}}}",
+                "{\"jsonrpc\":\"2.0\",\"id\":null,\"result\":{\"futureEvent\":{}}}",
+                "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"error\":{\"code\":-32000,\"message\":\"rejected\"}}")) {
+            TransportObservation observation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+            AtomicInteger errorCount = new AtomicInteger();
+            observation.frames().subscribe(new Flow.Subscriber<>() {
+                @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+                @Override public void onNext(TransportFrame frame) { }
+                @Override public void onError(Throwable throwable) { errorCount.incrementAndGet(); }
+                @Override public void onComplete() { }
+            });
+            SSEEventListener listener = new SSEEventListener("1.1", "1", observation);
+
+            listener.onMessage(new ServerSentEvent(envelope), null);
+
+            assertEquals(TransportEnd.Kind.FAILED, observation.completion().toCompletableFuture().join().kind());
+            assertEquals(1, errorCount.get());
+        }
+    }
+
+    @Test
+    public void selectedReaderCorrelatesIdsBeforeKnownFramesLocalRejectionsAndRpcErrors() {
+        String knownResult = "\"result\":{\"task\":{\"id\":\"task-1\",\"contextId\":\"context-1\",\"status\":{\"state\":\"TASK_STATE_WORKING\"}}}";
+        String localRejection = "\"result\":{\"error\":{\"code\":\"GENERATION_MISMATCH\",\"message\":\"stale\"}}";
+        String rpcError = "\"error\":{\"code\":-32010,\"message\":\"generation mismatch\"}";
+        List<String> payloads = List.of(knownResult, localRejection, rpcError);
+        List<String> invalidIdEnvelopes = List.of(
+                "\"jsonrpc\":\"2.0\",\"id\":\"another-request\",",
+                "\"jsonrpc\":\"2.0\",",
+                "\"jsonrpc\":\"2.0\",\"id\":null,",
+                "\"jsonrpc\":\"2.0\",\"id\":{},",
+                "\"jsonrpc\":\"2.0\",\"id\":true,",
+                "\"jsonrpc\":\"2.0\",\"id\":[],",
+                "\"jsonrpc\":\"2.0\",\"id\":17,");
+        String matchingTask = "{\"jsonrpc\":\"2.0\",\"id\":\"expected-request\",\"result\":{\"task\":{\"id\":\"task-after\",\"contextId\":\"context-after\",\"status\":{\"state\":\"TASK_STATE_WORKING\"}}}}";
+
+        for (String payload : payloads) {
+            for (String invalidId : invalidIdEnvelopes) {
+                TransportObservation observation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+                observation.markReady();
+                List<TransportFrame> frames = new ArrayList<>();
+                AtomicInteger errors = new AtomicInteger();
+                AtomicInteger completions = new AtomicInteger();
+                observation.frames().subscribe(new Flow.Subscriber<>() {
+                    @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+                    @Override public void onNext(TransportFrame frame) { frames.add(frame); }
+                    @Override public void onError(Throwable throwable) { errors.incrementAndGet(); }
+                    @Override public void onComplete() { completions.incrementAndGet(); }
+                });
+                SSEEventListener listener = new SSEEventListener("1.1", "expected-request", observation);
+                listener.onMessage(new ServerSentEvent("{" + invalidId + payload + "}"), null);
+                listener.onMessage(new ServerSentEvent(matchingTask), null);
+                listener.onComplete();
+
+                assertEquals(TransportEnd.Kind.FAILED, observation.completion().toCompletableFuture().join().kind());
+                assertTrue(frames.isEmpty(), "invalid response ID must prevent every frame category");
+                assertEquals(1, errors.get(), "invalid response ID must signal one terminal error");
+                assertEquals(0, completions.get());
+            }
+        }
+    }
+
+    @Test
+    public void selectedReaderPreservesMatchingStreamErrorAndJsonRpcGenerationMismatch() {
+        TransportObservation rejectionObservation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+        rejectionObservation.markReady();
+        List<TransportFrame> frames = new ArrayList<>();
+        rejectionObservation.frames().subscribe(new Flow.Subscriber<>() {
+            @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+            @Override public void onNext(TransportFrame frame) { frames.add(frame); }
+            @Override public void onError(Throwable throwable) { }
+            @Override public void onComplete() { }
+        });
+        SSEEventListener rejectionListener = new SSEEventListener("1.1", "expected-request", rejectionObservation);
+        rejectionListener.onMessage(new ServerSentEvent("""
+                {"jsonrpc":"2.0","id":"expected-request","result":{"error":{"code":"GENERATION_MISMATCH","message":"stale"}}}
+                """), null);
+        rejectionListener.onComplete();
+        assertEquals(1, frames.size());
+        assertNotNull(frames.get(0).streamError());
+        assertEquals(TransportEnd.Kind.COMPLETED, rejectionObservation.completion().toCompletableFuture().join().kind());
+
+        TransportObservation errorObservation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+        AtomicReference<Throwable> terminalError = new AtomicReference<>();
+        errorObservation.frames().subscribe(new Flow.Subscriber<>() {
+            @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+            @Override public void onNext(TransportFrame frame) { }
+            @Override public void onError(Throwable throwable) { terminalError.set(throwable); }
+            @Override public void onComplete() { }
+        });
+        SSEEventListener errorListener = new SSEEventListener("1.1", "expected-request", errorObservation);
+        errorListener.onMessage(new ServerSentEvent("""
+                {"jsonrpc":"2.0","id":"expected-request","error":{"code":-32010,"message":"generation mismatch"}}
+                """), null);
+
+        assertInstanceOf(org.a2aproject.sdk.spec.TaskGenerationMismatchError.class, terminalError.get());
+        assertEquals(TransportEnd.Kind.FAILED, errorObservation.completion().toCompletableFuture().join().kind());
+    }
+
+    private static ServerSentEvent event(String variant, String payload) {
+        return new ServerSentEvent("""
+                {"jsonrpc":"2.0","id":"1","result":{"%s":%s}}
+                """.formatted(variant, payload.trim()));
     }
 
     @Test

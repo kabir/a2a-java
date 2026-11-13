@@ -41,12 +41,19 @@ import org.jspecify.annotations.Nullable;
  * @see Task
  */
 public record TaskArtifactUpdateEvent(String taskId, Artifact artifact, String contextId, @Nullable Boolean append,
-        @Nullable Boolean lastChunk, @Nullable Map<String, Object> metadata) implements EventKind, StreamingEventKind, UpdateEvent {
+        @Nullable Boolean lastChunk, @Nullable Map<String, Object> metadata, long generation)
+        implements EventKind, StreamingEventKind, UpdateEvent {
 
     /**
      * The identifier when used in streaming responses
      */
     public static final String STREAMING_EVENT_ID = "artifactUpdate";
+
+    /** Preserves the legacy constructor with an unversioned event stamp. */
+    public TaskArtifactUpdateEvent(String taskId, Artifact artifact, String contextId, @Nullable Boolean append,
+            @Nullable Boolean lastChunk, @Nullable Map<String, Object> metadata) {
+        this(taskId, artifact, contextId, append, lastChunk, metadata, 0);
+    }
 
     /**
      * Compact constructor with validation.
@@ -127,6 +134,7 @@ public record TaskArtifactUpdateEvent(String taskId, Artifact artifact, String c
         private @Nullable Boolean append;
         private @Nullable Boolean lastChunk;
         private @Nullable Map<String, Object> metadata;
+        private long generation;
 
         private Builder() {
         }
@@ -138,6 +146,7 @@ public record TaskArtifactUpdateEvent(String taskId, Artifact artifact, String c
             this.append = existingTaskArtifactUpdateEvent.append;
             this.lastChunk = existingTaskArtifactUpdateEvent.lastChunk;
             this.metadata = existingTaskArtifactUpdateEvent.metadata;
+            this.generation = existingTaskArtifactUpdateEvent.generation();
         }
 
         /**
@@ -206,6 +215,12 @@ public record TaskArtifactUpdateEvent(String taskId, Artifact artifact, String c
             return this;
         }
 
+        /** Sets the generation assigned to this artifact update. */
+        public Builder generation(long generation) {
+            this.generation = generation;
+            return this;
+        }
+
         /**
          * Builds the TaskArtifactUpdateEvent.
          *
@@ -219,7 +234,8 @@ public record TaskArtifactUpdateEvent(String taskId, Artifact artifact, String c
                     Assert.checkNotNullParam("contextId", contextId),
                     append,
                     lastChunk,
-                    metadata);
+                    metadata,
+                    generation);
         }
     }
 }

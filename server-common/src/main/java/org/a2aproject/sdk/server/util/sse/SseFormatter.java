@@ -66,6 +66,12 @@ public class SseFormatter {
         return "data: " + jsonData + "\nid: " + eventId + "\n\n";
     }
 
+    /** Formats the response using the selected protocol's JSON field presence rules. */
+    public static String formatResponseAsSSE(A2AResponse<?> response, long eventId, String protocolVersion) {
+        String jsonData = serializeResponse(response, protocolVersion);
+        return "data: " + jsonData + "\nid: " + eventId + "\n\n";
+    }
+
     /**
      * Format a pre-serialized JSON string as an SSE event.
      * <p>
@@ -102,6 +108,16 @@ public class SseFormatter {
         // Convert domain response to protobuf message and serialize
         com.google.protobuf.MessageOrBuilder protoMessage = convertToProto(response);
         return JSONRPCUtils.toJsonRPCResultResponse(response.getId(), protoMessage);
+    }
+
+    private static String serializeResponse(A2AResponse<?> response, String protocolVersion) {
+        if (response instanceof A2AErrorResponse error) {
+            return JSONRPCUtils.toJsonRPCErrorResponse(error.getId(), error.getError());
+        }
+        if (response.getError() != null) {
+            return JSONRPCUtils.toJsonRPCErrorResponse(response.getId(), response.getError());
+        }
+        return JSONRPCUtils.toJsonRPCResultResponse(response.getId(), convertToProto(response), protocolVersion);
     }
 
     /**

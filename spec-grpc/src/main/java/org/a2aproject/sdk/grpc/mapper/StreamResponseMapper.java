@@ -4,84 +4,50 @@ import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.mapstruct.Mapper;
 
-/**
- * Mapper between {@link org.a2aproject.sdk.spec.StreamingEventKind} and {@link org.a2aproject.sdk.grpc.StreamResponse}.
- * <p>
- * StreamResponse uses a protobuf oneof field to represent polymorphic streaming events.
- * StreamingEventKind is a sealed interface with four permitted implementations:
- * <ul>
- *   <li>{@link Task} - Complete task state</li>
- *   <li>{@link Message} - Full message</li>
- *   <li>{@link TaskStatusUpdateEvent} - Status update event</li>
- *   <li>{@link TaskArtifactUpdateEvent} - Artifact update event</li>
- * </ul>
- * <p>
- * This mapper provides bidirectional conversion using instanceof checks (toProto)
- * and switch expressions on the oneof case (fromProto).
- */
+/** Maps task events; local StreamError outcomes are handled by StreamDecoder. */
 @Mapper(config = A2AProtoMapperConfig.class,
-        uses = {TaskMapper.class, MessageMapper.class, TaskStatusUpdateEventMapper.class, TaskArtifactUpdateEventMapper.class})
+        uses = {TaskMapper.class, MessageMapper.class, TaskStatusUpdateEventMapper.class,
+                TaskArtifactUpdateEventMapper.class, TaskMessageUpdateEventMapper.class})
 public interface StreamResponseMapper {
 
     StreamResponseMapper INSTANCE = A2AMappers.getMapper(StreamResponseMapper.class);
 
-    /**
-     * Converts domain StreamingEventKind to proto StreamResponse.
-     * Uses instanceof checks to determine which oneof field to set.
-     *
-     * @param domain the streaming event kind (Task, Message, TaskStatusUpdateEvent, or TaskArtifactUpdateEvent)
-     * @return the proto StreamResponse with the appropriate oneof field set
-     */
     default org.a2aproject.sdk.grpc.StreamResponse toProto(StreamingEventKind domain) {
         if (domain == null) {
             return null;
         }
-
         return switch (domain.kind()) {
             case Task.STREAMING_EVENT_ID -> org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
-                    .setTask(TaskMapper.INSTANCE.toProto((Task) domain))
-                    .build();
+                    .setTask(TaskMapper.INSTANCE.toProto((Task) domain)).build();
             case Message.STREAMING_EVENT_ID -> org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
-                    .setMessage(MessageMapper.INSTANCE.toProto((Message) domain))
-                    .build();
+                    .setMessage(MessageMapper.INSTANCE.toProto((Message) domain)).build();
             case TaskStatusUpdateEvent.STREAMING_EVENT_ID -> org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
-                    .setStatusUpdate(TaskStatusUpdateEventMapper.INSTANCE.toProto((TaskStatusUpdateEvent) domain))
-                    .build();
+                    .setStatusUpdate(TaskStatusUpdateEventMapper.INSTANCE.toProto((TaskStatusUpdateEvent) domain)).build();
             case TaskArtifactUpdateEvent.STREAMING_EVENT_ID -> org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
-                    .setArtifactUpdate(TaskArtifactUpdateEventMapper.INSTANCE.toProto((TaskArtifactUpdateEvent) domain))
-                    .build();
-            default ->
-                    throw new IllegalArgumentException("Unknown StreamingEventKind type: " + domain.getClass().getName());
+                    .setArtifactUpdate(TaskArtifactUpdateEventMapper.INSTANCE.toProto((TaskArtifactUpdateEvent) domain)).build();
+            case TaskMessageUpdateEvent.STREAMING_EVENT_ID -> org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
+                    .setMessageUpdate(TaskMessageUpdateEventMapper.INSTANCE.toProto((TaskMessageUpdateEvent) domain)).build();
+            default -> throw new IllegalArgumentException("Unknown StreamingEventKind type: " + domain.getClass().getName());
         };
     }
 
-    /**
-     * Converts proto StreamResponse to domain StreamingEventKind.
-     * Uses switch expression on the oneof case to determine which type to return.
-     *
-     * @param proto the proto StreamResponse
-     * @return the corresponding domain streaming event kind
-     * @throws IllegalArgumentException if the oneof field is not set
-     */
+    /** Legacy strict conversion. StreamError is not a task event and must use the outcome decoder. */
     default StreamingEventKind fromProto(org.a2aproject.sdk.grpc.StreamResponse proto) {
         if (proto == null) {
             return null;
         }
-
         return switch (proto.getPayloadCase()) {
-            case TASK ->
-                TaskMapper.INSTANCE.fromProto(proto.getTask());
-            case MESSAGE ->
-                MessageMapper.INSTANCE.fromProto(proto.getMessage());
-            case STATUS_UPDATE ->
-                TaskStatusUpdateEventMapper.INSTANCE.fromProto(proto.getStatusUpdate());
-            case ARTIFACT_UPDATE ->
-                TaskArtifactUpdateEventMapper.INSTANCE.fromProto(proto.getArtifactUpdate());
-            case PAYLOAD_NOT_SET ->
-                throw new IllegalArgumentException("StreamResponse payload oneof field not set");
+            case TASK -> TaskMapper.INSTANCE.fromProto(proto.getTask());
+            case MESSAGE -> MessageMapper.INSTANCE.fromProto(proto.getMessage());
+            case STATUS_UPDATE -> TaskStatusUpdateEventMapper.INSTANCE.fromProto(proto.getStatusUpdate());
+            case ARTIFACT_UPDATE -> TaskArtifactUpdateEventMapper.INSTANCE.fromProto(proto.getArtifactUpdate());
+            case MESSAGE_UPDATE -> TaskMessageUpdateEventMapper.INSTANCE.fromProto(proto.getMessageUpdate());
+            case ERROR -> throw new IllegalArgumentException("StreamError requires the versioned stream outcome decoder");
+            case PAYLOAD_NOT_SET -> throw new IllegalArgumentException("StreamResponse payload oneof field not set");
         };
     }
 }

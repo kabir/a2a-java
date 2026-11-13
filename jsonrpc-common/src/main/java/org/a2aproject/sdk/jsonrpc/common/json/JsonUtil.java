@@ -6,7 +6,9 @@ import static org.a2aproject.sdk.jsonrpc.common.json.JsonUtil.ThrowableTypeAdapt
 import static org.a2aproject.sdk.spec.DataPart.DATA;
 import static org.a2aproject.sdk.spec.TextPart.TEXT;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -21,6 +23,7 @@ import java.util.stream.Stream;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.ToNumberPolicy;
@@ -59,10 +62,13 @@ import org.a2aproject.sdk.spec.SecurityScheme;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskNotCancelableError;
 import org.a2aproject.sdk.spec.TaskNotFoundError;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
+import org.a2aproject.sdk.spec.TimelineEntry;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.spec.VersionNotSupportedError;
 import org.a2aproject.sdk.util.MapTypeUtils;
@@ -116,9 +122,166 @@ public class JsonUtil {
         }
     }
 
+    /** Encodes timeline payload alternatives with their protocol member names. */
+    static class TimelineEntryTypeAdapterFactory implements TypeAdapterFactory {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> @Nullable TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (type.getRawType() != TimelineEntry.class) {
+                return null;
+            }
+            TypeAdapter<Message> messageAdapter = gson.getAdapter(Message.class);
+            TypeAdapter<TaskStatus> statusAdapter = gson.getAdapter(TaskStatus.class);
+            return (TypeAdapter<T>) new TimelineEntryTypeAdapter(messageAdapter, statusAdapter);
+        }
+    }
+
+    /** Filters future timeline alternatives while preserving strict parsing for known entries. */
+    static class TimelineEntryListTypeAdapterFactory implements TypeAdapterFactory {
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> @Nullable TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (type.getRawType() != List.class || !(type.getType() instanceof ParameterizedType parameterizedType)
+                    || parameterizedType.getActualTypeArguments().length != 1
+                    || parameterizedType.getActualTypeArguments()[0] != TimelineEntry.class) {
+                return null;
+            }
+            TypeAdapter<TimelineEntry> entryAdapter = gson.getAdapter(TimelineEntry.class);
+            return (TypeAdapter<T>) new TimelineEntryListTypeAdapter(entryAdapter);
+        }
+    }
+
+    static class TimelineEntryListTypeAdapter extends TypeAdapter<List<TimelineEntry>> {
+        private final TypeAdapter<TimelineEntry> entryAdapter;
+
+        TimelineEntryListTypeAdapter(TypeAdapter<TimelineEntry> entryAdapter) {
+            this.entryAdapter = entryAdapter;
+        }
+
+        @Override
+        public void write(JsonWriter out, List<TimelineEntry> value) throws java.io.IOException {
+            if (value == null) {
+                out.nullValue();
+                return;
+            }
+            out.beginArray();
+            for (TimelineEntry entry : value) {
+                entryAdapter.write(out, entry);
+            }
+            out.endArray();
+        }
+
+        @Override
+        public @Nullable List<TimelineEntry> read(JsonReader in) throws java.io.IOException {
+            if (in.peek() == JsonToken.NULL) {
+                in.nextNull();
+                return null;
+            }
+            JsonElement element = JsonParser.parseReader(in);
+            if (!element.isJsonArray()) {
+                throw new JsonSyntaxException("Task timeline must be a JSON array");
+            }
+            List<TimelineEntry> entries = new ArrayList<>();
+            for (JsonElement item : element.getAsJsonArray()) {
+                if (isUnknownTimelineKind(item)) {
+                    readExactInt64(item.getAsJsonObject().get("generation"));
+                    continue;
+                }
+                TimelineEntry entry = entryAdapter.fromJsonTree(item);
+                if (entry == null) {
+                    throw new JsonSyntaxException("Task timeline cannot contain null entries");
+                }
+                entries.add(entry);
+            }
+            return entries;
+        }
+
+        private static boolean isUnknownTimelineKind(JsonElement element) {
+            if (!element.isJsonObject()) {
+                return false;
+            }
+            JsonObject object = element.getAsJsonObject();
+            return object.has("generation") && !object.has("message") && !object.has("status")
+                    && object.entrySet().stream().anyMatch(entry -> !entry.getKey().equals("generation")
+                            && entry.getValue().isJsonObject());
+        }
+    }
+
+    static class TimelineEntryTypeAdapter extends TypeAdapter<TimelineEntry> {
+        private final TypeAdapter<Message> messageAdapter;
+        private final TypeAdapter<TaskStatus> statusAdapter;
+
+        TimelineEntryTypeAdapter(TypeAdapter<Message> messageAdapter, TypeAdapter<TaskStatus> statusAdapter) {
+            this.messageAdapter = messageAdapter;
+            this.statusAdapter = statusAdapter;
+        }
+
+        @Override
+        public void write(JsonWriter out, TimelineEntry value) throws java.io.IOException {
+            if (value == null) {
+                out.nullValue();
+                return;
+            }
+            out.beginObject();
+            out.name("generation").value(value.generation());
+            if (value.entry() instanceof TimelineEntry.MessageValue messageValue) {
+                out.name("message");
+                messageAdapter.write(out, messageValue.message());
+            } else if (value.entry() instanceof TimelineEntry.StatusValue statusValue) {
+                out.name("status");
+                statusAdapter.write(out, statusValue.status());
+            } else {
+                throw new JsonSyntaxException("Unsupported timeline entry payload: " + value.entry().getClass());
+            }
+            out.endObject();
+        }
+
+        @Override
+        public @Nullable TimelineEntry read(JsonReader in) throws java.io.IOException {
+            if (in.peek() == JsonToken.NULL) {
+                in.nextNull();
+                return null;
+            }
+            JsonElement element = JsonParser.parseReader(in);
+            if (!element.isJsonObject()) {
+                throw new JsonSyntaxException("Timeline entry must be a JSON object");
+            }
+            JsonObject object = element.getAsJsonObject();
+            if (!object.has("generation")) {
+                throw new JsonSyntaxException("Timeline entry is missing generation");
+            }
+            boolean hasMessage = object.has("message");
+            boolean hasStatus = object.has("status");
+            if (hasMessage == hasStatus) {
+                throw new JsonSyntaxException("Timeline entry must contain exactly one message or status payload");
+            }
+            long generation = readExactInt64(object.get("generation"));
+            if (hasMessage) {
+                Message message = messageAdapter.fromJsonTree(object.get("message"));
+                return new TimelineEntry(generation, new TimelineEntry.MessageValue(message));
+            }
+            TaskStatus status = statusAdapter.fromJsonTree(object.get("status"));
+            return new TimelineEntry(generation, new TimelineEntry.StatusValue(status));
+        }
+    }
+
+    private static long readExactInt64(JsonElement element) {
+        if (element == null || !element.isJsonPrimitive()
+                || !(element.getAsJsonPrimitive().isNumber() || element.getAsJsonPrimitive().isString())) {
+            throw new JsonSyntaxException("Timeline entry generation must be an int64 value");
+        }
+        try {
+            return new BigDecimal(element.getAsString()).longValueExact();
+        } catch (ArithmeticException | NumberFormatException e) {
+            throw new JsonSyntaxException("Timeline entry generation must be an exact int64 value", e);
+        }
+    }
+
     private static GsonBuilder createBaseGsonBuilder() {
         return new GsonBuilder()
                 .registerTypeAdapterFactory(new MapTypeAdapterFactory())
+                .registerTypeAdapterFactory(new TimelineEntryTypeAdapterFactory())
+                .registerTypeAdapterFactory(new TimelineEntryListTypeAdapterFactory())
                 .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
                 .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeTypeAdapter())
                 .registerTypeAdapter(SecurityRequirement.class, new SecurityRequirementTypeAdapter())
@@ -209,6 +372,55 @@ public class JsonUtil {
         } catch (JsonSyntaxException e) {
             throw new JsonProcessingException("Failed to generate JSON", e);
         }
+    }
+
+    /** Serializes a projected streaming event using the selected 1.x wire contract. */
+    public static String toJsonStreamingEvent(StreamingEventKind data, String protocolVersion)
+            throws JsonProcessingException {
+        if (!"1.0".equals(protocolVersion) && !"1.1".equals(protocolVersion)) {
+            throw new JsonProcessingException("Unsupported streaming event protocol version: " + protocolVersion);
+        }
+        if ("1.0".equals(protocolVersion) && data instanceof TaskMessageUpdateEvent) {
+            throw new JsonProcessingException("Task message updates are not supported by protocol version 1.0");
+        }
+        try {
+            JsonElement encoded = JsonParser.parseString(OBJECT_MAPPER.toJson(data, StreamingEventKind.class));
+            if ("1.0".equals(protocolVersion) && encoded.isJsonObject()) {
+                removeLegacyEventFields(encoded.getAsJsonObject(), data);
+            }
+            return OBJECT_MAPPER.toJson(encoded);
+        } catch (JsonSyntaxException e) {
+            throw new JsonProcessingException("Failed to generate JSON", e);
+        }
+    }
+
+    private static void removeLegacyEventFields(JsonObject wrapper, StreamingEventKind event) {
+        if (event instanceof Task) {
+            JsonObject task = wrapper.getAsJsonObject(Task.STREAMING_EVENT_ID);
+            task.remove("generation");
+            task.remove("timeline");
+            if (task.has("artifacts") && task.get("artifacts").isJsonArray()) {
+                task.getAsJsonArray("artifacts").forEach(artifactElement -> {
+                    if (artifactElement.isJsonObject()) {
+                        removeArtifactProvenance(artifactElement.getAsJsonObject());
+                    }
+                });
+            }
+        } else if (event instanceof TaskStatusUpdateEvent) {
+            wrapper.getAsJsonObject(TaskStatusUpdateEvent.STREAMING_EVENT_ID).remove("generation");
+        } else if (event instanceof TaskArtifactUpdateEvent) {
+            JsonObject update = wrapper.getAsJsonObject(TaskArtifactUpdateEvent.STREAMING_EVENT_ID);
+            update.remove("generation");
+            if (update.has("artifact") && update.get("artifact").isJsonObject()) {
+                removeArtifactProvenance(update.getAsJsonObject("artifact"));
+            }
+        }
+    }
+
+    private static void removeArtifactProvenance(JsonObject artifact) {
+        artifact.remove("startGeneration");
+        artifact.remove("endGeneration");
+        artifact.remove("role");
     }
 
     /**
@@ -486,6 +698,7 @@ public class JsonUtil {
                 case EXTENDED_AGENT_CARD_NOT_CONFIGURED -> new ExtendedAgentCardNotConfiguredError(code, message, details);
                 case EXTENSION_SUPPORT_REQUIRED -> new ExtensionSupportRequiredError(code, message, details);
                 case VERSION_NOT_SUPPORTED -> new VersionNotSupportedError(code, message, details);
+                case TASK_GENERATION_MISMATCH -> new org.a2aproject.sdk.spec.TaskGenerationMismatchError(code, message, details);
             };
         }
     }
@@ -813,11 +1026,20 @@ public class JsonUtil {
 
             com.google.gson.JsonObject jsonObject = jsonElement.getAsJsonObject();
 
+            // An unwrapped message update also has a top-level "message" member. Recognize
+            // its complete event identity before treating that member as the wrapper discriminator.
+            if (jsonObject.has("taskId") && jsonObject.has("contextId") && jsonObject.has("message")) {
+                return delegateGson.fromJson(jsonObject, TaskMessageUpdateEvent.class);
+            }
+
             // Check for wrapped member name discriminators (v1.0 protocol - streaming format)
             if (jsonObject.has(Task.STREAMING_EVENT_ID)) {
                 return delegateGson.fromJson(jsonObject.get(Task.STREAMING_EVENT_ID), Task.class);
             } else if (jsonObject.has(Message.STREAMING_EVENT_ID)) {
                 return delegateGson.fromJson(jsonObject.get(Message.STREAMING_EVENT_ID), Message.class);
+            } else if (jsonObject.has(TaskMessageUpdateEvent.STREAMING_EVENT_ID)) {
+                return delegateGson.fromJson(
+                        jsonObject.get(TaskMessageUpdateEvent.STREAMING_EVENT_ID), TaskMessageUpdateEvent.class);
             } else if (jsonObject.has(TaskStatusUpdateEvent.STREAMING_EVENT_ID)) {
                 return delegateGson.fromJson(
                         jsonObject.get(TaskStatusUpdateEvent.STREAMING_EVENT_ID), TaskStatusUpdateEvent.class);

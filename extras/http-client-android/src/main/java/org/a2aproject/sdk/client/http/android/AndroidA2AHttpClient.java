@@ -8,6 +8,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.a2aproject.sdk.client.http.A2AHttpClient;
@@ -50,6 +52,8 @@ import org.jspecify.annotations.Nullable;
  * {@link A2AHttpClient.PostBuilder#followRedirects(boolean)} is enabled.
  */
 public class AndroidA2AHttpClient implements A2AHttpClient {
+
+    private static final int MAX_STATUS_ERROR_BODY_BYTES = 64 * 1024;
 
   private static final Executor NET_EXECUTOR = Executors.newCachedThreadPool(r -> {
     Thread t = new Thread(r, "A2A-Android-Net");
@@ -175,6 +179,26 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
       return connection;
     }
 
+    private record BoundedStatusErrorBody(String body, boolean tooLarge) {}
+
+    private static BoundedStatusErrorBody readStatusErrorBody(InputStream is) throws IOException {
+      if (is == null) {
+        return new BoundedStatusErrorBody("", false);
+      }
+      ByteArrayOutputStream body = new ByteArrayOutputStream();
+      byte[] buffer = new byte[8192];
+      int count;
+      while ((count = is.read(buffer)) != -1) {
+        int remaining = MAX_STATUS_ERROR_BODY_BYTES - body.size();
+        if (count > remaining) {
+          body.write(buffer, 0, Math.max(remaining, 0));
+          return new BoundedStatusErrorBody(body.toString(StandardCharsets.UTF_8), true);
+        }
+        body.write(buffer, 0, count);
+      }
+      return new BoundedStatusErrorBody(body.toString(StandardCharsets.UTF_8), false);
+    }
+
     protected static String readStreamWithLimit(InputStream is) throws IOException {
       if (is == null) {
         return "";
@@ -268,16 +292,51 @@ public class AndroidA2AHttpClient implements A2AHttpClient {
       return new AndroidHttpResponse(status, body, responseHeaders);
     }
 
+    protected A2AHttpResponse executeStatusAware(HttpURLConnection connection) throws IOException {
+      int status = connection.getResponseCode();
+      A2AHttpHeaders responseHeaders = fromConnectionHeaders(connection.getHeaderFields());
+      String body = "";
+      try (InputStream is =
+          (status >= HTTP_OK && status < HTTP_MULT_CHOICE)
+              ? connection.getInputStream()
+              : connection.getErrorStream()) {
+        body = readStreamWithLimit(is);
+      }
+      return new AndroidHttpResponse(status, body, responseHeaders);
+    }
+
     protected void processSSEResponse(
         HttpURLConnection connection,
         Consumer<ServerSentEvent> messageConsumer,
         Consumer<Throwable> errorConsumer,
         Runnable completeRunnable) {
+      processSSEResponse(connection, messageConsumer, errorConsumer, completeRunnable, false);
+    }
+
+    protected void processSSEResponse(
+        HttpURLConnection connection,
+        Consumer<ServerSentEvent> messageConsumer,
+        Consumer<Throwable> errorConsumer,
+        Runnable completeRunnable,
+        boolean rejectNonSuccessStatus) {
       try {
         int status = connection.getResponseCode();
         if (!(status >= HTTP_OK && status < HTTP_MULT_CHOICE)) {
+          A2AHttpHeaders responseHeaders = fromConnectionHeaders(connection.getHeaderFields());
+          if (rejectNonSuccessStatus) {
+            BoundedStatusErrorBody errorBody;
+            try (InputStream errorStream = connection.getErrorStream()) {
+              errorBody = readStatusErrorBody(errorStream);
+            }
+            String msg = "HTTP request failed with status " + status;
+            String errorMessage = errorBody.tooLarge()
+                ? msg + "; response body exceeds " + MAX_STATUS_ERROR_BODY_BYTES + " bytes" : msg;
+            errorConsumer.accept(new IOException(errorMessage,
+                new A2AClientHTTPError(status, msg,
+                    errorBody.tooLarge() ? null : errorBody.body(), responseHeaders.toMap())));
+            return;
+          }
           if (status == HTTP_UNAUTHORIZED || status == HTTP_FORBIDDEN) {
-            A2AHttpHeaders responseHeaders = fromConnectionHeaders(connection.getHeaderFields());
             String msg = status == HTTP_UNAUTHORIZED
                 ? A2AErrorMessages.AUTHENTICATION_FAILED
                 : A2AErrorMessages.AUTHORIZATION_FAILED;
@@ -422,6 +481,71 @@ AndroidGetBuilder(SSEParserConfig sseParserConfig, RedirectHeaderPolicy redirect
       HttpURLConnection connection = createConnection("GET", true);
       return executeAsyncSSE(connection, messageConsumer, errorConsumer, completeRunnable);
     }
+
+    @Override
+    public A2AHttpClient.AsyncSSECall getAsyncSSECallStatusAware(
+        Consumer<ServerSentEvent> messageConsumer,
+        Consumer<Throwable> errorConsumer,
+        Runnable completeRunnable)
+        throws IOException {
+      HttpURLConnection connection = createConnection("GET", true);
+      AtomicBoolean cancelled = new AtomicBoolean();
+      CompletableFuture<Void> worker = CompletableFuture.runAsync(
+          () -> {
+            try {
+              processSSEResponse(connection, messageConsumer, errorConsumer, completeRunnable, true);
+            } catch (Exception failure) {
+              if (!cancelled.get()) {
+                errorConsumer.accept(failure);
+              }
+            } finally {
+              connection.disconnect();
+            }
+          }, NET_EXECUTOR);
+      return new A2AHttpClient.AsyncSSECall() {
+        @Override
+        public CompletableFuture<Void> completion() {
+          return worker;
+        }
+
+        @Override
+        public void cancel() {
+          if (cancelled.compareAndSet(false, true)) {
+            connection.disconnect();
+            worker.cancel(true);
+          }
+        }
+      };
+    }
+
+    @Override
+    public A2AHttpClient.AsyncGetCall getAsyncResponse() throws IOException {
+      HttpURLConnection connection = createConnection("GET", false);
+      CompletableFuture<A2AHttpResponse> result = new CompletableFuture<>();
+      CompletableFuture<Void> worker = CompletableFuture.runAsync(
+          () -> {
+            try {
+              result.complete(executeStatusAware(connection));
+            } catch (Exception failure) {
+              result.completeExceptionally(failure);
+            } finally {
+              connection.disconnect();
+            }
+          }, NET_EXECUTOR);
+      return new A2AHttpClient.AsyncGetCall() {
+        @Override
+        public CompletableFuture<A2AHttpResponse> response() {
+          return result;
+        }
+
+        @Override
+        public void cancel() {
+          result.cancel(true);
+          connection.disconnect();
+          worker.cancel(true);
+        }
+      };
+    }
   }
 
   private static class AndroidPostBuilder extends AndroidBuilder<PostBuilder>
@@ -511,6 +635,120 @@ AndroidPostBuilder(SSEParserConfig sseParserConfig, RedirectHeaderPolicy redirec
               connection.disconnect();
             }
           }, NET_EXECUTOR);
+    }
+
+    @Override
+    public A2AHttpClient.AsyncSSECall postAsyncSSECall(
+        Consumer<ServerSentEvent> messageConsumer,
+        Consumer<Throwable> errorConsumer,
+        Runnable completeRunnable)
+        throws IOException {
+      HttpURLConnection connection = createConnection("POST", true);
+      connection.setDoOutput(true);
+      AtomicBoolean cancelled = new AtomicBoolean();
+      CompletableFuture<Void> worker = CompletableFuture.runAsync(
+          () -> {
+            try {
+              try (OutputStream os = connection.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+              }
+              processSSEResponse(connection, messageConsumer, errorConsumer, completeRunnable, false);
+            } catch (Exception failure) {
+              if (!cancelled.get()) {
+                errorConsumer.accept(failure);
+              }
+            } finally {
+              connection.disconnect();
+            }
+          }, NET_EXECUTOR);
+      return new A2AHttpClient.AsyncSSECall() {
+        @Override
+        public CompletableFuture<Void> completion() {
+          return worker;
+        }
+
+        @Override
+        public void cancel() {
+          if (cancelled.compareAndSet(false, true)) {
+            connection.disconnect();
+            worker.cancel(true);
+          }
+        }
+      };
+    }
+
+
+    @Override
+    public A2AHttpClient.AsyncSSECall postAsyncSSECallStatusAware(
+        Consumer<ServerSentEvent> messageConsumer,
+        Consumer<Throwable> errorConsumer,
+        Runnable completeRunnable)
+        throws IOException {
+      HttpURLConnection connection = createConnection("POST", true);
+      connection.setDoOutput(true);
+      AtomicBoolean cancelled = new AtomicBoolean();
+      CompletableFuture<Void> worker = CompletableFuture.runAsync(
+          () -> {
+            try {
+              try (OutputStream os = connection.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+              }
+              processSSEResponse(connection, messageConsumer, errorConsumer, completeRunnable, true);
+            } catch (Exception failure) {
+              if (!cancelled.get()) {
+                errorConsumer.accept(failure);
+              }
+            } finally {
+              connection.disconnect();
+            }
+          }, NET_EXECUTOR);
+      return new A2AHttpClient.AsyncSSECall() {
+        @Override
+        public CompletableFuture<Void> completion() {
+          return worker;
+        }
+
+        @Override
+        public void cancel() {
+          if (cancelled.compareAndSet(false, true)) {
+            connection.disconnect();
+            worker.cancel(true);
+          }
+        }
+      };
+    }
+
+    @Override
+    public A2AHttpClient.AsyncPostCall postAsyncResponse() throws IOException {
+      HttpURLConnection connection = createConnection("POST", false);
+      connection.setDoOutput(true);
+      CompletableFuture<A2AHttpResponse> result = new CompletableFuture<>();
+      CompletableFuture<Void> worker = CompletableFuture.runAsync(
+          () -> {
+            try {
+              try (OutputStream os = connection.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+              }
+              result.complete(execute(connection));
+            } catch (Exception failure) {
+              result.completeExceptionally(failure);
+            } finally {
+              connection.disconnect();
+            }
+          }, NET_EXECUTOR);
+      return new A2AHttpClient.AsyncPostCall() {
+        @Override
+        public CompletableFuture<A2AHttpResponse> response() {
+          return result;
+        }
+
+        @Override
+        public void cancel() {
+          result.cancel(true);
+          connection.disconnect();
+          worker.cancel(true);
+        }
+      };
     }
   }
 

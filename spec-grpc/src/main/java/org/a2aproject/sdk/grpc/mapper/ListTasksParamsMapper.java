@@ -26,6 +26,7 @@ public interface ListTasksParamsMapper {
     @Mapping(target = "pageSize", source = "pageSize", conditionExpression = "java(params.pageSize() != null)")
     @Mapping(target = "pageToken", source = "pageToken", conditionExpression = "java(params.pageToken() != null)")
     @Mapping(target = "historyLength", source = "historyLength", conditionExpression = "java(params.historyLength() != null)")
+    @Mapping(target = "timelineLength", source = "timelineLength", conditionExpression = "java(params.timelineLength() != null)")
     @Mapping(target = "statusTimestampAfter", source = "statusTimestampAfter", qualifiedByName = "instantToProtoTimestamp")
     @Mapping(target = "includeArtifacts", source = "includeArtifacts", conditionExpression = "java(params.includeArtifacts() != null)")
     @Mapping(target = "tenant", source = "tenant", conditionExpression = "java(params.tenant() != null)")
@@ -44,6 +45,7 @@ public interface ListTasksParamsMapper {
     @Mapping(target = "pageToken", source = "pageToken", qualifiedByName = "emptyToNull")
     // historyLength: Check if field is set using hasHistoryLength() for consistency with pageSize
     @Mapping(target = "historyLength", expression = "java(request.hasHistoryLength() ? request.getHistoryLength() : null)")
+    @Mapping(target = "timelineLength", expression = "java(request.hasTimelineLength() ? request.getTimelineLength() : null)")
     @Mapping(target = "statusTimestampAfter", source = "statusTimestampAfter", qualifiedByName = "protoTimestampToInstant")
     @Mapping(target = "includeArtifacts", source = "includeArtifacts", qualifiedByName = "falseToNull")
     @Mapping(target = "tenant", source = "tenant", qualifiedByName = "emptyToNull")

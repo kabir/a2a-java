@@ -30,6 +30,7 @@ public interface TaskPushNotificationConfigMapper {
     @Mapping(target = "token", source = "token", conditionExpression = "java(domain.token() != null)")
     @Mapping(target = "tenant", source = "tenant", conditionExpression = "java(domain.tenant() != null)")
     @Mapping(target = "authentication", source = "authentication", conditionExpression = "java(domain.authentication() != null)")
+    @Mapping(target = "protocolVersion", source = "protocolVersion", conditionExpression = "java(domain.protocolVersion() != null)")
     org.a2aproject.sdk.grpc.TaskPushNotificationConfig toProto(TaskPushNotificationConfig domain);
 
     /**
@@ -42,5 +43,6 @@ public interface TaskPushNotificationConfigMapper {
     @Mapping(target = "tenant", source = "tenant", qualifiedByName = "emptyToNull")
     @Mapping(target = "taskId", source = "taskId", qualifiedByName = "emptyToNull")
     @Mapping(target = "authentication", source = "authentication", conditionExpression = "java(proto.hasAuthentication())")
+    @Mapping(target = "protocolVersion", source = "protocolVersion", qualifiedByName = "emptyToNull")
     TaskPushNotificationConfig fromProto(org.a2aproject.sdk.grpc.TaskPushNotificationConfig proto);
 }

@@ -43,7 +43,8 @@ public interface TaskStatusUpdateEventMapper_v0_3 {
             v03.taskId(),
             TaskStatusMapper_v0_3.INSTANCE.toV10(v03.status()),
             v03.contextId(),
-            v03.metadata()
+            v03.metadata(),
+            0
         );
     }
 

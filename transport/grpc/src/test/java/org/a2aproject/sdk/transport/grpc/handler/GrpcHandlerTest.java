@@ -65,6 +65,7 @@ import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
+import org.a2aproject.sdk.spec.TimelineEntry;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.junit.jupiter.api.Assertions;
@@ -89,6 +90,145 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
             .build();
 
     @Test
+    void selected11ArtifactOnlyInputUsesCompanionBoundaryBeforeLegacyHandler() throws Exception {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        GrpcHandler handler = handlerWithVersion(selected11Card(), customHandler, "1.1");
+        org.a2aproject.sdk.grpc.SendMessageRequest request = org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder()
+                .addArtifactUpdates(org.a2aproject.sdk.grpc.TaskArtifactUpdateEvent.newBuilder()
+                        .setTaskId("task-1")
+                        .setContextId("context-1")
+                        .setArtifact(org.a2aproject.sdk.grpc.Artifact.newBuilder()
+                                .setArtifactId("input-1")
+                                .addParts(Part.newBuilder().setText("payload"))))
+                .build();
+        StreamRecorder<SendMessageResponse> recorder = StreamRecorder.create();
+
+        io.grpc.Context grpcContext = io.grpc.Context.current()
+                .withValue(org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys.VERSION_HEADER_KEY, "1.1");
+        io.grpc.Context previous = grpcContext.attach();
+        try {
+            handler.sendMessage(request, recorder);
+        } finally {
+            grpcContext.detach(previous);
+        }
+        recorder.awaitCompletion(5, TimeUnit.SECONDS);
+
+        Assertions.assertInstanceOf(StatusRuntimeException.class, recorder.getError());
+        assertEquals(Status.Code.FAILED_PRECONDITION,
+                ((StatusRuntimeException) recorder.getError()).getStatus().getCode());
+        Mockito.verify(customHandler, Mockito.never()).onMessageSend(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void selected11StreamingArtifactsAndGuardsStopBeforeAuthorization() throws Exception {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        GrpcHandler handler = handlerWithVersion(selected11Card(), customHandler, "1.1");
+        List<SendMessageRequest> requests = List.of(
+                SendMessageRequest.newBuilder()
+                        .addArtifactUpdates(org.a2aproject.sdk.grpc.TaskArtifactUpdateEvent.newBuilder()
+                                .setTaskId("task-1").setContextId("context-1")
+                                .setArtifact(org.a2aproject.sdk.grpc.Artifact.newBuilder()
+                                        .setArtifactId("input-1").addParts(Part.newBuilder().setText("payload"))))
+                        .build(),
+                SendMessageRequest.newBuilder().setMessage(GRPC_MESSAGE)
+                        .setConfiguration(org.a2aproject.sdk.grpc.SendMessageConfiguration.newBuilder()
+                                .setIfGenerationMatch(0))
+                        .build());
+        for (SendMessageRequest request : requests) {
+            StreamRecorder<StreamResponse> recorder = StreamRecorder.create();
+            io.grpc.Context grpcContext = io.grpc.Context.current()
+                    .withValue(org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys.VERSION_HEADER_KEY, "1.1");
+            io.grpc.Context previous = grpcContext.attach();
+            try {
+                handler.sendStreamingMessage(request, recorder);
+            } finally {
+                grpcContext.detach(previous);
+            }
+            recorder.awaitCompletion(5, TimeUnit.SECONDS);
+            Assertions.assertInstanceOf(StatusRuntimeException.class, recorder.getError());
+            assertEquals(Status.Code.FAILED_PRECONDITION,
+                    ((StatusRuntimeException) recorder.getError()).getStatus().getCode());
+        }
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
+    void selected11TimelineOptionIsRejectedBeforeCustomHandler() throws Exception {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        GrpcHandler handler = handlerWithVersion(selected11Card(), customHandler, "1.1");
+        SendMessageRequest request = SendMessageRequest.newBuilder()
+                .setMessage(GRPC_MESSAGE)
+                .setConfiguration(org.a2aproject.sdk.grpc.SendMessageConfiguration.newBuilder().setTimelineLength(5))
+                .build();
+        StreamRecorder<SendMessageResponse> recorder = StreamRecorder.create();
+
+        io.grpc.Context grpcContext = io.grpc.Context.current()
+                .withValue(org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys.VERSION_HEADER_KEY, "1.1");
+        io.grpc.Context previous = grpcContext.attach();
+        try {
+            handler.sendMessage(request, recorder);
+        } finally {
+            grpcContext.detach(previous);
+        }
+        recorder.awaitCompletion(5, TimeUnit.SECONDS);
+
+        Assertions.assertInstanceOf(StatusRuntimeException.class, recorder.getError());
+        assertEquals(Status.Code.FAILED_PRECONDITION,
+                ((StatusRuntimeException) recorder.getError()).getStatus().getCode());
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
+    void selected11CursorIsRejectedBeforeCustomHandler() throws Exception {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        GrpcHandler handler = handlerWithVersion(selected11Card(), customHandler, "1.1");
+        SubscribeToTaskRequest request = SubscribeToTaskRequest.newBuilder()
+                .setId("task-1")
+                .setLastSeenGeneration(3)
+                .build();
+        StreamRecorder<StreamResponse> recorder = StreamRecorder.create();
+
+        io.grpc.Context grpcContext = io.grpc.Context.current()
+                .withValue(org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys.VERSION_HEADER_KEY, "1.1");
+        io.grpc.Context previous = grpcContext.attach();
+        try {
+            handler.subscribeToTask(request, recorder);
+        } finally {
+            grpcContext.detach(previous);
+        }
+        recorder.awaitCompletion(5, TimeUnit.SECONDS);
+
+        Assertions.assertInstanceOf(StatusRuntimeException.class, recorder.getError());
+        assertEquals(Status.Code.FAILED_PRECONDITION,
+                ((StatusRuntimeException) recorder.getError()).getStatus().getCode());
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
+    void explicit10SubscriptionCursorIncludingZeroIsRejectedBeforeLegacyDispatch() throws Exception {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class);
+        GrpcHandler handler = handlerWithVersion(CARD, customHandler, "1.0");
+        SubscribeToTaskRequest request = SubscribeToTaskRequest.newBuilder()
+                .setId("task-1")
+                .setLastSeenGeneration(0)
+                .build();
+        StreamRecorder<StreamResponse> recorder = StreamRecorder.create();
+
+        io.grpc.Context grpcContext = io.grpc.Context.current()
+                .withValue(org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys.VERSION_HEADER_KEY, "1.0");
+        io.grpc.Context previous = grpcContext.attach();
+        try {
+            handler.subscribeToTask(request, recorder);
+        } finally {
+            grpcContext.detach(previous);
+        }
+        recorder.awaitCompletion(5, TimeUnit.SECONDS);
+
+        assertGrpcReason(recorder, Status.Code.UNIMPLEMENTED, "UNSUPPORTED_OPERATION");
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
     public void testOnGetTaskSuccess() throws Exception {
         GrpcHandler handler = new TestGrpcHandler(AbstractA2ARequestHandlerTest.CARD, requestHandler, internalExecutor);
         taskStore.save(AbstractA2ARequestHandlerTest.MINIMAL_TASK, false);
@@ -108,6 +248,54 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
         assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.id(), task.getId());
         assertEquals(AbstractA2ARequestHandlerTest.MINIMAL_TASK.contextId(), task.getContextId());
         assertEquals(TaskState.TASK_STATE_SUBMITTED, task.getStatus().getState());
+    }
+
+    @Test
+    public void legacyTaskOutputsAreProjectedAcrossGrpcBoundaries() throws Exception {
+        org.a2aproject.sdk.spec.Task canonical = org.a2aproject.sdk.spec.Task.builder(MINIMAL_TASK)
+                .generation(7)
+                .timeline(List.of(new TimelineEntry(7,
+                        new TimelineEntry.StatusValue(MINIMAL_TASK.status()))))
+                .build();
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class);
+        Mockito.when(customHandler.onMessageSend(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onGetTask(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onCancelTask(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onListTasks(Mockito.any(), Mockito.any()))
+                .thenReturn(new org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult(List.of(canonical)));
+        Mockito.when(customHandler.onSubscribeToTask(Mockito.any(), Mockito.any()))
+                .thenReturn(ZeroPublisher.fromItems(canonical));
+        GrpcHandler handler = handlerWithVersion(CARD, customHandler, "1.0");
+
+        StreamRecorder<SendMessageResponse> send = StreamRecorder.create();
+        handler.sendMessage(org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder().setMessage(GRPC_MESSAGE).build(), send);
+        send.awaitCompletion(5, TimeUnit.SECONDS);
+        assertLegacyProtoTask(send.getValues().get(0).getTask());
+
+        StreamRecorder<org.a2aproject.sdk.grpc.Task> get = StreamRecorder.create();
+        handler.getTask(GetTaskRequest.newBuilder().setId(MINIMAL_TASK.id()).build(), get);
+        get.awaitCompletion(5, TimeUnit.SECONDS);
+        assertLegacyProtoTask(get.getValues().get(0));
+
+        StreamRecorder<org.a2aproject.sdk.grpc.Task> cancel = StreamRecorder.create();
+        handler.cancelTask(CancelTaskRequest.newBuilder().setId(MINIMAL_TASK.id()).build(), cancel);
+        cancel.awaitCompletion(5, TimeUnit.SECONDS);
+        assertLegacyProtoTask(cancel.getValues().get(0));
+
+        StreamRecorder<ListTasksResponse> list = StreamRecorder.create();
+        handler.listTasks(ListTasksRequest.getDefaultInstance(), list);
+        list.awaitCompletion(5, TimeUnit.SECONDS);
+        assertLegacyProtoTask(list.getValues().get(0).getTasks(0));
+
+        StreamRecorder<StreamResponse> stream = StreamRecorder.create();
+        handler.subscribeToTask(SubscribeToTaskRequest.newBuilder().setId(MINIMAL_TASK.id()).build(), stream);
+        stream.awaitCompletion(5, TimeUnit.SECONDS);
+        assertLegacyProtoTask(stream.getValues().get(0).getTask());
+    }
+
+    private static void assertLegacyProtoTask(org.a2aproject.sdk.grpc.Task task) {
+        assertEquals(0, task.getGeneration());
+        assertEquals(0, task.getTimelineCount());
     }
 
     @Test
@@ -1852,6 +2040,12 @@ public class GrpcHandlerTest extends AbstractA2ARequestHandlerTest {
                 .setTenant("bad/tenant").build(), recorder);
 
         assertGrpcReason(recorder, Status.Code.INTERNAL, "INTERNAL");
+    }
+
+    private AgentCard selected11Card() {
+        return AgentCard.builder(CARD)
+                .supportedInterfaces(List.of(new AgentInterface("GRPC", "http://localhost:9999", null, "1.1")))
+                .build();
     }
 
     private GrpcHandler handlerWithVersion(AgentCard card, RequestHandler customHandler, String version) {

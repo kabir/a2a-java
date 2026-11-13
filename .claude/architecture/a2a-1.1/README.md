@@ -14,6 +14,9 @@ documented custom-store/executor changes required by 1.1.
   storage/replication, migration, live execution, and specification gates.
 - [Implementation-loop prompt](implementation-loop.md): copyable scope, phase
   deliverables, evidence requirements, and completion criteria.
+- [Model and token-cost policy](implementation-loop.md#model-selection-and-token-cost-policy):
+  Luna implementation by default, Sol planning/review, an explicit Astra ban,
+  model audit records, and focused task context.
 - [Acceptance and run limits](acceptance.md): fourteen evidence-based criteria,
   agreed iteration/time/attempt limits, and checkpoint behavior.
 
@@ -63,6 +66,13 @@ indeterminate cancellation. The legacy constant stays 1.0 independently of the
 1.1 client default; custom compatibility requires actual source/binary/wire
 checks. No public operation-status lookup or executor-delivery receipt is assumed.
 Missing binding correlation remains a specification gate, not a new protocol.
+
+The user clarified retry accounting on 2026-11-11: routine compilation/setup
+repairs are not automatically new iterations or failed substantive attempts.
+Three consecutive substantive attempts without progress on the same defect now
+trigger Sol diagnosis, replacing the blanket three-attempt cap. The authorized
+ten-iteration/two-hour bounds and historical evidence remain; see
+[the current counting rules](acceptance.md#counting-work-and-progress).
 
 ## Scope and conclusion
 

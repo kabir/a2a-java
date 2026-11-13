@@ -17,6 +17,11 @@ public enum ServerVersionPolicy {
         return protocolVersion;
     }
 
+    /** Whether this contract carries the Phase 2 task provenance and message-update fields. */
+    public boolean supportsPhase2Output() {
+        return this == V1_1;
+    }
+
     /** Resolves the binding default without inferring a version from the SDK or service name. */
     public static String resolveVersion(@Nullable String requested) {
         return requested == null || requested.isBlank() ? "0.3" : requested.trim();

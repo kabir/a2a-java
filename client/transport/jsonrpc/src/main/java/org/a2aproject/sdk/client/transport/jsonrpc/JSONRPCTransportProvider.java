@@ -14,9 +14,12 @@ import org.jspecify.annotations.Nullable;
 
 public class JSONRPCTransportProvider implements ClientTransportProvider<JSONRPCTransport, JSONRPCTransportConfig> {
 
+    private static final Set<ClientFeature> ONE_ONE_CAPABILITIES = Set.of(ClientFeature.ORDINARY,
+            ClientFeature.GUARDED_INPUT, ClientFeature.ARTIFACT_INPUT, ClientFeature.UNKNOWN_VARIANT_SKIP);
+
     @Override
     public Map<String, Set<ClientFeature>> capabilities() {
-        return Map.of("1.0", Set.of(ClientFeature.ORDINARY), "1.1", Set.of(ClientFeature.ORDINARY));
+        return Map.of("1.0", Set.of(ClientFeature.ORDINARY), "1.1", ONE_ONE_CAPABILITIES);
     }
 
     @Override

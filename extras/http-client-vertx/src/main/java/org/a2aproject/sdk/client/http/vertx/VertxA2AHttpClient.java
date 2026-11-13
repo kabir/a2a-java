@@ -24,6 +24,7 @@ import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.CDI;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -145,6 +146,8 @@ import org.jspecify.annotations.Nullable;
  * }</pre>
  */
 public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
+
+    private static final int MAX_STATUS_ERROR_BODY_BYTES = 64 * 1024;
 
     private static final Logger LOGGER = Logger.getLogger(VertxA2AHttpClient.class.getName());
     private final Vertx vertx;
@@ -417,17 +420,21 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
      * @param completeRunnable callback when stream completes successfully
      * @return CompletableFuture that completes when the stream ends
      */
-    private CompletableFuture<Void> executeAsyncSSE(
+    private A2AHttpClient.AsyncSSECall executeAsyncSSE(
             HttpMethod httpMethod,
             String url,
             Map<String, String> headers,
             @Nullable Buffer bodyBuffer,
             Consumer<ServerSentEvent> messageConsumer,
             Consumer<Throwable> errorConsumer,
-            Runnable completeRunnable) {
+            Runnable completeRunnable,
+            boolean rejectNonSuccessStatus) {
 
         CompletableFuture<Void> future = new CompletableFuture<>();
         AtomicBoolean futureCompleted = new AtomicBoolean(false);
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+        AtomicReference<io.vertx.core.http.HttpClientRequest> requestRef = new AtomicReference<>();
+        Object requestHandoff = new Object();
 
         RequestOptions options = new RequestOptions()
                 .setAbsoluteURI(url)
@@ -438,13 +445,30 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
         }
 
         httpClient.request(options)
-                .compose(req -> bodyBuffer != null ? req.send(bodyBuffer) : req.send())
+                .compose(req -> {
+                    synchronized (requestHandoff) {
+                        if (cancelled.get()) {
+                            req.reset();
+                            return Future.failedFuture("SSE request cancelled before send");
+                        }
+                        requestRef.set(req);
+                        return bodyBuffer != null ? req.send(bodyBuffer) : req.send();
+                    }
+                })
                 .onSuccess(response -> {
+                    if (cancelled.get()) {
+                        io.vertx.core.http.HttpClientRequest request = requestRef.get();
+                        if (request != null) {
+                            request.reset();
+                        }
+                        return;
+                    }
                     // Pause before inspecting headers so no body bytes are lost while we
                     // set up the appropriate handler. pipe().to(...) will resume the response.
                     response.pause();
                     int statusCode = response.statusCode();
-                    if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
+                    if (!rejectNonSuccessStatus
+                            && (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN)) {
                         if (futureCompleted.compareAndSet(false, true)) {
                             A2AHttpHeaders respHeaders = fromVertxHeaders(response.headers());
                             String msg = statusCode == HTTP_UNAUTHORIZED
@@ -454,6 +478,63 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
                                     new org.a2aproject.sdk.spec.A2AClientHTTPError(
                                             statusCode, msg, null, respHeaders.toMap())));
                             future.complete(null);
+                        }
+                        return;
+                    }
+                    if (rejectNonSuccessStatus && (statusCode < HTTP_OK || statusCode >= HTTP_MULT_CHOICE)) {
+                        if (!futureCompleted.get()) {
+                            String msg = "HTTP request failed with status " + statusCode;
+                            A2AHttpHeaders respHeaders = fromVertxHeaders(response.headers());
+                            ByteArrayOutputStream errorBody = new ByteArrayOutputStream();
+                            response.handler(buffer -> {
+                                if (futureCompleted.get()) {
+                                    return;
+                                }
+                                int remaining = MAX_STATUS_ERROR_BODY_BYTES - errorBody.size();
+                                int count = Math.min(buffer.length(), remaining);
+                                if (count > 0) {
+                                    byte[] bytes = buffer.getBytes(0, count);
+                                    errorBody.write(bytes, 0, bytes.length);
+                                }
+                                if (buffer.length() > remaining
+                                        && futureCompleted.compareAndSet(false, true)) {
+                                    io.vertx.core.http.HttpClientRequest request = requestRef.get();
+                                    if (request != null) {
+                                        request.reset();
+                                    }
+                                    try {
+                                        errorConsumer.accept(new IOException(
+                                                msg + "; response body exceeds "
+                                                        + MAX_STATUS_ERROR_BODY_BYTES + " bytes",
+                                                new org.a2aproject.sdk.spec.A2AClientHTTPError(
+                                                        statusCode, msg, null, respHeaders.toMap())));
+                                    } finally {
+                                        future.complete(null);
+                                    }
+                                }
+                            });
+                            response.exceptionHandler(failure -> {
+                                if (futureCompleted.compareAndSet(false, true)) {
+                                    try {
+                                        errorConsumer.accept(failure);
+                                    } finally {
+                                        future.complete(null);
+                                    }
+                                }
+                            });
+                            response.endHandler(ignored -> {
+                                if (futureCompleted.compareAndSet(false, true)) {
+                                    try {
+                                        errorConsumer.accept(new IOException(msg,
+                                                new org.a2aproject.sdk.spec.A2AClientHTTPError(
+                                                        statusCode, msg,
+                                                        errorBody.toString(StandardCharsets.UTF_8), respHeaders.toMap())));
+                                    } finally {
+                                        future.complete(null);
+                                    }
+                                }
+                            });
+                            response.resume();
                         }
                         return;
                     }
@@ -530,7 +611,26 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
                     }
                 });
 
-        return future;
+        return new A2AHttpClient.AsyncSSECall() {
+            @Override
+            public CompletableFuture<Void> completion() {
+                return future;
+            }
+
+            @Override
+            public void cancel() {
+                synchronized (requestHandoff) {
+                    if (cancelled.compareAndSet(false, true)) {
+                        futureCompleted.set(true);
+                        future.cancel(true);
+                        io.vertx.core.http.HttpClientRequest request = requestRef.get();
+                        if (request != null) {
+                            request.reset();
+                        }
+                    }
+                }
+            }
+        };
     }
 
     private class VertxGetBuilder extends VertxBuilder<GetBuilder> implements A2AHttpClient.GetBuilder {
@@ -580,12 +680,84 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
         }
 
         @Override
+        public A2AHttpClient.AsyncGetCall getAsyncResponse() {
+            RequestOptions options = new RequestOptions().setAbsoluteURI(url).setMethod(HttpMethod.GET);
+            headers.forEach(options::addHeader);
+            CompletableFuture<A2AHttpResponse> result = new CompletableFuture<>();
+            AsyncRequestHandoff requestHandoff = new AsyncRequestHandoff();
+            httpClient.request(options).onSuccess(request -> requestHandoff.onRequestReady(
+                    request::reset,
+                    () -> request.send()
+                            .onSuccess(response -> response.body()
+                                    .onSuccess(responseBody -> result.complete(new VertxHttpResponse(
+                                            response.statusCode(), responseBody.toString(StandardCharsets.UTF_8),
+                                            fromVertxHeaders(response.headers()))))
+                                    .onFailure(result::completeExceptionally))
+                            .onFailure(result::completeExceptionally)))
+                    .onFailure(result::completeExceptionally);
+            return new A2AHttpClient.AsyncGetCall() {
+                @Override
+                public CompletableFuture<A2AHttpResponse> response() {
+                    return result;
+                }
+
+                @Override
+                public void cancel() {
+                    if (result.cancel(true)) {
+                        requestHandoff.cancel();
+                    }
+                }
+            };
+        }
+
+        @Override
         public CompletableFuture<Void> getAsyncSSE(
                 Consumer<ServerSentEvent> messageConsumer,
                 Consumer<Throwable> errorConsumer,
                 Runnable completeRunnable) throws IOException, InterruptedException {
 
-            return executeAsyncSSE(HttpMethod.GET, url, headers, null, messageConsumer, errorConsumer, completeRunnable);
+            return executeAsyncSSE(HttpMethod.GET, url, headers, null, messageConsumer, errorConsumer, completeRunnable, false)
+                    .completion();
+        }
+
+        @Override
+        public A2AHttpClient.AsyncSSECall getAsyncSSECallStatusAware(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) {
+            return executeAsyncSSE(HttpMethod.GET, url, headers, null, messageConsumer, errorConsumer,
+                    completeRunnable, true);
+        }
+    }
+
+    static final class AsyncRequestHandoff {
+        private final Object lock = new Object();
+        private boolean cancelled;
+        private @Nullable Runnable cancelActiveRequest;
+
+        void onRequestReady(Runnable cancelRequest, Runnable sendRequest) {
+            synchronized (lock) {
+                if (cancelled) {
+                    cancelRequest.run();
+                    return;
+                }
+                cancelActiveRequest = cancelRequest;
+                sendRequest.run();
+            }
+        }
+
+        void cancel() {
+            synchronized (lock) {
+                if (cancelled) {
+                    return;
+                }
+                cancelled = true;
+                Runnable cancelRequest = cancelActiveRequest;
+                cancelActiveRequest = null;
+                if (cancelRequest != null) {
+                    cancelRequest.run();
+                }
+            }
         }
     }
 
@@ -659,7 +831,58 @@ public class VertxA2AHttpClient implements A2AHttpClient, AutoCloseable {
                 Runnable completeRunnable) throws IOException, InterruptedException {
 
             Buffer bodyBuffer = Buffer.buffer(body, StandardCharsets.UTF_8.name());
-            return executeAsyncSSE(HttpMethod.POST, url, headers, bodyBuffer, messageConsumer, errorConsumer, completeRunnable);
+            return executeAsyncSSE(HttpMethod.POST, url, headers, bodyBuffer, messageConsumer, errorConsumer, completeRunnable, false)
+                    .completion();
+        }
+
+        @Override
+        public A2AHttpClient.AsyncSSECall postAsyncSSECall(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) {
+            Buffer bodyBuffer = Buffer.buffer(body, StandardCharsets.UTF_8.name());
+            return executeAsyncSSE(HttpMethod.POST, url, headers, bodyBuffer, messageConsumer, errorConsumer, completeRunnable, false);
+        }
+
+        @Override
+        public A2AHttpClient.AsyncSSECall postAsyncSSECallStatusAware(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) {
+            Buffer bodyBuffer = Buffer.buffer(body, StandardCharsets.UTF_8.name());
+            return executeAsyncSSE(HttpMethod.POST, url, headers, bodyBuffer, messageConsumer, errorConsumer,
+                    completeRunnable, true);
+        }
+
+        @Override
+        public A2AHttpClient.AsyncPostCall postAsyncResponse() {
+            RequestOptions options = new RequestOptions().setAbsoluteURI(url).setMethod(HttpMethod.POST);
+            headers.forEach(options::addHeader);
+            CompletableFuture<A2AHttpResponse> result = new CompletableFuture<>();
+            AsyncRequestHandoff requestHandoff = new AsyncRequestHandoff();
+            httpClient.request(options).onSuccess(request -> requestHandoff.onRequestReady(
+                    request::reset,
+                    () -> request.send(Buffer.buffer(body, StandardCharsets.UTF_8.name()))
+                            .onSuccess(response -> response.body()
+                                    .onSuccess(responseBody -> result.complete(new VertxHttpResponse(
+                                            response.statusCode(), responseBody.toString(StandardCharsets.UTF_8),
+                                            fromVertxHeaders(response.headers()))))
+                                    .onFailure(result::completeExceptionally))
+                            .onFailure(result::completeExceptionally)))
+                    .onFailure(result::completeExceptionally);
+            return new A2AHttpClient.AsyncPostCall() {
+                @Override
+                public CompletableFuture<A2AHttpResponse> response() {
+                    return result;
+                }
+
+                @Override
+                public void cancel() {
+                    if (result.cancel(true)) {
+                        requestHandoff.cancel();
+                    }
+                }
+            };
         }
     }
 

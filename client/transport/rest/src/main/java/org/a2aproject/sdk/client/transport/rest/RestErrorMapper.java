@@ -45,6 +45,7 @@ public class RestErrorMapper {
             Map.entry("EXTENDED_AGENT_CARD_NOT_CONFIGURED", A2AErrorCodes.EXTENDED_AGENT_CARD_NOT_CONFIGURED),
             Map.entry("EXTENSION_SUPPORT_REQUIRED", A2AErrorCodes.EXTENSION_SUPPORT_REQUIRED),
             Map.entry("VERSION_NOT_SUPPORTED", A2AErrorCodes.VERSION_NOT_SUPPORTED),
+            Map.entry("TASK_GENERATION_MISMATCH", A2AErrorCodes.TASK_GENERATION_MISMATCH),
             Map.entry("INVALID_REQUEST", A2AErrorCodes.INVALID_REQUEST),
             Map.entry("METHOD_NOT_FOUND", A2AErrorCodes.METHOD_NOT_FOUND),
             Map.entry("INVALID_PARAMS", A2AErrorCodes.INVALID_PARAMS),
@@ -153,6 +154,7 @@ public class RestErrorMapper {
             case EXTENDED_AGENT_CARD_NOT_CONFIGURED -> new A2AClientException(errorMessage, new ExtendedAgentCardNotConfiguredError(null, errorMessage, metadata));
             case EXTENSION_SUPPORT_REQUIRED -> new A2AClientException(errorMessage, new ExtensionSupportRequiredError(null, errorMessage, metadata));
             case VERSION_NOT_SUPPORTED -> new A2AClientException(errorMessage, new VersionNotSupportedError(null, errorMessage, metadata));
+            case TASK_GENERATION_MISMATCH -> new A2AClientException(errorMessage, new org.a2aproject.sdk.spec.TaskGenerationMismatchError(null, errorMessage, metadata));
             case INVALID_REQUEST -> new A2AClientException(errorMessage, new InvalidRequestError(null, errorMessage, metadata));
             case JSON_PARSE -> new A2AClientException(errorMessage, new JSONParseError(null, errorMessage, metadata));
             case METHOD_NOT_FOUND -> new A2AClientException(errorMessage, new MethodNotFoundError(null, errorMessage, metadata));

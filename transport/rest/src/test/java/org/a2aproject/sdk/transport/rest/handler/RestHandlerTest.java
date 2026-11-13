@@ -40,6 +40,8 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskQueryParams;
+import org.a2aproject.sdk.spec.TimelineEntry;
+import mutiny.zero.ZeroPublisher;
 import org.a2aproject.sdk.spec.TaskState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -65,6 +67,117 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
+    void selected11ArtifactOnlyInputIsRejectedBeforeLegacyHandler() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = selected11Card();
+        RestHandler handler = new RestHandler(card11, createCacheMetadata(card11), customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        String body = """
+                {"artifactUpdates":[{"taskId":"task-1","contextId":"context-1","artifact":{"artifactId":"input-1","parts":[{"text":"payload"}]}}]}
+                """;
+
+        RestHandler.HTTPRestResponse response = handler.sendMessage(context, "", body);
+
+        Assertions.assertTrue(response.getBody().contains("UNSUPPORTED_OPERATION"));
+        Mockito.verify(customHandler, Mockito.never()).onMessageSend(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void selected11StreamingArtifactsAndGuardsStopBeforeAuthorization() throws InterruptedException {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = selected11Card();
+        RestHandler handler = new RestHandler(card11, createCacheMetadata(card11), customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        List<String> bodies = List.of(
+                """
+                {"artifactUpdates":[{"taskId":"task-1","contextId":"context-1","artifact":{"artifactId":"input-1","parts":[{"text":"payload"}]}}]}
+                """,
+                """
+                {"message":{"taskId":"task-1","contextId":"context-1","messageId":"message-1","role":"ROLE_USER","parts":[{"text":"input"}]},"configuration":{"ifGenerationMatch":"0"}}
+                """);
+
+        for (String body : bodies) {
+            RestHandler.HTTPRestResponse response = handler.sendStreamingMessage(context, "", body);
+            Assertions.assertInstanceOf(RestHandler.HTTPRestStreamingResponse.class, response);
+            AtomicBoolean unsupported = new AtomicBoolean();
+            CountDownLatch complete = new CountDownLatch(1);
+            ((RestHandler.HTTPRestStreamingResponse) response).getPublisher().subscribe(new Flow.Subscriber<>() {
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    subscription.request(Long.MAX_VALUE);
+                }
+
+                @Override
+                public void onNext(String event) {
+                    unsupported.set(event.contains("UNSUPPORTED_OPERATION"));
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    complete.countDown();
+                }
+
+                @Override
+                public void onComplete() {
+                    complete.countDown();
+                }
+            });
+            Assertions.assertTrue(complete.await(5, TimeUnit.SECONDS));
+            Assertions.assertTrue(unsupported.get());
+        }
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
+    void selected11TimelineOptionIsRejectedBeforeCustomHandler() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = selected11Card();
+        RestHandler handler = new RestHandler(card11, createCacheMetadata(card11), customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        String body = """
+                {"message":{"taskId":"task-1","contextId":"context-1","messageId":"message-1","role":"ROLE_USER","parts":[{"text":"input"}]},"configuration":{"timelineLength":5}}
+                """;
+
+        RestHandler.HTTPRestResponse response = handler.sendMessage(context, "", body);
+
+        Assertions.assertTrue(response.getBody().contains("UNSUPPORTED_OPERATION"));
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
+    void unsupportedTaskQueryOptionsAreRejectedBeforeRequestHandler() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class);
+        AgentCard card11 = selected11Card();
+        RestHandler handler = new RestHandler(card11, createCacheMetadata(card11), customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+
+        RestHandler.HTTPRestResponse response = handler.getTask(context, "", MINIMAL_TASK.id(), "0", "5", "7");
+
+        Assertions.assertTrue(response.getBody().contains("UNSUPPORTED_OPERATION"));
+        Mockito.verify(customHandler, Mockito.never()).onGetTask(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void selected11CursorIsRejectedBeforeCustomHandler() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = selected11Card();
+        RestHandler handler = new RestHandler(card11, createCacheMetadata(card11), customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+
+        RestHandler.HTTPRestResponse response = handler.subscribeToTask(context, "", "task-1", "3");
+
+        Assertions.assertTrue(response.getBody().contains("UNSUPPORTED_OPERATION"));
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    private static AgentCard selected11Card() {
+        return AgentCard.builder(CARD)
+                .supportedInterfaces(Collections.singletonList(
+                        new org.a2aproject.sdk.spec.AgentInterface("HTTP+JSON", "http://localhost:9999", null, "1.1")))
+                .build();
+    }
+
+    @Test
     public void testGetTaskSuccess() {
         RestHandler handler = new RestHandler(CARD, createCacheMetadata(), requestHandler, internalExecutor);
         taskStore.save(MINIMAL_TASK, false);
@@ -80,6 +193,60 @@ public class RestHandlerTest extends AbstractA2ARequestHandlerTest {
         Assertions.assertEquals(200, response.getStatusCode());
         Assertions.assertEquals(APPLICATION_JSON, response.getContentType());
         Assertions.assertTrue(response.getBody().contains(MINIMAL_TASK.id()));
+    }
+
+    @Test
+    void legacyTaskOutputsAreProjectedAcrossRestBoundaries() throws Exception {
+        Task canonical = Task.builder(MINIMAL_TASK)
+                .generation(7)
+                .timeline(List.of(new TimelineEntry(7, new TimelineEntry.StatusValue(MINIMAL_TASK.status()))))
+                .build();
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class);
+        Mockito.when(customHandler.onMessageSend(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onGetTask(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onCancelTask(Mockito.any(), Mockito.any())).thenReturn(canonical);
+        Mockito.when(customHandler.onListTasks(Mockito.any(), Mockito.any()))
+                .thenReturn(new ListTasksResult(List.of(canonical)));
+        Mockito.when(customHandler.onSubscribeToTask(Mockito.any(), Mockito.any()))
+                .thenReturn(ZeroPublisher.fromItems(canonical));
+        RestHandler handler = new RestHandler(CARD, createCacheMetadata(), customHandler, internalExecutor);
+
+        String messageBody = """
+                {"message":{"messageId":"m1","contextId":"c1","role":"ROLE_USER","parts":[{"text":"hello"}]}}
+                """;
+        JsonObject sent = JsonParser.parseString(handler.sendMessage(callContext, "", messageBody).getBody())
+                .getAsJsonObject().getAsJsonObject("task");
+        JsonObject fetched = JsonParser.parseString(handler.getTask(callContext, "", canonical.id(), "0").getBody())
+                .getAsJsonObject();
+        JsonObject cancelled = JsonParser.parseString(handler.cancelTask(callContext, "", "{}", canonical.id()).getBody())
+                .getAsJsonObject();
+        JsonObject listed = JsonParser.parseString(handler.listTasks(callContext, "", null, null, null, null,
+                null, null, null).getBody()).getAsJsonObject().getAsJsonArray("tasks").get(0).getAsJsonObject();
+
+        assertLegacyJsonTask(sent);
+        assertLegacyJsonTask(fetched);
+        assertLegacyJsonTask(cancelled);
+        assertLegacyJsonTask(listed);
+
+        RestHandler.HTTPRestStreamingResponse stream = (RestHandler.HTTPRestStreamingResponse)
+                handler.subscribeToTask(callContext, "", canonical.id());
+        String[] first = new String[1];
+        CountDownLatch completed = new CountDownLatch(1);
+        stream.getPublisher().subscribe(new Flow.Subscriber<>() {
+            @Override public void onSubscribe(Flow.Subscription subscription) { subscription.request(1); }
+            @Override public void onNext(String value) { first[0] = value; }
+            @Override public void onError(Throwable error) { throw new AssertionError(error); }
+            @Override public void onComplete() { completed.countDown(); }
+        });
+        Assertions.assertTrue(completed.await(5, TimeUnit.SECONDS));
+        Assertions.assertNotNull(first[0]);
+        Assertions.assertFalse(first[0].contains("generation"));
+        Assertions.assertFalse(first[0].contains("timeline"));
+    }
+
+    private static void assertLegacyJsonTask(JsonObject task) {
+        Assertions.assertFalse(task.has("generation"));
+        Assertions.assertFalse(task.has("timeline"));
     }
 
     @Test

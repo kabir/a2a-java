@@ -133,6 +133,23 @@ public class ProtoUtils {
             return MessageSendParamsMapper.INSTANCE.toProto(request);
         }
 
+        public static org.a2aproject.sdk.grpc.SendMessageRequest sendInputRequest(org.a2aproject.sdk.spec.SendInputParams request) {
+            return org.a2aproject.sdk.grpc.mapper.SendInputParamsMapper.INSTANCE.toProto(request);
+        }
+
+        public static org.a2aproject.sdk.grpc.SubscribeToTaskRequest subscribeToTaskRequest(
+                org.a2aproject.sdk.spec.ObserveTaskParams request) {
+            return org.a2aproject.sdk.grpc.mapper.ObserveTaskParamsMapper.INSTANCE.toProto(request);
+        }
+
+        public static org.a2aproject.sdk.grpc.StreamRequest streamRequest(org.a2aproject.sdk.spec.StreamRequest request) {
+            return org.a2aproject.sdk.grpc.mapper.StreamRequestMapper.INSTANCE.toProto(request);
+        }
+
+        public static org.a2aproject.sdk.grpc.StreamError streamError(org.a2aproject.sdk.spec.StreamError error) {
+            return org.a2aproject.sdk.grpc.mapper.StreamErrorMapper.INSTANCE.toProto(error);
+        }
+
         public static org.a2aproject.sdk.grpc.ListTaskPushNotificationConfigsResponse listTaskPushNotificationConfigsResponse(ListTaskPushNotificationConfigsResult result) {
             List<org.a2aproject.sdk.grpc.TaskPushNotificationConfig> confs = new ArrayList<>(result.configs().size());
             for (TaskPushNotificationConfig config : result.configs()) {
@@ -175,6 +192,11 @@ public class ProtoUtils {
                 case TaskArtifactUpdateEvent.STREAMING_EVENT_ID -> org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
                         .setArtifactUpdate(taskArtifactUpdateEvent((TaskArtifactUpdateEvent) eventKind))
                         .build();
+                case org.a2aproject.sdk.spec.TaskMessageUpdateEvent.STREAMING_EVENT_ID ->
+                        org.a2aproject.sdk.grpc.StreamResponse.newBuilder()
+                                .setMessageUpdate(org.a2aproject.sdk.grpc.mapper.TaskMessageUpdateEventMapper.INSTANCE
+                                        .toProto((org.a2aproject.sdk.spec.TaskMessageUpdateEvent) eventKind))
+                                .build();
                 default -> throw new IllegalArgumentException("Unsupported event type: " + eventKind);
             };
         }
@@ -245,11 +267,25 @@ public class ProtoUtils {
             return new GetExtendedAgentCardParams(tenant.isBlank() ? null : tenant);
         }
 
+        public static MessageSendConfiguration messageSendConfiguration(
+                org.a2aproject.sdk.grpc.SendMessageConfigurationOrBuilder configuration) {
+            org.a2aproject.sdk.grpc.SendMessageConfiguration proto =
+                    configuration instanceof org.a2aproject.sdk.grpc.SendMessageConfiguration
+                            ? (org.a2aproject.sdk.grpc.SendMessageConfiguration) configuration
+                            : ((org.a2aproject.sdk.grpc.SendMessageConfiguration.Builder) configuration).build();
+            return convert(() -> MessageSendConfigurationMapper.INSTANCE.fromProto(proto));
+        }
+
         public static MessageSendParams messageSendParams(org.a2aproject.sdk.grpc.SendMessageRequestOrBuilder request) {
             org.a2aproject.sdk.grpc.SendMessageRequest requestProto = request instanceof org.a2aproject.sdk.grpc.SendMessageRequest
                     ? (org.a2aproject.sdk.grpc.SendMessageRequest) request
                     : ((org.a2aproject.sdk.grpc.SendMessageRequest.Builder) request).build();
             return convert(() -> MessageSendParamsMapper.INSTANCE.fromProto(requestProto));
+        }
+
+        public static org.a2aproject.sdk.spec.SendInputParams sendInputParams(
+                org.a2aproject.sdk.grpc.SendMessageRequestOrBuilder request) {
+            return convert(() -> org.a2aproject.sdk.grpc.mapper.SendInputParamsMapper.INSTANCE.fromProto(request));
         }
 
         public static TaskPushNotificationConfig createTaskPushNotificationConfig(org.a2aproject.sdk.grpc.TaskPushNotificationConfigOrBuilder config) {
@@ -271,6 +307,19 @@ public class ProtoUtils {
                     ? (org.a2aproject.sdk.grpc.GetTaskPushNotificationConfigRequest) request
                     : ((org.a2aproject.sdk.grpc.GetTaskPushNotificationConfigRequest.Builder) request).build();
             return convert(() -> GetTaskPushNotificationConfigParamsMapper.INSTANCE.fromProto(reqProto));
+        }
+
+        public static org.a2aproject.sdk.spec.ObserveTaskParams observeTaskParams(
+                org.a2aproject.sdk.grpc.SubscribeToTaskRequestOrBuilder request) {
+            return convert(() -> org.a2aproject.sdk.grpc.mapper.ObserveTaskParamsMapper.INSTANCE.fromProto(request));
+        }
+
+        public static org.a2aproject.sdk.spec.StreamRequest streamRequest(org.a2aproject.sdk.grpc.StreamRequest request) {
+            return convert(() -> org.a2aproject.sdk.grpc.mapper.StreamRequestMapper.INSTANCE.fromProto(request));
+        }
+
+        public static org.a2aproject.sdk.spec.StreamError streamError(org.a2aproject.sdk.grpc.StreamError request) {
+            return convert(() -> org.a2aproject.sdk.grpc.mapper.StreamErrorMapper.INSTANCE.fromProto(request));
         }
 
         public static TaskIdParams taskIdParams(org.a2aproject.sdk.grpc.SubscribeToTaskRequestOrBuilder request) {

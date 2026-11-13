@@ -1,15 +1,30 @@
 package org.a2aproject.sdk.client.http;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.mockserver.integration.ClientAndServer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.Proxy;
 import java.net.ProxySelector;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -33,16 +48,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
 
 public class JdkA2AHttpClientTest {
 
@@ -73,6 +81,332 @@ public class JdkA2AHttpClientTest {
 
         assertEquals(200, response.status());
         assertEquals("ok", response.body());
+    }
+
+    @Test
+    public void postAsyncResponsePreservesNonSuccessStatusAndBody() throws Exception {
+        server = ClientAndServer.startClientAndServer(0);
+        server.when(request().withMethod("POST").withPath("/async"))
+                .respond(response().withStatusCode(500).withBody("failure body"));
+
+        A2AHttpClient.AsyncPostCall call = new JdkA2AHttpClient().createPost()
+                .url("http://localhost:" + server.getLocalPort() + "/async")
+                .body("{}")
+                .postAsyncResponse();
+        A2AHttpResponse result = call.response().get(5, TimeUnit.SECONDS);
+
+        assertEquals(500, result.status());
+        assertFalse(result.success());
+        assertEquals("failure body", result.body());
+    }
+
+    @Test
+    public void getAsyncResponsePreservesNonSuccessStatusAndBody() throws Exception {
+        server = ClientAndServer.startClientAndServer(0);
+        server.when(request().withMethod("GET").withPath("/async-get"))
+                .respond(response().withStatusCode(500).withBody("failure body"));
+
+        A2AHttpClient.AsyncGetCall call = new JdkA2AHttpClient().createGet()
+                .url("http://localhost:" + server.getLocalPort() + "/async-get")
+                .getAsyncResponse();
+        A2AHttpResponse result = call.response().get(5, TimeUnit.SECONDS);
+
+        assertEquals(500, result.status());
+        assertFalse(result.success());
+        assertEquals("failure body", result.body());
+    }
+
+    @Test
+    public void cancellingAsyncGetClosesHeldOpenPeerConnection() throws Exception {
+        try (ServerSocket listener = new ServerSocket(0)) {
+            CountDownLatch requestRead = new CountDownLatch(1);
+            CountDownLatch peerObservedClose = new CountDownLatch(1);
+            AtomicReference<Throwable> peerFailure = new AtomicReference<>();
+            Thread peer = new Thread(() -> {
+                try (Socket socket = listener.accept()) {
+                    socket.setSoTimeout(5000);
+                    InputStream input = socket.getInputStream();
+                    int matched = 0;
+                    int value;
+                    while ((value = input.read()) >= 0) {
+                        matched = switch (matched) {
+                            case 0 -> value == '\r' ? 1 : 0;
+                            case 1 -> value == '\n' ? 2 : value == '\r' ? 1 : 0;
+                            case 2 -> value == '\r' ? 3 : 0;
+                            case 3 -> value == '\n' ? 4 : 0;
+                            default -> matched;
+                        };
+                        if (matched == 4) break;
+                    }
+                    requestRead.countDown();
+                    if (input.read() == -1) peerObservedClose.countDown();
+                } catch (Throwable failure) {
+                    peerFailure.set(failure);
+                    requestRead.countDown();
+                }
+            }, "held-open-get-peer");
+            peer.setDaemon(true);
+            peer.start();
+
+            A2AHttpClient.AsyncGetCall call = new JdkA2AHttpClient().createGet()
+                    .url("http://localhost:" + listener.getLocalPort() + "/held-open-get")
+                    .getAsyncResponse();
+            assertTrue(requestRead.await(5, TimeUnit.SECONDS), "peer did not receive the GET request");
+            assertNull(peerFailure.get());
+
+            call.cancel();
+
+            assertTrue(call.response().isCancelled());
+            assertTrue(peerObservedClose.await(5, TimeUnit.SECONDS), "cancel left the held-open GET active");
+            assertNull(peerFailure.get());
+        }
+    }
+
+    @Test
+    public void cancellingAsyncResponseClosesHeldOpenPeerConnection() throws Exception {
+        try (ServerSocket listener = new ServerSocket(0)) {
+            CountDownLatch requestRead = new CountDownLatch(1);
+            CountDownLatch peerObservedClose = new CountDownLatch(1);
+            AtomicReference<Throwable> peerFailure = new AtomicReference<>();
+            Thread peer = new Thread(() -> {
+                try (Socket socket = listener.accept()) {
+                    socket.setSoTimeout(5000);
+                    InputStream input = socket.getInputStream();
+                    ByteArrayOutputStream headerBytes = new ByteArrayOutputStream();
+                    int matched = 0;
+                    int value;
+                    while ((value = input.read()) >= 0) {
+                        headerBytes.write(value);
+                        matched = switch (matched) {
+                            case 0 -> value == '\r' ? 1 : 0;
+                            case 1 -> value == '\n' ? 2 : value == '\r' ? 1 : 0;
+                            case 2 -> value == '\r' ? 3 : 0;
+                            case 3 -> value == '\n' ? 4 : 0;
+                            default -> matched;
+                        };
+                        if (matched == 4) break;
+                    }
+                    String headers = headerBytes.toString(java.nio.charset.StandardCharsets.US_ASCII);
+                    int contentLength = 0;
+                    for (String line : headers.split("\\r\\n")) {
+                        if (line.regionMatches(true, 0, "Content-Length:", 0, 15)) {
+                            contentLength = Integer.parseInt(line.substring(15).trim());
+                        }
+                    }
+                    for (int i = 0; i < contentLength; i++) {
+                        if (input.read() < 0) throw new IOException("request body ended early");
+                    }
+                    requestRead.countDown();
+                    if (input.read() == -1) peerObservedClose.countDown();
+                } catch (Throwable failure) {
+                    peerFailure.set(failure);
+                    requestRead.countDown();
+                }
+            }, "held-open-http-peer");
+            peer.setDaemon(true);
+            peer.start();
+
+            A2AHttpClient.AsyncPostCall call = new JdkA2AHttpClient().createPost()
+                    .url("http://localhost:" + listener.getLocalPort() + "/held-open")
+                    .body("{}")
+                    .postAsyncResponse();
+            assertTrue(requestRead.await(5, TimeUnit.SECONDS), "peer did not receive the complete request");
+            assertNull(peerFailure.get());
+
+            call.cancel();
+
+            assertTrue(call.response().isCancelled());
+            assertTrue(peerObservedClose.await(5, TimeUnit.SECONDS), "cancel left the held-open peer connection active");
+            assertNull(peerFailure.get());
+        }
+    }
+
+    @Test
+    public void cancellableSseRejectsHttp500JsonRpcResultBeforeMessageConsumer() throws Exception {
+        server = ClientAndServer.startClientAndServer(0);
+        String validResult = "{\"jsonrpc\":\"2.0\",\"id\":\"request-1\",\"result\":{\"task\":{\"id\":\"task-1\",\"contextId\":\"context-1\",\"status\":{\"state\":\"TASK_STATE_WORKING\"}}}}";
+        server.when(request().withMethod("POST").withPath("/non-2xx-sse"))
+                .respond(response().withStatusCode(500).withHeader("Content-Type", "application/json")
+                        .withBody(validResult));
+        AtomicReference<ServerSentEvent> message = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        AtomicInteger completed = new AtomicInteger();
+
+        A2AHttpClient.AsyncSSECall call = new JdkA2AHttpClient().createPost()
+                .url("http://localhost:" + server.getLocalPort() + "/non-2xx-sse")
+                .body("{}")
+                .postAsyncSSECallStatusAware(message::set, failure::set, completed::incrementAndGet);
+        call.completion().get(5, TimeUnit.SECONDS);
+
+        assertNull(message.get(), "a valid JSON-RPC result in a 500 response must not reach the decoder");
+        assertNotNull(failure.get());
+        org.a2aproject.sdk.spec.A2AClientHTTPError httpError = assertInstanceOf(
+                org.a2aproject.sdk.spec.A2AClientHTTPError.class, failure.get().getCause());
+        assertEquals(validResult, httpError.getResponseBody());
+        assertEquals(0, completed.get());
+    }
+
+    @Test
+    public void cancellableGetSsePreservesNonSuccessBodyWithoutSseDecoding() throws Exception {
+        server = ClientAndServer.startClientAndServer(0);
+        String errorBody = "{\"error\":{\"code\":409,\"message\":\"generation mismatch\"}}";
+        server.when(request().withMethod("GET").withPath("/non-2xx-get-sse"))
+                .respond(response().withStatusCode(409).withHeader("Content-Type", "application/json")
+                        .withBody(errorBody));
+        AtomicReference<ServerSentEvent> message = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        AtomicInteger completed = new AtomicInteger();
+
+        A2AHttpClient.AsyncSSECall call = new JdkA2AHttpClient().createGet()
+                .url("http://localhost:" + server.getLocalPort() + "/non-2xx-get-sse")
+                .getAsyncSSECallStatusAware(message::set, failure::set, completed::incrementAndGet);
+        call.completion().get(5, TimeUnit.SECONDS);
+
+        assertNull(message.get());
+        org.a2aproject.sdk.spec.A2AClientHTTPError httpError = assertInstanceOf(
+                org.a2aproject.sdk.spec.A2AClientHTTPError.class, failure.get().getCause());
+        assertEquals(409, httpError.getCode());
+        assertEquals(errorBody, httpError.getResponseBody());
+        assertEquals(0, completed.get());
+    }
+
+    @Test
+    public void statusAwareGetSseCancelsOversizedErrorBodyBeforeEndOfBody() throws Exception {
+        assertOversizedStatusAwareErrorBody(false);
+    }
+
+    @Test
+    public void statusAwarePostSseCancelsOversizedErrorBodyBeforeEndOfBody() throws Exception {
+        assertOversizedStatusAwareErrorBody(true);
+    }
+
+    private void assertOversizedStatusAwareErrorBody(boolean post) throws Exception {
+        HttpServer peer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        CountDownLatch peerObservedClose = new CountDownLatch(1);
+        AtomicInteger bytesSent = new AtomicInteger();
+        peer.createContext("/oversized-error", exchange -> writeOversizedErrorBody(exchange, post,
+                peerObservedClose, bytesSent));
+        peer.start();
+        try {
+            AtomicInteger events = new AtomicInteger();
+            AtomicInteger errors = new AtomicInteger();
+            AtomicInteger completed = new AtomicInteger();
+            AtomicReference<Throwable> failure = new AtomicReference<>();
+            String url = "http://127.0.0.1:" + peer.getAddress().getPort() + "/oversized-error";
+            A2AHttpClient.AsyncSSECall call = post
+                    ? new JdkA2AHttpClient().createPost().url(url).body("{}")
+                            .postAsyncSSECallStatusAware(event -> events.incrementAndGet(), error -> {
+                                errors.incrementAndGet();
+                                failure.set(error);
+                            }, completed::incrementAndGet)
+                    : new JdkA2AHttpClient().createGet().url(url)
+                            .getAsyncSSECallStatusAware(event -> events.incrementAndGet(), error -> {
+                                errors.incrementAndGet();
+                                failure.set(error);
+                            }, completed::incrementAndGet);
+
+            call.completion().get(5, TimeUnit.SECONDS);
+
+            assertTrue(peerObservedClose.await(2, TimeUnit.SECONDS), "oversized error body read was not cancelled");
+            assertTrue(bytesSent.get() < 2 * 1024 * 1024, "peer completed the oversized body instead of observing cancellation");
+            assertEquals(0, events.get());
+            assertEquals(1, errors.get());
+            assertEquals(0, completed.get());
+            assertNotNull(failure.get());
+            assertTrue(failure.get().getMessage().contains("exceeds"));
+            org.a2aproject.sdk.spec.A2AClientHTTPError httpError = assertInstanceOf(
+                    org.a2aproject.sdk.spec.A2AClientHTTPError.class, failure.get().getCause());
+            assertEquals(500, httpError.getCode());
+            assertNull(httpError.getResponseBody());
+            assertEquals("oversized", httpError.getResponseHeaders().get("X-Error-Test").get(0));
+        } finally {
+            peer.stop(0);
+        }
+    }
+
+    private static void writeOversizedErrorBody(
+            HttpExchange exchange, boolean post, CountDownLatch peerObservedClose, AtomicInteger bytesSent) {
+        try {
+            if (post) {
+                exchange.getRequestBody().transferTo(OutputStream.nullOutputStream());
+            }
+            exchange.getResponseHeaders().add("X-Error-Test", "oversized");
+            exchange.sendResponseHeaders(500, 2 * 1024 * 1024);
+            byte[] chunk = "x".repeat(4096).getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+            try (OutputStream output = exchange.getResponseBody()) {
+                while (bytesSent.get() < 2 * 1024 * 1024) {
+                    output.write(chunk);
+                    output.flush();
+                    bytesSent.addAndGet(chunk.length);
+                    Thread.sleep(10);
+                }
+            }
+        } catch (IOException closedByClient) {
+            peerObservedClose.countDown();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        } finally {
+            exchange.close();
+        }
+    }
+
+    @Test
+    public void cancellingAsyncSseClosesHeldOpenPeerConnection() throws Exception {
+        try (ServerSocket listener = new ServerSocket(0)) {
+            CountDownLatch requestRead = new CountDownLatch(1);
+            CountDownLatch peerObservedClose = new CountDownLatch(1);
+            AtomicReference<Throwable> peerFailure = new AtomicReference<>();
+            Thread peer = new Thread(() -> {
+                try (Socket socket = listener.accept()) {
+                    socket.setSoTimeout(5000);
+                    InputStream input = socket.getInputStream();
+                    ByteArrayOutputStream headerBytes = new ByteArrayOutputStream();
+                    int matched = 0;
+                    int value;
+                    while ((value = input.read()) >= 0) {
+                        headerBytes.write(value);
+                        matched = switch (matched) {
+                            case 0 -> value == '\r' ? 1 : 0;
+                            case 1 -> value == '\n' ? 2 : value == '\r' ? 1 : 0;
+                            case 2 -> value == '\r' ? 3 : 0;
+                            case 3 -> value == '\n' ? 4 : 0;
+                            default -> matched;
+                        };
+                        if (matched == 4) break;
+                    }
+                    String headers = headerBytes.toString(java.nio.charset.StandardCharsets.US_ASCII);
+                    int contentLength = 0;
+                    for (String line : headers.split("\\r\\n")) {
+                        if (line.regionMatches(true, 0, "Content-Length:", 0, 15)) {
+                            contentLength = Integer.parseInt(line.substring(15).trim());
+                        }
+                    }
+                    for (int i = 0; i < contentLength; i++) {
+                        if (input.read() < 0) throw new IOException("request body ended early");
+                    }
+                    requestRead.countDown();
+                    if (input.read() == -1) peerObservedClose.countDown();
+                } catch (Throwable failure) {
+                    peerFailure.set(failure);
+                    requestRead.countDown();
+                }
+            }, "held-open-sse-peer");
+            peer.setDaemon(true);
+            peer.start();
+
+            A2AHttpClient.AsyncSSECall call = new JdkA2AHttpClient().createPost()
+                    .url("http://localhost:" + listener.getLocalPort() + "/held-open-sse")
+                    .body("{}")
+                    .postAsyncSSECall(event -> { }, failure -> { }, () -> { });
+            assertTrue(requestRead.await(5, TimeUnit.SECONDS), "peer did not receive the complete SSE request");
+            assertNull(peerFailure.get());
+
+            call.cancel();
+
+            assertTrue(call.completion().isCancelled());
+            assertTrue(peerObservedClose.await(5, TimeUnit.SECONDS), "cancel left the held-open SSE read active");
+            assertNull(peerFailure.get());
+        }
     }
 
     @Test

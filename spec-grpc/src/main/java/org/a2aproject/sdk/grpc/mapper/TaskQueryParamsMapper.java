@@ -6,28 +6,21 @@ import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-/**
- * Mapper between {@link org.a2aproject.sdk.grpc.GetTaskRequest} and {@link org.a2aproject.sdk.spec.TaskQueryParams}.
- * <p>
- * Extracts task ID from resource name format "tasks/{id}" using {@link ResourceNameParser}.
- */
+/** Maps get-task requests while preserving optional cursor and timeline-limit presence. */
 @Mapper(config = A2AProtoMapperConfig.class, uses = A2ACommonFieldMapper.class)
 public interface TaskQueryParamsMapper {
 
     TaskQueryParamsMapper INSTANCE = A2AMappers.getMapper(TaskQueryParamsMapper.class);
 
-    /**
-     * Converts proto GetTaskRequest to domain TaskQueryParams.
-     * Extracts task ID from the resource name.
-     */
     @BeanMapping(builder = @Builder(buildMethod = "build"))
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "historyLength", source = "historyLength")
+    @Mapping(target = "historyLength", expression = "java(proto.hasHistoryLength() ? proto.getHistoryLength() : null)")
+    @Mapping(target = "currentGeneration", expression = "java(proto.hasCurrentGeneration() ? proto.getCurrentGeneration() : null)")
+    @Mapping(target = "timelineLength", expression = "java(proto.hasTimelineLength() ? proto.getTimelineLength() : null)")
     TaskQueryParams fromProto(org.a2aproject.sdk.grpc.GetTaskRequest proto);
 
-    @BeanMapping(builder = @Builder(buildMethod = "build"))
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "historyLength", source = "historyLength")
     @Mapping(target = "tenant", source = "tenant", conditionExpression = "java(domain.tenant() != null)")
+    @Mapping(target = "historyLength", source = "historyLength", conditionExpression = "java(domain.historyLength() != null)")
+    @Mapping(target = "currentGeneration", source = "currentGeneration", conditionExpression = "java(domain.currentGeneration() != null)")
+    @Mapping(target = "timelineLength", source = "timelineLength", conditionExpression = "java(domain.timelineLength() != null)")
     org.a2aproject.sdk.grpc.GetTaskRequest toProto(TaskQueryParams domain);
 }

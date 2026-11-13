@@ -13,7 +13,7 @@ import org.mapstruct.Mapping;
  */
 @Mapper(config = A2AProtoMapperConfig.class,
         collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED,
-        uses = {PartMapper.class, A2ACommonFieldMapper.class})
+        uses = {PartMapper.class, RoleMapper.class, A2ACommonFieldMapper.class})
 public interface ArtifactMapper {
 
     ArtifactMapper INSTANCE = A2AMappers.getMapper(ArtifactMapper.class);
@@ -37,5 +37,6 @@ public interface ArtifactMapper {
     @Mapping(target = "description", source = "description", qualifiedByName = "emptyToNull")
     @Mapping(target = "metadata", source = "metadata", qualifiedByName = "metadataFromProto")
     @Mapping(target = "extensions", source = "extensions", qualifiedByName = "emptyListToNull")
+    @Mapping(target = "role", source = "role")
     Artifact fromProto(org.a2aproject.sdk.grpc.Artifact proto);
 }

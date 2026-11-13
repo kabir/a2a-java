@@ -30,12 +30,19 @@ import io.opentelemetry.context.Scope;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TransportCall;
+import org.a2aproject.sdk.client.transport.spi.TransportEnd;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
+import org.a2aproject.sdk.client.transport.spi.TransportResult;
 import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.extras.opentelemetry.StreamingEventAttributes;
@@ -52,6 +59,8 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
@@ -514,6 +523,177 @@ public class OpenTelemetryClientTransport implements VersionedClientTransport {
             span.end();
             recordOperationDuration(startNanos, A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD, success);
         }
+    }
+
+    @Override
+    public TransportCall<TransportResult<EventKind>> sendInput(SendInputParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        String operation = "SendInput";
+        return traceCall(operation, params, null, () -> requireVersionedDelegate()
+                .sendInput(params, options, createContext(context)));
+    }
+
+    @Override
+    public TransportObservation streamInput(SendInputParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        String operation = "StreamInput";
+        return traceObservation(operation, params, null, () -> requireVersionedDelegate()
+                .streamInput(params, options, createContext(context)));
+    }
+
+    @Override
+    public TransportObservation observe(ObserveTaskParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        String operation = "ObserveTask";
+        return traceObservation(operation, params, params.id(), () -> requireVersionedDelegate()
+                .observe(params, options, createContext(context)));
+    }
+
+    @Override
+    public TransportCall<TransportResult<Task>> getTaskAsync(TaskQueryParams params, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        return traceCall(A2AMethods.GET_TASK_METHOD, params, params.id(), () -> requireVersionedDelegate()
+                .getTaskAsync(params, options, createContext(context)));
+    }
+
+    @Override
+    public TransportResult<Task> getTaskDecoded(TaskQueryParams params, @Nullable ClientCallContext context) {
+        return traceSynchronous(A2AMethods.GET_TASK_METHOD, params, params.id(),
+                () -> requireVersionedDelegate().getTaskDecoded(params, createContext(context)));
+    }
+
+    @Override
+    public TransportResult<ListTasksResult> listTasksDecoded(ListTasksParams params,
+            @Nullable ClientCallContext context) {
+        return traceSynchronous(A2AMethods.LIST_TASK_METHOD, params, null,
+                () -> requireVersionedDelegate().listTasksDecoded(params, createContext(context)));
+    }
+
+    private VersionedClientTransport requireVersionedDelegate() {
+        if (delegate instanceof VersionedClientTransport versioned) {
+            return versioned;
+        }
+        throw new UnsupportedOperationException("Transport does not support Phase 2 client operations");
+    }
+
+    private Span startOperationSpan(String operation, Object request, @Nullable String taskId) {
+        SpanBuilder builder = tracer.spanBuilder(operation)
+                .setSpanKind(SpanKind.CLIENT)
+                .setAttribute(GENAI_OPERATION_NAME, operation);
+        if (taskId != null) {
+            builder.setAttribute(GENAI_TASK_ID, taskId);
+        }
+        if (extractRequest()) {
+            builder.setAttribute(GENAI_REQUEST, request.toString());
+        }
+        return builder.startSpan();
+    }
+
+    private <T> TransportCall<T> traceCall(String operation, Object request, @Nullable String taskId,
+            Supplier<TransportCall<T>> invocation) {
+        long startNanos = System.nanoTime();
+        Span span = startOperationSpan(operation, request, taskId);
+        TransportCall<T> source;
+        try (Scope ignored = span.makeCurrent()) {
+            source = invocation.get();
+        } catch (RuntimeException | Error failure) {
+            finishOperationSpan(span, operation, startNanos, false, failure);
+            throw failure;
+        }
+
+        AtomicBoolean ended = new AtomicBoolean();
+        TransportCall<T> traced = TransportCall.create(source::cancel);
+        traced.result().whenComplete((value, failure) -> {
+            if (ended.compareAndSet(false, true)) {
+                finishOperationSpan(span, operation, startNanos, failure == null, failure);
+            }
+        });
+        try {
+            CompletionStage<T> sourceResult = source.result();
+            sourceResult.whenComplete((value, failure) -> {
+                if (failure == null) {
+                    traced.complete(value);
+                } else {
+                    traced.fail(failure);
+                }
+            });
+        } catch (RuntimeException | Error failure) {
+            traced.cancel();
+            throw failure;
+        }
+        return traced;
+    }
+
+    private TransportObservation traceObservation(String operation, Object request, @Nullable String taskId,
+            Supplier<TransportObservation> invocation) {
+        long startNanos = System.nanoTime();
+        Span span = startOperationSpan(operation, request, taskId);
+        TransportObservation observation;
+        try (Scope ignored = span.makeCurrent()) {
+            observation = invocation.get();
+        } catch (RuntimeException | Error failure) {
+            finishOperationSpan(span, operation, startNanos, false, failure);
+            throw failure;
+        }
+
+        AtomicBoolean ended = new AtomicBoolean();
+        try {
+            observation.ready().whenComplete((ready, failure) -> {
+                if (failure != null && ended.compareAndSet(false, true)) {
+                    finishOperationSpan(span, operation, startNanos, false, failure);
+                }
+            });
+            observation.completion().whenComplete((terminal, failure) -> {
+                if (!ended.compareAndSet(false, true)) {
+                    return;
+                }
+                boolean success = failure == null && terminal != null
+                        && terminal.kind() == TransportEnd.Kind.COMPLETED;
+                Throwable cause = failure != null ? failure : terminal == null ? null : terminal.cause();
+                finishOperationSpan(span, operation, startNanos, success, cause);
+            });
+        } catch (RuntimeException | Error failure) {
+            observation.cancel();
+            if (ended.compareAndSet(false, true)) {
+                finishOperationSpan(span, operation, startNanos, false, failure);
+            }
+            throw failure;
+        }
+        return observation;
+    }
+
+    private <T> T traceSynchronous(String operation, Object request, @Nullable String taskId, Supplier<T> invocation) {
+        long startNanos = System.nanoTime();
+        Span span = startOperationSpan(operation, request, taskId);
+        boolean success = false;
+        try (Scope ignored = span.makeCurrent()) {
+            T result = invocation.get();
+            if (result != null && extractResponse()) {
+                span.setAttribute(GENAI_RESPONSE, result.toString());
+            }
+            if (result != null) {
+                span.setStatus(StatusCode.OK);
+            }
+            success = true;
+            return result;
+        } catch (RuntimeException | Error failure) {
+            span.setStatus(StatusCode.ERROR, failure.getMessage());
+            throw failure;
+        } finally {
+            span.end();
+            recordOperationDuration(startNanos, operation, success);
+        }
+    }
+
+    private void finishOperationSpan(Span span, String operation, long startNanos, boolean success,
+            @Nullable Throwable failure) {
+        if (success) {
+            span.setStatus(StatusCode.OK);
+        } else if (failure != null) {
+            span.setStatus(StatusCode.ERROR, failure.getMessage());
+        }
+        span.end();
+        recordOperationDuration(startNanos, operation, success);
     }
 
     private void recordOperationDuration(long startNanos, String operationName, boolean success) {

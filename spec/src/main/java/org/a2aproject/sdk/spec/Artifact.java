@@ -3,8 +3,9 @@ package org.a2aproject.sdk.spec;
 import java.util.List;
 import java.util.Map;
 
-import org.a2aproject.sdk.util.Assert;
+import org.a2aproject.sdk.spec.Message.Role;
 import org.a2aproject.sdk.spec.util.CollectionCopies;
+import org.a2aproject.sdk.util.Assert;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,7 +33,14 @@ import org.jspecify.annotations.Nullable;
  * @see <a href="https://a2a-protocol.org/latest/">A2A Protocol Specification</a>
  */
 public record Artifact(String artifactId, @Nullable String name, @Nullable String description, List<Part<?>> parts, @Nullable Map<String, Object> metadata,
-                       @Nullable List<String> extensions) {
+                       @Nullable List<String> extensions, long startGeneration, long endGeneration,
+                       @Nullable Role role) {
+
+    /** Preserves the legacy constructor with unspecified origin and generation range. */
+    public Artifact(String artifactId, @Nullable String name, @Nullable String description, List<Part<?>> parts,
+            @Nullable Map<String, Object> metadata, @Nullable List<String> extensions) {
+        this(artifactId, name, description, parts, metadata, extensions, 0, 0, null);
+    }
 
     /**
      * Compact constructor that validates required fields.
@@ -101,6 +109,9 @@ public record Artifact(String artifactId, @Nullable String name, @Nullable Strin
         private @Nullable List<Part<?>> parts;
         private @Nullable Map<String, Object> metadata;
         private @Nullable List<String> extensions;
+        private long startGeneration;
+        private long endGeneration;
+        private @Nullable Role role;
 
         /**
          * Creates a new Builder with all fields unset.
@@ -120,6 +131,9 @@ public record Artifact(String artifactId, @Nullable String name, @Nullable Strin
             parts = existingArtifact.parts;
             metadata = existingArtifact.metadata;
             extensions = existingArtifact.extensions;
+            startGeneration = existingArtifact.startGeneration();
+            endGeneration = existingArtifact.endGeneration();
+            role = existingArtifact.role();
         }
 
         /**
@@ -199,6 +213,24 @@ public record Artifact(String artifactId, @Nullable String name, @Nullable Strin
             return this;
         }
 
+        /** Sets the generation at which this artifact was first observed. */
+        public Builder startGeneration(long startGeneration) {
+            this.startGeneration = startGeneration;
+            return this;
+        }
+
+        /** Sets the generation at which this artifact was most recently observed. */
+        public Builder endGeneration(long endGeneration) {
+            this.endGeneration = endGeneration;
+            return this;
+        }
+
+        /** Sets the artifact origin when known. */
+        public Builder role(@Nullable Role role) {
+            this.role = role;
+            return this;
+        }
+
         /**
          * Builds a new immutable {@link Artifact} from the current builder state.
          *
@@ -206,7 +238,8 @@ public record Artifact(String artifactId, @Nullable String name, @Nullable Strin
          * @throws IllegalArgumentException if required fields are missing or parts is empty
          */
         public Artifact build() {
-            return new Artifact(Assert.checkNotNullParam("artifactId", artifactId), name, description, Assert.checkNotNullParam("parts", parts), metadata, extensions);
+            return new Artifact(Assert.checkNotNullParam("artifactId", artifactId), name, description,
+                    Assert.checkNotNullParam("parts", parts), metadata, extensions, startGeneration, endGeneration, role);
         }
     }
 }

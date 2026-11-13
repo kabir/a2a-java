@@ -11,7 +11,13 @@ import org.jspecify.annotations.Nullable;
  * @param historyLength the maximum number of items of history for the task to include in the response
  * @param tenant optional tenant, provided as a path parameter.
  */
-public record TaskQueryParams(String id, @Nullable Integer historyLength, @Nullable String tenant) {
+public record TaskQueryParams(String id, @Nullable Integer historyLength, @Nullable String tenant,
+        @Nullable Long currentGeneration, @Nullable Integer timelineLength) {
+
+    /** Preserves the legacy constructor and leaves new query fields absent. */
+    public TaskQueryParams(String id, @Nullable Integer historyLength, @Nullable String tenant) {
+        this(id, historyLength, tenant, null, null);
+    }
 
     /**
      * Compact constructor for validation.
@@ -27,6 +33,9 @@ public record TaskQueryParams(String id, @Nullable Integer historyLength, @Nulla
         Utils.validateTenant(tenant);
         if (historyLength != null && historyLength < 0) {
             throw new IllegalArgumentException("Invalid history length");
+        }
+        if (timelineLength != null && timelineLength < 0) {
+            throw new IllegalArgumentException("Invalid timeline length");
         }
     }
 
@@ -65,6 +74,8 @@ public record TaskQueryParams(String id, @Nullable Integer historyLength, @Nulla
         private @Nullable String id;
         private @Nullable Integer historyLength;
         private @Nullable String tenant;
+        private @Nullable Long currentGeneration;
+        private @Nullable Integer timelineLength;
 
         /**
          * Creates a new Builder with all fields unset.
@@ -105,6 +116,21 @@ public record TaskQueryParams(String id, @Nullable Integer historyLength, @Nulla
             return this;
         }
 
+        /** Sets the optional current-generation cursor. */
+        public Builder currentGeneration(@Nullable Long currentGeneration) {
+            this.currentGeneration = currentGeneration;
+            return this;
+        }
+
+        /** Sets the maximum number of timeline entries to include. */
+        public Builder timelineLength(@Nullable Integer timelineLength) {
+            if (timelineLength != null && timelineLength < 0) {
+                throw new IllegalArgumentException("Invalid timeline length");
+            }
+            this.timelineLength = timelineLength;
+            return this;
+        }
+
         /**
          * Builds the TaskQueryParams.
          *
@@ -115,7 +141,9 @@ public record TaskQueryParams(String id, @Nullable Integer historyLength, @Nulla
             return new TaskQueryParams(
                 Assert.checkNotNullParam("id", id),
                 historyLength,
-                tenant
+                tenant,
+                currentGeneration,
+                timelineLength
             );
         }
     }

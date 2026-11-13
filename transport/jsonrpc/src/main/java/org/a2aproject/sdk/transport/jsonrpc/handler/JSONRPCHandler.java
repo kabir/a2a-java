@@ -36,6 +36,9 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputStreamingRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.ObserveTaskRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageResponse;
@@ -56,6 +59,7 @@ import org.a2aproject.sdk.server.multitenancy.TenantNotFoundException;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
 import org.a2aproject.sdk.server.util.CdiUtils;
 import org.a2aproject.sdk.server.util.async.Internal;
+import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.CancelTaskParams;
@@ -69,12 +73,15 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
 import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
+import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -263,9 +270,31 @@ public class JSONRPCHandler {
             String tenant = request.getParams() != null ? request.getParams().tenant() : null;
             EffectiveAgentCard effective = preflight(tenant, context, AgentCardOperation.none());
             MessageSendParams params = request.getParams();
+            rejectLegacyAdvancedInput(params, context);
             EventKind taskOrMessage = requestHandler.onMessageSend(new MessageSendParams(params.message(),
                     params.configuration(), params.metadata(), effective.tenant()), context);
+            if (taskOrMessage instanceof Task task) {
+                taskOrMessage = VersionedOutputProjector.projectTask(task, context.getVersionPolicy());
+            }
             return new SendMessageResponse(request.getId(), taskOrMessage);
+        } catch (A2AError e) {
+            return new SendMessageResponse(request.getId(), e);
+        } catch (Throwable t) {
+            return new SendMessageResponse(request.getId(), internalError(t));
+        }
+    }
+
+    /** Handles selected 1.1 companion message/artifact input. */
+    public SendMessageResponse onSendInput(SendInputRequest request, ServerCallContext context) {
+        try {
+            SendInputParams params = request.getParams();
+            rejectUnsupportedInputOptions(params);
+            EffectiveAgentCard effective = preflight(params.tenant(), context, AgentCardOperation.none());
+            EventKind result = requestHandler.onSendInput(withTenant(params, effective.tenant()), context);
+            if (result instanceof Task task) {
+                result = VersionedOutputProjector.projectTask(task, context.getVersionPolicy());
+            }
+            return new SendMessageResponse(request.getId(), result);
         } catch (A2AError e) {
             return new SendMessageResponse(request.getId(), e);
         } catch (Throwable t) {
@@ -315,9 +344,11 @@ public class JSONRPCHandler {
         try {
             EffectiveAgentCard effective = preflight(tenant, context, STREAMING);
             MessageSendParams params = request.getParams();
+            rejectLegacyAdvancedInput(params, context);
             Flow.Publisher<StreamingEventKind> publisher =
                     requestHandler.onMessageSendStream(new MessageSendParams(params.message(), params.configuration(),
                             params.metadata(), effective.tenant()), context);
+            publisher = VersionedOutputProjector.projectStream(publisher, context.getVersionPolicy());
             // We can't use the convertingProcessor convenience method since that propagates any errors as an error handled
             // via Subscriber.onError() rather than as part of the SendStreamingResponse payload
             return convertToSendStreamingMessageResponse(request.getId(), publisher);
@@ -325,6 +356,28 @@ public class JSONRPCHandler {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), e));
         } catch (Throwable throwable) {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), internalError(throwable)));
+        }
+    }
+
+    /** Handles selected 1.1 companion input streaming. */
+    public Flow.Publisher<SendStreamingMessageResponse> onSendInputStream(
+            SendInputStreamingRequest request, ServerCallContext context) {
+        try {
+            SendInputParams params = request.getParams();
+            rejectUnsupportedStreamingInput(params);
+            EffectiveAgentCard effective = preflight(params.tenant(), context, STREAMING);
+            SendInputParams effectiveParams = withTenant(params, effective.tenant());
+            String taskId = effectiveParams.message() != null ? effectiveParams.message().taskId()
+                    : effectiveParams.artifactUpdates().get(0).taskId();
+            requestHandler.authorizeTaskAccess(taskId, context, TaskOperation.MESSAGE_SEND_STREAM);
+            Flow.Publisher<StreamingEventKind> publisher =
+                    requestHandler.onSendInputStream(effectiveParams, context);
+            return convertToSendStreamingMessageResponse(request.getId(),
+                    VersionedOutputProjector.projectStream(publisher, context.getVersionPolicy()));
+        } catch (A2AError e) {
+            return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), e));
+        } catch (Throwable t) {
+            return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), internalError(t)));
         }
     }
 
@@ -360,7 +413,8 @@ public class JSONRPCHandler {
             CancelTaskParams params = request.getParams();
             Task task = requestHandler.onCancelTask(new CancelTaskParams(params.id(), effective.tenant(), params.metadata()), context);
             if (task != null) {
-                return new CancelTaskResponse(request.getId(), task);
+                return new CancelTaskResponse(request.getId(), VersionedOutputProjector.projectTask(task,
+                        context.getVersionPolicy()));
             }
             return new CancelTaskResponse(request.getId(), new TaskNotFoundError());
         } catch (A2AError e) {
@@ -417,6 +471,7 @@ public class JSONRPCHandler {
         try {
             Flow.Publisher<StreamingEventKind> publisher =
                     requestHandler.onSubscribeToTask(new TaskIdParams(request.getParams().id(), effective.tenant()), context);
+            publisher = VersionedOutputProjector.projectStream(publisher, context.getVersionPolicy());
             // We can't use the convertingProcessor convenience method since that propagates any errors as an error handled
             // via Subscriber.onError() rather than as part of the SendStreamingResponse payload
             return convertToSendStreamingMessageResponse(request.getId(), publisher);
@@ -425,6 +480,27 @@ public class JSONRPCHandler {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), e));
         } catch (Throwable throwable) {
             return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), internalError(throwable)));
+        }
+    }
+
+    /** Handles selected 1.1 task observation with an optional cursor. */
+    public Flow.Publisher<SendStreamingMessageResponse> onObserveTask(
+            ObserveTaskRequest request, ServerCallContext context) throws A2AError {
+        ObserveTaskParams params = request.getParams();
+        try {
+            if (params.lastSeenGeneration() != null) {
+                throw new UnsupportedOperationError();
+            }
+            EffectiveAgentCard effective = preflight(params.tenant(), context, STREAMING);
+            requestHandler.authorizeTaskAccess(params.id(), context, TaskOperation.SUBSCRIBE_TO_TASK);
+            Flow.Publisher<StreamingEventKind> publisher = requestHandler.onObserveTask(
+                    new ObserveTaskParams(params.id(), params.lastSeenGeneration(), effective.tenant()), context);
+            return convertToSendStreamingMessageResponse(request.getId(),
+                    VersionedOutputProjector.projectStream(publisher, context.getVersionPolicy()));
+        } catch (A2AError e) {
+            return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), e));
+        } catch (Throwable t) {
+            return ZeroPublisher.fromItems(new SendStreamingMessageResponse(request.getId(), internalError(t)));
         }
     }
 
@@ -461,7 +537,8 @@ public class JSONRPCHandler {
             TaskPushNotificationConfig config =
                     requestHandler.onGetTaskPushNotificationConfig(new GetTaskPushNotificationConfigParams(
                             params.taskId(), params.id(), effective.tenant()), context);
-            return new GetTaskPushNotificationConfigResponse(request.getId(), config);
+            return new GetTaskPushNotificationConfigResponse(request.getId(),
+                    VersionedOutputProjector.projectConfig(config, context.getVersionPolicy()));
         } catch (A2AError e) {
             return new GetTaskPushNotificationConfigResponse(request.getId(), e);
         } catch (Throwable t) {
@@ -500,10 +577,12 @@ public class JSONRPCHandler {
         try {
             EffectiveAgentCard effective = preflight(tenant, context, PUSH_NOTIFICATIONS);
             TaskPushNotificationConfig params = request.getParams();
+            rejectDeliveryVersion(params);
             TaskPushNotificationConfig config =
                     requestHandler.onCreateTaskPushNotificationConfig(new TaskPushNotificationConfig(params.id(),
                             params.taskId(), params.url(), params.token(), params.authentication(), effective.tenant()), context);
-            return new CreateTaskPushNotificationConfigResponse(request.getId(), config);
+            return new CreateTaskPushNotificationConfigResponse(request.getId(),
+                    VersionedOutputProjector.projectConfig(config, context.getVersionPolicy()));
         } catch (A2AError e) {
             return new CreateTaskPushNotificationConfigResponse(request.getId(), e);
         } catch (Throwable t) {
@@ -540,8 +619,10 @@ public class JSONRPCHandler {
             String tenant = request.getParams() != null ? request.getParams().tenant() : null;
             EffectiveAgentCard effective = preflight(tenant, context, AgentCardOperation.none());
             TaskQueryParams params = request.getParams();
+            rejectUnsupportedQuery(params);
             Task task = requestHandler.onGetTask(new TaskQueryParams(params.id(), params.historyLength(), effective.tenant()), context);
-            return new GetTaskResponse(request.getId(), task);
+            return new GetTaskResponse(request.getId(), task == null ? null
+                    : VersionedOutputProjector.projectTask(task, context.getVersionPolicy()));
         } catch (A2AError e) {
             return new GetTaskResponse(request.getId(), e);
         } catch (Throwable t) {
@@ -590,10 +671,14 @@ public class JSONRPCHandler {
             String tenant = request.getParams() != null ? request.getParams().tenant() : null;
             EffectiveAgentCard effective = preflight(tenant, context, AgentCardOperation.none());
             ListTasksParams params = request.getParams();
+            rejectUnsupportedListOptions(params);
             ListTasksResult result = requestHandler.onListTasks(new ListTasksParams(params.contextId(), params.status(),
                     params.pageSize(), params.pageToken(), params.historyLength(), params.statusTimestampAfter(),
                     params.includeArtifacts(), effective.tenant()), context);
-            return new ListTasksResponse(request.getId(), result);
+            ListTasksResult projected = new ListTasksResult(result.tasks().stream()
+                    .map(task -> VersionedOutputProjector.projectTask(task, context.getVersionPolicy())).toList(),
+                    result.totalSize(), result.pageSize(), result.nextPageToken());
+            return new ListTasksResponse(request.getId(), projected);
         } catch (A2AError e) {
             return new ListTasksResponse(request.getId(), e);
         } catch (Throwable t) {
@@ -634,7 +719,10 @@ public class JSONRPCHandler {
             ListTaskPushNotificationConfigsResult result =
                     requestHandler.onListTaskPushNotificationConfigs(new ListTaskPushNotificationConfigsParams(
                             params.id(), params.pageSize(), params.pageToken(), effective.tenant()), context);
-            return new ListTaskPushNotificationConfigsResponse(request.getId(), result);
+            ListTaskPushNotificationConfigsResult projected = new ListTaskPushNotificationConfigsResult(
+                    result.configs().stream().map(config -> VersionedOutputProjector.projectConfig(config,
+                            context.getVersionPolicy())).toList(), result.nextPageToken());
+            return new ListTaskPushNotificationConfigsResponse(request.getId(), projected);
         } catch (A2AError e) {
             return new ListTaskPushNotificationConfigsResponse(request.getId(), e);
         } catch (Throwable t) {
@@ -836,6 +924,62 @@ public class JSONRPCHandler {
      * @param t the unexpected exception
      * @return a sanitized internal error with a generic message
      */
+    private static SendInputParams withTenant(SendInputParams params, @Nullable String tenant) {
+        return new SendInputParams(params.message(), params.artifactUpdates(), params.configuration(), params.metadata(), tenant);
+    }
+
+    private static void rejectUnsupportedInputOptions(SendInputParams params) throws UnsupportedOperationError {
+        if (params.configuration() != null
+                && (params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectUnsupportedStreamingInput(SendInputParams params) throws UnsupportedOperationError {
+        if (!params.artifactUpdates().isEmpty() || params.configuration() != null
+                && (params.configuration().ifGenerationMatch() != null
+                        || params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectLegacyAdvancedInput(MessageSendParams params, ServerCallContext context)
+            throws UnsupportedOperationError {
+        if (context.getVersionPolicy() == org.a2aproject.sdk.server.version.ServerVersionPolicy.V1_0
+                && params.configuration() != null
+                && (params.configuration().ifGenerationMatch() != null
+                        || params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectUnsupportedQuery(TaskQueryParams params) throws A2AError {
+        if (params.currentGeneration() != null && params.currentGeneration() < 0) {
+            throw new InvalidParamsError("currentGeneration must be non-negative");
+        }
+        if (params.currentGeneration() != null || params.timelineLength() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectUnsupportedListOptions(ListTasksParams params) throws UnsupportedOperationError {
+        if (params.timelineLength() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectDeliveryVersion(TaskPushNotificationConfig config) throws UnsupportedOperationError {
+        if (config.protocolVersion() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
     private static InternalError internalError(Throwable t) {
         LOGGER.log(Level.SEVERE, "Internal error while processing request", t);
         return new InternalError("Internal error");

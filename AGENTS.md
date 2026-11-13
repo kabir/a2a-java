@@ -1,5 +1,41 @@
 # AGENTS.md
 
+## Model restrictions and cost policy
+
+- **Astra is prohibited for work in this worktree**, including implementation,
+  research, reviews, final reviews, retries, nested subagents and separate tasks.
+  Do not select any Astra model/alias or fall back to it. This explicit user
+  instruction overrides skill defaults that request the most capable model.
+- Use Luna for bounded implementation; Terra is an allowed alternative when
+  available. Use Sol for planning, independent reviews and difficult reasoning.
+  Select delegated models explicitly; do not silently inherit an expensive model.
+- Before A2A 1.1 phase work, read and follow the standing
+  [model and token-cost policy](.claude/architecture/a2a-1.1/implementation-loop.md#model-selection-and-token-cost-policy).
+- Record requested model identifiers and roles in the phase progress record.
+  Record observed model metadata when available; do not present a model's own
+  claim as verified telemetry. Preserve iteration and attempt counts on escalation.
+- If an allowed model cannot perform the work, report/checkpoint the limitation;
+  do not substitute Astra. If the current session is known to be running Astra,
+  stop task work and request resumption with an allowed model.
+
+## A2A 1.1 iteration and retry accounting
+
+The user's 2026-11-11 clarification in
+[acceptance.md](.claude/architecture/a2a-1.1/acceptance.md#run-limits) overrides
+older prompts/plans and skill rules that stop after three fixes or infer an
+architectural problem from that count alone. A coherent iteration may contain
+several compile/test corrections. Expected RED tests and routine import,
+signature, generated-code or classpath repairs are not automatically separate failed
+substantive attempts. Record all failures; repeated compiler/setup fixes without
+useful narrowing still count as no progress.
+
+After three consecutive substantive no-progress attempts on the same underlying
+defect, checkpoint dependent work for Sol diagnosis. Do not aggregate unrelated
+failures under one broad acceptance criterion. Respect existing agent permissions
+and the Astra ban. Keep the authorized ten-iteration/two-hour bounds, historical
+failures and current no-progress streaks across sessions; this clarification does
+not renew expired time or authorize implementation/retries beyond the budget.
+
 ## Project Overview
 
 Java SDK for the [Agent2Agent (A2A) Protocol](https://a2a-protocol.org/). Multi-module Maven project (`org.a2aproject.sdk` group) providing client and server libraries for A2A agent communication over JSON-RPC, gRPC, and REST transports.

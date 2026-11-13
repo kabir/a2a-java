@@ -6,12 +6,14 @@ import static java.net.HttpURLConnection.HTTP_MULT_CHOICE;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandler;
+import java.net.http.HttpResponse.BodySubscriber;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpResponse.BodySubscribers;
 import java.nio.ByteBuffer;
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -70,6 +73,8 @@ import org.a2aproject.sdk.spec.A2AClientHTTPError;
  * @see JdkA2AHttpClientProvider
  */
 public class JdkA2AHttpClient implements A2AHttpClient {
+
+    private static final int MAX_STATUS_ERROR_BODY_BYTES = 64 * 1024;
 
     private final HttpClient httpClient;
     private final SSEParserConfig sseParserConfig;
@@ -274,6 +279,17 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                 Consumer<Throwable> errorConsumer,
                 Runnable completeRunnable
         ) {
+            return asyncRequestCancellable(client, request, messageConsumer, errorConsumer, completeRunnable, false).completion();
+        }
+
+        protected A2AHttpClient.AsyncSSECall asyncRequestCancellable(
+                HttpClient client,
+                HttpRequest request,
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable,
+                boolean rejectNonSuccessStatus
+        ) {
             ServerSentEventParser sseParser = new ServerSentEventParser(messageConsumer, errorConsumer, sseParserConfig);
             AtomicBoolean useSseParser = new AtomicBoolean(false);
             AtomicBoolean errorNotified = new AtomicBoolean(false);
@@ -334,7 +350,8 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             // Create a custom body handler that checks status and Content-Type before processing body
             BodyHandler<Void> bodyHandler = responseInfo -> {
                 // Check for authentication/authorization errors only
-                if (responseInfo.statusCode() == HTTP_UNAUTHORIZED || responseInfo.statusCode() == HTTP_FORBIDDEN) {
+                if (!rejectNonSuccessStatus
+                        && (responseInfo.statusCode() == HTTP_UNAUTHORIZED || responseInfo.statusCode() == HTTP_FORBIDDEN)) {
                     final int statusCode = responseInfo.statusCode();
                     final String errorMessage = statusCode == HTTP_UNAUTHORIZED
                             ? A2AErrorMessages.AUTHENTICATION_FAILED
@@ -364,6 +381,12 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                         }
                     });
                 }
+                if (rejectNonSuccessStatus && !JdkHttpResponse.success(responseInfo.statusCode())) {
+                    int statusCode = responseInfo.statusCode();
+                    String errorMessage = "HTTP request failed with status " + statusCode;
+                    return boundedStatusErrorBodySubscriber(
+                            statusCode, errorMessage, responseInfo.headers().map(), errorConsumer, errorNotified);
+                }
                 // Use SSE parser only for actual SSE responses; plain body lines are forwarded directly
                 String contentType = responseInfo.headers().firstValue("Content-Type").orElse("");
                 boolean isSse = JdkHttpResponse.success(responseInfo.statusCode())
@@ -382,16 +405,27 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             // handle() catches failures before the body handler is reached (e.g. connection
             // errors, DNS failures) and routes them to errorConsumer, then always completes
             // normally — consistent with the Vert.x and Android implementations.
-            return client.sendAsync(request, bodyHandler)
-                    .<Void>handle((response, throwable) -> {
-                        if (throwable != null && errorNotified.compareAndSet(false, true)) {
-                            if (!isCancellation(throwable)) {
-                                Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
-                                errorConsumer.accept(cause);
-                            }
-                        }
-                        return null;
-                    });
+            CompletableFuture<Void> completion = new CompletableFuture<>();
+            CompletableFuture<HttpResponse<Void>> source = client.sendAsync(request, bodyHandler);
+            source.whenComplete((response, throwable) -> {
+                if (throwable != null && errorNotified.compareAndSet(false, true) && !isCancellation(throwable)) {
+                    Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
+                    errorConsumer.accept(cause);
+                }
+                completion.complete(null);
+            });
+            return new A2AHttpClient.AsyncSSECall() {
+                @Override
+                public CompletableFuture<Void> completion() {
+                    return completion;
+                }
+
+                @Override
+                public void cancel() {
+                    completion.cancel(true);
+                    source.cancel(true);
+                }
+            };
         }
     }
 
@@ -455,6 +489,33 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         }
 
         @Override
+        public A2AHttpClient.AsyncGetCall getAsyncResponse() throws IOException {
+            HttpRequest request = createRequestBuilder(false).build();
+            CompletableFuture<HttpResponse<String>> source = resolveClient().sendAsync(
+                    request, BodyHandlers.ofString(StandardCharsets.UTF_8));
+            CompletableFuture<A2AHttpResponse> result = new CompletableFuture<>();
+            source.whenComplete((response, failure) -> {
+                if (failure != null) {
+                    result.completeExceptionally(failure);
+                } else {
+                    result.complete(new JdkHttpResponse(response));
+                }
+            });
+            return new A2AHttpClient.AsyncGetCall() {
+                @Override
+                public CompletableFuture<A2AHttpResponse> response() {
+                    return result;
+                }
+
+                @Override
+                public void cancel() {
+                    result.cancel(true);
+                    source.cancel(true);
+                }
+            };
+        }
+
+        @Override
         public CompletableFuture<Void> getAsyncSSE(
                 Consumer<ServerSentEvent> messageConsumer,
                 Consumer<Throwable> errorConsumer,
@@ -462,6 +523,16 @@ public class JdkA2AHttpClient implements A2AHttpClient {
             HttpRequest request = createRequestBuilder(true)
                     .build();
             return super.asyncRequest(getNoRedirectClient(), request, messageConsumer, errorConsumer, completeRunnable);
+        }
+
+        @Override
+        public A2AHttpClient.AsyncSSECall getAsyncSSECallStatusAware(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) throws IOException {
+            HttpRequest request = createRequestBuilder(true).build();
+            return super.asyncRequestCancellable(getNoRedirectClient(), request,
+                    messageConsumer, errorConsumer, completeRunnable, true);
         }
 
     }
@@ -622,6 +693,54 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                     .build();
             return super.asyncRequest(resolveClient(), request, messageConsumer, errorConsumer, completeRunnable);
         }
+
+        @Override
+        public A2AHttpClient.AsyncSSECall postAsyncSSECall(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) throws IOException {
+            HttpRequest request = createRequestBuilder(true).build();
+            return super.asyncRequestCancellable(
+                    resolveClient(), request, messageConsumer, errorConsumer, completeRunnable, false);
+        }
+
+        @Override
+        public A2AHttpClient.AsyncSSECall postAsyncSSECallStatusAware(
+                Consumer<ServerSentEvent> messageConsumer,
+                Consumer<Throwable> errorConsumer,
+                Runnable completeRunnable) throws IOException {
+            HttpRequest request = createRequestBuilder(true).build();
+            return super.asyncRequestCancellable(
+                    resolveClient(), request, messageConsumer, errorConsumer, completeRunnable, true);
+        }
+
+
+        @Override
+        public A2AHttpClient.AsyncPostCall postAsyncResponse() throws IOException {
+            HttpRequest request = createRequestBuilder(false).build();
+            CompletableFuture<HttpResponse<String>> source = resolveClient().sendAsync(
+                    request, BodyHandlers.ofString(StandardCharsets.UTF_8));
+            CompletableFuture<A2AHttpResponse> result = new CompletableFuture<>();
+            source.whenComplete((response, failure) -> {
+                if (failure != null) {
+                    result.completeExceptionally(failure);
+                } else {
+                    result.complete(new JdkHttpResponse(response));
+                }
+            });
+            return new A2AHttpClient.AsyncPostCall() {
+                @Override
+                public CompletableFuture<A2AHttpResponse> response() {
+                    return result;
+                }
+
+                @Override
+                public void cancel() {
+                    result.cancel(true);
+                    source.cancel(true);
+                }
+            };
+        }
     }
 
     private record JdkHttpResponse(HttpResponse<String> response) implements A2AHttpResponse {
@@ -648,6 +767,100 @@ public class JdkA2AHttpClient implements A2AHttpClient {
         @Override
         public A2AHttpHeaders headers() {
             return A2AHttpHeaders.of(response.headers().map());
+        }
+    }
+
+    private static BodySubscriber<Void> boundedStatusErrorBodySubscriber(
+            int statusCode,
+            String errorMessage,
+            Map<String, List<String>> responseHeaders,
+            Consumer<Throwable> errorConsumer,
+            AtomicBoolean errorNotified) {
+        CompletableFuture<Void> body = new CompletableFuture<>();
+        ByteArrayOutputStream bodyBuffer = new ByteArrayOutputStream();
+        byte[] copyBuffer = new byte[8192];
+        return new BodySubscriber<>() {
+            private Flow.@Nullable Subscription subscription;
+            private boolean finished;
+
+            @Override
+            public CompletionStage<Void> getBody() {
+                return body;
+            }
+
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(List<ByteBuffer> buffers) {
+                if (finished) {
+                    return;
+                }
+                for (ByteBuffer buffer : buffers) {
+                    int remaining = MAX_STATUS_ERROR_BODY_BYTES - bodyBuffer.size();
+                    int available = buffer.remaining();
+                    copy(buffer, bodyBuffer, copyBuffer, Math.min(available, remaining));
+                    if (available > remaining) {
+                        finished = true;
+                        if (subscription != null) {
+                            subscription.cancel();
+                        }
+                        try {
+                            if (errorNotified.compareAndSet(false, true)) {
+                                errorConsumer.accept(new IOException(
+                                        errorMessage + "; response body exceeds "
+                                                + MAX_STATUS_ERROR_BODY_BYTES + " bytes",
+                                        new A2AClientHTTPError(statusCode, errorMessage, null, responseHeaders)));
+                            }
+                        } finally {
+                            body.complete(null);
+                        }
+                        return;
+                    }
+                }
+                if (subscription != null) {
+                    subscription.request(1);
+                }
+            }
+
+            @Override
+            public void onError(Throwable failure) {
+                finished = true;
+                try {
+                    if (errorNotified.compareAndSet(false, true)) {
+                        errorConsumer.accept(failure);
+                    }
+                } finally {
+                    body.complete(null);
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                finished = true;
+                try {
+                    if (errorNotified.compareAndSet(false, true)) {
+                        errorConsumer.accept(new IOException(errorMessage, new A2AClientHTTPError(
+                                statusCode, errorMessage,
+                                bodyBuffer.toString(StandardCharsets.UTF_8), responseHeaders)));
+                    }
+                } finally {
+                    body.complete(null);
+                }
+            }
+        };
+    }
+
+    private static void copy(ByteBuffer source, ByteArrayOutputStream target, byte[] buffer, int count) {
+        int remaining = count;
+        while (remaining > 0) {
+            int copied = Math.min(remaining, buffer.length);
+            source.get(buffer, 0, copied);
+            target.write(buffer, 0, copied);
+            remaining -= copied;
         }
     }
 

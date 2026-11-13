@@ -57,6 +57,9 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.NonStreamingJSONRPCRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputStreamingRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.ObserveTaskRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageResponse;
@@ -380,7 +383,7 @@ public class A2AServerRoutes {
         Multi<? extends A2AResponse<?>> streamingResponse = null;
         A2AErrorResponse error = null;
         try {
-            A2ARequest<?> request = JSONRPCUtils.parseRequestBody(body, extractTenant(rc));
+            A2ARequest<?> request = JSONRPCUtils.parseRequestBody(body, extractTenant(rc), context.getVersionPolicy().protocolVersion());
             context.getState().put(METHOD_NAME_KEY, request.getMethod());
             if (request instanceof NonStreamingJSONRPCRequest nonStreamingRequest) {
                 nonStreamingResponse = processNonStreamingRequest(nonStreamingRequest, context);
@@ -409,7 +412,7 @@ public class A2AServerRoutes {
                 rc.response()
                         .setStatusCode(200)
                         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .end(serializeResponse(error));
+                        .end(serializeResponse(error, context.getVersionPolicy().protocolVersion()));
             } else if (streaming) {
                 // Convert Multi<A2AResponse> to Multi<String> with SSE formatting
                 // CRITICAL: Subscribe synchronously to avoid race condition where EventConsumer
@@ -417,7 +420,8 @@ public class A2AServerRoutes {
                 // wrapper caused 100-600ms delays before subscription, causing events to be lost.
                 AtomicLong eventIdCounter = new AtomicLong(0);
                 Multi<String> sseEvents = streamingResponse
-                        .map(response -> SseFormatter.formatResponseAsSSE(response, eventIdCounter.getAndIncrement()));
+                        .map(response -> SseFormatter.formatResponseAsSSE(response, eventIdCounter.getAndIncrement(),
+                                context.getVersionPolicy().protocolVersion()));
                 // Write SSE-formatted strings to HTTP response
                 SseResponseWriter.writeSseStrings(sseEvents, rc, context, streamingMultiSseSupportSubscribedRunnable);
 
@@ -425,7 +429,7 @@ public class A2AServerRoutes {
                 rc.response()
                         .setStatusCode(200)
                         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
-                        .end(serializeResponse(nonStreamingResponse));
+                        .end(serializeResponse(nonStreamingResponse, context.getVersionPolicy().protocolVersion()));
             }
         }
     }
@@ -551,6 +555,9 @@ public class A2AServerRoutes {
         if (request instanceof SendMessageRequest req) {
             return jsonRpcHandler.onMessageSend(req, context);
         }
+        if (request instanceof SendInputRequest req) {
+            return jsonRpcHandler.onSendInput(req, context);
+        }
         if (request instanceof ListTaskPushNotificationConfigsRequest req) {
             return jsonRpcHandler.listPushNotificationConfigs(req, context);
         }
@@ -587,6 +594,13 @@ public class A2AServerRoutes {
         } else if (request instanceof SubscribeToTaskRequest req) {
             jsonRpcHandler.authorizeTaskAccess(req.getParams().id(), context,
                     TaskOperation.SUBSCRIBE_TO_TASK);
+        } else if (request instanceof SendInputStreamingRequest req) {
+            rejectUnsupportedStreamingInput(req.getParams());
+            String taskId = req.getParams().message() != null ? req.getParams().message().taskId()
+                    : req.getParams().artifactUpdates().get(0).taskId();
+            jsonRpcHandler.authorizeTaskAccess(taskId, context, TaskOperation.MESSAGE_SEND_STREAM);
+        } else if (request instanceof ObserveTaskRequest req) {
+            jsonRpcHandler.authorizeTaskAccess(req.getParams().id(), context, TaskOperation.SUBSCRIBE_TO_TASK);
         }
         try {
             Flow.Publisher<? extends A2AResponse<?>> publisher;
@@ -594,12 +608,27 @@ public class A2AServerRoutes {
                 publisher = jsonRpcHandler.onMessageSendStream(req, context);
             } else if (request instanceof SubscribeToTaskRequest req) {
                 publisher = jsonRpcHandler.onSubscribeToTask(req, context);
+            } else if (request instanceof SendInputStreamingRequest req) {
+                publisher = jsonRpcHandler.onSendInputStream(req, context);
+            } else if (request instanceof ObserveTaskRequest req) {
+                publisher = jsonRpcHandler.onObserveTask(req, context);
             } else {
                 return Multi.createFrom().item(generateErrorResponse(request, new UnsupportedOperationError()));
             }
             return Multi.createFrom().publisher(publisher);
         } catch (A2AError error) {
             return Multi.createFrom().item(generateErrorResponse(request, error));
+        }
+    }
+
+    private static void rejectUnsupportedStreamingInput(
+            org.a2aproject.sdk.spec.SendInputParams params) throws UnsupportedOperationError {
+        if (!params.artifactUpdates().isEmpty() || params.configuration() != null
+                && (params.configuration().ifGenerationMatch() != null
+                        || params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+            throw new UnsupportedOperationError();
         }
     }
 
@@ -760,7 +789,7 @@ public class A2AServerRoutes {
      * @see JSONRPCUtils#toJsonRPCResultResponse
      * @see JSONRPCUtils#toJsonRPCErrorResponse
      */
-    private static String serializeResponse(A2AResponse<?> response) {
+    private static String serializeResponse(A2AResponse<?> response, String protocolVersion) {
         // For error responses, use Jackson serialization (errors are standardized)
         if (response instanceof A2AErrorResponse error) {
             return JSONRPCUtils.toJsonRPCErrorResponse(error.getId(), error.getError());
@@ -770,7 +799,7 @@ public class A2AServerRoutes {
         }
         // Convert domain response to protobuf message and serialize
         com.google.protobuf.MessageOrBuilder protoMessage = convertToProto(response);
-        return JSONRPCUtils.toJsonRPCResultResponse(response.getId(), protoMessage);
+        return JSONRPCUtils.toJsonRPCResultResponse(response.getId(), protoMessage, protocolVersion);
     }
 
     /**

@@ -2,6 +2,7 @@ package org.a2aproject.sdk.grpc.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
@@ -85,6 +86,14 @@ public class ProtoJsonUtilsTest {
         String result = ProtoJsonUtils.toJson(JsonFormat.printer(), null);
 
         assertEquals("", result);
+    }
+
+    @Test
+    public void toJsonForVersion_rejectsUnsupportedVersion() {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> ProtoJsonUtils.toJsonForVersion(JsonFormat.printer(),
+                        org.a2aproject.sdk.grpc.Task.getDefaultInstance(), "1.2"));
+        assertTrue(error.getMessage().contains("1.2"));
     }
 
     @Test

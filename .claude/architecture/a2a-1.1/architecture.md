@@ -22,8 +22,10 @@ The user confirmed:
 - All three server interfaces must be serviceable from one instance when
   provisioned. Existing 0.3 support remains optional.
 - Later implementation runs are bounded by ten focused iterations or two hours,
-  with at most three attempts at the same failing criterion before reporting
-  the obstacle. Reaching a limit does not satisfy acceptance criteria.
+  with a Sol diagnostic checkpoint after three consecutive substantive attempts
+  without progress on the same underlying defect (clarified 2026-11-11). Routine
+  compile corrections are not automatically new attempts/iterations. Reaching a
+  limit does not satisfy acceptance criteria.
 
 The user expanded the scope on 2026-11-10 to production 1.1 SDK client support
 through public APIs over JSON-RPC, REST, and gRPC. Client and server capabilities
@@ -1133,8 +1135,11 @@ new serializers talking only to new handlers do not prove compatibility.
 
 The [acceptance checklist and run limits](acceptance.md) make completion and
 bounded progress explicit. Agreed implementation-run limits are ten focused
-iterations or two hours, with three attempts per failing criterion. An additional
-proposed safeguard stops after two consecutive iterations without meaningful progress.
+iterations or two hours. The 2026-11-11 clarification replaces the blanket
+three-attempt cap and proposed two-no-progress stop with a Sol diagnostic
+checkpoint after three consecutive substantive no-progress attempts on the same
+defect. Compiler/setup corrections are accounted for under the acceptance table,
+not automatically counted as separate iterations.
 Reaching a limit produces a checkpoint, never a claim of completion.
 
 No Maven tests were run for this architecture-only deliverable. Source/spec

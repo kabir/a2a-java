@@ -6,6 +6,8 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import org.a2aproject.sdk.client.http.ServerSentEvent;
+import org.a2aproject.sdk.client.transport.spi.TransportFrame;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
@@ -26,6 +28,7 @@ public abstract class AbstractSSEEventListener {
 
     private final Consumer<StreamingEventKind> eventHandler;
     private final @Nullable Consumer<Throwable> errorHandler;
+    private final @Nullable TransportObservation observation;
     private final AtomicBoolean terminalSignaled = new AtomicBoolean(false);
 
     /**
@@ -38,6 +41,14 @@ public abstract class AbstractSSEEventListener {
                                    @Nullable Consumer<Throwable> errorHandler) {
         this.eventHandler = eventHandler;
         this.errorHandler = errorHandler;
+        this.observation = null;
+    }
+
+    /** Creates a versioned reader that publishes raw transport frames. */
+    protected AbstractSSEEventListener(TransportObservation observation) {
+        this.eventHandler = event -> { };
+        this.errorHandler = null;
+        this.observation = observation;
     }
 
     /**
@@ -75,6 +86,13 @@ public abstract class AbstractSSEEventListener {
      * @param future Optional future for closing the SSE connection
      */
     public void onError(Throwable throwable, @Nullable Future<Void> future) {
+        if (observation != null) {
+            observation.fail(throwable);
+            if (future != null) {
+                future.cancel(true);
+            }
+            return;
+        }
         signalTerminal(throwable);
         if (future != null) {
             future.cancel(true); // close SSE channel
@@ -120,6 +138,44 @@ public abstract class AbstractSSEEventListener {
             LOGGER.fine("Auto-closing SSE connection for final event: " + event.getClass().getSimpleName());
             signalTerminal(null);
             future.cancel(true); // close SSE channel
+        }
+    }
+
+    /** Publishes a decoded 1.1 frame and applies the shared final-event close rule. */
+    protected void handleFrame(TransportFrame frame, @Nullable Future<Void> future) {
+        if (observation == null) {
+            throw new IllegalStateException("Raw frames require a versioned observation");
+        }
+        observation.markReady();
+        if (!observation.publish(frame)) {
+            return;
+        }
+        if (frame.event() != null && shouldAutoClose(frame.event())) {
+            observation.complete();
+            if (future != null) {
+                future.cancel(true);
+            }
+        }
+    }
+
+    /** Fails a versioned observation when envelope or known payload decoding fails. */
+    protected void failObservation(Throwable failure, @Nullable Future<Void> future) {
+        if (observation == null) {
+            throw new IllegalStateException("Observation failure requires a versioned reader");
+        }
+        observation.fail(failure);
+        if (future != null) {
+            future.cancel(true);
+        }
+    }
+
+    /** Marks an empty versioned stream ready before completing it. */
+    protected void completeObservation() {
+        if (observation != null) {
+            observation.markReady();
+            observation.complete();
+        } else {
+            signalTerminal(null);
         }
     }
 

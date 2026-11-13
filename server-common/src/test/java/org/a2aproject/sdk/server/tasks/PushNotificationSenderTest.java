@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import jakarta.enterprise.inject.Instance;
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
@@ -28,14 +33,17 @@ import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.AuthenticationInfo;
+import org.a2aproject.sdk.spec.DataPart;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
+import org.a2aproject.sdk.spec.TimelineEntry;
 import org.a2aproject.sdk.spec.TextPart;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +57,199 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class PushNotificationSenderTest {
+
+    @Test
+    void actualTaskWebhookBodyMatchesHistoricalFixtureForFallbackAndExplicitOnePointZero() throws Exception {
+        String taskId = "task-123";
+        Task task = historicalTaskWithNewState();
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/fallback", "fallback", null));
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+
+        sender.sendNotification(task, task);
+
+        JsonObject expected = historicalFixture("1.0", "event-task.json");
+        assertEquals(2, testHttpClient.rawBodies.size());
+        for (String body : testHttpClient.rawBodies) {
+            assertWrapperMatchesFixture(body, "task", expected);
+        }
+    }
+
+    @Test
+    void actualLegacyStatusArtifactAndMessageWebhookBodiesMatchHistoricalFixtures() throws Exception {
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent("1",
+                new TaskStatus(TaskState.TASK_STATE_SUBMITTED, null,
+                        OffsetDateTime.parse("2026-01-01T00:00:00Z")), "2", null, 88);
+        sendEventForVersion(status, "1.0", "statusUpdate", "event-status_update.json");
+
+        Artifact artifact = new Artifact("artifact-1", null, null,
+                List.of(new TextPart("Why did the chicken cross the road? To get to the other side!")),
+                null, null, 3, 9, Message.Role.ROLE_AGENT);
+        TaskArtifactUpdateEvent artifactUpdate = new TaskArtifactUpdateEvent("1", artifact, "2", false, true,
+                null, 99);
+        sendEventForVersion(artifactUpdate, "1.0", "artifactUpdate", "event-artifact_update.json");
+
+        Message message = Message.builder().role(Message.Role.ROLE_AGENT)
+                .parts(new TextPart("Hello, world!")).messageId("msg-123").contextId("context-456").build();
+        sendEventForVersion(message, "1.0", "message", "event-message.json");
+    }
+
+    @Test
+    void oldDeliverySuppressesMessageAndUserArtifactUpdatesBeforeSendingHttp() {
+        String taskId = "task-hidden";
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/hidden", "cfg-hidden", null));
+        Message updateMessage = Message.builder().role(Message.Role.ROLE_AGENT)
+                .parts(new TextPart("update")).messageId("m").build();
+        TaskMessageUpdateEvent messageUpdate = new TaskMessageUpdateEvent(taskId, "context", updateMessage, null, 4);
+        Artifact userArtifact = new Artifact("user", null, null, List.of(new TextPart("private")), null, null,
+                1, 4, Message.Role.ROLE_USER);
+        TaskArtifactUpdateEvent artifactUpdate = new TaskArtifactUpdateEvent(taskId, userArtifact, "context",
+                false, true, null, 4);
+
+        assertTrue(sender.sendNotification(messageUpdate, null));
+        assertTrue(sender.sendNotification(artifactUpdate, null));
+        assertTrue(testHttpClient.rawBodies.isEmpty());
+    }
+
+    @Test
+    void onePointOneWebhookRetainsGenerationAndTimeline() throws Exception {
+        String taskId = "task-123";
+        Task task = historicalTaskWithNewState();
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+
+        sender.sendNotification(task, task);
+
+        JsonObject taskBody = JsonParser.parseString(testHttpClient.rawBodies.get(0)).getAsJsonObject()
+                .getAsJsonObject("task");
+        assertEquals(17, taskBody.get("generation").getAsInt());
+        assertTrue(taskBody.has("timeline"));
+    }
+
+    @Test
+    void actualWebhookBodiesOmitZeroStampsWithoutRemovingSameNamedContentKeys() {
+        String taskId = "task-zero";
+        Map<String, Object> content = Map.of("generation", "g", "timeline", "t",
+                "startGeneration", "s", "endGeneration", "e", "role", "r");
+        Artifact artifact = new Artifact("artifact-zero", null, null,
+                List.of(new DataPart(content, content)), content, null, 0, 0, Message.Role.ROLE_AGENT);
+        TaskStatus status = new TaskStatus(TaskState.TASK_STATE_WORKING);
+        Task task = new Task(taskId, "context-zero", status, List.of(artifact), List.of(), content, 0, null);
+
+        JsonObject legacyTask = JsonParser.parseString(actualBodyForVersion(taskId, task, "1.0"))
+                .getAsJsonObject().getAsJsonObject("task");
+        assertFalse(legacyTask.has("generation"));
+        assertFalse(legacyTask.has("timeline"));
+        JsonObject legacyArtifact = legacyTask.getAsJsonArray("artifacts").get(0).getAsJsonObject();
+        assertFalse(legacyArtifact.has("startGeneration"));
+        assertFalse(legacyArtifact.has("endGeneration"));
+        assertFalse(legacyArtifact.has("role"));
+        JsonObject part = legacyArtifact.getAsJsonArray("parts").get(0).getAsJsonObject();
+        for (String key : content.keySet()) {
+            String expected = content.get(key).toString();
+            assertEquals(expected, legacyTask.getAsJsonObject("metadata").get(key).getAsString());
+            assertEquals(expected, legacyArtifact.getAsJsonObject("metadata").get(key).getAsString());
+            assertEquals(expected, part.getAsJsonObject("data").get(key).getAsString());
+            assertEquals(expected, part.getAsJsonObject("metadata").get(key).getAsString());
+        }
+
+        JsonObject currentTask = JsonParser.parseString(actualBodyForVersion(taskId, task, "1.1"))
+                .getAsJsonObject().getAsJsonObject("task");
+        assertEquals(0, currentTask.get("generation").getAsInt());
+        JsonObject currentArtifact = currentTask.getAsJsonArray("artifacts").get(0).getAsJsonObject();
+        assertEquals(0, currentArtifact.get("startGeneration").getAsInt());
+        assertEquals(0, currentArtifact.get("endGeneration").getAsInt());
+        assertTrue(currentArtifact.has("role"));
+
+        TaskStatusUpdateEvent statusUpdate = new TaskStatusUpdateEvent(taskId, status, "context-zero", content, 0);
+        JsonObject legacyStatus = JsonParser.parseString(actualBodyForVersion(taskId, statusUpdate, "1.0"))
+                .getAsJsonObject().getAsJsonObject("statusUpdate");
+        assertFalse(legacyStatus.has("generation"));
+        assertEquals("g", legacyStatus.getAsJsonObject("metadata").get("generation").getAsString());
+        JsonObject currentStatus = JsonParser.parseString(actualBodyForVersion(taskId, statusUpdate, "1.1"))
+                .getAsJsonObject().getAsJsonObject("statusUpdate");
+        assertEquals(0, currentStatus.get("generation").getAsInt());
+
+        TaskArtifactUpdateEvent artifactUpdate = new TaskArtifactUpdateEvent(taskId, artifact, "context-zero",
+                false, true, content, 0);
+        JsonObject legacyUpdate = JsonParser.parseString(actualBodyForVersion(taskId, artifactUpdate, "1.0"))
+                .getAsJsonObject().getAsJsonObject("artifactUpdate");
+        assertFalse(legacyUpdate.has("generation"));
+        JsonObject legacyUpdatedArtifact = legacyUpdate.getAsJsonObject("artifact");
+        assertFalse(legacyUpdatedArtifact.has("startGeneration"));
+        assertFalse(legacyUpdatedArtifact.has("endGeneration"));
+        assertFalse(legacyUpdatedArtifact.has("role"));
+        assertEquals("g", legacyUpdate.getAsJsonObject("metadata").get("generation").getAsString());
+        assertEquals("g", legacyUpdatedArtifact.getAsJsonArray("parts").get(0).getAsJsonObject()
+                .getAsJsonObject("data").get("generation").getAsString());
+        JsonObject currentUpdate = JsonParser.parseString(actualBodyForVersion(taskId, artifactUpdate, "1.1"))
+                .getAsJsonObject().getAsJsonObject("artifactUpdate");
+        assertEquals(0, currentUpdate.get("generation").getAsInt());
+        assertEquals(0, currentUpdate.getAsJsonObject("artifact").get("startGeneration").getAsInt());
+        assertEquals(0, currentUpdate.getAsJsonObject("artifact").get("endGeneration").getAsInt());
+    }
+
+    private String actualBodyForVersion(String taskId, StreamingEventKind event, String version) {
+        InMemoryPushNotificationConfigStore store = new InMemoryPushNotificationConfigStore();
+        TestHttpClient client = new TestHttpClient();
+        store.setInfo(createSamplePushConfig(taskId, "http://notify.me/" + version, "cfg", null), version);
+        BasePushNotificationSender isolatedSender = new BasePushNotificationSender(store, client,
+                PushNotificationUrlValidator.ALLOW_ALL);
+        assertTrue(isolatedSender.sendNotification(event, null));
+        assertEquals(1, client.rawBodies.size());
+        return client.rawBodies.get(0);
+    }
+
+    private void sendEventForVersion(StreamingEventKind event, String version, String wrapper, String fixture)
+            throws Exception {
+        String taskId;
+        if (event instanceof TaskStatusUpdateEvent value) {
+            taskId = value.taskId();
+        } else if (event instanceof TaskArtifactUpdateEvent value) {
+            taskId = value.taskId();
+        } else if (event instanceof Message) {
+            taskId = "task-123";
+        } else {
+            throw new IllegalArgumentException("unexpected test event " + event);
+        }
+        InMemoryPushNotificationConfigStore isolatedStore = new InMemoryPushNotificationConfigStore();
+        TestHttpClient isolatedClient = new TestHttpClient();
+        isolatedStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/" + wrapper,
+                "cfg-" + wrapper, null), version);
+        BasePushNotificationSender isolatedSender = new BasePushNotificationSender(isolatedStore, isolatedClient,
+                PushNotificationUrlValidator.ALLOW_ALL);
+
+        Task snapshot = event instanceof Message
+                ? new Task(taskId, "context-456", new TaskStatus(TaskState.TASK_STATE_WORKING), List.of(), List.of(), null)
+                : null;
+        isolatedSender.sendNotification(event, snapshot);
+
+        assertEquals(1, isolatedClient.rawBodies.size());
+        assertWrapperMatchesFixture(isolatedClient.rawBodies.get(0), wrapper, historicalFixture("1.0", fixture));
+    }
+
+    private static Task historicalTaskWithNewState() {
+        return new Task("task-123", "context-456",
+                new TaskStatus(TaskState.TASK_STATE_WORKING, null,
+                        OffsetDateTime.parse("2026-01-01T00:00:00Z")), List.of(), List.of(), null, 17,
+                List.of(new TimelineEntry(17, new TimelineEntry.StatusValue(
+                        new TaskStatus(TaskState.TASK_STATE_WORKING, null,
+                                OffsetDateTime.parse("2026-01-01T00:00:00Z"))))));
+    }
+
+    private static JsonObject historicalFixture(String version, String name) throws IOException {
+        Path directory = Path.of(System.getProperty("user.dir"));
+        if (!Files.exists(directory.resolve(".claude"))) {
+            directory = directory.getParent();
+        }
+        Path fixture = directory.resolve(".claude/architecture/a2a-1.1/phase-0/fixtures/expected")
+                .resolve(version).resolve(name);
+        return JsonParser.parseString(Files.readString(fixture)).getAsJsonObject();
+    }
+
+    private static void assertWrapperMatchesFixture(String body, String wrapper, JsonObject expected) {
+        JsonObject actual = JsonParser.parseString(body).getAsJsonObject();
+        assertEquals(java.util.Set.of(wrapper), actual.keySet());
+        assertEquals(expected, actual.getAsJsonObject(wrapper));
+    }
 
     private TestHttpClient testHttpClient;
     private InMemoryPushNotificationConfigStore configStore;

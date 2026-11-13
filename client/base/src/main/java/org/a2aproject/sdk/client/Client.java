@@ -4,11 +4,22 @@ import static org.a2aproject.sdk.util.Assert.checkNotNullParam;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.a2aproject.sdk.client.config.ClientConfig;
+import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TransportCall;
+import org.a2aproject.sdk.client.transport.spi.TransportEnd;
+import org.a2aproject.sdk.client.transport.spi.TransportFrame;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
+import org.a2aproject.sdk.client.transport.spi.TransportResult;
+import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.spec.A2AClientError;
@@ -26,10 +37,12 @@ import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskIdParams;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
@@ -317,6 +330,8 @@ public class Client extends AbstractClient {
                             @NonNull List<BiConsumer<ClientEvent, AgentCard>> consumers,
                             @Nullable Consumer<Throwable> streamingErrorHandler,
                             @Nullable ClientCallContext context) throws A2AClientException {
+        ClientInputPolicy.validateSend(clientConfig.getProtocolVersion(),
+                SendInputParams.from(messageSendParams), agentCard);
         if (! clientConfig.isStreaming() || ! agentCard.capabilities().streaming()) {
             EventKind eventKind = clientTransport.sendMessage(messageSendParams, context);
             ClientEvent clientEvent;
@@ -342,6 +357,188 @@ public class Client extends AbstractClient {
         }
     }
 
+
+    /**
+     * Sends message or artifact input using the selected protocol and delivers known response events
+     * to the supplied consumers. The error consumer receives exactly one terminal error or {@code null}
+     * for completed 1.1 asynchronous calls and streams.
+     */
+    public void sendInput(@NonNull SendInputParams params,
+            @NonNull List<BiConsumer<ClientEvent, AgentCard>> eventConsumers,
+            @Nullable Consumer<Throwable> errorConsumer,
+            @Nullable ClientCallContext context) throws A2AClientException {
+        checkNotNullParam("params", params);
+        checkNotNullParam("eventConsumers", eventConsumers);
+        ClientInputPolicy.validateSend(clientConfig.getProtocolVersion(), params, agentCard);
+
+        if ("1.0".equals(clientConfig.getProtocolVersion())) {
+            sendLegacyInput(params.requireMessageOnly(), eventConsumers, errorConsumer, context);
+            return;
+        }
+
+        if (!(clientTransport instanceof VersionedClientTransport versioned)) {
+            throw new A2AClientException("Selected transport does not support companion input");
+        }
+        if (clientConfig.isStreaming() && agentCard.capabilities().streaming()) {
+            TransportObservation observation;
+            try {
+                observation = versioned.streamInput(params, SpiCallOptions.defaults(), context);
+            } catch (UnsupportedOperationException unsupported) {
+                throw new A2AClientException("Selected transport does not support streaming input", unsupported);
+            }
+            consumeObservation(observation, eventConsumers, errorConsumer);
+            return;
+        }
+
+        final TransportCall<TransportResult<EventKind>> call;
+        try {
+            call = versioned.sendInput(params, SpiCallOptions.defaults(), context);
+        } catch (UnsupportedOperationException unsupported) {
+            throw new A2AClientException("Selected transport does not support input", unsupported);
+        }
+        AtomicBoolean terminal = new AtomicBoolean();
+        call.result().whenComplete((result, failure) -> {
+            if (!terminal.compareAndSet(false, true)) {
+                return;
+            }
+            if (failure != null) {
+                notifyInputCompletion(errorConsumer, unwrapCompletionFailure(failure));
+                return;
+            }
+            Throwable dispatchFailure = null;
+            try {
+                dispatchInputResult(result.value(), eventConsumers);
+            } catch (Throwable failureDuringDispatch) {
+                dispatchFailure = failureDuringDispatch;
+            }
+            notifyInputCompletion(errorConsumer, dispatchFailure);
+        });
+    }
+
+    /** Sends input using the consumers and error handler configured on this client. */
+    public void sendInput(@NonNull SendInputParams params, @Nullable ClientCallContext context)
+            throws A2AClientException {
+        sendInput(params, consumers, streamingErrorHandler, context);
+    }
+
+    /** Sends input using the consumers configured on this client. */
+    public void sendInput(@NonNull SendInputParams params) throws A2AClientException {
+        sendInput(params, consumers, streamingErrorHandler, null);
+    }
+
+    private void sendLegacyInput(MessageSendParams request,
+            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers,
+            @Nullable Consumer<Throwable> errorConsumer, @Nullable ClientCallContext context)
+            throws A2AClientException {
+        if (!clientConfig.isStreaming() || !agentCard.capabilities().streaming()) {
+            dispatchInputResult(clientTransport.sendMessage(request, context), eventConsumers);
+            notifyInputCompletion(errorConsumer, null);
+            return;
+        }
+        ClientTaskManager tracker = new ClientTaskManager();
+        AtomicBoolean terminal = new AtomicBoolean();
+        Consumer<Throwable> terminalError = error -> {
+            if (terminal.compareAndSet(false, true)) {
+                notifyInputCompletion(errorConsumer, error);
+            }
+        };
+        clientTransport.sendMessageStreaming(request, event -> {
+            try {
+                ClientEvent clientEvent = getClientEvent(event, tracker);
+                consume(clientEvent, agentCard, eventConsumers);
+            } catch (A2AClientError failure) {
+                terminalError.accept(failure);
+            }
+        }, terminalError, context);
+    }
+
+    private void consumeObservation(TransportObservation observation,
+            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers,
+            @Nullable Consumer<Throwable> errorConsumer) {
+        AtomicBoolean terminal = new AtomicBoolean();
+        Consumer<Throwable> finish = failure -> {
+            if (terminal.compareAndSet(false, true)) {
+                notifyInputCompletion(errorConsumer, failure);
+            }
+        };
+        observation.frames().subscribe(new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(TransportFrame frame) {
+                if (frame.streamError() != null) {
+                    var rejection = frame.streamError();
+                    finish.accept(new A2AClientException("Input stream rejected (" + rejection.code() + "): "
+                            + (rejection.message() == null ? "" : rejection.message())));
+                    observation.cancel();
+                    return;
+                }
+                if (frame.event() == null) {
+                    return;
+                }
+                try {
+                    ClientEvent event = getClientEvent(frame.event(), tracker);
+                    consume(event, agentCard, eventConsumers);
+                } catch (Throwable dispatchFailure) {
+                    finish.accept(dispatchFailure);
+                    observation.cancel();
+                }
+            }
+
+            private final ClientTaskManager tracker = new ClientTaskManager();
+
+            @Override
+            public void onError(Throwable failure) {
+                finish.accept(failure);
+            }
+
+            @Override
+            public void onComplete() {
+                observation.completion().whenComplete((end, failure) -> {
+                    if (failure != null) {
+                        finish.accept(unwrapCompletionFailure(failure));
+                    } else if (end == null) {
+                        finish.accept(new A2AClientException("Input stream completed without a terminal result"));
+                    } else if (end.kind() == TransportEnd.Kind.CANCELLED) {
+                        finish.accept(new CancellationException("Input stream cancelled"));
+                    } else if (end.kind() == TransportEnd.Kind.COMPLETED) {
+                        finish.accept(null);
+                    } else {
+                        finish.accept(end.cause() != null ? end.cause()
+                                : new A2AClientException("Input stream ended: " + end.kind()));
+                    }
+                });
+            }
+        });
+    }
+
+    private void dispatchInputResult(EventKind result,
+            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers) throws A2AClientException {
+        ClientEvent event;
+        if (result instanceof Task task) {
+            event = new TaskEvent(task);
+        } else if (result instanceof Message message) {
+            event = new MessageEvent(message);
+        } else {
+            throw new A2AClientException("Unsupported input response event: " + result.getClass().getName());
+        }
+        consume(event, agentCard, eventConsumers);
+    }
+
+    private void notifyInputCompletion(@Nullable Consumer<Throwable> errorConsumer, @Nullable Throwable failure) {
+        if (errorConsumer != null) {
+            errorConsumer.accept(failure);
+        } else if (failure != null) {
+            getOverriddenErrorHandler(null).accept(failure);
+        }
+    }
+
+    private static Throwable unwrapCompletionFailure(Throwable failure) {
+        return failure instanceof CompletionException && failure.getCause() != null ? failure.getCause() : failure;
+    }
 
     /**
      * Retrieve a specific task by ID.
@@ -373,6 +570,10 @@ public class Client extends AbstractClient {
      */
     @Override
     public Task getTask(TaskQueryParams request, @Nullable ClientCallContext context) throws A2AClientException {
+        ClientInputPolicy.validateTaskQuery(clientConfig.getProtocolVersion(), request);
+        if (supportsDecodedReads()) {
+            return ((VersionedClientTransport) clientTransport).getTaskDecoded(request, context).value();
+        }
         return clientTransport.getTask(request, context);
     }
 
@@ -410,7 +611,17 @@ public class Client extends AbstractClient {
      */
     @Override
     public ListTasksResult listTasks(ListTasksParams request, @Nullable ClientCallContext context) throws A2AClientException {
+        ClientInputPolicy.validateListTasks(clientConfig.getProtocolVersion(), request);
+        if (supportsDecodedReads()) {
+            return ((VersionedClientTransport) clientTransport).listTasksDecoded(request, context).value();
+        }
         return clientTransport.listTasks(request, context);
+    }
+
+    private boolean supportsDecodedReads() {
+        return clientTransport instanceof VersionedClientTransport versioned
+                && "1.1".equals(versioned.protocolVersion())
+                && versioned.capabilities().contains(ClientFeature.UNKNOWN_VARIANT_SKIP);
     }
 
     /**
@@ -483,6 +694,7 @@ public class Client extends AbstractClient {
     @Override
     public TaskPushNotificationConfig createTaskPushNotificationConfiguration(
             TaskPushNotificationConfig request, @Nullable ClientCallContext context) throws A2AClientException {
+        ClientInputPolicy.validatePushNotificationConfig(request);
         return clientTransport.createTaskPushNotificationConfiguration(request, context);
     }
 
@@ -691,6 +903,9 @@ public class Client extends AbstractClient {
             taskManager.saveTaskEvent(updateEvent);
             return new TaskUpdateEvent(taskManager.getCurrentTask(), updateEvent);
         } else if (event instanceof TaskArtifactUpdateEvent updateEvent) {
+            taskManager.saveTaskEvent(updateEvent);
+            return new TaskUpdateEvent(taskManager.getCurrentTask(), updateEvent);
+        } else if (event instanceof TaskMessageUpdateEvent updateEvent) {
             taskManager.saveTaskEvent(updateEvent);
             return new TaskUpdateEvent(taskManager.getCurrentTask(), updateEvent);
         } else {

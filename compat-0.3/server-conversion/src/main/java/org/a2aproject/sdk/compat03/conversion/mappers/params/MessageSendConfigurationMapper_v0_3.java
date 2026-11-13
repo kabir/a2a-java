@@ -67,7 +67,9 @@ public interface MessageSendConfigurationMapper_v0_3 {
             v03.acceptedOutputModes(),
             v03.historyLength(),
             taskPushConfig,
-            returnImmediately
+            returnImmediately,
+            null,
+            null
         );
     }
 

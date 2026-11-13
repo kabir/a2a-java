@@ -13,6 +13,7 @@ import org.a2aproject.sdk.spec.A2AClientInvalidStateError;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
@@ -82,6 +83,34 @@ class ClientTaskManager {
             taskBuilder.metadata(newMetadata);
         }
         taskBuilder.status(taskStatusUpdateEvent.status());
+        currentTask = taskBuilder.build();
+        return currentTask;
+    }
+
+    synchronized Task saveTaskEvent(TaskMessageUpdateEvent taskMessageUpdateEvent) throws A2AClientError {
+        Task task = currentTask;
+        if (task == null) {
+            throw new A2AClientInvalidStateError("Cannot apply a message update before a task baseline");
+        }
+        if (!task.id().equals(taskMessageUpdateEvent.taskId())
+                || !task.contextId().equals(taskMessageUpdateEvent.contextId())) {
+            throw new A2AClientInvalidArgsError("Message update identity does not match the current task");
+        }
+
+        Task.Builder taskBuilder = Task.builder(task);
+        List<Message> history = new ArrayList<>(task.history());
+        if (task.status().message() != null) {
+            history.add(task.status().message());
+            taskBuilder.status(new TaskStatus(task.status().state(), null, task.status().timestamp()));
+        }
+        history.add(taskMessageUpdateEvent.message());
+        taskBuilder.history(history);
+        if (taskMessageUpdateEvent.metadata() != null) {
+            Map<String, Object> metadata = task.metadata() == null
+                    ? new HashMap<>() : new HashMap<>(task.metadata());
+            metadata.putAll(taskMessageUpdateEvent.metadata());
+            taskBuilder.metadata(metadata);
+        }
         currentTask = taskBuilder.build();
         return currentTask;
     }

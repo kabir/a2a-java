@@ -15,7 +15,8 @@ public class RestTransportProvider implements ClientTransportProvider<RestTransp
 
     @Override
     public Map<String, Set<ClientFeature>> capabilities() {
-        return Map.of("1.0", Set.of(ClientFeature.ORDINARY), "1.1", Set.of(ClientFeature.ORDINARY));
+        return Map.of("1.0", Set.of(ClientFeature.ORDINARY), "1.1", Set.of(ClientFeature.ORDINARY,
+                ClientFeature.GUARDED_INPUT, ClientFeature.ARTIFACT_INPUT, ClientFeature.UNKNOWN_VARIANT_SKIP));
     }
 
     @Override

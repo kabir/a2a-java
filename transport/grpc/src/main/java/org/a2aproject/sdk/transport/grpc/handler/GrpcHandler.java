@@ -40,6 +40,7 @@ import org.a2aproject.sdk.server.AgentCardTransportValidator;
 import org.a2aproject.sdk.server.AgentCardValidator;
 import org.a2aproject.sdk.server.CachingAgentCardTransportValidator;
 import org.a2aproject.sdk.server.ServerCallContext;
+import org.a2aproject.sdk.server.auth.TaskOperation;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.auth.User;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
@@ -48,6 +49,7 @@ import org.a2aproject.sdk.server.multitenancy.TenantNotFoundException;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
 import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.server.version.ServerVersionPolicy;
+import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.A2AErrorCodes;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -66,6 +68,8 @@ import org.a2aproject.sdk.spec.JSONParseError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.MethodNotFoundError;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -74,6 +78,7 @@ import org.a2aproject.sdk.spec.TaskNotCancelableError;
 import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
+import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.spec.VersionNotSupportedError;
 import org.a2aproject.sdk.spec.util.Utils;
@@ -215,9 +220,22 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
         try {
             String tenant = request.getTenant();
             ServerCallContext context = createCallContext(responseObserver, tenant);
-            MessageSendParams params = FromProto.messageSendParams(
-                    request.toBuilder().setTenant(canonicalTenant(context)).build());
-            EventKind taskOrMessage = getRequestHandler().onMessageSend(params, context);
+            org.a2aproject.sdk.grpc.SendMessageRequest canonicalRequest =
+                    request.toBuilder().setTenant(canonicalTenant(context)).build();
+            EventKind taskOrMessage;
+            if (context.getVersionPolicy().supportsPhase2Output()) {
+                SendInputParams params = FromProto.sendInputParams(canonicalRequest);
+                rejectUnsupportedInputOptions(params);
+                taskOrMessage = getRequestHandler().onSendInput(params, context);
+            } else {
+                if (context.getVersionPolicy() == ServerVersionPolicy.V1_0) {
+                    rejectVersion10AdvancedInput(FromProto.sendInputParams(canonicalRequest));
+                }
+                taskOrMessage = getRequestHandler().onMessageSend(FromProto.messageSendParams(canonicalRequest), context);
+            }
+            if (taskOrMessage instanceof Task task) {
+                taskOrMessage = VersionedOutputProjector.projectTask(task, context.getVersionPolicy());
+            }
             org.a2aproject.sdk.grpc.SendMessageResponse response = ToProto.taskOrMessage(taskOrMessage);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -240,9 +258,11 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             ServerCallContext context = createCallContext(responseObserver, tenant);
             TaskQueryParams params = FromProto.taskQueryParams(
                     request.toBuilder().setTenant(canonicalTenant(context)).build());
+            rejectUnsupportedQuery(params);
             Task task = getRequestHandler().onGetTask(params, context);
             if (task != null) {
-                responseObserver.onNext(ToProto.task(task));
+                responseObserver.onNext(ToProto.task(VersionedOutputProjector.projectTask(task,
+                        context.getVersionPolicy())));
                 responseObserver.onCompleted();
             } else {
                 handleError(responseObserver, new TaskNotFoundError());
@@ -266,8 +286,12 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             ServerCallContext context = createCallContext(responseObserver, tenant);
             org.a2aproject.sdk.spec.ListTasksParams params = FromProto.listTasksParams(
                     request.toBuilder().setTenant(canonicalTenant(context)).build());
+            rejectUnsupportedListOptions(params);
             ListTasksResult result = getRequestHandler().onListTasks(params, context);
-            responseObserver.onNext(ToProto.listTasksResult(result));
+            ListTasksResult projected = new ListTasksResult(result.tasks().stream()
+                    .map(task -> VersionedOutputProjector.projectTask(task, context.getVersionPolicy())).toList(),
+                    result.totalSize(), result.pageSize(), result.nextPageToken());
+            responseObserver.onNext(ToProto.listTasksResult(projected));
             responseObserver.onCompleted();
         } catch (TenantNotFoundException e) {
             handleTenantNotFound(responseObserver, e);
@@ -290,7 +314,8 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
                     request.toBuilder().setTenant(canonicalTenant(context)).build());
             Task task = getRequestHandler().onCancelTask(params, context);
             if (task != null) {
-                responseObserver.onNext(ToProto.task(task));
+                responseObserver.onNext(ToProto.task(VersionedOutputProjector.projectTask(task,
+                        context.getVersionPolicy())));
                 responseObserver.onCompleted();
             } else {
                 handleError(responseObserver, new TaskNotFoundError());
@@ -314,8 +339,10 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             ServerCallContext context = createCallContext(responseObserver, tenant, PUSH_NOTIFICATIONS);
             TaskPushNotificationConfig config = FromProto.createTaskPushNotificationConfig(
                     request.toBuilder().setTenant(canonicalTenant(context)).build());
+            rejectDeliveryVersion(config);
             TaskPushNotificationConfig responseConfig = getRequestHandler().onCreateTaskPushNotificationConfig(config, context);
-            responseObserver.onNext(ToProto.taskPushNotificationConfig(responseConfig));
+            responseObserver.onNext(ToProto.taskPushNotificationConfig(
+                    VersionedOutputProjector.projectConfig(responseConfig, context.getVersionPolicy())));
             responseObserver.onCompleted();
         } catch (TenantNotFoundException e) {
             handleTenantNotFound(responseObserver, e);
@@ -337,7 +364,8 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             GetTaskPushNotificationConfigParams params = FromProto.getTaskPushNotificationConfigParams(
                     request.toBuilder().setTenant(canonicalTenant(context)).build());
             TaskPushNotificationConfig config = getRequestHandler().onGetTaskPushNotificationConfig(params, context);
-            responseObserver.onNext(ToProto.taskPushNotificationConfig(config));
+            responseObserver.onNext(ToProto.taskPushNotificationConfig(
+                    VersionedOutputProjector.projectConfig(config, context.getVersionPolicy())));
             responseObserver.onCompleted();
         } catch (TenantNotFoundException e) {
             handleTenantNotFound(responseObserver, e);
@@ -359,7 +387,11 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             ListTaskPushNotificationConfigsParams params = FromProto.listTaskPushNotificationConfigsParams(
                     request.toBuilder().setTenant(canonicalTenant(context)).build());
             ListTaskPushNotificationConfigsResult result = getRequestHandler().onListTaskPushNotificationConfigs(params, context);
-            org.a2aproject.sdk.grpc.ListTaskPushNotificationConfigsResponse response = ToProto.listTaskPushNotificationConfigsResponse(result);
+            ListTaskPushNotificationConfigsResult projected = new ListTaskPushNotificationConfigsResult(
+                    result.configs().stream().map(config -> VersionedOutputProjector.projectConfig(config,
+                            context.getVersionPolicy())).toList(), result.nextPageToken());
+            org.a2aproject.sdk.grpc.ListTaskPushNotificationConfigsResponse response =
+                    ToProto.listTaskPushNotificationConfigsResponse(projected);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (TenantNotFoundException e) {
@@ -417,10 +449,24 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             String tenant = request.getTenant();
             ServerCallContext context = createCallContext(responseObserver, tenant, STREAMING);
             installForkedContextWrapper(context);
-            MessageSendParams params = FromProto.messageSendParams(
-                    request.toBuilder().setTenant(canonicalTenant(context)).build());
-            Flow.Publisher<StreamingEventKind> publisher = getRequestHandler().onMessageSendStream(params, context);
-            convertToStreamResponse(publisher, responseObserver, context);
+            org.a2aproject.sdk.grpc.SendMessageRequest canonicalRequest =
+                    request.toBuilder().setTenant(canonicalTenant(context)).build();
+            Flow.Publisher<StreamingEventKind> publisher;
+            if (context.getVersionPolicy().supportsPhase2Output()) {
+                SendInputParams params = FromProto.sendInputParams(canonicalRequest);
+                rejectUnsupportedStreamingInput(params);
+                String taskId = params.message() != null ? params.message().taskId() : params.artifactUpdates().get(0).taskId();
+                getRequestHandler().authorizeTaskAccess(taskId, context, TaskOperation.MESSAGE_SEND_STREAM);
+                publisher = getRequestHandler().onSendInputStream(params, context);
+            } else {
+                if (context.getVersionPolicy() == ServerVersionPolicy.V1_0) {
+                    rejectVersion10AdvancedInput(FromProto.sendInputParams(canonicalRequest));
+                }
+                MessageSendParams params = FromProto.messageSendParams(canonicalRequest);
+                publisher = getRequestHandler().onMessageSendStream(params, context);
+            }
+            convertToStreamResponse(VersionedOutputProjector.projectStream(publisher, context.getVersionPolicy()),
+                    responseObserver, context);
         } catch (TenantNotFoundException e) {
             handleTenantNotFound(responseObserver, e);
         } catch (A2AError e) {
@@ -439,10 +485,29 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             String tenant = request.getTenant();
             ServerCallContext context = createCallContext(responseObserver, tenant, STREAMING);
             installForkedContextWrapper(context);
-            TaskIdParams params = FromProto.taskIdParams(
-                    request.toBuilder().setTenant(canonicalTenant(context)).build());
-            Flow.Publisher<StreamingEventKind> publisher = getRequestHandler().onSubscribeToTask(params, context);
-            convertToStreamResponse(publisher, responseObserver, context);
+            org.a2aproject.sdk.grpc.SubscribeToTaskRequest canonicalRequest =
+                    request.toBuilder().setTenant(canonicalTenant(context)).build();
+            Flow.Publisher<StreamingEventKind> publisher;
+            if (context.getVersionPolicy().supportsPhase2Output()) {
+                ObserveTaskParams params = FromProto.observeTaskParams(canonicalRequest);
+                if (params.lastSeenGeneration() != null && params.lastSeenGeneration() < 0) {
+                    throw new InvalidParamsError("lastSeenGeneration must be non-negative");
+                }
+                if (params.lastSeenGeneration() != null) {
+                    throw new UnsupportedOperationError();
+                }
+                getRequestHandler().authorizeTaskAccess(params.id(), context, TaskOperation.SUBSCRIBE_TO_TASK);
+                publisher = getRequestHandler().onObserveTask(params, context);
+            } else {
+                if (context.getVersionPolicy() == ServerVersionPolicy.V1_0
+                        && canonicalRequest.hasLastSeenGeneration()) {
+                    throw new UnsupportedOperationError();
+                }
+                TaskIdParams params = FromProto.taskIdParams(canonicalRequest);
+                publisher = getRequestHandler().onSubscribeToTask(params, context);
+            }
+            convertToStreamResponse(VersionedOutputProjector.projectStream(publisher, context.getVersionPolicy()),
+                    responseObserver, context);
         } catch (TenantNotFoundException e) {
             handleTenantNotFound(responseObserver, e);
         } catch (A2AError e) {
@@ -665,6 +730,56 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
      * @see CallContextFactory
      * @see org.a2aproject.sdk.transport.grpc.context.GrpcContextKeys
      */
+    private static void rejectUnsupportedInputOptions(SendInputParams params) throws UnsupportedOperationError {
+        if (params.configuration() != null
+                && (params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectUnsupportedStreamingInput(SendInputParams params) throws UnsupportedOperationError {
+        if (!params.artifactUpdates().isEmpty() || hasAdvancedConfiguration(params)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectVersion10AdvancedInput(SendInputParams params) throws UnsupportedOperationError {
+        if (!params.artifactUpdates().isEmpty() || hasAdvancedConfiguration(params)) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static boolean hasAdvancedConfiguration(SendInputParams params) {
+        return params.configuration() != null
+                && (params.configuration().ifGenerationMatch() != null
+                        || params.configuration().timelineLength() != null
+                        || params.configuration().taskPushNotificationConfig() != null
+                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null);
+    }
+
+    private static void rejectUnsupportedQuery(TaskQueryParams params) throws A2AError {
+        if (params.currentGeneration() != null && params.currentGeneration() < 0) {
+            throw new InvalidParamsError("currentGeneration must be non-negative");
+        }
+        if (params.currentGeneration() != null || params.timelineLength() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectUnsupportedListOptions(org.a2aproject.sdk.spec.ListTasksParams params) throws A2AError {
+        if (params.timelineLength() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
+    private static void rejectDeliveryVersion(TaskPushNotificationConfig config) throws UnsupportedOperationError {
+        if (config.protocolVersion() != null) {
+            throw new UnsupportedOperationError();
+        }
+    }
+
     private <V> ServerCallContext createRawCallContext(StreamObserver<V> responseObserver) {
         CallContextFactory factory = getCallContextFactory();
         ServerCallContext context;

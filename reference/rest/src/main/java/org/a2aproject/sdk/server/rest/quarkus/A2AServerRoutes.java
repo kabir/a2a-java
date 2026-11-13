@@ -418,7 +418,8 @@ public class A2AServerRoutes {
             response = jsonRestHandler.listTasks(context, extractTenant(rc), rc.request().params().get("contextId"),
                     rc.request().params().get("status"), rc.request().params().get(PAGE_SIZE_PARAM),
                     rc.request().params().get(PAGE_TOKEN_PARAM), rc.request().params().get(HISTORY_LENGTH_PARAM),
-                    rc.request().params().get(STATUS_TIMESTAMP_AFTER), rc.request().params().get("includeArtifacts"));
+                    rc.request().params().get(STATUS_TIMESTAMP_AFTER), rc.request().params().get("includeArtifacts"),
+                    rc.request().params().get("timelineLength"));
         } catch (Throwable t) {
             LOGGER.error("Internal error while processing request", t);
             response = jsonRestHandler.createErrorResponse(new InternalError("Internal error"));
@@ -444,7 +445,8 @@ public class A2AServerRoutes {
         HTTPRestResponse response = null;
         try {
             response = jsonRestHandler.getTask(context, extractTenant(rc), taskId,
-                    rc.request().params().get(HISTORY_LENGTH_PARAM));
+                    rc.request().params().get(HISTORY_LENGTH_PARAM), rc.request().params().get("timelineLength"),
+                    rc.request().params().get("currentGeneration"));
         } catch (Throwable t) {
             LOGGER.error("Internal error while processing request", t);
             response = jsonRestHandler.createErrorResponse(new InternalError("Internal error"));
@@ -539,7 +541,8 @@ public class A2AServerRoutes {
         HTTPRestStreamingResponse streamingResponse = null;
         HTTPRestResponse error = null;
         try {
-            HTTPRestResponse response = jsonRestHandler.subscribeToTask(context, extractTenant(rc), taskId);
+            HTTPRestResponse response = jsonRestHandler.subscribeToTask(context, extractTenant(rc), taskId,
+                    rc.request().params().get("lastSeenGeneration"));
             if (response instanceof HTTPRestStreamingResponse httpRestStreamingResponse) {
                 streamingResponse = httpRestStreamingResponse;
             } else {

@@ -70,7 +70,9 @@ public interface TaskMapper_v0_3 {
             TaskStatusMapper_v0_3.INSTANCE.toV10(v03.status()),
             artifacts,
             history,
-            v03.metadata()
+            v03.metadata(),
+            0,
+            null
         );
     }
 

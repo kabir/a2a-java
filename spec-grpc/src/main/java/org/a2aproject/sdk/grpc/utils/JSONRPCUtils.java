@@ -1,11 +1,15 @@
 package org.a2aproject.sdk.grpc.utils;
 
-import org.a2aproject.sdk.spec.A2AErrorCodes;
-
-import static org.a2aproject.sdk.spec.A2AMethods.CANCEL_TASK_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
-import static org.a2aproject.sdk.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.Strictness;
+import com.google.gson.stream.JsonWriter;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
@@ -17,28 +21,20 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.Strictness;
-import com.google.gson.stream.JsonWriter;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.util.JsonFormat;
 import org.a2aproject.sdk.grpc.StreamResponse;
 import org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException;
 import org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonMappingException;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.jsonrpc.common.json.MethodNotFoundJsonMappingException;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.A2AMessage;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.A2ARequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.A2AResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskResponse;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequest;
@@ -51,17 +47,19 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTaskPushNotificationConfig
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTaskPushNotificationConfigsResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResponse;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.ObserveTaskRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendInputStreamingRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest;
-import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigRequest;
-import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SubscribeToTaskRequest;
 import org.a2aproject.sdk.spec.A2AError;
+import org.a2aproject.sdk.spec.A2AErrorCodes;
 import org.a2aproject.sdk.spec.ContentTypeNotSupportedError;
 import org.a2aproject.sdk.spec.ExtendedAgentCardNotConfiguredError;
-import org.a2aproject.sdk.spec.GetExtendedAgentCardParams;
 import org.a2aproject.sdk.spec.ExtensionSupportRequiredError;
+import org.a2aproject.sdk.spec.GetExtendedAgentCardParams;
 import org.a2aproject.sdk.spec.InvalidAgentResponseError;
 import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.InvalidRequestError;
@@ -76,16 +74,17 @@ import org.a2aproject.sdk.spec.util.ErrorDetail;
 import org.a2aproject.sdk.spec.util.Utils;
 import org.jspecify.annotations.Nullable;
 
+import static org.a2aproject.sdk.spec.A2AMethods.CANCEL_TASK_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.GET_EXTENDED_AGENT_CARD_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.GET_TASK_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.GET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.LIST_TASK_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.LIST_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.SEND_MESSAGE_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.SET_TASK_PUSH_NOTIFICATION_CONFIG_METHOD;
 import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
-
-import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 
 /**
  * Utilities for converting between JSON-RPC 2.0 messages and Protocol Buffer objects.
@@ -221,6 +220,104 @@ public class JSONRPCUtils {
         }
     }
 
+    /** Parses 1.1 companion request wrappers while retaining the legacy parser for older versions. */
+    public static A2ARequest<?> parseRequestBody(String body, @Nullable String tenant, String protocolVersion)
+            throws A2AError, JsonMappingException, JsonProcessingException {
+        if (!"1.1".equals(protocolVersion)) {
+            if ("1.0".equals(protocolVersion)) {
+                validateVersion10Input(body, tenant);
+            }
+            return parseRequestBody(body, tenant);
+        }
+        JsonElement element = JsonParser.parseString(body);
+        if (!element.isJsonObject()) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC request: the request must be a JSON object.");
+        }
+        JsonObject request = element.getAsJsonObject();
+        if (!request.has("method")) {
+            throw new IdJsonMappingException("JSON-RPC request missing required 'method' field.", getIdIfPossible(request));
+        }
+        String version = getAndValidateJsonrpc(request);
+        Object id = getAndValidateId(request);
+        String method = request.get("method").getAsString();
+        JsonElement params = request.get("params");
+        if (params == null || params.isJsonNull()) {
+            params = new JsonObject();
+        }
+        if (SEND_MESSAGE_METHOD.equals(method) || SEND_STREAMING_MESSAGE_METHOD.equals(method)) {
+            org.a2aproject.sdk.grpc.SendMessageRequest.Builder builder =
+                    org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder();
+            parseRequestBody(params, builder, id);
+            setTenantIfAbsent(builder::getTenant, builder::setTenant, tenant);
+            org.a2aproject.sdk.spec.SendInputParams input = ProtoUtils.FromProto.sendInputParams(builder);
+            return SEND_MESSAGE_METHOD.equals(method)
+                    ? new SendInputRequest(version, id, input)
+                    : new SendInputStreamingRequest(version, id, input);
+        }
+        if (SUBSCRIBE_TO_TASK_METHOD.equals(method)) {
+            org.a2aproject.sdk.grpc.SubscribeToTaskRequest.Builder builder =
+                    org.a2aproject.sdk.grpc.SubscribeToTaskRequest.newBuilder();
+            parseRequestBody(params, builder, id);
+            setTenantIfAbsent(builder::getTenant, builder::setTenant, tenant);
+            return new ObserveTaskRequest(version, id, ProtoUtils.FromProto.observeTaskParams(builder));
+        }
+        return parseMethodRequest(version, id, method, params, tenant);
+    }
+
+    private static void validateVersion10Input(String body, @Nullable String tenant)
+            throws A2AError, JsonMappingException, JsonProcessingException {
+        JsonElement element = JsonParser.parseString(body);
+        if (!element.isJsonObject()) {
+            return;
+        }
+        JsonObject request = element.getAsJsonObject();
+        String method = request.has("method") ? request.get("method").getAsString() : "";
+        if (SUBSCRIBE_TO_TASK_METHOD.equals(method)) {
+            JsonElement params = request.get("params");
+            if (params != null && params.isJsonObject()
+                    && params.getAsJsonObject().has("lastSeenGeneration")
+                    && !params.getAsJsonObject().get("lastSeenGeneration").isJsonNull()) {
+                throw new org.a2aproject.sdk.spec.UnsupportedOperationError();
+            }
+            return;
+        }
+        if (!SEND_MESSAGE_METHOD.equals(method) && !SEND_STREAMING_MESSAGE_METHOD.equals(method)) {
+            return;
+        }
+        String version = getAndValidateJsonrpc(request);
+        Object id = getAndValidateId(request);
+        JsonElement params = request.get("params");
+        if (params == null || params.isJsonNull()) {
+            params = new JsonObject();
+        }
+        org.a2aproject.sdk.grpc.SendMessageRequest.Builder builder =
+                org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder();
+        parseRequestBody(params, builder, id);
+        setTenantIfAbsent(builder::getTenant, builder::setTenant, tenant);
+        try {
+            org.a2aproject.sdk.spec.SendInputParams input = ProtoUtils.FromProto.sendInputParams(builder);
+            if (hasAdvancedInput(input)) {
+                throw new org.a2aproject.sdk.spec.UnsupportedOperationError();
+            }
+        } catch (IllegalArgumentException e) {
+            // Let the legacy parser retain its existing message-required validation.
+            if (builder.hasMessage()) {
+                throw new InvalidParamsError(e.getMessage());
+            }
+        }
+    }
+
+    private static boolean hasAdvancedInput(org.a2aproject.sdk.spec.SendInputParams input) {
+        if (!input.artifactUpdates().isEmpty()) {
+            return true;
+        }
+        org.a2aproject.sdk.spec.MessageSendConfiguration configuration = input.configuration();
+        return configuration != null && (configuration.ifGenerationMatch() != null
+                || configuration.timelineLength() != null
+                || configuration.taskPushNotificationConfig() != null
+                        && configuration.taskPushNotificationConfig().protocolVersion() != null);
+    }
+
     private static void setTenantIfAbsent(Supplier<String> existingTenantGetter, Consumer<String> setter, @Nullable String tenantOverride) {
         if (tenantOverride != null && !tenantOverride.isBlank() && existingTenantGetter.get().isBlank()) {
             setter.accept(tenantOverride);
@@ -306,6 +403,107 @@ public class JSONRPCUtils {
             default ->
                 throw new MethodNotFoundJsonMappingException("Unsupported JSON-RPC method: '" + method + "'", id);
         }
+    }
+
+    /** Decodes a streaming JSON-RPC envelope without collapsing skip, rejection, and malformed outcomes. */
+    public static StreamDecodeResult decodeResponseEvent(String envelope, String protocolVersion)
+            throws JsonMappingException, JsonProcessingException {
+        JsonObject result = responseResult(envelope);
+        return StreamDecoder.decodeJson(result.toString(), protocolVersion);
+    }
+
+    /** Decodes a streaming JSON-RPC envelope only when its id matches the originating request. */
+    public static StreamDecodeResult decodeResponseEvent(String envelope, String protocolVersion, String requestId)
+            throws JsonMappingException, JsonProcessingException {
+        JsonObject result = responseResult(envelope, requestId);
+        return StreamDecoder.decodeJson(result.toString(), protocolVersion);
+    }
+
+    public static DecodedTask decodeTaskResponse(String envelope, String protocolVersion)
+            throws JsonMappingException, JsonProcessingException {
+        return StreamDecoder.decodeTaskJson(responseResult(envelope).toString(), protocolVersion);
+    }
+
+    /** Decodes a task response only when its JSON-RPC id matches the originating request. */
+    public static DecodedTask decodeTaskResponse(String envelope, String protocolVersion, String requestId)
+            throws JsonMappingException, JsonProcessingException {
+        return StreamDecoder.decodeTaskJson(responseResult(envelope, requestId).toString(), protocolVersion);
+    }
+
+    public static DecodedTaskList decodeListTasksResponse(String envelope, String protocolVersion)
+            throws JsonMappingException, JsonProcessingException {
+        return StreamDecoder.decodeTaskListJson(responseResult(envelope).toString(), protocolVersion);
+    }
+
+    /** Decodes a task-list response only when its JSON-RPC id matches the originating request. */
+    public static DecodedTaskList decodeListTasksResponse(String envelope, String protocolVersion, String requestId)
+            throws JsonMappingException, JsonProcessingException {
+        return StreamDecoder.decodeTaskListJson(responseResult(envelope, requestId).toString(), protocolVersion);
+    }
+
+    public static DecodedEvent decodeSendResponse(String envelope, String protocolVersion)
+            throws JsonMappingException, JsonProcessingException {
+        return StreamDecoder.decodeSendResponseJson(responseResult(envelope).toString(), protocolVersion);
+    }
+
+    /** Decodes a send response only when its JSON-RPC id matches the originating request. */
+    public static DecodedEvent decodeSendResponse(String envelope, String protocolVersion, String requestId)
+            throws JsonMappingException, JsonProcessingException {
+        return StreamDecoder.decodeSendResponseJson(responseResult(envelope, requestId).toString(), protocolVersion);
+    }
+
+    private static JsonObject responseResult(String body) throws JsonMappingException, JsonProcessingException {
+        JsonElement element = JsonParser.parseString(body);
+        if (!element.isJsonObject()) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC response: envelope must be an object.");
+        }
+        JsonObject response = element.getAsJsonObject();
+        getAndValidateJsonrpc(response);
+        JsonElement error = response.get("error");
+        if (error != null && !error.isJsonNull()) {
+            if (!error.isJsonObject()) {
+                throw new JsonMappingException(null, "Invalid JSON-RPC response error object.");
+            }
+            throw processError(error.getAsJsonObject());
+        }
+        getAndValidateId(response);
+        JsonElement result = response.get("result");
+        if (result == null || result.isJsonNull() || !result.isJsonObject()) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC response: result must be an object.");
+        }
+        return result.getAsJsonObject();
+    }
+
+    private static JsonObject responseResult(String body, String expectedRequestId)
+            throws JsonMappingException, JsonProcessingException {
+        JsonElement element = JsonParser.parseString(body);
+        if (!element.isJsonObject()) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC response: envelope must be an object.");
+        }
+        JsonObject response = element.getAsJsonObject();
+        getAndValidateJsonrpc(response);
+        JsonElement id = response.get("id");
+        if (id == null || id.isJsonNull()) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC response: response id is missing or null.");
+        }
+        if (!id.isJsonPrimitive() || (!id.getAsJsonPrimitive().isString() && !id.getAsJsonPrimitive().isNumber())) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC response: id must be a string or number.");
+        }
+        if (!id.getAsJsonPrimitive().isString() || !expectedRequestId.equals(id.getAsString())) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC response: id does not match the request id.");
+        }
+        JsonElement error = response.get("error");
+        if (error != null && !error.isJsonNull()) {
+            if (!error.isJsonObject()) {
+                throw new JsonMappingException(null, "Invalid JSON-RPC response error object.");
+            }
+            throw processError(error.getAsJsonObject());
+        }
+        JsonElement result = response.get("result");
+        if (result == null || result.isJsonNull() || !result.isJsonObject()) {
+            throw new JsonMappingException(null, "Invalid JSON-RPC response: result must be an object.");
+        }
+        return result.getAsJsonObject();
     }
 
     public static StreamResponse parseResponseEvent(String body) throws JsonMappingException, JsonProcessingException {
@@ -449,6 +647,7 @@ public class JSONRPCUtils {
                     case EXTENDED_AGENT_CARD_NOT_CONFIGURED -> new ExtendedAgentCardNotConfiguredError(code, message, details);
                     case EXTENSION_SUPPORT_REQUIRED -> new ExtensionSupportRequiredError(code, message, details);
                     case VERSION_NOT_SUPPORTED -> new VersionNotSupportedError(code, message, details);
+                    case TASK_GENERATION_MISMATCH -> new org.a2aproject.sdk.spec.TaskGenerationMismatchError(code, message, details);
                     case TASK_NOT_CANCELABLE -> new TaskNotCancelableError(code, message, details);
                     case TASK_NOT_FOUND -> new TaskNotFoundError(message, details);
                 };
@@ -613,11 +812,19 @@ public class JSONRPCUtils {
     }
 
     public static String toJsonRPCResultResponse(@Nullable Object requestId, com.google.protobuf.MessageOrBuilder builder) {
+        return toJsonRPCResultResponse(requestId, builder, null);
+    }
+
+    /** Serializes a response with schema-path omission for the selected protocol version. */
+    public static String toJsonRPCResultResponse(@Nullable Object requestId,
+            com.google.protobuf.MessageOrBuilder builder, @Nullable String protocolVersion) {
         try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
             JsonUtil.writeJsonRpcId(output, requestId);
-            String resultValue = ProtoJsonUtils.toJson(RESPONSE_PRINTER, builder);
+            String resultValue = protocolVersion == null
+                    ? ProtoJsonUtils.toJson(RESPONSE_PRINTER, builder)
+                    : ProtoJsonUtils.toJsonForVersion(RESPONSE_PRINTER, builder, protocolVersion);
             output.name("result").jsonValue(resultValue);
             output.endObject();
             return result.toString();
