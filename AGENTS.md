@@ -10,31 +10,33 @@
   available. Use Sol for planning, independent reviews and difficult reasoning.
   Select delegated models explicitly; do not silently inherit an expensive model.
 - Before A2A 1.1 phase work, read and follow the standing
-  [model and token-cost policy](.claude/architecture/a2a-1.1/implementation-loop.md#model-selection-and-token-cost-policy).
+  [model and token-cost policy](.claude/architecture/a2a-1.1/implementation-tasks.md#model-selection-and-token-cost-policy).
 - Record requested model identifiers and roles in the phase progress record.
   Record observed model metadata when available; do not present a model's own
-  claim as verified telemetry. Preserve iteration and attempt counts on escalation.
+  claim as verified telemetry. Preserve task state and failed-approach evidence on escalation.
 - If an allowed model cannot perform the work, report/checkpoint the limitation;
   do not substitute Astra. If the current session is known to be running Astra,
   stop task work and request resumption with an allowed model.
 
-## A2A 1.1 iteration and retry accounting
+## A2A 1.1 task workflow
 
-The user's 2026-11-11 clarification in
-[acceptance.md](.claude/architecture/a2a-1.1/acceptance.md#run-limits) overrides
-older prompts/plans and skill rules that stop after three fixes or infer an
-architectural problem from that count alone. A coherent iteration may contain
-several compile/test corrections. Expected RED tests and routine import,
-signature, generated-code or classpath repairs are not automatically separate failed
-substantive attempts. Record all failures; repeated compiler/setup fixes without
-useful narrowing still count as no progress.
+The user's 2026-11-16 change replaces coordinator loops with normal tasks.
+Start at [the task list](.claude/architecture/a2a-1.1/task-list.md) and follow the
+[current task bounds](.claude/architecture/a2a-1.1/acceptance.md#run-limits).
+The developer assigns implementation, independent review and corrections in
+separate sessions. Use the existing reviewed plan; ask for focused planning only
+where it lacks implementable detail. Stop after the assigned task/handoff; do not
+start the next row, orchestrate agents or spawn workers without explicit permission.
 
-After three consecutive substantive no-progress attempts on the same underlying
-defect, checkpoint dependent work for Sol diagnosis. Do not aggregate unrelated
-failures under one broad acceptance criterion. Respect existing agent permissions
-and the Astra ban. Keep the authorized ten-iteration/two-hour bounds, historical
-failures and current no-progress streaks across sessions; this clarification does
-not renew expired time or authorize implementation/retries beyond the budget.
+Use Luna medium/normal for implementation and Sol medium/normal for planning,
+review or targeted diagnosis. No mandatory loop-iteration quotas or cumulative
+command counters apply to new work. Retain the two-hour per-assignment backstop
+unless explicitly changed, finite test commands, and a Sol diagnosis checkpoint
+after three substantive attempts without progress on the same defect. Routine
+compile corrections/expected RED tests are not separate failed attempts. Preserve
+historical failures and ledgers; a fresh session does not reset an active deadline.
+Checkpoint before context fills, then let the developer start a fresh session.
+All architecture, acceptance, model restrictions and commit approvals remain.
 
 ## Project Overview
 

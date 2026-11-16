@@ -8,7 +8,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.Strictness;
 import com.google.gson.stream.JsonWriter;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -161,7 +163,7 @@ import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
  *
  * // Create JSON-RPC response from proto
  * org.a2aproject.sdk.grpc.Task protoTask = ...;
- * String response = JSONRPCUtils.toJsonRPCResultResponse("req-1", protoTask);
+ * String response = JSONRPCUtils.toJsonRPCResultResponse("req-1", protoTask, "1.1");
  * }</pre>
  *
  * @see ProtoUtils
@@ -824,20 +826,29 @@ public class JSONRPCUtils {
         }
     }
 
-    public static String toJsonRPCResultResponse(@Nullable Object requestId, com.google.protobuf.MessageOrBuilder builder) {
-        return toJsonRPCResultResponse(requestId, builder, null);
+    /**
+     * Serializes a response using the historical 1.0 wire shape. Call the versioned overload
+     * with {@code "1.1"} when the response is for a 1.1 peer.
+     */
+    public static String toJsonRPCResultResponse(@Nullable Object requestId, MessageOrBuilder builder) {
+        return toJsonRPCResultResponse(requestId, builder, "1.0");
     }
 
-    /** Serializes a response with schema-path omission for the selected protocol version. */
+    /**
+     * Serializes a response with schema-path omission for the selected protocol version.
+     * A {@code null} version retains the historical 1.0 behavior. Payload variants introduced
+     * after 1.0 are rejected for legacy versions rather than serialized as if they were supported.
+     */
     public static String toJsonRPCResultResponse(@Nullable Object requestId,
-            com.google.protobuf.MessageOrBuilder builder, @Nullable String protocolVersion) {
+            MessageOrBuilder builder, @Nullable String protocolVersion) {
         try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
             JsonUtil.writeJsonRpcId(output, requestId);
-            String resultValue = protocolVersion == null
-                    ? ProtoJsonUtils.toJson(RESPONSE_PRINTER, builder)
-                    : ProtoJsonUtils.toJsonForVersion(RESPONSE_PRINTER, builder, protocolVersion);
+            String selectedVersion = protocolVersion == null ? "1.0" : protocolVersion;
+            validateResponseVersion(selectedVersion);
+            rejectUnsupportedLegacyPayload(builder, selectedVersion);
+            String resultValue = ProtoJsonUtils.toJsonForVersion(RESPONSE_PRINTER, builder, selectedVersion);
             output.name("result").jsonValue(resultValue);
             output.endObject();
             return result.toString();
@@ -845,6 +856,33 @@ public class JSONRPCUtils {
             throw new RuntimeException(
                     "Failed to serialize JSON-RPC success response. "
                     + "Proto type: " + builder.getClass().getSimpleName() + ", Request ID: " + requestId, ex);
+        }
+    }
+
+    private static void validateResponseVersion(String protocolVersion) {
+        if (!"0.3".equals(protocolVersion) && !"1.0".equals(protocolVersion) && !"1.1".equals(protocolVersion)) {
+            throw new IllegalArgumentException("Unsupported protocol version for protobuf JSON encoding: "
+                    + protocolVersion);
+        }
+    }
+
+    private static void rejectUnsupportedLegacyPayload(MessageOrBuilder builder, String protocolVersion) {
+        if ("1.1".equals(protocolVersion)) {
+            return;
+        }
+        String messageType = builder.getDescriptorForType().getName();
+        if (messageType.equals("TaskMessageUpdateEvent") || messageType.equals("StreamError")) {
+            throw new UnsupportedOperationException(messageType + " requires protocol version 1.1");
+        }
+        if (!messageType.equals("StreamResponse")) {
+            return;
+        }
+        for (FieldDescriptor field : builder.getDescriptorForType().getFields()) {
+            // StreamResponse fields 5+ were added after the legacy 1.0 payload variants.
+            if (field.getContainingOneof() != null && field.getNumber() > 4 && builder.hasField(field)) {
+                throw new UnsupportedOperationException("StreamResponse payload '" + field.getJsonName()
+                        + "' requires protocol version 1.1");
+            }
         }
     }
 

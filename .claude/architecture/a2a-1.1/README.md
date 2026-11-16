@@ -1,31 +1,33 @@
 # A2A 1.1 client and server architecture
 
-Status: reviewed server direction with a proposed client scope revision; no runtime implementation.
+Status: architecture reference with a developer-selected task workflow. Phase 2 is complete within the approved experimental pinned-RC scope; no final 1.1 conformance claim. Start with [the task list](task-list.md).
 
 ## Architecture review and implementation handoff
 
 The user clarified the outcome on 2026-11-09: a reviewed architecture and a
-concrete prompt for a later implementation loop. One instance must serve the
-distinct 0.3, 1.0, and 1.1 server interfaces when provisioned; explicit requests
+concrete implementation handoff. On 2026-11-16 the user replaced coordinator loops
+with developer-selected tasks and separate implementation/review sessions.
+One instance must serve the distinct 0.3, 1.0, and 1.1 server interfaces when provisioned; explicit requests
 must not silently select another version. Preserve common Java APIs, allowing
 documented custom-store/executor changes required by 1.1.
 
 - [Proposed architecture](architecture.md): provisioning, protocol policies,
   storage/replication, migration, live execution, and specification gates.
-- [Implementation-loop prompt](implementation-loop.md): copyable scope, phase
+- [Task list](task-list.md): current status, dependencies and next assignments.
+- [Task implementation guide](implementation-tasks.md): scope, phase
   deliverables, evidence requirements, and completion criteria.
-- [Model and token-cost policy](implementation-loop.md#model-selection-and-token-cost-policy):
+- [Model and token-cost policy](implementation-tasks.md#model-selection-and-token-cost-policy):
   Luna implementation by default, Sol planning/review, an explicit Astra ban,
   model audit records, and focused task context.
-- [Acceptance and run limits](acceptance.md): fourteen evidence-based criteria,
-  agreed iteration/time/attempt limits, and checkpoint behavior.
+- [Acceptance and task bounds](acceptance.md): fourteen evidence-based criteria,
+  task scope/time bounds, stuck-task diagnosis and concise handoffs.
 
 The user-supplied review confirmed the shared-core direction; its requested
-clarifications have been incorporated. This is a reviewed proposal and handoff,
-not an implemented feature. The documents below retain the original research
-baseline. Where a previously open design choice now has a proposed
+clarifications have been incorporated. This is an architecture reference and
+handoff; current implementation status and review dispositions live in the task
+list and progress records. The documents below retain the original research baseline. Where a previously open design choice now has a proposed
 answer, consult the architecture; specification ambiguities remain explicit
-preflight gates. No implementation or conformance is claimed.
+preflight gates. Historical research is not fresh implementation or conformance evidence.
 
 The architecture now explicitly covers ordinary direct-Message responses without
 task persistence, revision-checked full Task output from executors, and defaults
@@ -42,6 +44,9 @@ not part of the retained handoff.
 
 ## Client scope revision — 2026-11-10
 
+This dated section records the original scope revision and subsequent contract
+review; use the task list for current implementation/review status.
+
 The user expanded the handoff to include production public SDK client support
 alongside each server capability, over all three bindings. The client default is
 **1.1**; explicit 1.0 clients keep 1.0 semantics. Rebuilt applications using an
@@ -56,7 +61,8 @@ extensibility within existing modules. The revised phases require public-client
 integration evidence as features arrive, alongside unchanged historical peers
 and raw fixtures. No new production Maven module or duplicate 1.0 client stack
 is proposed. Prior review conclusions apply to the server design; the client
-revision still needs independent review. The agreed run limits remain unchanged.
+revision required independent review at that point. Current task bounds are
+defined in acceptance.md; historical run limits remain part of the original evidence.
 
 The follow-up contract review now has recommended public observation/live/input
 handles, raw SPI companion interfaces and provider/wrapper capability checks.
@@ -67,12 +73,13 @@ indeterminate cancellation. The legacy constant stays 1.0 independently of the
 checks. No public operation-status lookup or executor-delivery receipt is assumed.
 Missing binding correlation remains a specification gate, not a new protocol.
 
-The user clarified retry accounting on 2026-11-11: routine compilation/setup
-repairs are not automatically new iterations or failed substantive attempts.
-Three consecutive substantive attempts without progress on the same defect now
-trigger Sol diagnosis, replacing the blanket three-attempt cap. The authorized
-ten-iteration/two-hour bounds and historical evidence remain; see
-[the current counting rules](acceptance.md#counting-work-and-progress).
+The 2026-11-16 task workflow supersedes loop scheduling and mandatory iteration
+arithmetic. The developer selects one task, uses the reviewed plan where it is
+already concrete, requests independent review at a meaningful boundary, and
+routes corrections. No persistent coordinator or automatic dispatch is needed.
+Luna medium/normal implements; Sol medium/normal plans when needed and reviews.
+Keep the Astra ban, historical evidence, task time bounds, stuck-task diagnosis
+and all technical acceptance gates. See [task bounds](acceptance.md#run-limits).
 
 ## Scope and conclusion
 

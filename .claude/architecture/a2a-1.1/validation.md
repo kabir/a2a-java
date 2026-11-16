@@ -4,8 +4,8 @@ This is a research checklist, not an implemented test suite or an approved
 implementation plan. See the [compatibility assessment](compatibility.md).
 
 The [architecture](architecture.md) proposes answers to SDK policy decisions and
-records the confirmed user constraints. The [implementation-loop
-prompt](implementation-loop.md) turns this matrix into later evidence gates.
+records the confirmed user constraints. The [task implementation
+guide](implementation-tasks.md) turns this matrix into later evidence gates.
 The user-supplied review confirmed the shared-core direction and its requested
 clarifications are incorporated. The questions below retain the original
 research findings, rather than implying that every item is still undecided.
@@ -121,7 +121,7 @@ projection makes every feature representable to old clients.
 
 ## Suggested order for later implementation
 
-Follow the seven phases in [the implementation prompt](implementation-loop.md):
+Follow the seven phases in [the implementation prompt](implementation-tasks.md):
 
 1. Phase 0 pins semantics, inventories client construction/SPI/stream reduction,
    and captures historical and public API baselines.

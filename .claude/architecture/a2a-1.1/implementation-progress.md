@@ -1,4 +1,61 @@
-# Current Phase 2 checkpoint — through T6b, 2026-11-13
+# Current checkpoint — Phase 2 complete, 2026-11-16
+
+The user requested the Phase 2 commit after accepted T6c/T7 and deterministic
+public gRPC race follow-up corrections. Phase 2 is complete within its approved
+experimental pinned-RC scope; later operational guarantees and final conformance
+remain gated. [Close-out](phase-2/checkpoints/phase2-complete.md),
+[verification](phase-2/verification.md), [next assignment](phase-2/next-session.md).
+
+The later full clean-install log has 83 successful modules, 4,138 executed tests,
+123 skips and zero failures/errors. All production source hashes still match its
+manifest. Later test-only revisions are independently accepted and covered by
+fresh focused verification: 145 tests, zero failures/errors/skips. Counts overlap.
+The close-out records both logs' hashes, source identities and limits; raw and
+compressed log files are excluded from the commit at the user's request.
+No source edits, repeated full build, push, PR or Phase 3 work occurred during
+commit packaging. Historical status statements and original failures below are
+preserved; they do not supersede this current disposition.
+
+---
+
+# Historical workflow — developer-selected tasks, 2026-11-16
+
+The user replaced coordinator loops with a normal [task list](task-list.md).
+Select one implementation task/subtask, use the existing plan, then request a
+separate independent review. Sol medium/normal plans only where necessary and
+reviews; Luna medium/normal implements. No automatic dispatch or next-task
+continuation. No mandatory iteration arithmetic or cumulative command numbering
+for new work; historical ledgers below remain unchanged evidence.
+
+The latest inspected commit is `34a120f73` (reactor regression fixes), following
+Phase 2 checkpoint `eb8cff42a`. **T6c is accepted within its reviewed Phase 2
+scope. The public race-evidence follow-up and both low-note corrections are
+verified and accepted in the focused correction re-review. T7 is accepted for its
+compatibility/evidence scope: its public no-version helper correction passed
+focused Sol review, the final Java 17 clean install, and affected historical
+serializer comparisons. Phase 2 completion is not established because the
+Phase 0 specification/acceptance gates remain open.** Current evidence and the
+separate Sol dispositions are recorded below.
+The preceding workflow conversion reran no runtime checks and grants no
+commit, push or PR authorization. All architecture/specification/acceptance
+gates remain. The current final build receipt and log hash are recorded in
+[T7 verification](phase-2/verification.md#final-candidate-build-and-affected-comparison-refresh--2026-11-16).
+
+## T6c public race evidence follow-up — 2026-11-16
+
+The bounded test-only correction and its focused result are recorded in the
+[race follow-up checkpoint](phase-2/checkpoints/t6c-public-race-followup.md).
+It strengthens the held-callback completion/close case and adds a pending
+known-update/peer-error case. The [focused follow-up review](phase-2/reviews/t6c-public-race-followup-review.md)
+accepted this evidence; its two low-note corrections and focused result are
+recorded in the checkpoint. The [correction re-review](phase-2/reviews/t6c-public-race-followup-review.md#correction-re-review--2026-11-16)
+closes both notes and preserves the race and pending-update assertions. The
+current source hash matches the recorded 8/8 passing candidate. No new tests
+were run for this status update; this bounded T6c follow-up is closed.
+
+---
+
+# Historical Phase 2 checkpoint — through T6b, 2026-11-13
 
 The user requested a local checkpoint commit for the accumulated Phase 2 work through accepted T6b REST. **Phase 2 remains incomplete: T6c gRPC and T7 are pending.** Existing specification gates remain unchanged. This authorization supersedes older no-commit statements for this checkpoint only; no push, PR or Phase 3 is authorized.
 
@@ -1468,3 +1525,251 @@ The new user-authorized T6b correction/review window began **20:28:06Z**, with a
 **Exact verification and review:** raw Maven #178 passed REST **65/65** (peer 22, transport 24, mapper 7, listener 12) and JSON-RPC **63/63**, zero failures/errors/skips. JDK #179 passed **22/22**; Vert.x #176 **20/20** and Android #177 **25/25**, each zero failures/errors/skips, including GET/POST oversized no-newline error-body and small 409 cases. Public base #180 passed **8/8** in a 12-module reactor, zero failures/errors/skips, including the controlled public race. These selector totals overlap and are not additive. The independent reviewer parsed current Surefire XML and confirmed relevant source/test mtimes precede it; the focused re-review closed both original P2 findings and found no new P1/P2 blocker. **T6b REST is accepted within the reviewed Phase 2 binding scope.** No full-reactor build, historical compatibility fixture gate, T7 evidence gate or aggregate Phase 2 acceptance is claimed. The finite HTTP cap intentionally yields a generic status-bearing error for oversized bodies; exact resident memory peaks inside HTTP libraries were not measured.
 
 **T6c handoff:** gRPC remains a separate binding assignment. Start only under its own authorization and budget, using the accepted T6 shared, T6a JSON-RPC and T6b REST contracts/evidence unchanged unless a concrete defect requires a focused shared correction. T6c must implement and independently verify its selected-version request/response/evidence, streaming unknown/malformed/local-rejection semantics and public-client path; T7 remains after all binding adapters. No T6c/T7 work, commit, push, PR or Phase 2 completion claim was made in this T6b run. Stop here at T6b acceptance.
+
+### T7 compatibility and evidence checkpoint — 2026-11-16 15:58 UTC
+
+T6c correction re-review is accepted with nonblocking follow-ups. T7 candidate
+compatibility and regression evidence is recorded in
+[`phase-2/verification.md`](phase-2/verification.md), with the separate review
+and full-build gate in [`phase-2/next-session.md`](phase-2/next-session.md).
+T7 remains pending; the independent review and bounded clean install have not
+run.
+
+The unchanged candidate 0.3 fixture corpus passed 24 wire comparisons with its
+two historical failure fingerprints. The candidate default 1.0 fixture run
+reproduced its historical failure fingerprint but exited 1 on nine changed or
+missing outputs. No 1.0 positive total is claimed. Focused explicit-version T3
+tests passed 284 tests with one disabled skip and compare selected output paths
+to the unchanged 1.0/0.3 fixtures; they do not replace the failed 1.0 corpus
+comparison. T1 frozen/candidate NullAway and legacy-binary checks passed for
+the caller; the exhaustive sealed-switch candidate failure is the approved D1
+source-compatibility break. Legacy provider compatibility ran 4/4.
+
+The changed-module gate passed: 30 modules; Surefire 190 suites, 2,399 tests,
+6 skips, no failures/errors. The same-instance/auth/0.3 gate passed: 44
+modules; 283 suites, 3,928 tests, 122 skips, no failures/errors. The selected
+JSON-RPC/REST/gRPC target tests actually ran. These totals overlap and are not
+additive. Both commands first failed in the sandbox at the socket-binding
+prerequisite; those exit-1 attempts are preserved, and the exact selectors
+passed when rerun with the approved bounded execution. Candidate artifact and
+classpath hashes, skip identities, and target suite counts are in the
+verification record. `test.log` remains unchanged at SHA-256
+`e31ad06e2049cdb7315c5da47bf3882ed092d0b0a5bea76da5d4a0dccba92e7f`.
+
+This assignment began at 2026-11-16 15:33:01 UTC with a two-hour backstop at
+17:33:01 UTC; this checkpoint is within that window. The requested action was
+to continue this evidence assignment without a model change or subagents;
+exact executor model metadata was not available, so no model identity is
+claimed. The next independent reviewer is a separate `gpt-6-sol`, medium/normal
+session as required by the task workflow. This checkpoint does not reset any
+prior ledger or task bounds. No Phase 3, commit, push, PR, or final protocol
+conformance claim was made.
+
+### T7 independent review disposition — 2026-11-16
+
+The developer supplied the independent Sol review; it is recorded in
+[`phase-2/reviews/t7-review.md`](phase-2/reviews/t7-review.md). T7 is **not
+accepted** and Phase 2 completion is **not established**. The reviewer found
+that the candidate default 1.0 fixture run still has nine changed/missing
+outputs after reproducing the historical cancellation-request failure
+fingerprint. Earlier selected-version T3 checks cover selected webhook cases
+but do not compare every affected output through its explicit 1.0 path. The
+unchanged expectations and original default-run fingerprint remain untouched.
+
+At this initial review checkpoint, the next action was to compare each of the
+nine affected outputs through its selected 1.0 projection/codec path against
+the unchanged Phase 0 expectation. That comparison has since run; its separate
+checkpoint below records the results. The review-before-clean-install gate
+remains closed until a focused Sol disposition accepts; do not start the
+bounded full build yet.
+The 0.3 evidence remains separate at 24 positive comparisons plus two
+historical failure fingerprints. The Sol review ran no tests or builds. It
+independently checked the temporary classpath hashes and confirmed the T6c
+accepted disposition with its nonblocking follow-up.
+
+The review also identified stale T6c wording in the current-workflow summary at
+the top of this file. That summary now reflects T6c acceptance and T7 pending;
+older checkpoint language remains unchanged as historical record. At this
+initial review checkpoint no production code, test, fixture, or build output
+was changed. The selected-version diagnostic source and results are recorded
+in the follow-up checkpoint below. No model switch or agent delegation was
+used; no active runtime model identity is claimed. No Phase 3, commit, push,
+PR, or final conformance claim was made.
+
+### T7 explicit 1.0 comparison checkpoint — 2026-11-16
+
+The nine explicit selected-version comparisons requested by the supplied Sol
+review have now been run. The candidate diagnostic compiled and ran
+[`SelectedVersionFixtureProbe.java`](phase-2/evidence/SelectedVersionFixtureProbe.java)
+using `javac` and `java` with `/tmp/a2a-t7-selected-version.cp` (67 entries,
+SHA-256 `8c2896be6752c8e7f11d6824928f57c7a116432eeb0436ecf770cbf367e6e595`).
+It compared nine outputs against the unchanged Phase 0 expectations; process
+exit 1, 5 matches and 4 mismatches. A separate process compiled and ran
+[`FrozenProtoSerializerProbe.java`](phase-2/evidence/FrozenProtoSerializerProbe.java)
+with `/tmp/a2a-t7-frozen.cp` (192 entries, SHA-256
+`3a700279261a4dce5fc871c80ec09b0e959c6d3e71e63a2f9305de10bbf39498`); exit
+0. No frozen and candidate classpaths were mixed. The four candidate
+mismatches against unchanged fixtures (JSON-RPC Task, REST Task, GET response,
+SEND_MESSAGE response) have the same output hashes as the old frozen
+protobuf serializer. Detailed output and expected hashes are in
+[`phase-2/verification.md`](phase-2/verification.md).
+
+This does not satisfy the original Sol review's requirement that all nine
+outputs pass against unchanged expectations. It narrows the concrete issue to
+the relationship between selected-version protobuf JSON output and frozen
+fixture provenance; no code or fixture correction was made. The focused Sol
+disposition remains pending, so the review-before-clean-install gate is
+closed. No Maven tests or builds were run for this checkpoint. The existing
+public controlled-peer, raw payload, historical 0.3, API/SPI and regression
+results remain recorded as separate evidence layers. `test.log` remains at
+SHA-256 `e31ad06e2049cdb7315c5da47bf3882ed092d0b0a5bea76da5d4a0dccba92e7f`.
+T7 remains unaccepted and Phase 2 completion is not established.
+
+### T7 serializer-path correction — 2026-11-16
+
+The prior 5/9 selected-version probe compared protobuf HTTP response printers
+with Gson `.json` expectations. It is retained as an invalid diagnostic and
+does not count as candidate compatibility evidence. The independent frozen
+Phase 0 diagnosis used source revision `2817ed78d02d9a6e609dafdf7f5129484edef017`
+and a separate classpath with 355 SDK/dependency file hashes verified. Its
+unchanged `WireProbe` outputs match 33 positive expectations; the original
+cancellation-request NPE remains one separate historical fingerprint. An
+independent comparison of the retained output directory found no expectation
+mismatches.
+
+Corrected evidence: the candidate protobuf payload path matches the unchanged
+`.proto.json`/`.pb` fixtures 4/4 using `WireProbe`'s own printer and binary
+serializer. Candidate selected event-stream outputs match original frozen
+runtime outputs 4/4. Candidate protobuf HTTP response serializer bodies (REST
+Task and JSON-RPC cancel/get/send) match frozen runtime outputs 4/4 using the
+same production serializer calls and printer options. These endpoint checks
+are serializer-body comparisons, not full server tests. Separately, the
+candidate's direct model-level `JsonUtil.toJson` path matches 0/9 historical
+Gson `.json` expectations after explicit projection because zero-valued
+new-generation/provenance fields remain serialized. This does not establish
+an HTTP regression; its required T7 scope is for independent review. No
+production serializer or fixture change was made. Full evidence, hashes,
+commands and limits are in [`phase-2/verification.md`](phase-2/verification.md).
+
+The initial [T7 review report](phase-2/reviews/t7-review.md) was left
+unchanged as required; independent review of the corrected evidence remains
+pending. The preserved `test.log` reports an 83-module BUILD SUCCESS, 4,239
+tests discovered / 4,116 executed / 123 skipped / zero failures or errors,
+Java 17.0.18, 11:21 elapsed, finished 2026-11-13T17:04:37Z. The actual Maven
+argv and candidate hash are absent, and it predates current HEAD's
+17:13:46Z commit plus current T6c worktree edits. It is recorded as an older
+full-suite result, not current-candidate evidence. This assignment did not
+repeat the full build. `test.log` remains unchanged at SHA-256
+`e31ad06e2049cdb7315c5da47bf3882ed092d0b0a5bea76da5d4a0dccba92e7f`.
+T7 remains unaccepted; Phase 2 completion is not established.
+
+### T7 correction re-review checkpoint — 2026-11-16
+
+The independent Sol correction re-review is complete; its report was left to
+the reviewer in [`phase-2/reviews/t7-review.md`](phase-2/reviews/t7-review.md).
+The original four apparent 1.0 mismatches are closed as an invalid
+protobuf-printer-versus-Gson comparison. Corrected evidence is kept distinct:
+protobuf payload fixtures 4/4, selected-version event and response serializer
+bodies match the isolated frozen runtime 8/8, and direct model-level Gson
+output is 0/9 against old transport expectations as an intentional T2/D1
+canonical model change. The 0/9 result is not transport compatibility
+evidence.
+
+The remaining concrete contract issue is that the documented public no-version
+SSE helper calls a no-version JSON-RPC response serializer, whose unfiltered
+protobuf printer can emit newly added zero-valued fields. The reference
+JSON-RPC route passes the selected version, so this does not show a regression
+in that route. Proposed bounded disposition: preserve historical 1.0 output
+for old no-version helpers and require explicit-version overloads for 1.1, or
+obtain owner approval for version-agnostic behavior and document that 1.0
+callers must pass the version. No production fix was made in this evidence
+checkpoint; any implementation is a separate assignment.
+
+The developer reports a later passing full suite, but its run receipt and
+candidate identity are not available in the worktree. The retained `test.log`
+is an older 83-module pass ending 2026-11-13T17:04:37Z, before reviewed HEAD
+and T6c edits; it lacks Maven argv and candidate hashes. It remains preserved
+as prior evidence and does not establish this candidate's clean-install gate.
+Record the reported run's exact command, exit/time, Java, candidate including
+dirty-source hash, reactor/test discovery, zero-test targets, skips, Docker
+execution and artifact hashes before deciding whether a duplicate build is
+needed. No full build or tests were run for this checkpoint. T7 remains
+unaccepted and Phase 2 completion is not established.
+
+### T7 public-helper compatibility correction — 2026-11-16 17:51 UTC
+
+Implemented the developer-selected compatibility contract. The public
+no-version `JSONRPCUtils.toJsonRPCResultResponse` now selects historical 1.0;
+the versioned overload defaults null to 1.0, filters added schema fields for
+0.3/1.0, and retains them for 1.1. New `TaskMessageUpdateEvent`/`StreamError`
+messages and active post-1.0 `StreamResponse` oneof fields throw
+`UnsupportedOperationException` for legacy versions. `SseFormatter`'s
+no-version helper selects 1.0; its explicit overload remains selected-version.
+Its Javadoc now shows callers passing the negotiated version. The reference
+JSON-RPC unary and SSE routes already pass `context.getVersionPolicy().protocolVersion()`.
+
+Added JSON-RPC and SSE regressions. Before the implementation, focused RED runs
+confirmed the extra `generation: "0"` and `timeline: []` fields and silent
+acceptance of the new stream variant (spec-grpc 61 tests / 2 expected failures;
+server-common 3 tests / 2 expected failures). The output used for byte-parity
+assertions came from isolated Phase 0 source revision
+`2817ed78d02d9a6e609dafdf7f5129484edef017`, classpath-file SHA-256
+`b8f66b5e851ec46da6e7de466fad51d76a5b4f1cac48f7420265c5baed762224`. Frozen
+direct protobuf response and model-to-proto response hashes are in the T7
+verification record. Fixtures remain unchanged.
+
+Final focused results on Java 17.0.18:
+
+- `mvn -B -ntp -pl spec-grpc -am -Dtest=JSONRPCUtilsTest -Dsurefire.failIfNoSpecifiedTests=false test` — exit 0, 6.024 seconds; 61 run, 0 failures/errors/skips.
+- `mvn -B -ntp -pl server-common -am -Dtest=SseFormatterTest -Dsurefire.failIfNoSpecifiedTests=false test` — exit 0, 10.876 seconds; 3 run, 0 failures/errors/skips.
+- Additional unchanged caller selector `mvn -B -ntp -pl reference/jsonrpc -am -Dtest=A2AServerRoutesTest -Dsurefire.failIfNoSpecifiedTests=false test` — exit 1, 36 errors during Mockito/Byte Buddy agent initialization before assertions; not counted as evidence. The selected-version arguments were confirmed in source.
+
+Requested next role: focused independent `gpt-6-sol`, medium/normal review of
+only this helper correction. Implementation runtime model metadata was not
+available, so no observed model identity is claimed; Astra was not used. After
+review acceptance, the sole next build is one Java 17
+`mvn -B -ntp clean install`, saving the full log as `test.log`, recording the
+dirty candidate identity and reactor/test/artifact results, then refreshing
+only comparisons affected by the helper change. T7 remains unaccepted and
+Phase 2 completion is not established.
+
+### T7 focused helper review disposition — 2026-11-16 17:54 UTC
+
+Focused `gpt-6-sol`, medium review accepted the public-helper correction with
+no blocking production or regression-test finding. The reviewer confirmed the
+isolated frozen classpath and historical output hashes, ran no tests/builds,
+and noted that only the three selected-1.0 JSON-RPC cancel/get/send response
+comparisons need refreshing after the final build. REST Task and event
+comparisons use unchanged paths. The report is
+[`phase-2/reviews/t7-helper-correction-review.md`](phase-2/reviews/t7-helper-correction-review.md).
+
+The separate `A2AServerRoutesTest` attempt remains 36 Mockito/Byte Buddy setup
+errors before assertions and is not passing evidence. T7 remains open pending
+one final Java 17 clean install and the three affected response comparisons.
+The raw prior `test.log` was absent at the start of this correction; save the
+new final build log as `test.log`. No fixtures or unrelated accepted evidence
+were changed. This is the review-time handoff state; the final build and T7
+closure are recorded in the current entry below.
+
+### T7 compatibility/evidence gate accepted — 2026-11-16
+
+Focused Sol review accepted the public helper correction. The one final
+`mvn -B -ntp clean install` ran on Temurin 17.0.18+8 for HEAD
+`34a120f73e551affca271850aff6d057baf413f6` plus the eleven-file dirty source
+manifest (SHA-256
+`7b6bdb52d78ee91e73ffa83eb2761a8db58349cd86332abb862054c98daa946d`). It
+exited 0 after 670.382 seconds with all 83 reactor modules successful. Fresh
+Surefire/Failsafe reports record 4,261 discovered, 4,138 executed, 123
+skipped and zero failures/errors. Docker-backed authorization and replication
+tests ran. The full inventory, zero-test targets, skip identities, source and
+artifact hashes, and `test.log` SHA-256 are in
+[T7 verification](phase-2/verification.md#final-candidate-build-and-affected-comparison-refresh--2026-11-16).
+
+Only the three selected-1.0 JSON-RPC body comparisons affected by the helper
+change were refreshed; cancel/get/send-message match the isolated frozen
+runtime 3/3. The accepted REST Task and four event comparisons, 0.3 fixture
+run, protobuf payload 4/4, historical cancellation failure fingerprint, and
+other accepted T7 evidence remain unchanged. No fixture was recaptured.
+T7 is accepted for its compatibility/evidence scope. Phase 2 completion and
+final protocol conformance are not established because the Phase 0
+specification gates remain open. No commit, push, PR, or Phase 3 work occurred.

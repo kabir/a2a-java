@@ -1,0 +1,11 @@
+client/base/src/test/java/org/a2aproject/sdk/client/Phase2GrpcPublicClientTest.java	ffc2ee535101d5d16ca289ab32962d702b0ba71dc3123c8868a8e3b305aa9d6a
+client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/EventStreamObserver.java	60484d80c55bb0c71260690b8729ec3edca0ce4d36072fb944f1713cd47b21c0
+client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransport.java	103e60aebb198a2c81552c467c81af961daf9d2fc5458bdfb1935a842edfb439
+client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportProvider.java	5b01e94ac7c9f467a8ee468cd8fd583201e0cd34e51a1d9ebaae2fc9ddabfad9
+client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/EventStreamObserverTest.java	f14c281bcc94b8c8d55af3ec8cd07af7b757eed9702cf47efeaf028ba4ff6e2a
+client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcErrorMapperTest.java	869b652748eaa54b5c307eccb27f79ba92b438aa5326d1642198f385b37aa5eb
+client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/Phase2PublicClientTest.java	3eeb042a24be3970f141ce6188a45874d6cb66699fcabad87e08d3504f034890
+server-common/src/main/java/org/a2aproject/sdk/server/util/sse/SseFormatter.java	6c1e285d9201d6a3ace383b7fea9722e9fd646a8accf3409b617b6ad03ec266d
+server-common/src/test/java/org/a2aproject/sdk/server/util/sse/SseFormatterTest.java	83232b7f5e35b8734d5603314d13347ceef2da2253b045dd6a150285ff4633c8
+spec-grpc/src/main/java/org/a2aproject/sdk/grpc/utils/JSONRPCUtils.java	188b79e2dff125e018dfe77ff2a21a93f7a9e0c66ede453613130ff8bfd1f1d8
+spec-grpc/src/test/java/org/a2aproject/sdk/grpc/utils/JSONRPCUtilsTest.java	e13960298aaa78d58096d84cd73511de2c563bf3c423cc03fde37329bb47d132

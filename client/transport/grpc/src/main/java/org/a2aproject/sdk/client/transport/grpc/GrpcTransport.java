@@ -17,16 +17,30 @@ import io.grpc.Channel;
 import io.grpc.Metadata;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TaskDecodeEvidence;
+import org.a2aproject.sdk.client.transport.spi.TransportCall;
+import org.a2aproject.sdk.client.transport.spi.TransportEnd;
+import org.a2aproject.sdk.client.transport.spi.TransportFrame;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
+import org.a2aproject.sdk.client.transport.spi.TransportResult;
 import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallInterceptor;
@@ -35,8 +49,13 @@ import org.a2aproject.sdk.grpc.A2AServiceGrpc;
 import org.a2aproject.sdk.grpc.A2AServiceGrpc.A2AServiceBlockingV2Stub;
 import org.a2aproject.sdk.grpc.A2AServiceGrpc.A2AServiceStub;
 import org.a2aproject.sdk.grpc.GetExtendedAgentCardRequest;
+import org.a2aproject.sdk.grpc.utils.DecodedEvent;
+import org.a2aproject.sdk.grpc.utils.DecodedTask;
+import org.a2aproject.sdk.grpc.utils.DecodedTaskList;
 import org.a2aproject.sdk.grpc.utils.ProtoUtils.FromProto;
 import org.a2aproject.sdk.grpc.utils.ProtoUtils.ToProto;
+import org.a2aproject.sdk.grpc.utils.StreamDecodeResult;
+import org.a2aproject.sdk.grpc.utils.StreamDecoder;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -50,6 +69,7 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
@@ -67,6 +87,7 @@ public class GrpcTransport implements VersionedClientTransport {
     private final @Nullable List<ClientCallInterceptor> interceptors;
     private final AgentCard agentCard;
     private final String agentTenant;
+    private final Set<TransportObservation> activeObservations = ConcurrentHashMap.newKeySet();
 
     /** Creates a transport using protocol 1.1. Use the version overload to select 1.0. */
     public GrpcTransport(Channel channel, AgentCard agentCard) {
@@ -143,6 +164,10 @@ public class GrpcTransport implements VersionedClientTransport {
 
     @Override
     public Set<ClientFeature> capabilities() {
+        if ("1.1".equals(protocolVersion)) {
+            return Set.of(ClientFeature.ORDINARY, ClientFeature.GUARDED_INPUT, ClientFeature.ARTIFACT_INPUT,
+                    ClientFeature.UNKNOWN_VARIANT_SKIP);
+        }
         return Set.of(ClientFeature.ORDINARY);
     }
 
@@ -154,6 +179,314 @@ public class GrpcTransport implements VersionedClientTransport {
      */
     private String resolveTenant(@Nullable String requestTenant) {
         return (requestTenant == null || requestTenant.isBlank()) ? agentTenant : requestTenant;
+    }
+
+    @Override
+    public TransportCall<TransportResult<EventKind>> sendInput(SendInputParams request,
+            SpiCallOptions options, @Nullable ClientCallContext context) {
+        checkNotNullParam("request", request);
+        checkNotNullParam("options", options);
+        requireOneOneInput("sendInput");
+
+        org.a2aproject.sdk.grpc.SendMessageRequest grpcRequest = ToProto.sendInputRequest(request).toBuilder()
+                .setTenant(resolveTenant(request.tenant())).build();
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SEND_MESSAGE_METHOD, grpcRequest, agentCard, context);
+        AtomicReference<ClientCallStreamObserver<Object>> responseStream = new AtomicReference<>();
+        AtomicBoolean cancellationRequested = new AtomicBoolean();
+        TransportCall<TransportResult<EventKind>> call = TransportCall.create(() -> {
+            cancellationRequested.set(true);
+            ClientCallStreamObserver<Object> current = responseStream.get();
+            if (current != null) {
+                current.cancel("A2A input call cancelled", null);
+            }
+        });
+        AtomicBoolean receivedResponse = new AtomicBoolean();
+        ClientResponseObserver<Object, org.a2aproject.sdk.grpc.SendMessageResponse> observer =
+                new ClientResponseObserver<>() {
+                    @Override
+                    public void beforeStart(ClientCallStreamObserver<Object> requestStream) {
+                        responseStream.set(requestStream);
+                        if (cancellationRequested.get()) {
+                            requestStream.cancel("A2A input call cancelled", null);
+                        }
+                    }
+
+                    @Override
+                    public void onNext(org.a2aproject.sdk.grpc.SendMessageResponse response) {
+                        if (!receivedResponse.compareAndSet(false, true)) {
+                            call.fail(new A2AClientException("gRPC SendMessage returned multiple responses"));
+                            return;
+                        }
+                        try {
+                            DecodedEvent decoded = StreamDecoder.decodeSendResponse(response, protocolVersion);
+                            List<TaskDecodeEvidence> evidence = decoded.task() == null ? List.of()
+                                    : List.of(evidence(decoded.task()));
+                            call.complete(new TransportResult<>(decoded.value(), evidence));
+                        } catch (RuntimeException failure) {
+                            call.fail(new A2AClientException("Failed to decode gRPC send response: " + failure,
+                                    failure));
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable failure) {
+                        call.fail(GrpcErrorMapper.mapGrpcError(failure, "Failed to send input: "));
+                    }
+
+                    @Override
+                    public void onCompleted() {
+                        if (!receivedResponse.get()) {
+                            call.fail(new A2AClientException("gRPC SendMessage completed without a response"));
+                        }
+                    }
+                };
+        try {
+            createAsyncStubWithMetadata(context, payloadAndHeaders).sendMessage(grpcRequest, observer);
+        } catch (RuntimeException failure) {
+            call.fail(GrpcErrorMapper.mapGrpcError(failure, "Failed to start send input: "));
+        }
+        return call;
+    }
+
+    @Override
+    public TransportObservation streamInput(SendInputParams request, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        checkNotNullParam("request", request);
+        checkNotNullParam("options", options);
+        requireOneOneInput("streamInput");
+        org.a2aproject.sdk.grpc.SendMessageRequest grpcRequest = ToProto.sendInputRequest(request).toBuilder()
+                .setTenant(resolveTenant(request.tenant())).build();
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(SEND_STREAMING_MESSAGE_METHOD, grpcRequest,
+                agentCard, context);
+        return startObservation(options, "Failed to send streaming input: ", observer ->
+                createAsyncStubWithMetadata(context, payloadAndHeaders).sendStreamingMessage(grpcRequest, observer));
+    }
+
+    @Override
+    public TransportResult<Task> getTaskDecoded(TaskQueryParams request, @Nullable ClientCallContext context) {
+        checkNotNullParam("request", request);
+        requireOneOneDecodedRead();
+        requireSupportedTaskQuery(request);
+        org.a2aproject.sdk.grpc.GetTaskRequest grpcRequest = ToProto.getTaskRequest(request).toBuilder()
+                .setTenant(resolveTenant(request.tenant())).build();
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_TASK_METHOD, grpcRequest, agentCard, context);
+        try {
+            org.a2aproject.sdk.grpc.Task response = createBlockingStubWithMetadata(context, payloadAndHeaders)
+                    .getTask(grpcRequest);
+            DecodedTask decoded = StreamDecoder.decodeTask(response, protocolVersion);
+            return new TransportResult<>(decoded.task(), List.of(evidence(decoded)));
+        } catch (StatusRuntimeException | StatusException failure) {
+            throw GrpcErrorMapper.mapGrpcError(failure, "Failed to get decoded task: ");
+        } catch (RuntimeException failure) {
+            throw new A2AClientException("Failed to decode gRPC task response: " + failure, failure);
+        }
+    }
+
+    @Override
+    public TransportCall<TransportResult<Task>> getTaskAsync(TaskQueryParams request, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        checkNotNullParam("request", request);
+        checkNotNullParam("options", options);
+        requireOneOneDecodedRead();
+        requireSupportedTaskQuery(request);
+        org.a2aproject.sdk.grpc.GetTaskRequest grpcRequest = ToProto.getTaskRequest(request).toBuilder()
+                .setTenant(resolveTenant(request.tenant())).build();
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_TASK_METHOD, grpcRequest, agentCard, context);
+        AtomicReference<ClientCallStreamObserver<Object>> responseStream = new AtomicReference<>();
+        AtomicBoolean cancellationRequested = new AtomicBoolean();
+        TransportCall<TransportResult<Task>> call = TransportCall.create(() -> {
+            cancellationRequested.set(true);
+            ClientCallStreamObserver<Object> current = responseStream.get();
+            if (current != null) {
+                current.cancel("A2A task read cancelled", null);
+            }
+        });
+        AtomicBoolean receivedResponse = new AtomicBoolean();
+        ClientResponseObserver<Object, org.a2aproject.sdk.grpc.Task> observer = new ClientResponseObserver<>() {
+            @Override
+            public void beforeStart(ClientCallStreamObserver<Object> requestStream) {
+                responseStream.set(requestStream);
+                if (cancellationRequested.get()) {
+                    requestStream.cancel("A2A task read cancelled", null);
+                }
+            }
+
+            @Override
+            public void onNext(org.a2aproject.sdk.grpc.Task response) {
+                if (!receivedResponse.compareAndSet(false, true)) {
+                    call.fail(new A2AClientException("gRPC GetTask returned multiple responses"));
+                    return;
+                }
+                try {
+                    DecodedTask decoded = StreamDecoder.decodeTask(response, protocolVersion);
+                    call.complete(new TransportResult<>(decoded.task(), List.of(evidence(decoded))));
+                } catch (RuntimeException failure) {
+                    call.fail(new A2AClientException("Failed to decode async gRPC task response: " + failure,
+                            failure));
+                }
+            }
+
+            @Override
+            public void onError(Throwable failure) {
+                call.fail(GrpcErrorMapper.mapGrpcError(failure, "Failed to get task asynchronously: "));
+            }
+
+            @Override
+            public void onCompleted() {
+                if (!receivedResponse.get()) {
+                    call.fail(new A2AClientException("gRPC GetTask completed without a response"));
+                }
+            }
+        };
+        try {
+            createAsyncStubWithMetadata(context, payloadAndHeaders).getTask(grpcRequest, observer);
+        } catch (RuntimeException failure) {
+            call.fail(GrpcErrorMapper.mapGrpcError(failure, "Failed to start async get task: "));
+        }
+        return call;
+    }
+
+    @Override
+    public TransportResult<ListTasksResult> listTasksDecoded(ListTasksParams request,
+            @Nullable ClientCallContext context) {
+        checkNotNullParam("request", request);
+        requireOneOneDecodedRead();
+        requireSupportedListQuery(request);
+        org.a2aproject.sdk.grpc.ListTasksRequest grpcRequest = ToProto.listTasksParams(request).toBuilder()
+                .setTenant(resolveTenant(request.tenant())).build();
+        PayloadAndHeaders payloadAndHeaders = applyInterceptors(LIST_TASK_METHOD, grpcRequest, agentCard, context);
+        try {
+            org.a2aproject.sdk.grpc.ListTasksResponse response = createBlockingStubWithMetadata(context,
+                    payloadAndHeaders).listTasks(grpcRequest);
+            DecodedTaskList decoded = StreamDecoder.decodeTaskList(response, protocolVersion);
+            List<TaskDecodeEvidence> evidence = decoded.tasks().stream().map(GrpcTransport::evidence).toList();
+            return new TransportResult<>(decoded.value(), evidence);
+        } catch (StatusRuntimeException | StatusException failure) {
+            throw GrpcErrorMapper.mapGrpcError(failure, "Failed to list decoded tasks: ");
+        } catch (RuntimeException failure) {
+            throw new A2AClientException("Failed to decode gRPC task list response: " + failure, failure);
+        }
+    }
+
+    private void requireOneOneInput(String operation) {
+        if (!"1.1".equals(protocolVersion)) {
+            throw new UnsupportedOperationException(operation + " requires protocol version 1.1");
+        }
+    }
+
+    private void requireOneOneDecodedRead() {
+        if (!"1.1".equals(protocolVersion)) {
+            throw new UnsupportedOperationException("Decoded task reads require protocol version 1.1");
+        }
+    }
+
+    private void requireSupportedTaskQuery(TaskQueryParams request) {
+        if (request.currentGeneration() != null) {
+            throw new UnsupportedOperationException("gRPC task reads do not support the currentGeneration query yet");
+        }
+        if ("1.0".equals(protocolVersion) && request.timelineLength() != null) {
+            throw new UnsupportedOperationException("Timeline limits require protocol version 1.1");
+        }
+    }
+
+    private void requireSupportedListQuery(ListTasksParams request) {
+        if ("1.0".equals(protocolVersion) && request.timelineLength() != null) {
+            throw new UnsupportedOperationException("Timeline limits require protocol version 1.1");
+        }
+    }
+
+    private static TaskDecodeEvidence evidence(DecodedTask decoded) {
+        return new TaskDecodeEvidence(decoded.task().id(), decoded.notes().skippedTimelineGenerations(),
+                decoded.notes().unknownSkipped());
+    }
+
+    private TransportObservation startObservation(SpiCallOptions options, String errorPrefix,
+            Consumer<StreamObserver<org.a2aproject.sdk.grpc.StreamResponse>> start) {
+        AtomicReference<TransportObservation> observationReference = new AtomicReference<>();
+        AtomicReference<EventStreamObserver> observerReference = new AtomicReference<>();
+        AtomicBoolean cancellationRequested = new AtomicBoolean();
+        TransportObservation observation = TransportObservation.create(options, () -> {
+            cancellationRequested.set(true);
+            EventStreamObserver observer = observerReference.get();
+            if (observer != null) {
+                observer.cancel();
+            }
+            TransportObservation current = observationReference.get();
+            if (current != null) {
+                activeObservations.remove(current);
+            }
+        });
+        observationReference.set(observation);
+        EventStreamObserver observer = new EventStreamObserver(protocolVersion, observation, cancellationRequested);
+        observerReference.set(observer);
+        activeObservations.add(observation);
+        observation.completion().whenComplete((ignored, failure) -> activeObservations.remove(observation));
+        if (cancellationRequested.get()) {
+            observer.cancel();
+            return observation;
+        }
+        try {
+            start.accept(observer);
+        } catch (RuntimeException failure) {
+            observation.fail(GrpcErrorMapper.mapGrpcError(failure, errorPrefix));
+        }
+        return observation;
+    }
+
+    private void bridgeObservation(TransportObservation observation, Consumer<StreamingEventKind> eventConsumer,
+            Consumer<Throwable> errorConsumer) {
+        AtomicBoolean terminal = new AtomicBoolean();
+        observation.frames().subscribe(new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(TransportFrame frame) {
+                if (frame.streamError() != null) {
+                    if (terminal.compareAndSet(false, true)) {
+                        errorConsumer.accept(new A2AClientException("gRPC stream rejected ("
+                                + frame.streamError().code() + "): " + frame.streamError().message()));
+                        observation.cancel();
+                    }
+                } else if (frame.event() != null && !terminal.get()) {
+                    try {
+                        eventConsumer.accept(frame.event());
+                    } catch (RuntimeException failure) {
+                        if (terminal.compareAndSet(false, true)) {
+                            errorConsumer.accept(failure);
+                            observation.cancel();
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Throwable failure) {
+                if (terminal.compareAndSet(false, true)) {
+                    errorConsumer.accept(failure);
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                observation.completion().whenComplete((end, failure) -> {
+                    if (!terminal.compareAndSet(false, true)) {
+                        return;
+                    }
+                    if (failure != null) {
+                        errorConsumer.accept(failure);
+                    } else if (end != null && end.kind() == TransportEnd.Kind.COMPLETED) {
+                        errorConsumer.accept(null);
+                    } else if (end != null && end.cause() != null) {
+                        errorConsumer.accept(end.cause());
+                    } else if (end != null && end.kind() == TransportEnd.Kind.CANCELLED) {
+                        errorConsumer.accept(new CancellationException("gRPC stream cancelled"));
+                    }
+                });
+            }
+        });
     }
 
     @Override
@@ -171,6 +504,13 @@ public class GrpcTransport implements VersionedClientTransport {
             if (response.hasMessage()) {
                 return FromProto.message(response.getMessage());
             } else if (response.hasTask()) {
+                if ("1.1".equals(protocolVersion)) {
+                    try {
+                        return StreamDecoder.decodeSendResponse(response, protocolVersion).value();
+                    } catch (IllegalArgumentException failure) {
+                        throw new A2AClientException("Malformed gRPC send response task: " + failure, failure);
+                    }
+                }
                 return FromProto.task(response.getTask());
             } else {
                 throw new A2AClientException("Server response did not contain a message or task");
@@ -190,6 +530,14 @@ public class GrpcTransport implements VersionedClientTransport {
         org.a2aproject.sdk.grpc.SendMessageRequest grpcRequest = createGrpcSendMessageRequest(tenantRequest, context);
         PayloadAndHeaders payloadAndHeaders = applyInterceptors(SEND_STREAMING_MESSAGE_METHOD,
                 grpcRequest, agentCard, context);
+        if ("1.1".equals(protocolVersion)) {
+            TransportObservation observation = startObservation(SpiCallOptions.defaults(),
+                    "Failed to send streaming message: ", observer ->
+                            createAsyncStubWithMetadata(context, payloadAndHeaders)
+                                    .sendStreamingMessage(grpcRequest, observer));
+            bridgeObservation(observation, eventConsumer, errorConsumer);
+            return;
+        }
         StreamObserver<org.a2aproject.sdk.grpc.StreamResponse> streamObserver = new EventStreamObserver(eventConsumer, errorConsumer);
 
         try {
@@ -203,19 +551,23 @@ public class GrpcTransport implements VersionedClientTransport {
     @Override
     public Task getTask(TaskQueryParams request, @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("request", request);
-        org.a2aproject.sdk.grpc.GetTaskRequest.Builder requestBuilder = org.a2aproject.sdk.grpc.GetTaskRequest.newBuilder();
-        requestBuilder.setId(request.id());
-        if (request.historyLength() != null) {
-            requestBuilder.setHistoryLength(request.historyLength());
-        }
-        requestBuilder.setTenant(resolveTenant(request.tenant()));
-        org.a2aproject.sdk.grpc.GetTaskRequest getTaskRequest = requestBuilder.build();
+        requireSupportedTaskQuery(request);
+        org.a2aproject.sdk.grpc.GetTaskRequest getTaskRequest = ToProto.getTaskRequest(request).toBuilder()
+                .setTenant(resolveTenant(request.tenant())).build();
         PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_TASK_METHOD, getTaskRequest,
                 agentCard, context);
 
         try {
             A2AServiceBlockingV2Stub stubWithMetadata = createBlockingStubWithMetadata(context, payloadAndHeaders);
-            return FromProto.task(stubWithMetadata.getTask(getTaskRequest));
+            org.a2aproject.sdk.grpc.Task response = stubWithMetadata.getTask(getTaskRequest);
+            if ("1.1".equals(protocolVersion)) {
+                try {
+                    return StreamDecoder.decodeTask(response, protocolVersion).task();
+                } catch (IllegalArgumentException failure) {
+                    throw new A2AClientException("Malformed gRPC task response: " + failure, failure);
+                }
+            }
+            return FromProto.task(response);
         } catch (StatusRuntimeException | StatusException e) {
             throw GrpcErrorMapper.mapGrpcError(e, "Failed to get task: ");
         }
@@ -242,49 +594,21 @@ public class GrpcTransport implements VersionedClientTransport {
     @Override
     public ListTasksResult listTasks(ListTasksParams request, @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("request", request);
-
-        org.a2aproject.sdk.grpc.ListTasksRequest.Builder requestBuilder = org.a2aproject.sdk.grpc.ListTasksRequest.newBuilder();
-        if (request.contextId() != null) {
-            requestBuilder.setContextId(request.contextId());
-        }
-        if (request.status() != null) {
-            requestBuilder.setStatus(ToProto.taskState(request.status()));
-        }
-        if (request.pageSize() != null) {
-            requestBuilder.setPageSize(request.pageSize());
-        }
-        if (request.pageToken() != null) {
-            requestBuilder.setPageToken(request.pageToken());
-        }
-        if (request.historyLength() != null) {
-            requestBuilder.setHistoryLength(request.historyLength());
-        }
-        if (request.statusTimestampAfter() != null) {
-            requestBuilder.setStatusTimestampAfter(
-                    com.google.protobuf.Timestamp.newBuilder()
-                            .setSeconds(request.statusTimestampAfter().getEpochSecond())
-                            .setNanos(request.statusTimestampAfter().getNano())
-                            .build());
-        }
-        if (request.includeArtifacts() != null) {
-            requestBuilder.setIncludeArtifacts(request.includeArtifacts());
-        }
-        requestBuilder.setTenant(resolveTenant(request.tenant()));
-        org.a2aproject.sdk.grpc.ListTasksRequest listTasksRequest = requestBuilder.build();
+        requireSupportedListQuery(request);
+        org.a2aproject.sdk.grpc.ListTasksRequest listTasksRequest = ToProto.listTasksParams(request).toBuilder()
+                .setTenant(resolveTenant(request.tenant())).build();
         PayloadAndHeaders payloadAndHeaders = applyInterceptors(LIST_TASK_METHOD, listTasksRequest, agentCard, context);
 
         try {
             A2AServiceBlockingV2Stub stubWithMetadata = createBlockingStubWithMetadata(context, payloadAndHeaders);
             org.a2aproject.sdk.grpc.ListTasksResponse grpcResponse = stubWithMetadata.listTasks(listTasksRequest);
 
-            return new ListTasksResult(
-                    grpcResponse.getTasksList().stream()
-                            .map(FromProto::task)
-                            .collect(Collectors.toList()),
-                    grpcResponse.getTotalSize(),
-                    grpcResponse.getTasksCount(),
-                    grpcResponse.getNextPageToken().isEmpty() ? null : grpcResponse.getNextPageToken()
-            );
+            if ("1.1".equals(protocolVersion)) {
+                return StreamDecoder.decodeTaskList(grpcResponse, protocolVersion).value();
+            }
+            return new ListTasksResult(grpcResponse.getTasksList().stream().map(FromProto::task).toList(),
+                    grpcResponse.getTotalSize(), grpcResponse.getTasksCount(),
+                    grpcResponse.getNextPageToken().isEmpty() ? null : grpcResponse.getNextPageToken());
         } catch (StatusRuntimeException | StatusException e) {
             throw GrpcErrorMapper.mapGrpcError(e, "Failed to list tasks: ");
         }
@@ -384,6 +708,15 @@ public class GrpcTransport implements VersionedClientTransport {
                 .build();
         PayloadAndHeaders payloadAndHeaders = applyInterceptors(SUBSCRIBE_TO_TASK_METHOD, grpcRequest, agentCard, context);
 
+        if ("1.1".equals(protocolVersion)) {
+            TransportObservation observation = startObservation(SpiCallOptions.defaults(),
+                    "Failed to subscribe to task: ", observer ->
+                            createAsyncStubWithMetadata(context, payloadAndHeaders)
+                                    .subscribeToTask(grpcRequest, observer));
+            bridgeObservation(observation, eventConsumer, errorConsumer);
+            return;
+        }
+
         StreamObserver<org.a2aproject.sdk.grpc.StreamResponse> streamObserver = new EventStreamObserver(eventConsumer, errorConsumer);
 
         try {
@@ -428,6 +761,9 @@ public class GrpcTransport implements VersionedClientTransport {
 
     @Override
     public void close() {
+        for (TransportObservation observation : activeObservations) {
+            observation.cancel();
+        }
         ownedChannel.close();
     }
 

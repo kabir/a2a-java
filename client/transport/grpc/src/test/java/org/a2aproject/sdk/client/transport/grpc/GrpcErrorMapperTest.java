@@ -1,22 +1,24 @@
 package org.a2aproject.sdk.client.transport.grpc;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.Any;
 import com.google.rpc.ErrorInfo;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.protobuf.StatusProto;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.ContentTypeNotSupportedError;
 import org.a2aproject.sdk.spec.ExtendedAgentCardNotConfiguredError;
 import org.a2aproject.sdk.spec.ExtensionSupportRequiredError;
 import org.a2aproject.sdk.spec.InvalidParamsError;
+import org.a2aproject.sdk.spec.TaskGenerationMismatchError;
 import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.spec.VersionNotSupportedError;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import io.grpc.protobuf.StatusProto;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -161,6 +163,20 @@ public class GrpcErrorMapperTest {
         assertNotNull(result);
         assertNotNull(result.getCause());
         assertInstanceOf(TaskNotFoundError.class, result.getCause());
+    }
+
+    @Test
+    public void testGenerationMismatchRequiresProtocolErrorInfoReason() {
+        StatusRuntimeException typedFailure = createA2AStatusException(Status.Code.ABORTED.value(),
+                "generation mismatch", "TASK_GENERATION_MISMATCH");
+        A2AClientException typed = GrpcErrorMapper.mapGrpcError(typedFailure);
+        assertInstanceOf(TaskGenerationMismatchError.class, typed.getCause());
+
+        StatusRuntimeException unrelatedAborted = Status.ABORTED.withDescription("unrelated abort")
+                .asRuntimeException();
+        A2AClientException generic = GrpcErrorMapper.mapGrpcError(unrelatedAborted);
+        assertFalse(generic.getCause() instanceof TaskGenerationMismatchError,
+                "ABORTED alone must not be interpreted as a task generation mismatch");
     }
 
     @Test

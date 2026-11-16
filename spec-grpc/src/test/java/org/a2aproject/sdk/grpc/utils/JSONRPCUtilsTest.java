@@ -788,6 +788,92 @@ public class JSONRPCUtilsTest {
     }
 
     @Test
+    public void testToJsonRPCResultResponse_legacyOverloadMatchesFrozenOneZeroSerializer() {
+        org.a2aproject.sdk.grpc.Task task = org.a2aproject.sdk.grpc.Task.newBuilder()
+                .setId("task-legacy")
+                .setContextId("context-legacy")
+                .setStatus(org.a2aproject.sdk.grpc.TaskStatus.newBuilder()
+                        .setState(org.a2aproject.sdk.grpc.TaskState.TASK_STATE_WORKING)
+                        .setTimestamp(com.google.protobuf.Timestamp.newBuilder().setSeconds(1794787200L)))
+                .setGeneration(0)
+                .build();
+
+        String historicalOneZeroJson = "{\"jsonrpc\":\"2.0\",\"id\":\"legacy-id\",\"result\":"
+                + "{\"id\":\"task-legacy\",\"contextId\":\"context-legacy\",\"status\":"
+                + "{\"state\":\"TASK_STATE_WORKING\",\"timestamp\":\"2026-11-16T00:00:00Z\"},"
+                + "\"artifacts\":[],\"history\":[]}}";
+
+        assertEquals(historicalOneZeroJson, JSONRPCUtils.toJsonRPCResultResponse("legacy-id", task));
+    }
+
+    @Test
+    public void testToJsonRPCResultResponse_explicitVersionFiltersOrKeepsZeroValuedFields() {
+        org.a2aproject.sdk.grpc.Task task = org.a2aproject.sdk.grpc.Task.newBuilder()
+                .setId("task-versioned")
+                .setStatus(org.a2aproject.sdk.grpc.TaskStatus.newBuilder()
+                        .setState(org.a2aproject.sdk.grpc.TaskState.TASK_STATE_WORKING))
+                .addArtifacts(org.a2aproject.sdk.grpc.Artifact.newBuilder()
+                        .setArtifactId("artifact-1")
+                        .setStartGeneration(0)
+                        .setEndGeneration(0)
+                        .setRoleValue(0))
+                .setGeneration(0)
+                .build();
+
+        JsonObject oneZeroTask = JsonParser.parseString(
+                JSONRPCUtils.toJsonRPCResultResponse("id", task, "1.0"))
+                .getAsJsonObject().getAsJsonObject("result");
+        assertFalse(oneZeroTask.has("generation"));
+        assertFalse(oneZeroTask.has("timeline"));
+        JsonObject oneZeroArtifact = oneZeroTask.getAsJsonArray("artifacts").get(0).getAsJsonObject();
+        assertFalse(oneZeroArtifact.has("startGeneration"));
+        assertFalse(oneZeroArtifact.has("endGeneration"));
+        assertFalse(oneZeroArtifact.has("role"));
+
+        JsonObject oneOneTask = JsonParser.parseString(
+                JSONRPCUtils.toJsonRPCResultResponse("id", task, "1.1"))
+                .getAsJsonObject().getAsJsonObject("result");
+        assertEquals(0, oneOneTask.get("generation").getAsLong());
+        assertTrue(oneOneTask.get("timeline").getAsJsonArray().isEmpty());
+        JsonObject oneOneArtifact = oneOneTask.getAsJsonArray("artifacts").get(0).getAsJsonObject();
+        assertEquals(0, oneOneArtifact.get("startGeneration").getAsLong());
+        assertEquals(0, oneOneArtifact.get("endGeneration").getAsLong());
+        assertTrue(oneOneArtifact.has("role"));
+    }
+
+    @Test
+    public void testToJsonRPCResultResponse_rejectsNewStreamPayloadForLegacyVersion() {
+        StreamResponse messageUpdate = StreamResponse.newBuilder()
+                .setMessageUpdate(org.a2aproject.sdk.grpc.TaskMessageUpdateEvent.newBuilder()
+                        .setTaskId("task-1")
+                        .setContextId("context-1"))
+                .build();
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> JSONRPCUtils.toJsonRPCResultResponse("id", messageUpdate));
+        assertThrows(UnsupportedOperationException.class,
+                () -> JSONRPCUtils.toJsonRPCResultResponse("id", messageUpdate, "1.0"));
+
+        StreamResponse streamError = StreamResponse.newBuilder()
+                .setError(org.a2aproject.sdk.grpc.StreamError.getDefaultInstance())
+                .build();
+        assertThrows(UnsupportedOperationException.class,
+                () -> JSONRPCUtils.toJsonRPCResultResponse("id", streamError));
+        assertThrows(UnsupportedOperationException.class,
+                () -> JSONRPCUtils.toJsonRPCResultResponse("id",
+                        org.a2aproject.sdk.grpc.TaskMessageUpdateEvent.newBuilder()
+                                .setTaskId("task-1").setContextId("context-1").build()));
+
+        JsonObject oneOneResult = JsonParser.parseString(
+                JSONRPCUtils.toJsonRPCResultResponse("id", messageUpdate, "1.1"))
+                .getAsJsonObject().getAsJsonObject("result");
+        assertTrue(oneOneResult.has("messageUpdate"));
+        assertEquals(0, oneOneResult.getAsJsonObject("messageUpdate").get("generation").getAsLong());
+        assertTrue(JsonParser.parseString(JSONRPCUtils.toJsonRPCResultResponse("id", streamError, "1.1"))
+                .getAsJsonObject().getAsJsonObject("result").has("error"));
+    }
+
+    @Test
     public void testToJsonRPCResultResponse_preservesEscapesInStreamingToolResults() throws Exception {
         String text = "Literal escapes: \\u003e \\u0027; backslashes: \\> \\'; actual: > '";
         org.a2aproject.sdk.grpc.Artifact artifact = org.a2aproject.sdk.grpc.Artifact.newBuilder()

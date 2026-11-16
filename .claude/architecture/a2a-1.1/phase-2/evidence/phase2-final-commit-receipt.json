@@ -1,0 +1,127 @@
+{
+  "scope": "Phase 2 completion within the approved experimental pinned-RC scope; no final protocol conformance or Phase 3 claim",
+  "parent_commit": "34a120f73e551affca271850aff6d057baf413f6",
+  "full_build": {
+    "command_recorded_in_verification": "mvn -B -ntp clean install",
+    "log_sha256": "bfa5d13b2bc8ac8702d4a1f6b42b622004d922a2ee28d54fcfe939eacd5495ba",
+    "finished_utc": "2026-11-16T18:40:54Z",
+    "elapsed_as_reported": "11:15 min",
+    "successful_modules": 83,
+    "discovered": 4261,
+    "executed": 4138,
+    "skipped": 123,
+    "failures": 0,
+    "errors": 0,
+    "source_manifest": "final-build-candidate-source-manifest.tsv",
+    "later_change": "Only Phase2GrpcPublicClientTest.java changed after the full build; production source hashes still match. The later deterministic race/error test changes have independent acceptance and focused verification."
+  },
+  "focused_verification": {
+    "command": "mvn -B -ntp -pl client/base,server-common -am -Dtest=Phase2GrpcPublicClientTest,Phase2PublicClientTest,EventStreamObserverTest,GrpcErrorMapperTest,JSONRPCUtilsTest,SseFormatterTest -Dsurefire.failIfNoSpecifiedTests=false test",
+    "exit_code": 0,
+    "finished_utc": "2026-11-16T19:20:23Z",
+    "log_sha256": "5e1b23c8379f47262877c27bcf0ae4e8e6a9eaa1e55d88d8bd3ac8f75b34aa35",
+    "suite_count": 9,
+    "totals": {
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "successful_modules": 13,
+    "suites": [
+      {
+        "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.Phase2GrpcPublicClientTest.xml",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "client/base/target/surefire-reports/TEST-org.a2aproject.sdk.client.Phase2PublicClientTest.xml",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.EventStreamObserverTest.xml",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.GrpcErrorMapperTest.xml",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "client/transport/grpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.grpc.Phase2PublicClientTest.xml",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "client/transport/jsonrpc/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.jsonrpc.Phase2PublicClientTest.xml",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "client/transport/rest/target/surefire-reports/TEST-org.a2aproject.sdk.client.transport.rest.Phase2PublicClientTest.xml",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "server-common/target/surefire-reports/TEST-org.a2aproject.sdk.server.util.sse.SseFormatterTest.xml",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "spec-grpc/target/surefire-reports/TEST-org.a2aproject.sdk.grpc.utils.JSONRPCUtilsTest.xml",
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "final_java_sha256": {
+    "client/base/src/test/java/org/a2aproject/sdk/client/Phase2GrpcPublicClientTest.java": "9d4d67ee2517d26df547900721adcb1f7e83bbbc26a2593a038b53418cc59eb2",
+    "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/EventStreamObserver.java": "60484d80c55bb0c71260690b8729ec3edca0ce4d36072fb944f1713cd47b21c0",
+    "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransport.java": "103e60aebb198a2c81552c467c81af961daf9d2fc5458bdfb1935a842edfb439",
+    "client/transport/grpc/src/main/java/org/a2aproject/sdk/client/transport/grpc/GrpcTransportProvider.java": "5b01e94ac7c9f467a8ee468cd8fd583201e0cd34e51a1d9ebaae2fc9ddabfad9",
+    "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/EventStreamObserverTest.java": "f14c281bcc94b8c8d55af3ec8cd07af7b757eed9702cf47efeaf028ba4ff6e2a",
+    "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/GrpcErrorMapperTest.java": "869b652748eaa54b5c307eccb27f79ba92b438aa5326d1642198f385b37aa5eb",
+    "client/transport/grpc/src/test/java/org/a2aproject/sdk/client/transport/grpc/Phase2PublicClientTest.java": "3eeb042a24be3970f141ce6188a45874d6cb66699fcabad87e08d3504f034890",
+    "server-common/src/main/java/org/a2aproject/sdk/server/util/sse/SseFormatter.java": "6c1e285d9201d6a3ace383b7fea9722e9fd646a8accf3409b617b6ad03ec266d",
+    "server-common/src/test/java/org/a2aproject/sdk/server/util/sse/SseFormatterTest.java": "83232b7f5e35b8734d5603314d13347ceef2da2253b045dd6a150285ff4633c8",
+    "spec-grpc/src/main/java/org/a2aproject/sdk/grpc/utils/JSONRPCUtils.java": "188b79e2dff125e018dfe77ff2a21a93f7a9e0c66ede453613130ff8bfd1f1d8",
+    "spec-grpc/src/test/java/org/a2aproject/sdk/grpc/utils/JSONRPCUtilsTest.java": "e13960298aaa78d58096d84cd73511de2c563bf3c423cc03fde37329bb47d132"
+  },
+  "retained_diagnostic_sha256": {
+    ".claude/architecture/a2a-1.1/phase-2/evidence/FrozenEventHttpProbe.java": "82f52296c686783c1dc0f226edd3bcbfc7cf8e3961d324a71a9c74e644102ac5",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/FrozenProtoHttpProbe.java": "49e38cb7946444001eb0eecb417f71db24aaa02a7caef8457088fa6f9be51c44",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/FrozenProtoSerializerProbe.java": "ed9709c823343bdf6f12b81165a04a867deb5c29cbd76b71e7e053eb0e7e811e",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/SelectedVersionEventHttpProbe.java": "aef70d7ef7a17f25e832d86a1dc43741cfa9e7e96d0e721b8128fa6928f00d9e",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/SelectedVersionFixtureProbe.java": "d77143d3592133486dbc344f93e32f8c45911c3aa41a0497e4ad3eef23fd127a",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/SelectedVersionGsonFixtureProbe.java": "8f12cf42d89b7934415fa6b5a0e1d58209cdd16db2662950f8f46cf6936d1632",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/SelectedVersionProtoFixtureProbe.java": "d77d017e21c965b7851537ea794e97ef9e4bf62e0422cd9b1c26fece27e1db3f",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/SelectedVersionProtoHttpProbe.java": "9b85e195892ce9f05f50e52d1b8f52bc021af70ff0ddb53a5a62d862940b105c",
+    ".claude/architecture/a2a-1.1/phase-2/evidence/compare-json-outputs.py": "cc1a2ee43b10f4c76c9c34242a255c9a971e4a69922fc586dd26f310fdae1465"
+  },
+  "limitations": [
+    "Full-build totals and focused totals overlap and are not additive.",
+    "The prior full build did not execute the later race-test revisions; those revisions are separately covered by the focused run.",
+    "Historical generic Gson changes remain intentional D1/T2 model effects, not selected-version wire parity passes.",
+    "Phase 0 normative gates remain open for affected future implementation and final conformance."
+  ]
+}

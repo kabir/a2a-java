@@ -1,30 +1,38 @@
 # A2A 1.1 Phase 2 implementation plan
 
-> For the later Luna session: use `superpowers:executing-plans`, one bounded task at a time. This document authorizes no implementation. Independent Sol plan review comes first. Do not use Astra or spawn agents under this planning authorization.
+> Current workflow (2026-11-16): the developer selects one task from [the task list](../task-list.md). Use the existing reviewed plan with `superpowers:executing-plans`; no new planning session is required for an already concrete task. Implementation and independent review are separate assignments. Stop at the selected task; no coordinator, automatic dispatch or agents are authorized by this document. Astra remains prohibited.
 
 **Goal:** extend shared request/result/event types, versioned codecs and compatibility adapters, with usable public client encoding and callbacks. Operational mutation, replay, long-poll and live guarantees remain in their designated phases.
 
 **Architecture:** one shared 1.x model/generated service, exact immutable client/server version policies, direct optional 0.3 conversion. Add compatible SPI defaults in existing modules; project older output before conversion or encoding. Known, ignored and malformed decoding are separate outcomes.
 
-**Stack/spec:** Java 17, Gson, protobuf/MapStruct, Flow, JUnit 5; experimental RC `78e1d6a1f7f118c8e9bc830b04a8579c1119cb78`. Read [architecture](../architecture.md), [Phase 2 contract](../implementation-loop.md#phase-2-shared-model-and-compatibility-adapters), [acceptance](../acceptance.md), [validation](../validation.md), [gate decisions](../phase-0/decisions.md), [selected policies](../phase-0/selected-policies.md), and [required client rules](../phase-0/required-client-rules.md). Open PR2411 is not schema authority.
+**Stack/spec:** Java 17, Gson, protobuf/MapStruct, Flow, JUnit 5; experimental RC `78e1d6a1f7f118c8e9bc830b04a8579c1119cb78`. Read [architecture](../architecture.md), [Phase 2 contract](../implementation-tasks.md#phase-2-shared-model-and-compatibility-adapters), [acceptance](../acceptance.md), [validation](../validation.md), [gate decisions](../phase-0/decisions.md), [selected policies](../phase-0/selected-policies.md), and [required client rules](../phase-0/required-client-rules.md). Open PR2411 is not schema authority.
 
 ## Verified planning baseline and authorization
 
 Inspected on 2026-11-11 in `/Users/kabir/.codex-api/worktrees/3053/a2a-java`, branch `support/a2a-1.1.0`, HEAD `4efaf334e485af5d80dda39c35c6e635e2c11b1a`. Latest progress receipt supersedes historical incomplete/no-commit statements: Phase 1 is committed, with 83 successful modules, 4,041 discovered / 3,918 executed / 123 unchanged skips / zero failures or errors. Those are retained results, not checks executed here.
 
-Pre-existing uncommitted changes: `AGENTS.md`, `.claude/architecture/a2a-1.1/{README.md,implementation-loop.md,implementation-progress.md}`. Preserve them. Only this new plan is this session's deliverable. No build, runtime/test/dependency/generated-source change, commit, push or PR belongs to this session.
+Pre-existing uncommitted changes at that planning baseline: `AGENTS.md`, `.claude/architecture/a2a-1.1/{README.md,implementation-loop.md,implementation-progress.md}`. Preserve them. Only this new plan is this session's deliverable. No build, runtime/test/dependency/generated-source change, commit, push or PR belongs to this session.
 
 Model record for this planning artifact: Sol planning role requested; no delegated workers/reviewers, and no independently observable runtime model telemetry or billing measurement asserted. Subsequent sessions must record exact requested model IDs (Luna implementation, Sol independent review) and observable metadata in the progress record; never substitute Astra.
 
 Historical accounting remains intact: Phase 0 eight completed iterations, conservative A03 audit 10 and original breach; Phase 1 seventeen cumulative iterations, all five resumed iterations consumed, original/correction failures including three materially failed F1 implementations preserved. No historical allowance remains available for implementation. Planning/review does not reset counters.
 
-**Later authorization needed:** approve the reviewed Phase 2 scope/API decisions and an explicit bounded allowance before Luna edits code. Proposed initial allowance: at most 10 focused iterations or two hours, whichever first; apply the current acceptance.md accounting policy, including Sol diagnosis after three consecutive substantive no-progress attempts on the same defect. Routine compiler/setup corrections and expected RED tests are not automatically new iterations or failed substantive attempts; repeated unproductive compiler fixes still count. Retain historical F1/A03 accounting. Commands: at most min(1,200 seconds, remaining authorized time), plus 30 seconds cleanup. The user-approved 2026-11-11 clarification supersedes the old three-attempt cap and proposed two-no-progress stop. This changes accounting/diagnostic policy, not the existing run start, deadline or authorization. These are proposed bounds, not newly granted time. If the allowance cannot finish the tasks, checkpoint without claiming Phase 2 complete. Any phase commit needs a concrete proposal and separate approval; issue #1303 is already established.
+**Current assignment rule:** the developer selects and authorizes one task or
+coherent subtask, then requests independent review. Follow [task bounds](../acceptance.md#run-limits):
+a default two-hour assignment backstop unless explicitly changed, finite commands,
+and Sol diagnosis after three substantive no-progress attempts on the same defect.
+No mandatory ten-iteration allowance or cumulative Maven counter applies to new
+work. Historical run accounting above remains evidence; it is not a current work
+queue or a source of renewed authorization. A fresh session retains the active
+assignment deadline. No later task or commit is authorized automatically; issue
+#1303 is already established.
 
 ## Scope, prerequisites and exclusions
 
 Phase 2 delivers DTOs/builders, schema regeneration/mappings, Gson support, version projections, decoder outcomes, public companion-input encoding/query/config fields and known-event callbacks, conservative SPI/wrapper forwarding, compatibility and API evidence. Controlled wire servers prove public usability without pretending that the current task engine enforces new mutation or observation behavior.
 
-Prerequisites: independent Sol review of this plan; fresh status/HEAD inspection; API decision D1 below; retained target/provenance verification; new implementation allowance. Preserve Phase 1 exact selection (client default 1.1, explicit 1.0, frozen legacy constant 1.0, no fallback), endpoint/tenant scoping, missing-version 0.3 rules, REST 1.1 GET versus legacy POST subscription, and original 0.3 context.
+Prerequisites: independent Sol review of this plan; fresh status/HEAD inspection; API decision D1 below; retained target/provenance verification; current developer-selected task authorization. Preserve Phase 1 exact selection (client default 1.1, explicit 1.0, frozen legacy constant 1.0, no fallback), endpoint/tenant scoping, missing-version 0.3 rules, REST 1.1 GET versus legacy POST subscription, and original 0.3 context.
 
 Preserve approved SDK-owned gRPC admission for **both** versions: `GrpcManagedChannelOptions`, `GrpcTransport.createManaged(...)`, `GrpcTransportConfigBuilder.managedChannel(...)`, pinned grpc-java 1.81.0 isolation and bounded owned-resource cleanup. No raw channel/factory acceptance, dependency upgrade or new credential adapter. Fixtures must use genuine SDK-issued handles. Follow-ups concerning optional whole ITK compilation and extra DNS/hostname proof remain separate.
 
@@ -259,7 +267,7 @@ Base ordinary `Client.getTask`/`listTasks` use the decoded companion on the 1.1 
 
 ### T7 — Independent compatibility and phase evidence gate (A03, A04, A07, A14)
 
-**Files:** create `phase-2/verification.md`, `phase-2/next-session.md`, `phase-2/evidence/` beneath `.claude/architecture/a2a-1.1/`; finish T1 migration report/probes; append results/accounting to `implementation-progress.md` only during authorized implementation. No historical evidence edits.
+**Files:** create `phase-2/verification.md`, `phase-2/next-session.md`, `phase-2/evidence/` beneath `.claude/architecture/a2a-1.1/`; finish T1 migration report/probes; append material results to `implementation-progress.md` only during authorized implementation. No historical evidence edits.
 
 - [ ] Keep three evidence layers separate: public Client controlled-peer tests; raw malformed/future payload tests; unchanged historical fixture/binary checks. A paired candidate client/server pass cannot stand in for the third layer. Phase 0 fixtures cover selected codecs, not full A03; Phase 1 approved compatibility/channel evidence remains attributed to its exact build.
 - [ ] After candidate build, from repository root run exactly:
@@ -277,7 +285,7 @@ Expected selected corpus: 1.0 33 positives + one historical failure fingerprint;
 - [ ] Changed-module regression gate: `mvn -B -ntp -pl spec-grpc,client/base,client/transport/jsonrpc,client/transport/rest,client/transport/grpc,transport/jsonrpc,transport/rest,transport/grpc,compat-0.3/server-conversion,extras/opentelemetry/client,extras/opentelemetry/client-propagation -am test`.
 - [ ] Existing same-instance/auth/0.3 regression gate: `mvn -B -ntp -pl tests/multiversion/jsonrpc,tests/multiversion/rest,tests/multiversion/grpc -am verify`. This preserves Phase 1 ordinary behavior; does not claim Phase 3 mixed mutation or Phase 4 observation acceptance.
 - [ ] Once changed checks and an independent Sol review pass, run one bounded `mvn -B -ntp clean install` for the changed Phase 2 candidate. Do not rerun the Phase 1 baseline before edits. Inventory Surefire/Failsafe discoveries, zero-test selectors, skip identities, Docker execution and Java 17 compatibility; `failIfNoSpecifiedTests=false` permits upstream modules with no matching test but does not prove the target test ran. Retain exact commands, exit codes/timeouts and source hashes. Fix/retest only affected checks unless a changed candidate or reviewer concern warrants broader rerun.
-- [ ] Record task evidence and partial acceptance coverage, unresolved gates/approvals, model roles and consumed bounds. Do not pass all A01–A14 from codec tests. Prepare later Phase 3 handoff only; no automatic continuation or commit.
+- [ ] Record task evidence and partial acceptance coverage, unresolved gates/approvals, model roles and applicable task bounds. Do not pass all A01–A14 from codec tests. Prepare later Phase 3 handoff only; no automatic continuation or commit.
 
 ## Explicitly blocked work and decisions
 

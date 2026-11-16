@@ -27,7 +27,8 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageResponse;
  * AtomicLong eventId = new AtomicLong(0);
  *
  * Multi<String> sseEvents = Multi.createFrom().publisher(responses)
- *     .map(response -> SseFormatter.formatResponseAsSSE(response, eventId.getAndIncrement()));
+ *     .map(response -> SseFormatter.formatResponseAsSSE(response, eventId.getAndIncrement(),
+ *         context.getVersionPolicy().protocolVersion()));
  *
  * sseEvents.subscribe().with(sseEvent -> httpResponse.write(Buffer.buffer(sseEvent)));
  * }</pre>
@@ -48,7 +49,8 @@ public class SseFormatter {
     }
 
     /**
-     * Format an A2A response as an SSE event.
+     * Format an A2A response as an SSE event using the historical 1.0 wire shape.
+     * Use the overload with an explicit protocol version when serving 1.1 clients.
      * <p>
      * Serializes the response to JSON and formats as:
      * <pre>
@@ -62,8 +64,7 @@ public class SseFormatter {
      * @return SSE-formatted string (ready to write to HTTP response)
      */
     public static String formatResponseAsSSE(A2AResponse<?> response, long eventId) {
-        String jsonData = serializeResponse(response);
-        return "data: " + jsonData + "\nid: " + eventId + "\n\n";
+        return formatResponseAsSSE(response, eventId, "1.0");
     }
 
     /** Formats the response using the selected protocol's JSON field presence rules. */
@@ -91,23 +92,6 @@ public class SseFormatter {
      */
     public static String formatJsonAsSSE(String jsonString, long eventId) {
         return "data: " + jsonString + "\nid: " + eventId + "\n\n";
-    }
-
-    /**
-     * Serialize an A2AResponse to JSON string.
-     */
-    private static String serializeResponse(A2AResponse<?> response) {
-        // For error responses, use standard JSON-RPC error format
-        if (response instanceof A2AErrorResponse error) {
-            return JSONRPCUtils.toJsonRPCErrorResponse(error.getId(), error.getError());
-        }
-        if (response.getError() != null) {
-            return JSONRPCUtils.toJsonRPCErrorResponse(response.getId(), response.getError());
-        }
-
-        // Convert domain response to protobuf message and serialize
-        com.google.protobuf.MessageOrBuilder protoMessage = convertToProto(response);
-        return JSONRPCUtils.toJsonRPCResultResponse(response.getId(), protoMessage);
     }
 
     private static String serializeResponse(A2AResponse<?> response, String protocolVersion) {

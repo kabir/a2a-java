@@ -16,16 +16,16 @@ versions are rejected, never silently redirected to another version.
 The user confirmed:
 
 - This goal delivers an architecture for review and a concrete prompt for a
-  later implementation loop. Production implementation is a separate task.
+  later implementation handoff. Production changes remain separately assigned tasks.
 - Preserve common application APIs. Documented custom-store and executor
   migrations are acceptable where necessary for 1.1.
 - All three server interfaces must be serviceable from one instance when
   provisioned. Existing 0.3 support remains optional.
-- Later implementation runs are bounded by ten focused iterations or two hours,
-  with a Sol diagnostic checkpoint after three consecutive substantive attempts
-  without progress on the same underlying defect (clarified 2026-11-11). Routine
-  compile corrections are not automatically new attempts/iterations. Reaching a
-  limit does not satisfy acceptance criteria.
+- Implementation now follows developer-selected tasks (2026-11-16), with separate
+  implementation and independent review assignments. Keep task time bounds,
+  finite commands and diagnosis after three substantive no-progress attempts on
+  the same defect. Mandatory loop-iteration quotas are superseded; reaching a
+  time/scope limit never satisfies acceptance criteria.
 
 The user expanded the scope on 2026-11-10 to production 1.1 SDK client support
 through public APIs over JSON-RPC, REST, and gRPC. Client and server capabilities
@@ -1133,21 +1133,20 @@ artifact projection/collision, transaction crash/recovery, and API migration
 checks described here. Run old 1.0 binaries or raw historical fixtures as peers;
 new serializers talking only to new handlers do not prove compatibility.
 
-The [acceptance checklist and run limits](acceptance.md) make completion and
-bounded progress explicit. Agreed implementation-run limits are ten focused
-iterations or two hours. The 2026-11-11 clarification replaces the blanket
-three-attempt cap and proposed two-no-progress stop with a Sol diagnostic
-checkpoint after three consecutive substantive no-progress attempts on the same
-defect. Compiler/setup corrections are accounted for under the acceptance table,
-not automatically counted as separate iterations.
-Reaching a limit produces a checkpoint, never a claim of completion.
+The [acceptance checklist and task bounds](acceptance.md) define completion and
+bounded assignments. The [task list](task-list.md) replaces autonomous coordinator
+loops. Keep the default two-hour assignment backstop, finite commands and a Sol
+diagnosis after three substantive attempts without progress on the same defect.
+Routine compiler corrections are not independent failed attempts. Historical
+loop counters remain evidence; new tasks need no iteration arithmetic. A scope or
+time stop produces a handoff, never a claim of completion.
 
 No Maven tests were run for this architecture-only deliverable. Source/spec
 inspection and independent consistency review informed the proposal. The
 user-supplied review confirmed the shared-core direction and requested the
 direct-response, full-Task, and new-deployment clarifications incorporated here.
 This records review of the architecture, not runtime validation or authorization
-to implement. The [implementation-loop prompt](implementation-loop.md) belongs
+to implement. The [task implementation guide](implementation-tasks.md) belongs
 to a separately authorized implementation task; its specification gates still
 apply. Proposed policies beyond the agreed constraints remain identified as
 proposals rather than being attributed to explicit user approval.

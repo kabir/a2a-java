@@ -1,10 +1,10 @@
-# Acceptance criteria and bounded implementation runs
+# Acceptance criteria and task bounds
 
 Status: acceptance proposal updated for production client and server support;
 prior independent review covered the server architecture, not this client revision.
 These criteria govern the later implementation,
 not the completion of this architecture-only task. Read with
-[architecture](architecture.md) and the [implementation prompt](implementation-loop.md).
+[architecture](architecture.md) and the [implementation prompt](implementation-tasks.md).
 
 ## Definition of done
 
@@ -157,83 +157,64 @@ merely copying the expected result into the progress record is not evidence.
 
 ## Run limits
 
-Current user-approved clarification, 2026-11-11: replace the blanket three-attempt
-cap with a **three-consecutive-no-progress diagnostic checkpoint**. This supersedes
-the original three-attempt rule and the proposed two-no-progress safeguard in
-older prompts, plans and skill guidance. Historical evidence and failures remain
-intact; a policy change does not make a failed command pass.
+Current workflow, approved 2026-11-16: normal developer-selected assignments replace
+autonomous coordinator loops. These task rules supersede older iteration quotas
+and scheduling instructions, including expired loop prompts. Historical evidence,
+failed commands and prior breaches remain unchanged; no failed check becomes a
+pass. This policy update authorizes documentation only, not runtime implementation.
 
-- Maximum **10 focused iterations per authorized run**, or **2 hours elapsed**,
-  whichever comes first. One iteration is a coherent planned implementation and
-  verification objective (or focused investigation), not each command or compiler
-  failure. It can include several necessary compile/test corrections. Do not
-  group unrelated tasks or repeated blind fixes to evade the limit.
-- Proposed command safeguard remains: local builds/tests have a deadline of at
-  most 20 minutes and the remaining authorized time, plus at most 30 seconds
-  controlled cleanup. Reuse recorded process handles; a timeout is incomplete
-  verification, not passing evidence. External CI has its own reported deadlines.
-- After **3 consecutive substantive attempts without meaningful progress on the
-  same underlying defect**, checkpoint that defect for Sol diagnosis. Do not use
-  a broad acceptance ID such as A04 to aggregate unrelated compiler/setup issues.
-  Continue independent authorized tasks where safe. This is a diagnosis/escalation
-  trigger, not proof that the architecture is wrong or the whole phase must stop.
-  Use an authorized Sol review path; if spawning is prohibited, save the handoff
-  for a separate Sol session rather than creating an unauthorized agent. Astra
-  remains prohibited. Sol diagnosis uses the remaining allowance; no new time,
-  iteration budget or extra review loop is implied. Stop dependent implementation
-  until the diagnostic checkpoint records an evidence-based next approach.
+- Work only on the task/subtask or review assigned by the developer. Stop at its
+  handoff; do not dispatch agents or start the next row automatically.
+- Retain a **two-hour elapsed backstop per assigned session**, unless the developer
+  sets a different explicit bound. Record start/deadline for a substantial task;
+  honor narrower existing authorizations. A continuation of the same assignment
+  retains its deadline; a new session does not silently renew an expired budget.
+- There is **no mandatory iteration quota or cumulative command counter** for new
+  work. Record exact verification commands/results and meaningful failed approaches.
+- Local builds/tests are bounded by the smaller of 20 minutes and remaining
+  authorized time, plus at most 30 seconds controlled cleanup. Reuse a live process
+  handle; a timeout means incomplete verification, not a reason to duplicate builds.
+- After **three consecutive substantive attempts without progress on the same
+  defect**, stop dependent work and prepare a focused Sol diagnosis handoff. The
+  developer starts that session; no automatic escalation or model substitution.
+  Keep the Astra ban. A useful new approach is needed before resuming blind fixes.
 
 ### Counting work and progress
 
-| Work or outcome | Accounting |
-| --- | --- |
-| Expected RED test proving missing planned behavior | Normal development, not a failed substantive attempt. |
-| Import, signature, generated-code, compiler-option or classpath correction | Record command/result; consumes elapsed time within the current objective, not automatically another iteration or a substantive retry. |
-| Corrected compile error followed by a materially different diagnostic | Evidence of progress if the previous cause is actually resolved or the next action is materially narrowed. A different error alone is not automatic progress. |
-| New verified behavior, resolved root cause, or useful narrowing evidence | Meaningful progress; reset the consecutive no-progress streak for that defect, preserving all raw failure history. |
-| Distinct substantive fix tested against the same unresolved defect with no advancement | Increment that defect's no-progress streak. |
-| Repeated compiler error or setup change without useful narrowing | Not exempt merely because it is a compile issue; count an unproductive diagnostic/fix cycle toward the no-progress checkpoint. |
-| Status update, polling a known live build, or context/session/model change | No new iteration/attempt; elapsed time still counts and counters do not reset. |
-
-An expected RED assertion is different from a broken test harness: record setup
-failures honestly. Do not count every local edit/build command as a separate
-substantive hypothesis, but do not hide repeated failed hypotheses inside one
-nominal iteration. A speculative edit, restated plan or unchanged failing rerun
-does not establish progress. Never skip required checks, weaken acceptance or
-invent success to avoid a checkpoint.
+An expected RED test and routine import/signature/generated-code/classpath repairs
+are ordinary implementation work, not separate failed substantive attempts.
+Record failures honestly. Repeated substantive fixes to the same defect without
+useful narrowing trigger diagnosis, even if they concern compilation. Preserve
+failed approaches in the handoff; new verified behavior or resolved causes are
+progress. Do not maintain phase-wide iteration arithmetic just to satisfy an old
+loop ledger, or skip tests/weaken acceptance to avoid a checkpoint.
 
 ### Continuations and historical counters
 
-Keep raw command/fix history and substantive-attempt counts for audit; the old
-raw three-attempt totals no longer impose a stop by themselves. Record the current
-underlying defect, evidence of progress and consecutive no-progress streak.
-Classify current work using available evidence; do not rerun historical checks or
-rewrite old ledgers solely to fit this new policy. Unknown progress is not a pass.
-
-Persist run start/deadline, completed coherent iterations, defect streaks and
-exhaustion state across tasks, clean sessions, compaction and model escalation.
-The clarification neither renews an expired run nor erases historical breaches.
-At the iteration/time limit, stop scheduling work and report a checkpoint; a fresh
-session is not fresh authorization. Obtain an explicit budget decision after
-exhaustion. Follow environment goal-status rules: a checkpoint is not success or
-permission to mark a goal complete, paused or blocked.
+Historical ledgers are evidence, not current scheduling instructions. Leave them
+intact; no retrospective reclassification, renumbering or rerun is needed.
+The developer selects work from [task-list.md](task-list.md), including separate
+implementation, review and correction assignments. A task document is not itself
+authorization. Preserve task state and any active deadline across context changes.
+Before context becomes crowded, save a concise handoff for a fresh session rather
+than relying on repeated compaction. Do not mark incomplete work complete.
 
 ## Checkpoint report
 
-Every bounded run ends with:
+A task handoff records:
 
-1. Coherent iterations, raw attempt history, defect no-progress streaks and
-   elapsed time used; reason for stopping or diagnostic escalation.
-2. Acceptance IDs passed, with evidence; IDs still incomplete or blocked.
-3. Changed files and tests/build results, including failures and skips.
-4. A concrete obstacle or unresolved decision, if any, and what evidence rules
-   out the approaches already tried.
-5. The next safe action and the budget/decision needed for another run.
-6. For a completed phase, the proposed phase commit scope/message and its user
-   approval status. Obtain explicit user approval before each phase commit;
-   architecture/phase-execution approval alone does not authorize a commit.
-   Follow [phase commit instructions](implementation-loop.md#phase-commits-and-user-approval)
-   and record the approved commit SHA before starting the next authorized phase.
+1. Task/subtask and implementation status, separately from independent review.
+2. Changed files and exact checks/results, including failures, skips and evidence
+   provenance. Reuse unchanged evidence without claiming a new test execution.
+3. Outstanding findings/blockers and relevant unsuccessful approaches.
+4. The next concrete action for the developer to assign; time/authorization state
+   if the assignment stopped at a limit.
+5. Requested model/settings and observed metadata when available, without invented
+   billing or mandatory per-command/cumulative counters.
 
-Completion and stopping are separate outcomes. A finite run can make useful
-progress and stop with the implementation correctly reported as incomplete.
+Update the selected task row/evidence link; add material decisions and phase exit
+summaries to `implementation-progress.md`. At phase completion retain the required
+independent review, full acceptance gates, verification record and handoff.
+Commits require explicit developer approval under the
+[commit policy](implementation-tasks.md#phase-commits-and-user-approval).
+Task/architecture approval does not authorize a commit, push or PR.
