@@ -13,12 +13,15 @@ import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.util.PageToken;
+import org.a2aproject.sdk.util.Assert;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * In-memory implementation of {@link TaskStore} and {@link TaskStateProvider}.
@@ -88,18 +91,45 @@ import java.util.concurrent.ConcurrentMap;
  * @see TaskStateProvider for queue lifecycle integration
  */
 @ApplicationScoped
-public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
+public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
-    private final ConcurrentMap<String, Task> tasks = new ConcurrentHashMap<>();
+    enum CommitFaultPoint {
+        BEFORE_REPLACEMENT,
+        AFTER_REPLACEMENT
+    }
+
+    @FunctionalInterface
+    interface CommitFaultInjector {
+        void at(CommitFaultPoint point, String taskId, TaskSnapshot proposed);
+    }
+
+    private static final CommitFaultInjector NO_COMMIT_FAULT = (point, taskId, proposed) -> {
+    };
+
+    private record StoredTask(Task task, TaskRevision revision) {
+        TaskSnapshot snapshot() {
+            return new TaskSnapshot(task, revision);
+        }
+    }
+
+    private record MutationResult(CommittedMutation mutation,
+            TaskCommitSlot.@Nullable Reservation reservation) {
+    }
+
+    private final ConcurrentMap<String, StoredTask> tasks = new ConcurrentHashMap<>();
+    private final AtomicLong revisionSequence = new AtomicLong();
     private final @Nullable TaskAuthorizationProvider authorizationProvider;
+    private final CommitFaultInjector commitFaultInjector;
 
     public InMemoryTaskStore() {
         this.authorizationProvider = null;
+        this.commitFaultInjector = NO_COMMIT_FAULT;
     }
 
     @Inject
     public InMemoryTaskStore(@Any Instance<TaskAuthorizationProvider> authorizationProviderInstance) {
         this.authorizationProvider = CdiUtils.getIfResolvable(authorizationProviderInstance);
+        this.commitFaultInjector = NO_COMMIT_FAULT;
     }
 
     /**
@@ -115,22 +145,128 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
      */
     public InMemoryTaskStore(@Nullable TaskAuthorizationProvider authorizationProvider) {
         this.authorizationProvider = authorizationProvider;
+        this.commitFaultInjector = NO_COMMIT_FAULT;
+    }
+
+    InMemoryTaskStore(@Nullable TaskAuthorizationProvider authorizationProvider,
+            CommitFaultInjector commitFaultInjector) {
+        this.authorizationProvider = authorizationProvider;
+        this.commitFaultInjector = Assert.checkNotNullParam("commitFaultInjector", commitFaultInjector);
     }
 
     @Override
     public void save(Task task, boolean isReplicated) {
-        tasks.put(task.id(), task);
+        tasks.compute(task.id(), (taskId, current) -> new StoredTask(task, nextRevision()));
         // InMemoryTaskStore doesn't fire TaskFinalizedEvent, so isReplicated is unused here
     }
 
     @Override
     public @Nullable Task get(String taskId) {
-        return tasks.get(taskId);
+        StoredTask stored = tasks.get(taskId);
+        return stored == null ? null : stored.task();
     }
 
     @Override
     public void delete(String taskId) {
-        tasks.remove(taskId);
+        tasks.computeIfPresent(taskId, (id, current) -> null);
+    }
+
+    @Override
+    public @Nullable TaskSnapshot readSnapshot(String taskId) {
+        StoredTask stored = tasks.get(taskId);
+        return stored == null ? null : stored.snapshot();
+    }
+
+    @Override
+    public CommittedMutation mutate(String taskId, TaskMutation mutation) {
+        return mutate(taskId, mutation, TaskCommitSlotCallback.NONE);
+    }
+
+    @Override
+    public CommittedMutation mutate(String taskId, TaskMutation mutation, TaskCommitSlotCallback slotCallback) {
+        Assert.checkNotNullParam("taskId", taskId);
+        Assert.checkNotNullParam("mutation", mutation);
+        Assert.checkNotNullParam("slotCallback", slotCallback);
+
+        AtomicReference<MutationResult> result = new AtomicReference<>();
+        AtomicReference<TaskCommitSlot.Reservation> reservedSlot = new AtomicReference<>();
+        try {
+            tasks.compute(taskId, (id, current) -> {
+                TaskSnapshot currentSnapshot = current == null ? null : current.snapshot();
+                MutationPlan plan;
+                try {
+                    plan = Assert.checkNotNullParam("plan", mutation.plan(currentSnapshot));
+                } catch (RuntimeException failure) {
+                    throw new TaskMutationNotCommittedException(taskId, "Task mutation planning failed", failure);
+                }
+
+                if (!plan.changed()) {
+                    if (current == null) {
+                        throw new TaskMutationNotCommittedException(taskId,
+                                "An absent task cannot accept an unchanged mutation");
+                    }
+                    result.set(new MutationResult(
+                            new CommittedMutation(current.snapshot(), List.of(), false), null));
+                    return current;
+                }
+
+                if (!taskId.equals(plan.task().id())) {
+                    throw new TaskMutationNotCommittedException(taskId,
+                            "Mutation plan task ID does not match the requested task ID");
+                }
+
+                TaskRevision revision = nextRevision();
+                TaskSnapshot committedSnapshot = new TaskSnapshot(plan.task(), revision);
+                CommittedMutation committed = new CommittedMutation(committedSnapshot, plan.events(), true);
+                TaskCommitSlot.Reservation reservation = TaskCommitSlot.reserve(taskId, revision);
+                TaskCommitSlot slot = reservation.slot();
+                reservedSlot.set(reservation);
+                try {
+                    slotCallback.reserve(slot, committed);
+                } catch (RuntimeException failure) {
+                    reservation.cancel();
+                    throw new TaskMutationNotCommittedException(taskId,
+                            "Task publication slot reservation failed", failure);
+                } catch (Error failure) {
+                    reservation.cancel();
+                    throw failure;
+                }
+
+                result.set(new MutationResult(committed, reservation));
+                commitFaultInjector.at(CommitFaultPoint.BEFORE_REPLACEMENT, taskId, committedSnapshot);
+                return new StoredTask(plan.task(), revision);
+            });
+            MutationResult committed = result.get();
+            if (committed == null) {
+                throw new TaskMutationOutcomeUnknownException(taskId,
+                        "Task mutation completed without a committed result");
+            }
+            if (committed.reservation() != null) {
+                try {
+                    commitFaultInjector.at(CommitFaultPoint.AFTER_REPLACEMENT, taskId,
+                            committed.mutation().snapshot());
+                    committed.reservation().markCommitted();
+                } catch (RuntimeException failure) {
+                    committed.reservation().cancel();
+                    throw new TaskMutationOutcomeUnknownException(taskId,
+                            "Task replacement completed but its storage outcome is unknown", failure);
+                }
+            }
+            return committed.mutation();
+        } catch (TaskMutationNotCommittedException failure) {
+            cancel(reservedSlot.get());
+            throw failure;
+        } catch (TaskMutationOutcomeUnknownException failure) {
+            cancel(reservedSlot.get());
+            throw failure;
+        } catch (RuntimeException failure) {
+            cancel(reservedSlot.get());
+            throw new TaskMutationOutcomeUnknownException(taskId,
+                    "Task mutation storage outcome is unknown", failure);
+        } catch (Error failure) {
+            cancel(reservedSlot.get());
+            throw failure;
+        }
     }
 
     @Override
@@ -148,6 +284,7 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
             @Nullable TaskAuthorizationProvider provider) {
         // Filter and sort tasks in a single stream pipeline
         List<Task> allFilteredTasks = tasks.values().stream()
+                .map(StoredTask::task)
                 .filter(task -> params.contextId() == null || params.contextId().equals(task.contextId()))
                 .filter(task -> params.status() == null ||
                         (task.status() != null && params.status().equals(task.status().state())))
@@ -234,6 +371,20 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
         return new ListTasksResult(transformedTasks, totalSize, transformedTasks.size(), nextPageToken);
     }
 
+    private TaskRevision nextRevision() {
+        long revision = revisionSequence.incrementAndGet();
+        if (revision <= 0) {
+            throw new IllegalStateException("Task storage revision sequence is exhausted");
+        }
+        return new TaskRevision(revision);
+    }
+
+    private static void cancel(TaskCommitSlot.@Nullable Reservation reservation) {
+        if (reservation != null) {
+            reservation.cancel();
+        }
+    }
+
     private Task transformTask(Task task, int historyLength, boolean includeArtifacts) {
         // Limit history if needed (keep most recent N messages)
         List<Message> history = task.history();
@@ -261,7 +412,7 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
 
     @Override
     public boolean isTaskActive(String taskId) {
-        Task task = tasks.get(taskId);
+        Task task = get(taskId);
         if (task == null) {
             return false;
         }
@@ -271,7 +422,7 @@ public class InMemoryTaskStore implements TaskStore, TaskStateProvider {
 
     @Override
     public boolean isTaskFinalized(String taskId) {
-        Task task = tasks.get(taskId);
+        Task task = get(taskId);
         if (task == null) {
             return false;
         }

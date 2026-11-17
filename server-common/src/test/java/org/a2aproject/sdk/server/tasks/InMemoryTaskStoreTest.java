@@ -1,6 +1,7 @@
 package org.a2aproject.sdk.server.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,6 +56,28 @@ public class InMemoryTaskStoreTest {
         InMemoryTaskStore store = new InMemoryTaskStore();
 
         store.delete("non-existent");
+    }
+
+    @Test
+    public void testTaskStateProviderBehavior() {
+        InMemoryTaskStore store = new InMemoryTaskStore();
+        Task task = sampleTask("task-state");
+
+        assertFalse(store.isTaskActive(task.id()));
+        store.save(task, false);
+        assertTrue(store.isTaskActive(task.id()));
+        assertFalse(store.isTaskFinalized(task.id()));
+
+        Task finalized = Task.builder(task)
+                .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED))
+                .build();
+        store.save(finalized, false);
+        assertFalse(store.isTaskActive(task.id()));
+        assertTrue(store.isTaskFinalized(task.id()));
+
+        store.delete(task.id());
+        assertFalse(store.isTaskActive(task.id()));
+        assertFalse(store.isTaskFinalized(task.id()));
     }
 
     @Test
