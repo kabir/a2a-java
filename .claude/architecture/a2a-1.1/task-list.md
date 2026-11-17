@@ -5,11 +5,11 @@ implementor, then requests independent review at a meaningful boundary. No
 persistent coordinator or automatic progression. Start only the assigned row;
 this checklist is not implementation or commit authorization.
 
-The latest inspected HEAD is `b99a29152` (Phase 2 completion), on
+At Phase 2 close-out, the inspected HEAD was `b99a29152` on
 `support/a2a-1.1.0` in worktree `/Users/kabir/.codex-api/worktrees/3053/a2a-java`.
 Phase 2 close-out evidence is retained below; no Phase 2 build was repeated to
-begin Phase 3 planning. Initial status contained only untracked `test.log`, which
-is preserved. Commits are context, not reset targets. Existing dependent
+begin Phase 3 planning. That checkpoint's initial status contained only
+untracked `test.log`. Commits are context, not reset targets. Existing dependent
 specification gates remain open.
 
 ## Phase 2
@@ -87,16 +87,17 @@ work and final conformance. See the [close-out](phase-2/checkpoints/phase2-compl
 [handoff](phase-2/next-session.md); do not begin Phase 3 without a separate
 developer assignment.
 
-## Phase 3 — P3-T01 accepted; P3-T02 ready for assignment
+## Phase 3 — P3-T01/T02 accepted; P3-T03 ready for assignment
 
 Planning is prepared in [implementation-plan.md](phase-3/implementation-plan.md).
 **Approved at plan level by the independent Sol High/normal correction
 [re-review](phase-3/reviews/plan-review.md), 2026-11-17.** All three original
 findings are closed; no blocking regression was found. P3-T01 is implemented
 and independently accepted after correction re-review, with 48/48 focused tests
-passing. P3-T02 is ready for separate developer assignment to a bounded Luna
-medium/normal session. This index does not authorize starting it.
-No agents, coordinator loop, automatic next row or commit is implied.
+passing. P3-T02 is independently accepted after correction re-review, with
+28/28 focused tests passing. P3-T03 is ready for a separate bounded Luna
+medium/normal assignment. This index does not authorize starting it. No agents,
+coordinator loop, automatic progression or commit is implied.
 
 Task identifiers are in intended execution order. Dependencies below abbreviate
 `P3-TNN` as `TNN`; they require accepted predecessor contracts/behavior. Each row
@@ -108,7 +109,7 @@ serving metadata is unavailable, not asserted as telemetry.
 | Task | Depends on | Implementation | Review |
 | --- | --- | --- | --- |
 | P3-T01 atomic store companion/in-memory authority | Accepted plan; developer assignment | Implemented and independently accepted; focused tests 48/48 passed ([handoff](phase-3/handoffs/P3-T01.md)) | Accepted for P3-T01 scope; fresh 48/48 focused tests ([second correction re-review](phase-3/reviews/P3-T01-review.md#second-correction-re-review--2026-11-17-1728-utc)) |
-| P3-T02 canonical input/delta rules | T01 | Planned; not started | Pending |
+| P3-T02 canonical input/delta rules | T01 | Implemented and independently accepted; focused 28/28 tests passed ([handoff](phase-3/handoffs/P3-T02.md#correction-handoff--2026-11-17)) | Accepted for P3-T02 scope; fresh focused 28/28 ([correction re-review](phase-3/reviews/P3-T02-review.md#correction-re-review--2026-11-17-1843-utc)) |
 | P3-T03 committed bus/local publication order | T01, T02 | Planned; not started | Pending |
 | P3-T04 proposal provenance/local completion | T01, T03 | Planned; not started | Pending |
 | P3-T05 full-Task normalization/migration | T02, T04 | Planned; not started | Pending |
@@ -166,7 +167,7 @@ selected-task handoffs/reviews use `phase-3/handoffs/P3-TNN.md` and
 | 0: semantics/baseline | Retained completed research | [Historical evidence](phase-0/decisions.md); unresolved dependent gates still apply |
 | 1: exact interfaces/client versions | Committed checkpoint | [Historical handoff](phase-1/next-session.md) |
 | 2: models/adapters/public bindings | Complete within the approved experimental pinned-RC scope | [Close-out and evidence](phase-2/checkpoints/phase2-complete.md); Phase 3 needs a separate assignment |
-| 3: mutation/publication/client reducer | P3-T01 implemented and independently accepted | [Approved 20-task plan](phase-3/implementation-plan.md); next ready developer assignment is P3-T02 |
+| 3: mutation/publication/client reducer | P3-T01/T02 implemented and independently accepted | [Approved 20-task plan](phase-3/implementation-plan.md); next ready developer assignment is P3-T03 |
 | 4: observation/versioned delivery | Not assigned | Plan after prerequisites and gates are resolved |
 | 5: live execution/bindings | Not assigned | Plan only the supported, resolved specification contract |
 | 6: final audit/docs | Not assigned | Retain all final acceptance and independent evidence requirements |
@@ -177,7 +178,10 @@ Give Luna medium/normal the selected task, relevant plan sections, files and
 checks. It implements and records a short handoff, then stops. Give Sol
 medium/normal the actual diff and relevant evidence for independent review.
 The developer routes findings back for correction and chooses the next task.
-Astra remains prohibited. No subagents are required or implicitly authorized.
+Checkpoint each independently accepted task in an explicitly developer-authorized
+commit before starting the next task; use that commit SHA as its base. Review
+acceptance does not authorize committing. Astra remains prohibited. No subagents
+are required or implicitly authorized.
 
 Use [task bounds](acceptance.md#run-limits) and the
 [implementation guide](implementation-tasks.md#task-execution-and-progress-record).

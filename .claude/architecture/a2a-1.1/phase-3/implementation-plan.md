@@ -1,6 +1,6 @@
 # A2A 1.1 Phase 3 Implementation Plan
 
-**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. Runtime implementation remains unstarted and requires a separate developer task assignment.**
+**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. P3-T01 and P3-T02 are implemented and independently accepted. P3-T03 is ready for a separate developer assignment; later rows remain planned.**
 
 > Execute one developer-selected task per separate Luna medium/normal session;
 > stop with a handoff for a separate Sol medium/normal review. The user's manual
@@ -57,8 +57,9 @@ Carry these reviewed checkpoints into the assigned tasks:
   before dispatch, never as retry after an opening failure/wrapper rejection or
   where dispatch is uncertain. Test one subscription ingress and no wrapper bypass.
 
-All task implementation and task-review statuses remain not started/pending.
-**Next ready assignment: P3-T01**, only when selected by the developer for a
+P3-T01 and P3-T02 are implemented and independently accepted; later task
+implementation/review remains not started/pending.
+**Next ready assignment: P3-T03**, only when selected by the developer for a
 separate Luna medium/normal session. Stop at that task's evidence/handoff.
 
 ## Review correction record — 2026-11-17
@@ -276,10 +277,11 @@ latest-revision stamping. Snapshot revisions are not authorization credentials.
 
 ## Execution index
 
-All rows are **planned, not started; independent implementation review pending**. Dependencies
+Implementation status is tracked in [task-list.md](../task-list.md) and the
+per-task handoffs; review disposition remains separate. P3-T01 and P3-T02 are
+implemented and independently accepted; later rows remain planned. Dependencies
 mean accepted predecessor interfaces/behavior, not permission to run the next row.
-Identifiers are in intended execution order. The developer may choose an
-independent ready row; no automatic progression is implied.
+Identifiers are in intended execution order; no automatic progression is implied.
 
 | ID | Deliverable | Depends on |
 | --- | --- | --- |
