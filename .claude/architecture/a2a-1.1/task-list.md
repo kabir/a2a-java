@@ -5,10 +5,12 @@ implementor, then requests independent review at a meaningful boundary. No
 persistent coordinator or automatic progression. Start only the assigned row;
 this checklist is not implementation or commit authorization.
 
-The latest inspected HEAD is `34a120f73` (Phase 2 reactor regression fixes), after
-checkpoint `eb8cff42a` (Phase 2 through T6b). These commits are context, not reset
-targets or proof of T6c/T7 acceptance. Existing specification gates remain open.
-No runtime verification was rerun for this workflow conversion.
+The latest inspected HEAD is `b99a29152` (Phase 2 completion), on
+`support/a2a-1.1.0` in worktree `/Users/kabir/.codex-api/worktrees/3053/a2a-java`.
+Phase 2 close-out evidence is retained below; no Phase 2 build was repeated to
+begin Phase 3 planning. Initial status contained only untracked `test.log`, which
+is preserved. Commits are context, not reset targets. Existing dependent
+specification gates remain open.
 
 ## Phase 2
 
@@ -85,6 +87,77 @@ work and final conformance. See the [close-out](phase-2/checkpoints/phase2-compl
 [handoff](phase-2/next-session.md); do not begin Phase 3 without a separate
 developer assignment.
 
+## Phase 3 — plan approved; runtime tasks unstarted
+
+Planning is prepared in [implementation-plan.md](phase-3/implementation-plan.md).
+**Approved at plan level by the independent Sol High/normal correction
+[re-review](phase-3/reviews/plan-review.md), 2026-11-17.** All three original
+findings are closed; no blocking regression was found. No runtime task has
+started or is authorized by this index. P3-T01 is ready for separate developer
+assignment to a bounded Luna medium/normal session.
+No agents, coordinator loop, automatic next row or commit is implied.
+
+Task identifiers are in intended execution order. Dependencies below abbreviate
+`P3-TNN` as `TNN`; they require accepted predecessor contracts/behavior. Each row
+has concrete files, acceptance scenarios, commands, a review boundary and a short
+implementation brief in the plan. All task implementation/review statuses remain
+separate from plan preparation. Planning requested Sol medium/normal; exact
+serving metadata is unavailable, not asserted as telemetry.
+
+| Task | Depends on | Implementation | Review |
+| --- | --- | --- | --- |
+| P3-T01 atomic store companion/in-memory authority | Accepted plan; developer assignment | Planned; not started | Pending |
+| P3-T02 canonical input/delta rules | T01 | Planned; not started | Pending |
+| P3-T03 committed bus/local publication order | T01, T02 | Planned; not started | Pending |
+| P3-T04 proposal provenance/local completion | T01, T03 | Planned; not started | Pending |
+| P3-T05 full-Task normalization/migration | T02, T04 | Planned; not started | Pending |
+| P3-T06 materialization config enrollment | T01, T03 | Planned; not started | Pending |
+| P3-T07 ordinary-send branches/read projections | T02–T06 | Planned; not started | Pending |
+| P3-T08 JPA transactional authority | T01–T03, T06, T07 | Planned; not started | Pending |
+| P3-T09 baseline migration/writer fencing | T08 | Planned; not started | Pending |
+| P3-T10 committed replication/finalization | T03–T05, T08, T09 | Planned; not started | Pending |
+| P3-T11 shared ordered webhook dispatch | T03, T06, T08–T10 | Planned; not started | Pending implementation review; approved lane/quiescence tradeoff |
+| P3-T12 topology/provisioning gate | T07–T11 | Planned; not started | Pending |
+| P3-T13 real multi-instance evidence | T10, T12 | Planned; not started; requires DB/Kafka/Docker evidence | Pending |
+| P3-T14 bounded publication-gap handling | T03, T07, T10 | Planned; not started | Pending; G3 limits retained |
+| P3-T15 generation/timeline reducer/TaskView | Phase 2; T02/T05 rules | Planned; not started | Pending |
+| P3-T16 public ordinary entry-point views/reliability | T15 | Planned; not started | Pending |
+| P3-T17 JSON-RPC production integration | T07, T12, T14, T16 | Planned; not started | Pending |
+| P3-T18 REST production integration | Accepted T17 shared fixture and prerequisites | Planned; not started | Pending |
+| P3-T19 gRPC production integration | Accepted T17 shared fixture and prerequisites | Planned; not started | Pending |
+| P3-T20 compatibility/migration/phase gate | All prior rows | Planned; not started | Pending independent phase audit |
+
+Retain the selected experimental bootstrap/origin/no-retry policies; G4/G6
+normative residuals do not require selecting them again. G1/G2 final claims,
+G3 cursor/reliable repeated-snapshot recovery and G5 live outcomes stay open.
+The plan uses bounded stream failure plus explicit GetTask for publication gaps,
+without inventing a retry code, snapshot exemption or lossless delivery guarantee.
+Authority/fencing and real infrastructure are prerequisites for their dependent
+cluster/migration tasks; they do not block unrelated reducer/unit work. Any new
+unavoidable common-API/client-SPI break or authority/scope change requires an
+explicit material decision. See the plan's gate table and review checkpoints.
+
+The supplied review's three findings are addressed in the approved plan:
+all selected-1.1 sendMessage/ordinary-subscription/input routes share reducer and
+reliability state (T16–T19); cross-node webhooks use a shared dispatch gate with
+real paused-dispatch evidence (new T11, T13); existing-task independent-store
+enrollment partial effects/IDs and unsafe-compensation tests are explicit (T06–T08).
+Original T11–T19 became T12–T20 to retain execution-order numbering. These
+corrections are now independently accepted at plan level. Preserve the approved
+shared lane's quiescence/availability tradeoff: abandoned claims can block webhook
+dispatch indefinitely until quiescence is proven. It adds no payload outbox,
+lossless guarantee or automatic stale-owner takeover.
+
+The retained [review](phase-3/reviews/plan-review.md) also requires batch-final
+snapshot provenance (T01/T03/T11/T13), synchronous unary sendMessage timing,
+and unsupported-before-dispatch-only optional subscription fallback with no
+wrapper bypass or duplicate I/O (T16–T19). The plan records these as binding
+implementation checkpoints; approval is not runtime evidence.
+
+Preserve the independent review report and its reviewed-input hashes. Future
+selected-task handoffs/reviews use `phase-3/handoffs/P3-TNN.md` and
+`phase-3/reviews/P3-TNN-review.md`. Preserve existing Phase 2 evidence and test.log.
+
 ## Later phases
 
 | Phase | Status | Next planning work |
@@ -92,7 +165,7 @@ developer assignment.
 | 0: semantics/baseline | Retained completed research | [Historical evidence](phase-0/decisions.md); unresolved dependent gates still apply |
 | 1: exact interfaces/client versions | Committed checkpoint | [Historical handoff](phase-1/next-session.md) |
 | 2: models/adapters/public bindings | Complete within the approved experimental pinned-RC scope | [Close-out and evidence](phase-2/checkpoints/phase2-complete.md); Phase 3 needs a separate assignment |
-| 3: mutation/publication/client reducer | Not assigned | On developer request, Sol makes a focused task plan from the [phase contract](implementation-tasks.md#phase-3-authoritative-task-mutation-and-publication) and then-current code |
+| 3: mutation/publication/client reducer | Plan approved; runtime unassigned | [Approved 20-task plan](phase-3/implementation-plan.md); next ready developer assignment is P3-T01 |
 | 4: observation/versioned delivery | Not assigned | Plan after prerequisites and gates are resolved |
 | 5: live execution/bindings | Not assigned | Plan only the supported, resolved specification contract |
 | 6: final audit/docs | Not assigned | Retain all final acceptance and independent evidence requirements |
