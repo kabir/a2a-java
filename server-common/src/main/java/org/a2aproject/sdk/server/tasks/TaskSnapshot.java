@@ -9,5 +9,6 @@ public record TaskSnapshot(Task task, TaskRevision revision) {
     public TaskSnapshot {
         Assert.checkNotNullParam("task", task);
         Assert.checkNotNullParam("revision", revision);
+        task = ImmutableTaskCopy.copy(task);
     }
 }

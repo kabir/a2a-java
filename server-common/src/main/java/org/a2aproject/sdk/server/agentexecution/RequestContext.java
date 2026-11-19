@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.a2aproject.sdk.server.ServerCallContext;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
@@ -80,6 +81,7 @@ public class RequestContext {
     private final String contextId;
     private final @Nullable String tenant;
     private final @Nullable Task task;
+    private final @Nullable TaskSnapshot taskSnapshot;
     private final List<Task> relatedTasks;
     private final @Nullable ServerCallContext callContext;
 
@@ -104,6 +106,7 @@ public class RequestContext {
             String contextId,
             @Nullable String tenant,
             @Nullable Task task,
+            @Nullable TaskSnapshot taskSnapshot,
             List<Task> relatedTasks,
             @Nullable ServerCallContext callContext) {
         this.params = params;
@@ -111,6 +114,7 @@ public class RequestContext {
         this.contextId = contextId;
         this.tenant = tenant;
         this.task = task;
+        this.taskSnapshot = taskSnapshot;
         this.relatedTasks = relatedTasks;
         this.callContext = callContext;
     }
@@ -162,6 +166,11 @@ public class RequestContext {
      */
     public @Nullable Task getTask() {
         return task;
+    }
+
+    /** Returns the invocation-start Task and storage revision captured atomically, when available. */
+    public @Nullable TaskSnapshot getTaskSnapshot() {
+        return taskSnapshot;
     }
 
     /**
@@ -236,6 +245,11 @@ public class RequestContext {
      */
     public @Nullable String getTenant() {
         return tenant;
+    }
+
+    /** Whether the invocation tenant agrees with its retained message-send parameters. */
+    public boolean isTenantConsistentWithParams() {
+        return params == null || java.util.Objects.equals(tenant, params.tenant());
     }
 
     /**
@@ -329,6 +343,7 @@ public class RequestContext {
         private @Nullable String contextId;
         private @Nullable String tenant;
         private @Nullable Task task;
+        private @Nullable TaskSnapshot taskSnapshot;
         private @Nullable List<Task> relatedTasks;
         private @Nullable ServerCallContext serverCallContext;
 
@@ -360,6 +375,16 @@ public class RequestContext {
 
         public Builder setTask(@Nullable Task task) {
             this.task = task;
+            this.taskSnapshot = null;
+            return this;
+        }
+
+        /** Sets the Task and its matching storage revision from one atomic store read. */
+        public Builder setTaskSnapshot(@Nullable TaskSnapshot taskSnapshot) {
+            this.taskSnapshot = taskSnapshot;
+            if (taskSnapshot != null) {
+                this.task = taskSnapshot.task();
+            }
             return this;
         }
 
@@ -447,7 +472,7 @@ public class RequestContext {
 
             // 6. Call constructor with finalized values (IDs guaranteed non-null)
             return new RequestContext(finalParams, finalTaskId, finalContextId,
-                    tenant, task, finalRelatedTasks, serverCallContext);
+                    tenant, task, taskSnapshot, finalRelatedTasks, serverCallContext);
         }
     }
 

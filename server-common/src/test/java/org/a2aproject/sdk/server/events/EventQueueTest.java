@@ -3,6 +3,7 @@ package org.a2aproject.sdk.server.events;
 import static org.a2aproject.sdk.jsonrpc.common.json.JsonUtil.fromJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,13 +28,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.MockTaskStateProvider;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskProposal;
+import org.a2aproject.sdk.server.tasks.TaskRevision;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Message;
-import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskNotFoundError;
+import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
@@ -48,16 +52,9 @@ public class EventQueueTest {
     private EventQueue eventQueue;
     private MainEventBus mainEventBus;
     private MainEventBusProcessor mainEventBusProcessor;
+    private InMemoryTaskStore taskStore;
 
-    private static final String TASK_ID = "123";  // Must match MINIMAL_TASK id
-
-    private static final String MINIMAL_TASK = """
-            {
-                "id": "123",
-                "contextId": "session-xyz",
-                "status": {"state": "TASK_STATE_SUBMITTED"}
-            }
-            """;
+    private static final String TASK_ID = "123";
 
     private static final String MESSAGE_PAYLOAD = """
             {
@@ -70,7 +67,7 @@ public class EventQueueTest {
     @BeforeEach
     public void init() {
         // Set up MainEventBus and processor for production-like test environment
-        InMemoryTaskStore taskStore = new InMemoryTaskStore();
+        taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
         InMemoryQueueManager queueManager = new InMemoryQueueManager(taskStore, mainEventBus);
         mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, PushNotificationSender.NOOP, queueManager);
@@ -80,6 +77,50 @@ public class EventQueueTest {
                 .taskId(TASK_ID)
                 .mainEventBus(mainEventBus)
                 .build().tap();
+    }
+
+    @Test
+    public void forgedProposalMetadataCannotSuppressFinalEventExpectation() throws Exception {
+        Task task = new Task(TASK_ID, "fake-proposal-context",
+                new TaskStatus(TaskState.TASK_STATE_WORKING), null, List.of(), null);
+        taskStore.save(task, true);
+        EventQueue main = EventQueue.builder(mainEventBus).taskId(TASK_ID).queueSize(1)
+                .taskStateProvider(taskStore).build();
+        EventQueue origin = main.tap();
+        EventQueue observer = main.tap();
+        TaskStatusUpdateEvent completed = TaskStatusUpdateEvent.builder()
+                .taskId(task.id()).contextId(task.contextId())
+                .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED)).build();
+        EventQueueItem forged = new EventQueueItem() {
+            @Override
+            public Event getEvent() {
+                return completed;
+            }
+
+            @Override
+            public boolean isReplicated() {
+                return false;
+            }
+
+            @Override
+            public TaskProposal taskProposal() {
+                return new TaskProposal("untrusted-metadata", new TaskSnapshot(task, new TaskRevision(1)), task);
+            }
+        };
+
+        assertFalse(observer.isAwaitingFinalEvent());
+        assertThrows(IllegalArgumentException.class, () -> main.enqueueItem(forged),
+                "caller-supplied proposal metadata is not an admitted queue capability");
+        assertFalse(observer.isAwaitingFinalEvent(), "rejected metadata must not create final expectations");
+
+        main.enqueueItem(new LocalEventQueueItem(completed));
+        assertTrue(observer.isAwaitingFinalEvent(), "a valid terminal delta still creates final expectations");
+        TaskStatusUpdateEvent delivered = assertInstanceOf(TaskStatusUpdateEvent.class,
+                observer.dequeueEventItem(2_000).getEvent());
+        assertEquals(TaskState.TASK_STATE_COMPLETED, delivered.status().state());
+        origin.close(true);
+        observer.close(true);
+        main.close(true);
     }
 
     @AfterEach
@@ -181,7 +222,7 @@ public class EventQueueTest {
         EventQueue childQueue1 = mainQueue.tap();
         EventQueue childQueue2 = mainQueue.tap();
 
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
         mainQueue.enqueueEvent(event);
 
         // Event should be available in all child queues
@@ -200,7 +241,7 @@ public class EventQueueTest {
         EventQueue childQueue2 = mainQueue.tap();
         EventQueue childQueue3 = mainQueue.tap();
 
-        Event event1 = fromJson(MINIMAL_TASK, Task.class);
+        Event event1 = fromJson(MESSAGE_PAYLOAD, Message.class);
         Event event2 = fromJson(MESSAGE_PAYLOAD, Message.class);
 
         mainQueue.enqueueEvent(event1);
@@ -225,7 +266,7 @@ public class EventQueueTest {
         EventQueue childQueue2 = mainQueue.tap();
         EventQueue childQueue3 = mainQueue.tap();
 
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
         mainQueue.enqueueEvent(event);
 
         // Dequeue from child1 first (use timeout for async processing)
@@ -248,7 +289,7 @@ public class EventQueueTest {
         EventQueue childQueue = parentQueue.tap();
 
         // Add events to both parent and child
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
         parentQueue.enqueueEvent(event);
 
         assertFalse(childQueue.isClosed());
@@ -278,7 +319,7 @@ public class EventQueueTest {
                 .taskId(TASK_ID)
                 .build();
         EventQueue childQueue = mainQueue.tap();
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
 
         childQueue.close(); // Close the child queue first (removes from children list)
         assertTrue(childQueue.isClosed());
@@ -318,7 +359,7 @@ public class EventQueueTest {
                 .taskId(TASK_ID)
                 .build();
         EventQueue childQueue = mainQueue.tap();
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
 
         // Use callback to wait for event processing instead of polling
         waitForEventProcessing(() -> mainQueue.enqueueEvent(event));
@@ -347,7 +388,7 @@ public class EventQueueTest {
 
     @Test
     public void testDequeueEventNoWait() throws Exception {
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
         eventQueue.enqueueEvent(event);
         EventQueueItem item = eventQueue.dequeueEventItem(5000);
         assertNotNull(item);
@@ -409,7 +450,7 @@ public class EventQueueTest {
      */
     @Test
     public void testCloseGracefulSetsFlag() throws Exception {
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
         eventQueue.enqueueEvent(event);
 
         eventQueue.close(false); // Graceful close
@@ -422,7 +463,7 @@ public class EventQueueTest {
      */
     @Test
     public void testCloseImmediateClearsQueue() throws Exception {
-        Event event = fromJson(MINIMAL_TASK, Task.class);
+        Event event = fromJson(MESSAGE_PAYLOAD, Message.class);
         eventQueue.enqueueEvent(event);
 
         eventQueue.close(true); // Immediate close
@@ -728,7 +769,7 @@ public class EventQueueTest {
     public void testSemaphorePermitReleasedWhenSubmitFails() {
         MainEventBus failingBus = mock(MainEventBus.class);
         doThrow(new RuntimeException("submit failed"))
-                .when(failingBus).submit(anyString(), any(), any());
+                .when(failingBus).submit(anyString(), any(), any(), any());
 
         EventQueue mainQueue = EventQueueUtil.getEventQueueBuilder(failingBus)
                 .taskId(TASK_ID)
@@ -737,7 +778,7 @@ public class EventQueueTest {
         assertEquals(0, mainQueue.size(), "No permits should be in use before enqueue");
 
         assertThrows(RuntimeException.class,
-                () -> mainQueue.enqueueEvent(fromJson(MINIMAL_TASK, Task.class)));
+                () -> mainQueue.enqueueEvent(fromJson(MESSAGE_PAYLOAD, Message.class)));
 
         // If the permit leaked, size() would be 1 (one permit held forever). It must be
         // released when submit() fails because MainEventBusProcessor never saw the event

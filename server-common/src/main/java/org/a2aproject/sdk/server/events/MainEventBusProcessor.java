@@ -15,6 +15,7 @@ import jakarta.inject.Inject;
 
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.CommittedMutation;
+import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.TaskCommitSlot;
 import org.a2aproject.sdk.server.tasks.TaskManager;
@@ -233,6 +234,15 @@ public class MainEventBusProcessor implements Runnable {
         Event event = context.eventQueueItem().getEvent();
         // MainEventBus.submit() guarantees this is always a MainQueue
         EventQueue.MainQueue mainQueue = (EventQueue.MainQueue) context.eventQueue();
+
+        if (context.eventQueueItem() instanceof ExecutorSubmissionService.ProposalAdmission proposalItem) {
+            try {
+                proposalItem.process();
+            } finally {
+                mainQueue.releaseSemaphore();
+            }
+            return;
+        }
 
         LOGGER.debug("MainEventBusProcessor: Processing event for task {}: {}",
                     taskId, event.getClass().getSimpleName());

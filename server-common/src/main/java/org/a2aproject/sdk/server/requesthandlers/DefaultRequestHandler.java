@@ -45,6 +45,8 @@ import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.multitenancy.AgentExecutorRouter;
 import org.a2aproject.sdk.server.tasks.AgentEmitter;
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
+import org.a2aproject.sdk.server.tasks.ExecutionProposalContext;
+import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.ResultAggregator;
@@ -213,6 +215,10 @@ public class DefaultRequestHandler implements RequestHandler {
     private static final String A2A_BLOCKING_AGENT_TIMEOUT_SECONDS = "a2a.blocking.agent.timeout.seconds";
     private static final String A2A_BLOCKING_CONSUMPTION_TIMEOUT_SECONDS = "a2a.blocking.consumption.timeout.seconds";
     private static final String A2A_BLOCKING_RECONCILIATION_TIMEOUT_SECONDS = "a2a.blocking.reconciliation.timeout.seconds";
+    private static final String A2A_TASK_PROPOSAL_ADMISSION_TIMEOUT_MILLIS =
+            "a2a.task-proposal.admission-timeout.millis";
+    private static final String A2A_TASK_PROPOSAL_RESULT_TIMEOUT_MILLIS =
+            "a2a.task-proposal.result-observation-timeout.millis";
     private static final String A2A_REQUEST_CONTEXT_POPULATE_REFERRED_TASKS = "a2a.request-context.populate-referred-tasks";
     private static final String A2A_AUTHORIZATION_REQUIRED = "a2a.authorization.required";
     private static final String A2A_PUSH_NOTIFICATIONS_ENABLED = "a2a.push-notification.enabled";
@@ -274,6 +280,11 @@ public class DefaultRequestHandler implements RequestHandler {
      * (e.g., MicroProfileConfigProvider in reference implementations).
      */
     int reconciliationTimeoutSeconds;
+
+    int proposalAdmissionTimeoutMillis = (int) ExecutorSubmissionService.DEFAULT_ADMISSION_TIMEOUT.toMillis();
+
+    int proposalResultObservationTimeoutMillis =
+            (int) ExecutorSubmissionService.DEFAULT_RESULT_OBSERVATION_TIMEOUT.toMillis();
 
     // Only used inside initConfig() (CDI lifecycle). In static create() paths this field
     // remains null and is never accessed, hence the NullAway suppression.
@@ -379,6 +390,12 @@ public class DefaultRequestHandler implements RequestHandler {
                 configProvider.getValue(A2A_BLOCKING_CONSUMPTION_TIMEOUT_SECONDS));
         reconciliationTimeoutSeconds = Integer.parseInt(
                 configProvider.getValue(A2A_BLOCKING_RECONCILIATION_TIMEOUT_SECONDS));
+        proposalAdmissionTimeoutMillis = Integer.parseInt(
+                configProvider.getValue(A2A_TASK_PROPOSAL_ADMISSION_TIMEOUT_MILLIS));
+        proposalResultObservationTimeoutMillis = Integer.parseInt(
+                configProvider.getValue(A2A_TASK_PROPOSAL_RESULT_TIMEOUT_MILLIS));
+        requirePositiveProposalTimeout(proposalAdmissionTimeoutMillis, A2A_TASK_PROPOSAL_ADMISSION_TIMEOUT_MILLIS);
+        requirePositiveProposalTimeout(proposalResultObservationTimeoutMillis, A2A_TASK_PROPOSAL_RESULT_TIMEOUT_MILLIS);
         authorizationProvider = CdiUtils.getIfResolvable(authorizationProviderInstance);
         agentExecutorRouter = CdiUtils.getIfResolvable(agentExecutorRouterInstance);
         if (agentExecutor == null && agentExecutorInstance != null) {
@@ -416,6 +433,10 @@ public class DefaultRequestHandler implements RequestHandler {
         private int agentCompletionTimeoutSeconds = 30;
         private int consumptionCompletionTimeoutSeconds = 5;
         private int reconciliationTimeoutSeconds = 1;
+        private int proposalAdmissionTimeoutMillis =
+                (int) ExecutorSubmissionService.DEFAULT_ADMISSION_TIMEOUT.toMillis();
+        private int proposalResultObservationTimeoutMillis =
+                (int) ExecutorSubmissionService.DEFAULT_RESULT_OBSERVATION_TIMEOUT.toMillis();
 
         public Builder agentExecutor(AgentExecutor agentExecutor) {
             this.agentExecutor = agentExecutor;
@@ -497,6 +518,24 @@ public class DefaultRequestHandler implements RequestHandler {
             return this;
         }
 
+        /** Sets how long proposal submission waits for local queue admission. */
+        public Builder proposalAdmissionTimeoutMillis(int millis) {
+            if (millis <= 0) {
+                throw new IllegalArgumentException("Proposal admission timeout must be positive");
+            }
+            proposalAdmissionTimeoutMillis = millis;
+            return this;
+        }
+
+        /** Sets how long the returned stage waits for the correlated proposal result. */
+        public Builder proposalResultObservationTimeoutMillis(int millis) {
+            if (millis <= 0) {
+                throw new IllegalArgumentException("Proposal result observation timeout must be positive");
+            }
+            proposalResultObservationTimeoutMillis = millis;
+            return this;
+        }
+
         public Builder authorizationProvider(@Nullable TaskAuthorizationProvider authorizationProvider) {
             this.authorizationProvider = authorizationProvider;
             return this;
@@ -549,6 +588,8 @@ public class DefaultRequestHandler implements RequestHandler {
             handler.agentCompletionTimeoutSeconds = agentCompletionTimeoutSeconds;
             handler.consumptionCompletionTimeoutSeconds = consumptionCompletionTimeoutSeconds;
             handler.reconciliationTimeoutSeconds = reconciliationTimeoutSeconds;
+            handler.proposalAdmissionTimeoutMillis = proposalAdmissionTimeoutMillis;
+            handler.proposalResultObservationTimeoutMillis = proposalResultObservationTimeoutMillis;
             handler.authorizationProvider = authorizationProvider;
             handler.agentExecutorRouter = agentExecutorRouter;
             handler.authorizationRequired = authorizationRequired;
@@ -722,7 +763,12 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     private Task doCancelTask(CancelTaskParams params, ServerCallContext context) throws A2AError {
-        Task task = taskStore.get(params.id());
+        TaskSnapshot invocationSnapshot = taskStore instanceof AtomicTaskStore atomicStore
+                ? atomicStore.readSnapshot(params.id()) : null;
+        if (taskStore instanceof AtomicTaskStore && invocationSnapshot == null) {
+            throw new TaskNotFoundError();
+        }
+        Task task = invocationSnapshot == null ? taskStore.get(params.id()) : invocationSnapshot.task();
         if (task == null) {
             throw new TaskNotFoundError();
         }
@@ -745,22 +791,24 @@ public class DefaultRequestHandler implements RequestHandler {
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null, executor, eventConsumerExecutor,
                         SECONDS.toNanos(reconciliationTimeoutSeconds));
 
-        EventQueue queue = queueManager.createOrTap(task.id());
-        EventConsumer consumer = new EventConsumer(queue, eventConsumerExecutor);
-
         // Call agentExecutor.cancel() to enqueue the CANCELED event
         RequestContext cancelRequestContext = requestContextBuilder.get()
                 .setTaskId(task.id())
                 .setContextId(task.contextId())
                 .setTenant(params.tenant())
-                .setTask(task)
+                .setTask(invocationSnapshot == null ? task : invocationSnapshot.task())
+                .setTaskSnapshot(invocationSnapshot)
                 .setServerCallContext(context)
                 .build();
-        AgentEmitter emitter = new AgentEmitter(cancelRequestContext, queue);
-
         AgentExecutor resolvedExecutor = resolveAgentExecutor(cancelRequestContext.getTenant());
+        ExecutionProposalContext proposalContext = createExecutionProposalContext(cancelRequestContext);
+        EventQueue queue = queueManager.createOrTap(task.id());
+        @Nullable EventConsumer consumer = null;
 
         try {
+            EventConsumer activeConsumer = new EventConsumer(queue, eventConsumerExecutor);
+            consumer = activeConsumer;
+            AgentEmitter emitter = new AgentEmitter(cancelRequestContext, queue, proposalContext);
             // Call agentExecutor.cancel() with error handling. AgentExecutor is user-provided.
             try {
                 resolvedExecutor.cancel(cancelRequestContext, emitter);
@@ -782,7 +830,7 @@ public class DefaultRequestHandler implements RequestHandler {
             // AUTH_REQUIRED committed event. It does not wait for the task's longer-lived stream.
             ResultAggregator.EventTypeAndInterrupt etai =
                     resultAggregator.consumeUntilFinalOrAuthRequired(
-                            consumer, consumptionCompletionTimeoutSeconds, SECONDS);
+                            activeConsumer, consumptionCompletionTimeoutSeconds, SECONDS);
             Task responseTask;
             if (etai.committedSnapshot() != null) {
                 responseTask = etai.committedSnapshot().task();
@@ -799,7 +847,11 @@ public class DefaultRequestHandler implements RequestHandler {
             return responseTask;
         } finally {
             // This is the cancellation request's child only; unrelated task subscribers stay open.
-            consumer.close();
+            if (consumer != null) {
+                consumer.close();
+            } else {
+                queue.close();
+            }
         }
     }
 
@@ -1364,7 +1416,8 @@ public class DefaultRequestHandler implements RequestHandler {
             @Override
             public void run() {
                 LOGGER.debug("Agent execution starting for task {}", taskId);
-                AgentEmitter emitter = new AgentEmitter(requestContext, queue);
+                AgentEmitter emitter = new AgentEmitter(requestContext, queue,
+                        createExecutionProposalContext(requestContext));
                 try {
                     try {
                         resolvedExecutor.execute(requestContext, emitter);
@@ -1546,6 +1599,14 @@ public class DefaultRequestHandler implements RequestHandler {
     @SuppressWarnings("NullAway") // shouldAddPushInfo guarantees pushConfigStore != null
     private MessageSendSetup initMessageSend(MessageSendParams params, ServerCallContext context) throws A2AError {
         Task task = authorizeTaskAccess(params, context);
+        TaskSnapshot taskSnapshot = task != null && taskStore instanceof AtomicTaskStore atomicStore
+                ? atomicStore.readSnapshot(task.id()) : null;
+        if (task != null && taskStore instanceof AtomicTaskStore && taskSnapshot == null) {
+            throw new TaskNotFoundError();
+        }
+        if (taskSnapshot != null) {
+            task = taskSnapshot.task();
+        }
         MessageSendParams requestParams = task == null ? params : normalizeRequestParamsForTask(params, task);
 
         RequestContext requestContext = requestContextBuilder.get()
@@ -1554,6 +1615,7 @@ public class DefaultRequestHandler implements RequestHandler {
                 .setContextId(task != null ? task.contextId() : requestParams.message().contextId())
                 .setTenant(requestParams.tenant())
                 .setTask(task)
+                .setTaskSnapshot(taskSnapshot)
                 .setServerCallContext(context)
                 .build();
 
@@ -1569,6 +1631,15 @@ public class DefaultRequestHandler implements RequestHandler {
             LOGGER.debug("Found task updating with message {}", params.message());
             task = taskManager.updateWithMessage(params.message(), task);
 
+            taskSnapshot = taskStore instanceof AtomicTaskStore atomicStore
+                    ? atomicStore.readSnapshot(task.id()) : null;
+            if (taskStore instanceof AtomicTaskStore && taskSnapshot == null) {
+                throw new TaskNotFoundError();
+            }
+            if (taskSnapshot != null) {
+                task = taskSnapshot.task();
+            }
+
             if (shouldAddPushInfo(params)) {
                 LOGGER.debug("Adding push info");
                 String version = context != null ? context.getRequestedProtocolVersion() : null;
@@ -1579,6 +1650,7 @@ public class DefaultRequestHandler implements RequestHandler {
             requestContext = requestContextBuilder.get()
                     .setParams(requestParams)
                     .setTask(task)
+                    .setTaskSnapshot(taskSnapshot)
                     .setContextId(task.contextId())
                     .setTenant(requestParams.tenant())
                     .setServerCallContext(context)
@@ -1586,6 +1658,20 @@ public class DefaultRequestHandler implements RequestHandler {
         }
 
         return new MessageSendSetup(taskManager, task, requestContext);
+    }
+
+    private ExecutionProposalContext createExecutionProposalContext(RequestContext requestContext) {
+        ExecutorSubmissionService service = new ExecutorSubmissionService(
+                ExecutorSubmissionService.forTaskStore(taskStore), requestContext,
+                java.time.Duration.ofMillis(proposalAdmissionTimeoutMillis),
+                java.time.Duration.ofMillis(proposalResultObservationTimeoutMillis));
+        return new ExecutionProposalContext(requestContext, service);
+    }
+
+    private static void requirePositiveProposalTimeout(int value, String setting) {
+        if (value <= 0) {
+            throw new IllegalArgumentException(setting + " must be positive");
+        }
     }
 
     AgentExecutor resolveAgentExecutor(@Nullable String tenant) {

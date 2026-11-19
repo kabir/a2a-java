@@ -20,10 +20,13 @@ import org.a2aproject.sdk.server.events.InMemoryQueueManager;
 import org.a2aproject.sdk.server.events.MainEventBus;
 import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.spec.Event;
+import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskState;
+import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
 import org.junit.jupiter.api.AfterEach;
@@ -56,6 +59,15 @@ public class AgentEmitterTest {
     public void init() {
         // Set up MainEventBus and processor for production-like test environment
         InMemoryTaskStore taskStore = new InMemoryTaskStore();
+        taskStore.save(Task.builder()
+                .id(TEST_TASK_ID)
+                .contextId(TEST_TASK_CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING))
+                .artifacts(List.of(Artifact.builder()
+                        .artifactId("artifact-id")
+                        .parts(SAMPLE_PARTS)
+                        .build()))
+                .build(), false);
         mainEventBus = new MainEventBus();
         InMemoryQueueManager queueManager = new InMemoryQueueManager(taskStore, mainEventBus);
         mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, PushNotificationSender.NOOP, queueManager);

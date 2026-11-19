@@ -246,7 +246,8 @@ public class ResultAggregatorTest {
     void testConsumeAndBreakNonBlocking() throws Exception {
         // Test that with blocking=false, the method returns after the first event
         String taskId = "test-task";
-        Task firstEvent = createSampleTask(taskId, TaskState.TASK_STATE_WORKING, "ctx1");
+        Task firstEvent = withCommittedGeneration(
+                createSampleTask(taskId, TaskState.TASK_STATE_WORKING, "ctx1"));
 
         // After processing firstEvent, the current result will be that task
         when(mockTaskManager.getTask()).thenReturn(firstEvent);
@@ -262,7 +263,7 @@ public class ResultAggregatorTest {
         EventQueue queue = queueManager.getEventQueueBuilder(taskId).build().tap();
 
         // Use callback to wait for event processing (replaces polling)
-        waitForEventProcessing(processor, () -> queue.enqueueEvent(firstEvent));
+        queue.enqueueLocalOnly(new ResultTaskQueueItem(firstEvent, firstEvent));
 
         // Create real EventConsumer with the queue
         EventConsumer eventConsumer =
@@ -434,6 +435,10 @@ public class ResultAggregatorTest {
         return new EventConsumer(queue, testExecutor);
     }
 
+    private static Task withCommittedGeneration(Task task) {
+        return Task.builder(task).generation(1).build();
+    }
+
     // AUTH_REQUIRED Tests
 
     @Test
@@ -456,7 +461,8 @@ public class ResultAggregatorTest {
 
         try {
             // Enqueue AUTH_REQUIRED task using callback pattern
-            waitForEventProcessing(processor, () -> queue.enqueueEvent(authRequiredTask));
+            Task committed = withCommittedGeneration(authRequiredTask);
+            queue.enqueueLocalOnly(new ResultTaskQueueItem(committed, committed));
 
             // Create EventConsumer
             EventConsumer eventConsumer = new EventConsumer(queue, Runnable::run);
@@ -500,7 +506,8 @@ public class ResultAggregatorTest {
 
         try {
             // Enqueue AUTH_REQUIRED task
-            waitForEventProcessing(processor, () -> queue.enqueueEvent(authRequiredTask));
+            Task committed = withCommittedGeneration(authRequiredTask);
+            queue.enqueueLocalOnly(new ResultTaskQueueItem(committed, committed));
 
             // Create EventConsumer
             EventConsumer eventConsumer = new EventConsumer(queue, Runnable::run);
@@ -595,7 +602,8 @@ public class ResultAggregatorTest {
 
         try {
             // Enqueue Task event with AUTH_REQUIRED
-            waitForEventProcessing(processor, () -> queue.enqueueEvent(authRequiredTask));
+            Task committed = withCommittedGeneration(authRequiredTask);
+            queue.enqueueLocalOnly(new ResultTaskQueueItem(committed, committed));
 
             // Create EventConsumer
             EventConsumer eventConsumer = new EventConsumer(queue, Runnable::run);

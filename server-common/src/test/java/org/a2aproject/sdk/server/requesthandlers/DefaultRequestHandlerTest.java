@@ -195,6 +195,8 @@ public class DefaultRequestHandlerTest {
         when(configProvider.getValue("a2a.blocking.agent.timeout.seconds")).thenReturn("30");
         when(configProvider.getValue("a2a.blocking.consumption.timeout.seconds")).thenReturn("5");
         when(configProvider.getValue("a2a.blocking.reconciliation.timeout.seconds")).thenReturn("7");
+        when(configProvider.getValue("a2a.task-proposal.admission-timeout.millis")).thenReturn("5000");
+        when(configProvider.getValue("a2a.task-proposal.result-observation-timeout.millis")).thenReturn("30000");
 
         DefaultRequestHandler handler = new DefaultRequestHandler();
         handler.configProvider = configProvider;
@@ -203,6 +205,22 @@ public class DefaultRequestHandlerTest {
         assertEquals(30, handler.agentCompletionTimeoutSeconds);
         assertEquals(5, handler.consumptionCompletionTimeoutSeconds);
         assertEquals(7, handler.reconciliationTimeoutSeconds);
+        assertEquals(5000, handler.proposalAdmissionTimeoutMillis);
+        assertEquals(30000, handler.proposalResultObservationTimeoutMillis);
+    }
+
+    @Test
+    void testInitConfigRejectsNonPositiveProposalDeadlines() {
+        A2AConfigProvider configProvider = mock(A2AConfigProvider.class);
+        when(configProvider.getValue("a2a.blocking.agent.timeout.seconds")).thenReturn("30");
+        when(configProvider.getValue("a2a.blocking.consumption.timeout.seconds")).thenReturn("5");
+        when(configProvider.getValue("a2a.blocking.reconciliation.timeout.seconds")).thenReturn("1");
+        when(configProvider.getValue("a2a.task-proposal.admission-timeout.millis")).thenReturn("0");
+        when(configProvider.getValue("a2a.task-proposal.result-observation-timeout.millis")).thenReturn("30000");
+        DefaultRequestHandler handler = new DefaultRequestHandler();
+        handler.configProvider = configProvider;
+
+        assertThrows(IllegalArgumentException.class, handler::initConfig);
     }
 
     @Test
@@ -1589,6 +1607,8 @@ public class DefaultRequestHandlerTest {
             }
         });
         agentExecutorCancel = (context, emitter) -> {
+            assertNotNull(context.getTaskSnapshot(), "cancel invocation carries its atomic Task/revision base");
+            assertEquals(workingTask.id(), context.getTaskSnapshot().task().id());
             emitter.startWork();
             emitter.requiresAuth();
         };
@@ -2128,8 +2148,8 @@ public class DefaultRequestHandlerTest {
 
         CountDownLatch workingEventProcessing = new CountDownLatch(1);
         CountDownLatch releaseWorkingEvent = new CountDownLatch(1);
-        CountDownLatch reportedErrorProcessed = new CountDownLatch(1);
-        AtomicReference<A2AError> reportedError = new AtomicReference<>();
+        CountDownLatch failedMutationProcessed = new CountDownLatch(1);
+        AtomicReference<TaskStatusUpdateEvent> failedMutation = new AtomicReference<>();
         mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
             @Override
             public void onEventProcessed(String taskId, Event event) {
@@ -2141,9 +2161,10 @@ public class DefaultRequestHandlerTest {
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
-                } else if (event instanceof A2AError error && expectedErrorClass.isInstance(error)) {
-                    reportedError.set(error);
-                    reportedErrorProcessed.countDown();
+                } else if (event instanceof TaskStatusUpdateEvent statusUpdate
+                        && statusUpdate.status().state() == TaskState.TASK_STATE_FAILED) {
+                    failedMutation.set(statusUpdate);
+                    failedMutationProcessed.countDown();
                 }
             }
 
@@ -2231,9 +2252,9 @@ public class DefaultRequestHandlerTest {
                         () -> requestHandler.onMessageSend(params, NULL_CONTEXT));
             }
 
-            assertTrue(reportedErrorProcessed.await(5, TimeUnit.SECONDS),
-                    "The agent error should be processed by the event bus");
-            assertInstanceOf(expectedErrorClass, reportedError.get());
+            assertTrue(failedMutationProcessed.await(5, TimeUnit.SECONDS),
+                    "the canonical FAILED mutation should be processed by the event bus");
+            assertNotNull(failedMutation.get());
             if (returnImmediately) {
                 Task storedTask = taskStore.get(taskId);
                 assertNotNull(storedTask);

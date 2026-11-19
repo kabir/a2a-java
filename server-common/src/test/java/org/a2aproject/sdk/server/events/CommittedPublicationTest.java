@@ -102,11 +102,8 @@ class CommittedPublicationTest {
                     .generation(0)
                     .build();
 
-            liveBus.producer.enqueueEvent(stale);
-            EventQueueItem rejection = liveBus.producer.dequeueEventItem(5000);
-
-            assertTrue(rejection.getEvent() instanceof A2AError,
-                    "the proposing request should receive a typed rejection");
+            assertThrows(IllegalArgumentException.class, () -> liveBus.producer.enqueueEvent(stale),
+                    "a raw full Task without an admitted proposal envelope is rejected synchronously");
             assertEquals(before, store.readSnapshot(TASK_ID),
                     "a stale full Task must not replace the authoritative snapshot");
             assertTrue(observer.events.isEmpty(), "unrelated observers must not receive the rejected Task");
@@ -897,7 +894,7 @@ class CommittedPublicationTest {
     }
 
     @Test
-    void initialFullTaskNormalizesLegacyUnstampedArtifactOnLiveBus() throws Exception {
+    void initialFullTaskRequiresTheProposalEnvelopeBeforeQueueAdmission() throws Exception {
         InMemoryTaskStore store = new InMemoryTaskStore();
         Artifact legacyArtifact = new Artifact("legacy-output", null, null,
                 List.of(new TextPart("result")), null, null);
@@ -908,35 +905,17 @@ class CommittedPublicationTest {
                 .history(List.of())
                 .artifacts(List.of(legacyArtifact))
                 .build();
-        AtomicReference<CommittedTaskBatch> admitted = new AtomicReference<>();
-        CountDownLatch admission = new CountDownLatch(1);
-
         try (LiveBus liveBus = new LiveBus(store, (event, snapshot) -> true, null)) {
             RecordingSubscriber observer = liveBus.subscribeObserver(store);
-            liveBus.processor.setCallback(new MainEventBusProcessorCallback() {
-                @Override public void beforePushNotification(CommittedTaskBatch batch) {
-                    admitted.set(batch);
-                    admission.countDown();
-                }
-                @Override public void onEventProcessed(String taskId, Event event) { }
-                @Override public void onTaskFinalized(String taskId) { }
-            });
-            liveBus.producer.enqueueEvent(initial);
-
-            assertTrue(admission.await(5, TimeUnit.SECONDS));
-            assertTrue(observer.completed.await(5, TimeUnit.SECONDS));
-            Artifact stored = store.get(TASK_ID).artifacts().get(0);
-            assertEquals(1, stored.startGeneration());
-            assertEquals(1, stored.endGeneration());
-            assertEquals(Message.Role.ROLE_AGENT, stored.role());
-            assertEquals(List.of(stored), admitted.get().snapshot().task().artifacts());
-            Task delivered = assertInstanceOf(Task.class, observer.events.get(0));
-            assertEquals(List.of(stored), delivered.artifacts());
+            assertThrows(IllegalArgumentException.class, () -> liveBus.producer.enqueueEvent(initial));
+            assertNull(store.get(TASK_ID));
+            assertTrue(observer.events.isEmpty());
+            assertNull(observer.failure);
         }
     }
 
     @Test
-    void initialFullTaskRejectsDuplicateGenerationOneTimelineEntries() throws Exception {
+    void rawInitialTaskWithDuplicateTimelineIsRejectedBeforeAdmission() throws Exception {
         Task duplicateTimeline = Task.builder(task(TASK_STATE_WORKING, 1))
                 .timeline(List.of(
                         new TimelineEntry(1, new TimelineEntry.StatusValue(new TaskStatus(TASK_STATE_WORKING))),
@@ -947,7 +926,7 @@ class CommittedPublicationTest {
     }
 
     @Test
-    void initialFullTaskRejectsExplicitUnspecifiedArtifactOrigin() throws Exception {
+    void rawInitialTaskWithUnspecifiedArtifactOriginIsRejectedBeforeAdmission() throws Exception {
         Artifact unspecifiedOrigin = Artifact.builder()
                 .artifactId("unspecified-origin")
                 .parts(List.of(new TextPart("result")))
@@ -1676,35 +1655,18 @@ class CommittedPublicationTest {
         InMemoryTaskStore store = new InMemoryTaskStore();
         List<Event> pushes = new CopyOnWriteArrayList<>();
         List<Event> replications = new CopyOnWriteArrayList<>();
-        TaskStatusUpdateEvent barrier = status(TASK_STATE_WORKING, 0);
-        CountDownLatch barrierProcessed = new CountDownLatch(1);
         try (LiveBus liveBus = new LiveBus(store, (event, snapshot) -> {
             pushes.add(event);
             return true;
         }, item -> replications.add(item.getEvent()))) {
             RecordingSubscriber observer = liveBus.subscribeObserver(store, 1);
-            liveBus.processor.setCallback(new MainEventBusProcessorCallback() {
-                @Override public void onEventProcessed(String taskId, Event event) {
-                    if (event instanceof TaskStatusUpdateEvent update
-                            && update.status().state() == TASK_STATE_WORKING) {
-                        barrierProcessed.countDown();
-                    }
-                }
-                @Override public void onTaskFinalized(String taskId) { }
-            });
-            liveBus.producer.enqueueEvent(rejected);
-            liveBus.producer.enqueueEvent(barrier);
-
-            assertTrue(barrierProcessed.await(5, TimeUnit.SECONDS));
-            assertTrue(observer.eventReceived.await(5, TimeUnit.SECONDS),
-                    "the subscriber must record the valid follow-up event before assertions");
-            assertNull(observer.failure, "the observer must not fail while consuming the valid barrier");
-            assertBarrierOnly(observer.events,
-                    "the rejected initial Task must not be broadcast to child queues");
-            assertBarrierOnly(pushes, "the rejected initial Task must not reach push delivery");
-            assertBarrierOnly(replications, "the rejected initial Task must not reach the replication hook");
-            assertEquals(0, store.get(TASK_ID).generation(),
-                    "only the legitimate follow-up status should create the Task");
+            assertThrows(IllegalArgumentException.class, () -> liveBus.producer.enqueueEvent(rejected));
+            assertNull(store.get(TASK_ID));
+            assertTrue(observer.events.isEmpty());
+            assertNull(observer.failure);
+            assertTrue(pushes.isEmpty());
+            assertTrue(replications.isEmpty());
+            assertNull(store.get(TASK_ID), "raw Task admission cannot create authoritative state");
         }
     }
 

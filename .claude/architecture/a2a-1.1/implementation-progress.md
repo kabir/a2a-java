@@ -1773,3 +1773,98 @@ other accepted T7 evidence remain unchanged. No fixture was recaptured.
 T7 is accepted for its compatibility/evidence scope. Phase 2 completion and
 final protocol conformance are not established because the Phase 0
 specification gates remain open. No commit, push, PR, or Phase 3 work occurred.
+
+### P3-T04 implementation checkpoint — 2026-11-19
+
+P3-T04 was assigned from base `fbeb3ac8d54b4223deefe6202c277356291b9061` on
+`support/a2a-1.1.0`, starting 09:53:58 UTC with deadline 11:53:58 UTC.
+Requested implementation settings were Luna, medium reasoning, normal speed;
+runtime model metadata was unavailable and is not asserted. The implementation
+and exact verification are recorded in the [P3-T04 handoff](phase-3/handoffs/P3-T04.md).
+The required focused selector passed 91/91 and the final targeted
+cancellation/config selector passed 2/2. Full-Task production changes remain
+guarded until T05 supplies normalization; no automatic rebasing was added. A
+broader handler run exposed two interrupted-enqueue callback expectations that
+are recorded for review against T03's origin-local error delivery contract.
+Independent review remains pending. T05, commits, pushes, PRs and external
+communication were not started.
+
+### P3-T04 review corrections implemented — 2026-11-19
+
+The independent P3-T04 review marked changes required. The report and its review
+cell were preserved; correction work stayed on the same assignment and retained
+its 11:53:58 UTC deadline. The review findings around spoofable raw admission,
+proposal ownership, commit certainty, callback dispatch/order, result retention,
+request identity, cancellation snapshot capture, and T03 fixture migrations are
+addressed in the [correction handoff](phase-3/handoffs/P3-T04.md#correction-implementation-addendum--2026-11-19).
+That addendum supersedes the initial handoff where it records stale details.
+
+Final required selector: exact command and Surefire evidence are in the handoff;
+103 tests ran with 0 failures, errors, or skips. The final targeted handler,
+cancellation, and proposal-config selector ran 5/5; the final T03 publication,
+aggregator, and cancellation regression selector ran 60/60. The intermediate
+required-selector failure (103 run, 1 failure) was the timeout listener test
+checking state before a deliberately blocked callback completed; bounded-latch
+synchronization was added and the final selector passed. No broad reactor build
+was run. `test.log` was not used or changed. The task-list implementation status
+was updated while the review cell remains `Changes required` pending
+independent correction re-review. P3-T05, commits, pushes, PRs, and external
+communication remain unstarted. Requested settings remain Luna, medium,
+normal-speed; runtime model metadata remains unavailable and is not claimed as
+telemetry.
+
+### P3-T04 second review corrections implemented — 2026-11-19
+
+The 2026-11-19 13:18 UTC correction re-review reproduced typed queue failure
+after forwarding, authoritative timeout sink loss, stale notification after
+commit, timeout scheduler starvation, mutable status-message provenance, and
+retention expiry failure for negative/zero clock origins. The second correction
+round began at 13:27:20 UTC with a 15:27:20 UTC backstop; the initial assignment
+deadline and the review's separate deadline remain preserved in the handoff and
+review report. The capability-bound queue proof, final versus observational
+sink distinction, timer decision dispatch, complete status-message deep copy,
+and elapsed-time expiry are documented in the [second correction handoff](phase-3/handoffs/P3-T04.md#second-correction-implementation-addendum--2026-11-19).
+
+Expected-RED evidence ran 26 focused tests with 5 failures and 2 errors; one
+error was a malformed new test fixture subsequently fixed, while RR4's source
+aliasing was independently reproduced in the reviewer probe. The first Maven
+attempt stopped before tests due a transient `RedirectedRequest` class-file
+lookup failure in `http-client`; retry compiled and executed the selector.
+Final required verification passed 108/108 at 13:37:24 UTC; handler/cancel/config
+passed 5/5 at 13:37:32 UTC; T03 regressions passed 60/60 at 13:37:50 UTC. Exact
+commands, Surefire XML paths, and counts are in the handoff. `test.log` was
+absent at the 13:18 review checkpoint and is present at this final status
+check; it was not read, written, deleted, or used. The review report and
+`Changes required` cell are preserved pending independent correction re-review.
+T05, commits, pushes, PRs,
+external communication, and subagents were not started. Requested settings
+remain Luna, medium reasoning, normal speed; runtime model metadata is
+unavailable and is not claimed as observed telemetry.
+
+### P3-T04 third review corrections implemented — 2026-11-19
+
+The latest Sol correction re-review reproduced two races: a timeout sink could
+invoke a listener concurrently with the authoritative result sink, and pruning
+could combine a stale elapsed-time read with newly published completion
+evidence. Per-submission asynchronous sink serialization and an atomic
+result/timestamp evidence record address these races. Two bounded interleaving
+tests failed before the production fixes and passed afterward. The required
+selector passed 109/109 at 13:58:44 UTC; focused handler/cancellation/config
+checks passed 5/5 at 13:58:53 UTC; T03 regressions passed 60/60 at 13:59:04 UTC.
+Exact commands, counts, XML evidence, and the preserved 15:27:20 UTC correction
+backstop are recorded in the [latest T04 handoff](phase-3/handoffs/P3-T04.md#third-correction-implementation-addendum--2026-11-19).
+The review disposition remains `Changes required` pending independent
+correction review. `test.log` was not read, written, deleted, or used. No T05,
+subagents, commits, pushes, PRs, or external communication occurred.
+
+
+### P3-T04 accepted; full-reactor checkpoint requested — 2026-11-19
+
+The third independent correction re-review accepts P3-T04, with 109 required,
+5 handler and 60 T03 regression tests passing. Original findings and intermediate
+dispositions remain preserved. A fresh pre-commit required selector passed 109/109
+at 14:21:49 UTC; see the [handoff](phase-3/handoffs/P3-T04.md). The developer
+requested the accepted-task commit and a full-reactor checkpoint before the next
+task. P3-T05 remains unassigned and its prompt is held. An external tee process
+was actively writing test.log; it is excluded and a duplicate clean run was not
+started during commit preparation.

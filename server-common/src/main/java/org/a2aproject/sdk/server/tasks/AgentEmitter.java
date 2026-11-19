@@ -2,13 +2,14 @@ package org.a2aproject.sdk.server.tasks;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.a2aproject.sdk.server.events.EventQueue;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Artifact;
@@ -22,6 +23,8 @@ import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Helper for emitting events from AgentExecutor implementations.
@@ -102,6 +105,7 @@ public class AgentEmitter {
     private final EventQueue eventQueue;
     private final String taskId;
     private final String contextId;
+    private final @Nullable ExecutionProposalContext proposalContext;
     private final AtomicBoolean terminalStateReached = new AtomicBoolean(false);
 
     /**
@@ -111,9 +115,16 @@ public class AgentEmitter {
      * @param eventQueue the event queue for enqueueing events
      */
     public AgentEmitter(RequestContext context, EventQueue eventQueue) {
+        this(context, eventQueue, null);
+    }
+
+    /** Creates an emitter with executor-local full-Task proposal provenance and result delivery. */
+    public AgentEmitter(RequestContext context, EventQueue eventQueue,
+            @Nullable ExecutionProposalContext proposalContext) {
         this.eventQueue = eventQueue;
         this.taskId = context.getTaskId();
         this.contextId = context.getContextId();
+        this.proposalContext = proposalContext;
     }
 
     /**
@@ -570,33 +581,26 @@ public class AgentEmitter {
     }
 
     /**
-     * Adds a custom Task object to be sent to the client.
-     * <p>
-     * Use this when you need to create a Task with specific fields (history, artifacts, etc.)
-     * that the convenience methods like {@link #submit()}, {@link #startWork()}, or
-     * {@link #complete()} don't provide.
-     * </p>
-     * <p>
-     * <b>Typical usage pattern:</b> Build a task with {@link #taskBuilder()}, customize it,
-     * then add it with this method.
-     * </p>
-     * <p>Example usage:
+     * Proposes this Task against the immutable Task/revision captured at executor invocation
+     * start. The void API delivers its correlated outcome asynchronously to
+     * {@link #addProposalResultListener(Consumer)} and {@link #lastProposalResult()}.
+     * Call {@link #refreshTask()} and submit a newly built TaskProposal to use a newer base;
+     * previously built proposals are never rebased. Changed full-Task replacement is rejected
+     * until the P3-T05 normalization path is available.
+     * <p>For an invocation with an existing Task, an unchanged legacy proposal can be observed
+     * without advancing the captured base:
      * <pre>{@code
      * public void execute(RequestContext context, AgentEmitter emitter) {
-     *     // Create a task with specific status and history
-     *     Task task = emitter.taskBuilder()
-     *         .status(new TaskStatus(TaskState.SUBMITTED))
-     *         .history(List.of(context.getMessage()))
-     *         .build();
-     *     emitter.addTask(task);
+     *     emitter.addProposalResultListener(result -> handleProposalResult(result));
+     *     emitter.addTask(context.getTask());
      * }
      * }</pre>
      *
-     * @param task the task to add
+     * @param task the proposed task
      * @since 1.0.0
      */
     public void addTask(Task task) {
-        eventQueue.enqueueEvent(task);
+        proposalContext().submitLegacyTask(task, eventQueue);
     }
 
     /**
@@ -624,7 +628,51 @@ public class AgentEmitter {
      * @since 1.0.0
      */
     public void emitEvent(Event event) {
-        eventQueue.enqueueEvent(event);
+        if (event instanceof Task task) {
+            addTask(task);
+        } else {
+            eventQueue.enqueueEvent(event);
+        }
+    }
+
+    /**
+     * Submits a full Task with caller-selected immutable provenance and observes its correlated
+     * local result. A timeout or dispatch failure marked indeterminate does not cancel the
+     * underlying submission; use {@link #proposalCompletion(String)} to observe a late result.
+     * Completion reports authority processing only and does not acknowledge subscriber or webhook
+     * delivery. Changed full-Task replacement remains guarded until P3-T05.
+     */
+    public CompletionStage<ProposalResult> submitTask(TaskProposal proposal) {
+        return proposalContext().submitTask(proposal, eventQueue);
+    }
+
+    /** Returns the current authoritative Task and storage revision as a matching pair. */
+    public TaskSnapshot refreshTask() {
+        return proposalContext().refreshTask();
+    }
+
+    /** Registers an asynchronous observer for legacy void-emitter proposal outcomes. */
+    public void addProposalResultListener(Consumer<ProposalResult> listener) {
+        proposalContext().addResultListener(listener);
+    }
+
+    /** Looks up the retained eventual result for a proposal correlation ID. */
+    public Optional<CompletionStage<ProposalResult>> proposalCompletion(String correlationId) {
+        return proposalContext().completion(correlationId)
+                .map(completion -> (CompletionStage<ProposalResult>) completion);
+    }
+
+    /** Returns the most recent correlated result delivered to this execution's local sink. */
+    public @Nullable ProposalResult lastProposalResult() {
+        return proposalContext().lastResult();
+    }
+
+    private ExecutionProposalContext proposalContext() {
+        if (proposalContext == null) {
+            throw new IllegalStateException(
+                    "full Task emission requires execution-local proposal provenance and completion handling");
+        }
+        return proposalContext;
     }
 
     /**

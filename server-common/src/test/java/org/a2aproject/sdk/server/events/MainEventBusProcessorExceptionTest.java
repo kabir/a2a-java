@@ -24,6 +24,7 @@ import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
+import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,7 +106,7 @@ public class MainEventBusProcessorExceptionTest {
         when(mockTaskStore.get(any())).thenThrow(exception);
         doThrow(exception).when(mockTaskStore).save(any(Task.class), anyBoolean());
 
-        Task testTask = createTestTask();
+        TaskStatusUpdateEvent testTask = createTestStatusEvent(TASK_ID);
 
         // Act: Enqueue event and wait for processing
         List<Event> distributedEvents = captureDistributedEvent(testTask);
@@ -144,7 +145,7 @@ public class MainEventBusProcessorExceptionTest {
         when(mockTaskStore.get(any())).thenThrow(exception);
         doThrow(exception).when(mockTaskStore).save(any(Task.class), anyBoolean());
 
-        Task testTask = createTestTask();
+        TaskStatusUpdateEvent testTask = createTestStatusEvent(TASK_ID);
 
         // Act: Enqueue event and wait for processing
         List<Event> distributedEvents = captureDistributedEvent(testTask);
@@ -187,11 +188,7 @@ public class MainEventBusProcessorExceptionTest {
                 .mainEventBus(mainEventBus)
                 .build().tap();
 
-        Task testTask = Task.builder()
-                .id(specificTaskId)
-                .contextId("test-context")
-                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED))
-                .build();
+        TaskStatusUpdateEvent testTask = createTestStatusEvent(specificTaskId);
 
         // Act: Enqueue event and wait for processing
         List<Event> distributedEvents = new ArrayList<>();
@@ -227,11 +224,11 @@ public class MainEventBusProcessorExceptionTest {
     /**
      * Helper method to create a test Task.
      */
-    private Task createTestTask() {
-        return Task.builder()
-                .id(TASK_ID)
+    private TaskStatusUpdateEvent createTestStatusEvent(String taskId) {
+        return TaskStatusUpdateEvent.builder()
+                .taskId(taskId)
                 .contextId("test-context")
-                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED))
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING))
                 .build();
     }
 

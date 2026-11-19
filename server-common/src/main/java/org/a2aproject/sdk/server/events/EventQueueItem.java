@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.server.events;
 
+import org.a2aproject.sdk.server.tasks.TaskProposal;
 import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Task;
@@ -38,7 +39,19 @@ public interface EventQueueItem {
      */
     boolean isReplicated();
 
-    /** Final store snapshot attached to a canonical committed event, when available. */
+    /**
+     * Optional proposal description retained for diagnostics and compatibility. Queue admission
+     * never trusts this method as provenance; only the internal per-submission capability proves
+     * that a local full Task was registered with an executor result channel.
+     */
+    default @Nullable TaskProposal taskProposal() {
+        return null;
+    }
+
+    /**
+     * Final store snapshot attached to an internal canonical committed event, when available.
+     * Custom items cannot use this optional value to establish committed state.
+     */
     default @Nullable TaskSnapshot committedSnapshot() {
         return null;
     }

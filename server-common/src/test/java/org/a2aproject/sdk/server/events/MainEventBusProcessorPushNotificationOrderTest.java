@@ -72,16 +72,12 @@ public class MainEventBusProcessorPushNotificationOrderTest {
 
         mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, sender, queueManager);
         EventQueueUtil.start(mainEventBusProcessor);
+        taskStore.save(Task.builder().id(taskId).contextId(CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED)).build(), false);
         EventQueue eventQueue = EventQueueUtil.getEventQueueBuilder(mainEventBus)
                 .taskId(taskId)
                 .mainEventBus(mainEventBus)
                 .build().tap();
-
-        eventQueue.enqueueEvent(Task.builder()
-                .id(taskId)
-                .contextId(CONTEXT_ID)
-                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED))
-                .build());
 
         for (int i = 0; i < eventCount; i++) {
             eventQueue.enqueueEvent(statusEventWithSequence(taskId, i));
@@ -127,12 +123,12 @@ public class MainEventBusProcessorPushNotificationOrderTest {
         EventQueue fastQueue = EventQueueUtil.getEventQueueBuilder(mainEventBus)
                 .taskId(fastTaskId).mainEventBus(mainEventBus).build().tap();
 
-        slowQueue.enqueueEvent(Task.builder().id(slowTaskId).contextId(CONTEXT_ID)
-                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED)).build());
+        taskStore.save(Task.builder().id(slowTaskId).contextId(CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED)).build(), false);
+        taskStore.save(Task.builder().id(fastTaskId).contextId(CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED)).build(), false);
         slowQueue.enqueueEvent(statusEventWithSequence(slowTaskId, 0));
 
-        fastQueue.enqueueEvent(Task.builder().id(fastTaskId).contextId(CONTEXT_ID)
-                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED)).build());
         fastQueue.enqueueEvent(statusEventWithSequence(fastTaskId, 0));
 
         assertTrue(fastLatch.await(1, TimeUnit.SECONDS),
@@ -158,7 +154,7 @@ public class MainEventBusProcessorPushNotificationOrderTest {
         //   2. Always sleep before the first count check so the last cleanup has time to run.
         //   3. Assert on the captured count, not a fresh read.
         int taskCount = 10;
-        CountDownLatch latch = new CountDownLatch(taskCount * 2);
+        CountDownLatch latch = new CountDownLatch(taskCount);
         PushNotificationSender sender = (event, snapshot) -> {
             latch.countDown();
             return true;
@@ -174,11 +170,11 @@ public class MainEventBusProcessorPushNotificationOrderTest {
                     .taskId(taskId)
                     .mainEventBus(mainEventBus)
                     .build().tap();
-            eventQueue.enqueueEvent(Task.builder()
+            taskStore.save(Task.builder()
                     .id(taskId)
                     .contextId(CONTEXT_ID)
                     .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED))
-                    .build());
+                    .build(), false);
             eventQueue.enqueueEvent(statusEventWithSequence(taskId, 0));
         }
 
@@ -221,12 +217,12 @@ public class MainEventBusProcessorPushNotificationOrderTest {
                 .mainEventBus(mainEventBus)
                 .build().tap();
 
-        eventQueue.enqueueEvent(Task.builder()
+        taskStore.save(Task.builder()
                 .id(taskId)
                 .contextId(CONTEXT_ID)
                 .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED))
-                .build());
-        for (int i = 0; i < eventCount - 1; i++) {
+                .build(), false);
+        for (int i = 0; i < eventCount; i++) {
             eventQueue.enqueueEvent(statusEventWithSequence(taskId, i));
         }
 

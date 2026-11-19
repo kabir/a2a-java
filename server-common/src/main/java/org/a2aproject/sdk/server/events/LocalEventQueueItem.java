@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.server.events;
 
+import org.a2aproject.sdk.server.tasks.TaskProposal;
 import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Task;
@@ -53,6 +54,11 @@ class LocalEventQueueItem implements EventQueueItem {
     @Override
     public boolean isReplicated() {
         return false;
+    }
+
+    @Override
+    public @Nullable TaskProposal taskProposal() {
+        return null;
     }
 
     @Override

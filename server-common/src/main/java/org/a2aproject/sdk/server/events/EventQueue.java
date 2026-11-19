@@ -13,12 +13,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
+import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Task;
-import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -254,6 +255,14 @@ public abstract class EventQueue implements AutoCloseable {
      */
     public abstract void enqueueItem(EventQueueItem item);
 
+    /**
+     * Returns whether this queue is bound to the requested task identifier. Custom queue
+     * implementations must opt in before they can admit full-Task proposals.
+     */
+    public boolean isForTask(String taskId) {
+        return false;
+    }
+
     /** Timed form of {@link #enqueueItem(EventQueueItem)}. */
     public void enqueueItem(EventQueueItem item, long timeout, TimeUnit unit) {
         throw new UnsupportedOperationException("This event queue does not support bounded enqueues");
@@ -274,6 +283,22 @@ public abstract class EventQueue implements AutoCloseable {
 
         public EnqueueTimeoutException() {
             super("Timed out waiting for queue capacity to enqueue the event");
+        }
+    }
+
+    /** Opaque proof that a MainQueue made an admission decision for one exact queue item. */
+    public static final class QueueAdmissionToken {
+        private final EventQueue owner;
+        private final EventQueueItem item;
+
+        private QueueAdmissionToken(EventQueue owner, EventQueueItem item) {
+            this.owner = owner;
+            this.item = item;
+        }
+
+        /** The token is useful only to the owning queue and the exact item presented to it. */
+        public boolean authorizes(EventQueue queue, EventQueueItem candidate) {
+            return owner == queue && item == candidate;
         }
     }
 
@@ -584,6 +609,11 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
         @Override
+        public boolean isForTask(String requestedTaskId) {
+            return taskId.equals(requestedTaskId);
+        }
+
+        @Override
         public void enqueueItem(EventQueueItem item) {
             enqueueItemInternal(item, -1, null, null);
         }
@@ -614,6 +644,26 @@ public abstract class EventQueue implements AutoCloseable {
             // We bypass the parent's closed check and enqueue directly
             Event event = item.getEvent();
 
+            ExecutorSubmissionService.ProposalAdmission proposalAdmission =
+                    item instanceof ExecutorSubmissionService.ProposalAdmission admission ? admission : null;
+            QueueAdmissionToken admissionToken = new QueueAdmissionToken(this, item);
+            boolean registeredProposal = proposalAdmission != null;
+            boolean trustedLocalResult = item instanceof LocalEventQueueItem;
+            boolean carriesUntrustedProvenance = item.taskProposal() != null && !registeredProposal;
+            boolean carriesUntrustedResult = !item.isReplicated() && !trustedLocalResult && !registeredProposal
+                    && (item.committedSnapshot() != null || item.resultTaskSnapshot() != null
+                            || item.isCanonicalFinal() || item.isFinalForLocalConsumption());
+            if (carriesUntrustedProvenance || carriesUntrustedResult) {
+                throw new IllegalArgumentException(
+                        "proposal and committed-result metadata require an internal queue envelope");
+            }
+
+            if (event instanceof Task && !registeredProposal
+                    && !item.isReplicated()) {
+                throw new IllegalArgumentException(
+                        "local full Task admission requires a proposal provenance and completion envelope");
+            }
+
             // Validate event taskId matches queue taskId
             validateEventIds(event);
 
@@ -636,10 +686,16 @@ public abstract class EventQueue implements AutoCloseable {
                 if (unit == null) {
                     semaphore.acquire();
                 } else if (!semaphore.tryAcquire(timeout, unit)) {
+                    if (proposalAdmission != null) {
+                        proposalAdmission.markQueueAdmissionRejected(admissionToken, this);
+                    }
                     awaitingChildren.forEach(ChildQueue::cancelPendingFinalEvent);
                     throw new EnqueueTimeoutException();
                 }
             } catch (InterruptedException e) {
+                if (proposalAdmission != null) {
+                    proposalAdmission.markQueueAdmissionRejected(admissionToken, this);
+                }
                 awaitingChildren.forEach(ChildQueue::cancelPendingFinalEvent);
                 Thread.currentThread().interrupt();
                 throw new EnqueueInterruptedException(e);
@@ -663,6 +719,9 @@ public abstract class EventQueue implements AutoCloseable {
             try {
                 // Submit event to MainEventBus with our taskId
                 mainEventBus.submit(taskId, this, item, origin);
+                if (proposalAdmission != null) {
+                    proposalAdmission.markQueueAdmissionAccepted(admissionToken, this);
+                }
             } catch (RuntimeException e) {
                 // The event never reached MainEventBusProcessor, so it will never call
                 // releaseSemaphore() (see MainEventBusProcessor.processEvent finally block).
@@ -819,7 +878,12 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
         private boolean isFinalProposal(EventQueueItem item) {
-            if (item.isFinalForLocalConsumption() || isFinalEvent(item.getEvent())) {
+            if (item instanceof ExecutorSubmissionService.ProposalAdmission) {
+                return false;
+            }
+            if (((item instanceof LocalEventQueueItem || item.isReplicated())
+                    && (item.isFinalForLocalConsumption() || item.isCanonicalFinal()))
+                    || isFinalEvent(item.getEvent())) {
                 return true;
             }
             if (item.isReplicated() || !(taskStateProvider instanceof AtomicTaskStore)) {
@@ -948,6 +1012,11 @@ public abstract class EventQueue implements AutoCloseable {
             // subscriber cannot grow the deque unboundedly. internalEnqueueItem() detects
             // a full queue and closes the child immediately (see offer() below).
             this.queue = new LinkedBlockingDeque<>(parent.getQueueSize());
+        }
+
+        @Override
+        public boolean isForTask(String requestedTaskId) {
+            return parent.isForTask(requestedTaskId);
         }
 
         @Override
