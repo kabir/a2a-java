@@ -44,10 +44,12 @@ import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.multitenancy.AgentExecutorRouter;
 import org.a2aproject.sdk.server.tasks.AgentEmitter;
+import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.ResultAggregator;
 import org.a2aproject.sdk.server.tasks.TaskManager;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.server.tasks.TaskStoreException;
 import org.a2aproject.sdk.server.util.CdiUtils;
@@ -725,8 +727,11 @@ public class DefaultRequestHandler implements RequestHandler {
             throw new TaskNotFoundError();
         }
 
-        // Check if task is in a non-cancelable state (completed, canceled, failed, rejected)
-        if (task.status().state().isFinal()) {
+        // Atomic canonical state follows T02's UNSPECIFIED terminal assessment. Legacy stores
+        // retain the protocol enum's prior behavior for this state.
+        boolean unspecifiedIsTerminal = taskStore instanceof AtomicTaskStore
+                && task.status().state() == TaskState.TASK_STATE_UNSPECIFIED;
+        if (task.status().state().isFinal() || unspecifiedIsTerminal) {
             throw new TaskNotCancelableError(
                     "Task cannot be canceled - current state: " + task.status().state());
         }
@@ -755,46 +760,47 @@ public class DefaultRequestHandler implements RequestHandler {
 
         AgentExecutor resolvedExecutor = resolveAgentExecutor(cancelRequestContext.getTenant());
 
-        // Call agentExecutor.cancel() with error handling
-        // AgentExecutor is user-provided, so catch all exceptions
         try {
-            resolvedExecutor.cancel(cancelRequestContext, emitter);
-        } catch (TaskNotCancelableError e) {
-            // Expected error - log and enqueue
-            LOGGER.info("Task {} is not cancelable, agent threw: {}", task.id(), e.getMessage());
-            emitter.fail(e);
-        } catch (A2AError e) {
-            // Other A2A errors - log and enqueue
-            LOGGER.warn("Agent cancellation threw A2AError for task {}: {} - {}",
-                task.id(), e.getClass().getSimpleName(), e.getMessage(), e);
-            emitter.fail(e);
-        } catch (Exception e) {
-            // Unexpected errors - log and enqueue as InternalError
-            LOGGER.error("Agent cancellation threw unexpected exception for task {}", task.id(), e);
-            emitter.fail(new InternalError("Agent cancellation failed: " + e.getMessage()));
+            // Call agentExecutor.cancel() with error handling. AgentExecutor is user-provided.
+            try {
+                resolvedExecutor.cancel(cancelRequestContext, emitter);
+            } catch (TaskNotCancelableError e) {
+                LOGGER.info("Task {} is not cancelable, agent threw: {}", task.id(), e.getMessage());
+                emitter.fail(e);
+            } catch (A2AError e) {
+                LOGGER.warn("Agent cancellation threw A2AError for task {}: {} - {}",
+                        task.id(), e.getClass().getSimpleName(), e.getMessage(), e);
+                emitter.fail(e);
+            } catch (Exception e) {
+                LOGGER.error("Agent cancellation threw unexpected exception for task {}", task.id(), e);
+                emitter.fail(new InternalError("Agent cancellation failed: " + e.getMessage()));
+            }
+
+            Optional.ofNullable(runningAgents.get(task.id())).ifPresent(cf -> cf.cancel(true));
+
+            // Cancellation ignores progress and returns from the matching terminal or
+            // AUTH_REQUIRED committed event. It does not wait for the task's longer-lived stream.
+            ResultAggregator.EventTypeAndInterrupt etai =
+                    resultAggregator.consumeUntilFinalOrAuthRequired(
+                            consumer, consumptionCompletionTimeoutSeconds, SECONDS);
+            Task responseTask;
+            if (etai.committedSnapshot() != null) {
+                responseTask = etai.committedSnapshot().task();
+            } else if (etai.eventType() instanceof Task taskResult) {
+                responseTask = taskResult;
+            } else {
+                throw new InternalError("Agent did not return valid response for cancel");
+            }
+
+            if (responseTask.status().state() != TaskState.TASK_STATE_CANCELED) {
+                throw new TaskNotCancelableError(
+                        "Task cannot be canceled - current state: " + responseTask.status().state());
+            }
+            return responseTask;
+        } finally {
+            // This is the cancellation request's child only; unrelated task subscribers stay open.
+            consumer.close();
         }
-
-        // Cancel any running agent future
-        Optional.ofNullable(runningAgents.get(task.id()))
-                .ifPresent(cf -> cf.cancel(true));
-
-        // Consume events with blocking=true to wait for CANCELED state
-        // The latch in consumeAndBreakOnInterrupt ensures EventConsumer starts before we wait
-        // CANCELED is a final state, so loop will break naturally when event arrives
-        // If agentExecutor.cancel() threw TaskNotCancelableError, that A2AError event will also break the loop
-        ResultAggregator.EventTypeAndInterrupt etai = resultAggregator.consumeAndBreakOnInterrupt(consumer, true);
-
-        if (!(etai.eventType() instanceof Task tempTask)) {
-            throw new InternalError("Agent did not return valid response for cancel");
-        }
-
-        // Verify task was actually canceled (not completed concurrently)
-        if (tempTask.status().state() != TaskState.TASK_STATE_CANCELED) {
-            throw new TaskNotCancelableError(
-                    "Task cannot be canceled - current state: " + tempTask.status().state());
-        }
-
-        return tempTask;
     }
 
     @Override

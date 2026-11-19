@@ -3,6 +3,7 @@ package org.a2aproject.sdk.server.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atMost;
@@ -22,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.a2aproject.sdk.server.events.EnhancedRunnable;
 import org.a2aproject.sdk.server.events.EventConsumer;
 import org.a2aproject.sdk.server.events.EventQueue;
+import org.a2aproject.sdk.server.events.EventQueueItem;
 import org.a2aproject.sdk.server.events.EventQueueUtil;
 import org.a2aproject.sdk.server.events.InMemoryQueueManager;
 import org.a2aproject.sdk.server.events.MainEventBus;
@@ -272,7 +274,9 @@ public class ResultAggregatorTest {
         ResultAggregator.EventTypeAndInterrupt result =
             aggregator.consumeAndBreakOnInterrupt(eventConsumer, false);
 
-        assertEquals(firstEvent, result.eventType());
+        Task canonicalTask = (Task) result.eventType();
+        assertEquals(firstEvent.id(), canonicalTask.id());
+        assertEquals(1, canonicalTask.generation(), "the aggregator receives the committed canonical Task");
         assertTrue(result.interrupted());
         // NOTE: ResultAggregator no longer calls taskManager.process()
         // That responsibility has moved to MainEventBusProcessor for centralized persistence
@@ -348,6 +352,79 @@ public class ResultAggregatorTest {
         verify(taskStore, times(1)).get(taskId);
     }
 
+    @Test
+    void cancellationUsesMatchingLegacyTaskSnapshotForTerminalStatus() throws Exception {
+        String taskId = "legacy-cancel-task";
+        Task earlierTask = createSampleTask(taskId, TaskState.TASK_STATE_WORKING, "ctx1");
+        Task matchingTask = createSampleTask(taskId, TaskState.TASK_STATE_CANCELED, "ctx1");
+        TaskStatusUpdateEvent canceled = TaskStatusUpdateEvent.builder()
+                .taskId(taskId).contextId("ctx1").status(new TaskStatus(TaskState.TASK_STATE_CANCELED)).build();
+        MainEventBus eventBus = new MainEventBus();
+        InMemoryQueueManager queueManager = new InMemoryQueueManager(mock(TaskStateProvider.class), eventBus);
+        EventQueue main = queueManager.getEventQueueBuilder(taskId).build();
+        EventQueue child = main.tap();
+        child.enqueueLocalOnly(new ResultTaskQueueItem(earlierTask, earlierTask));
+        child.enqueueLocalOnly(new ResultTaskQueueItem(canceled, matchingTask));
+        ResultAggregator cancellationAggregator = new ResultAggregator(
+                new TaskManager(taskId, "ctx1", mock(TaskStore.class), null), null,
+                testExecutor, testExecutor, TimeUnit.SECONDS.toNanos(1));
+
+        try {
+            ResultAggregator.EventTypeAndInterrupt result = cancellationAggregator.consumeUntilFinalOrAuthRequired(
+                    new EventConsumer(child, testExecutor), 1, TimeUnit.SECONDS);
+            assertEquals(matchingTask, result.eventType(),
+                    "legacy terminal status must return its matching persisted Task result");
+            assertNull(result.committedSnapshot());
+        } finally {
+            child.close(true);
+            main.close(true);
+        }
+    }
+
+    @Test
+    void cancellationTreatsStreamClosureAfterProgressAsMissingOutcome() throws Exception {
+        String taskId = "legacy-cancel-closed-task";
+        Task staleTask = createSampleTask(taskId, TaskState.TASK_STATE_WORKING, "ctx1");
+        TaskStatusUpdateEvent progress = TaskStatusUpdateEvent.builder()
+                .taskId(taskId).contextId("ctx1").status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build();
+        MainEventBus eventBus = new MainEventBus();
+        InMemoryQueueManager queueManager = new InMemoryQueueManager(mock(TaskStateProvider.class), eventBus);
+        EventQueue main = queueManager.getEventQueueBuilder(taskId).build();
+        EventQueue child = main.tap();
+        child.enqueueLocalOnly(new ResultTaskQueueItem(progress, staleTask));
+        child.close(false, false);
+        ResultAggregator cancellationAggregator = new ResultAggregator(
+                new TaskManager(taskId, "ctx1", mock(TaskStore.class), null), null,
+                testExecutor, testExecutor, TimeUnit.MILLISECONDS.toNanos(100));
+
+        try {
+            InternalError error = assertThrows(InternalError.class,
+                    () -> cancellationAggregator.consumeUntilFinalOrAuthRequired(
+                            new EventConsumer(child, testExecutor), 1, TimeUnit.SECONDS));
+            assertTrue(error.getMessage().contains("without a terminal or AUTH_REQUIRED"));
+        } finally {
+            child.close(true);
+            main.close(true);
+        }
+    }
+
+    private record ResultTaskQueueItem(Event event, Task resultTaskSnapshot) implements EventQueueItem {
+        @Override
+        public Event getEvent() {
+            return event;
+        }
+
+        @Override
+        public boolean isReplicated() {
+            return false;
+        }
+
+        @Override
+        public Task resultTaskSnapshot() {
+            return resultTaskSnapshot;
+        }
+    }
+
     private EventConsumer createClosedEventConsumer(String taskId) {
         MainEventBus mainEventBus = new MainEventBus();
         InMemoryQueueManager queueManager =
@@ -390,7 +467,9 @@ public class ResultAggregatorTest {
 
             // Assert: interrupted=true for AUTH_REQUIRED
             assertTrue(result.interrupted(), "AUTH_REQUIRED should trigger interrupt in blocking mode");
-            assertEquals(authRequiredTask, result.eventType(), "Event type should be the AUTH_REQUIRED task");
+            Task canonicalTask = (Task) result.eventType();
+            assertEquals(authRequiredTask.id(), canonicalTask.id());
+            assertEquals(1, canonicalTask.generation());
 
             // Verify consumption continues in background (consumptionFuture should be running)
             // For blocking mode, the consumption future should complete after processing
@@ -432,7 +511,9 @@ public class ResultAggregatorTest {
 
             // Assert: interrupted=true for AUTH_REQUIRED
             assertTrue(result.interrupted(), "AUTH_REQUIRED should trigger interrupt in non-blocking mode");
-            assertEquals(authRequiredTask, result.eventType(), "Event type should be the AUTH_REQUIRED task");
+            Task canonicalTask = (Task) result.eventType();
+            assertEquals(authRequiredTask.id(), canonicalTask.id());
+            assertEquals(1, canonicalTask.generation());
 
             // For non-blocking mode, consumption should complete immediately
             assertNotNull(result, "Result should not be null");
@@ -525,7 +606,9 @@ public class ResultAggregatorTest {
 
             // Assert: interrupted=true for AUTH_REQUIRED
             assertTrue(result.interrupted(), "AUTH_REQUIRED Task event should trigger interrupt");
-            assertEquals(authRequiredTask, result.eventType(), "Event type should be the AUTH_REQUIRED task");
+            Task canonicalTask = (Task) result.eventType();
+            assertEquals(authRequiredTask.id(), canonicalTask.id());
+            assertEquals(1, canonicalTask.generation());
 
             // Verify both Task and TaskStatusUpdateEvent can trigger AUTH_REQUIRED interrupt
             // (this test validates Task event, testAuthRequiredWithTaskStatusUpdateEvent validates TaskStatusUpdateEvent)

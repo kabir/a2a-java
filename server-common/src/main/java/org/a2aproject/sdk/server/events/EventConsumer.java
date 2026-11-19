@@ -230,7 +230,8 @@ public class EventConsumer {
 
                             // Check for QueueClosedEvent BEFORE sending to avoid delivering it to subscribers
                             boolean isFinalEvent = false;
-                            if (event instanceof TaskStatusUpdateEvent tue && tue.isFinal()) {
+                            if (item.isFinalForLocalConsumption()
+                                    || event instanceof TaskStatusUpdateEvent tue && tue.isFinal()) {
                                 isFinalEvent = true;
                             } else if (event instanceof Message) {
                                 // Per A2A spec §3.1.2 (Send Streaming Message): a Message is the

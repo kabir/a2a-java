@@ -12,6 +12,7 @@ import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.util.PageToken;
 import org.a2aproject.sdk.util.Assert;
 import org.jspecify.annotations.Nullable;
@@ -218,6 +219,10 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
                 TaskRevision revision = nextRevision();
                 TaskSnapshot committedSnapshot = new TaskSnapshot(plan.task(), revision);
                 CommittedMutation committed = new CommittedMutation(committedSnapshot, plan.events(), true);
+                if (plan.events().isEmpty()) {
+                    result.set(new MutationResult(committed, null));
+                    return new StoredTask(plan.task(), revision);
+                }
                 TaskCommitSlot.Reservation reservation = TaskCommitSlot.reserve(taskId, revision);
                 TaskCommitSlot slot = reservation.slot();
                 reservedSlot.set(reservation);
@@ -417,7 +422,9 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
             return false;
         }
         // Task is active if not in final state
-        return task.status() == null || task.status().state() == null || !task.status().state().isFinal();
+        return task.status() == null || task.status().state() == null
+                || !(task.status().state().isFinal()
+                        || task.status().state() == TaskState.TASK_STATE_UNSPECIFIED);
     }
 
     @Override
@@ -427,8 +434,8 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
             return false;
         }
         // Task is finalized if in final state (ignores grace period)
-        return task.status() != null
-                && task.status().state() != null
-                && task.status().state().isFinal();
+        return task.status() != null && task.status().state() != null
+                && (task.status().state().isFinal()
+                        || task.status().state() == TaskState.TASK_STATE_UNSPECIFIED);
     }
 }

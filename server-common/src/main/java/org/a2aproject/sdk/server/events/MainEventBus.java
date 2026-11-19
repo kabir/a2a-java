@@ -3,6 +3,7 @@ package org.a2aproject.sdk.server.events;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +19,13 @@ public class MainEventBus {
     }
 
     void submit(String taskId, EventQueue.MainQueue mainQueue, EventQueueItem item) {
+        submit(taskId, mainQueue, item, null);
+    }
+
+    void submit(String taskId, EventQueue.MainQueue mainQueue, EventQueueItem item,
+            EventQueue.@Nullable ChildQueue origin) {
         try {
-            queue.put(new MainEventBusContext(taskId, mainQueue, item));
+            queue.put(new MainEventBusContext(taskId, mainQueue, item, origin));
             LOGGER.debug("Submitted event for task {} to MainEventBus (queue size: {})",
                         taskId, queue.size());
         } catch (InterruptedException e) {

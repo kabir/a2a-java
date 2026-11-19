@@ -28,7 +28,9 @@ public interface AtomicTaskStore extends TaskStore {
      * {@link TaskMutationOutcomeUnknownException}; it must not claim rollback. Cancelling a slot
      * suppresses publication but does not prove rollback. A changed result contains the original
      * ordered events and exactly one final task snapshot for the whole batch. An unchanged plan
-     * preserves both protocol generation and storage revision and returns no events.</p>
+     * preserves both protocol generation and storage revision and returns no events. A changed
+     * plan with no events is reserved for an atomic compatibility bootstrap whose legacy event
+     * provenance cannot be represented as a canonical batch; it commits without a publication slot.</p>
      */
     CommittedMutation mutate(String taskId, TaskMutation mutation, TaskCommitSlotCallback slotCallback);
 }

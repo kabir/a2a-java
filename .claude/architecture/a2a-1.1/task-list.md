@@ -87,7 +87,7 @@ work and final conformance. See the [close-out](phase-2/checkpoints/phase2-compl
 [handoff](phase-2/next-session.md); do not begin Phase 3 without a separate
 developer assignment.
 
-## Phase 3 — P3-T01/T02 accepted; P3-T03 ready for assignment
+## Phase 3 — P3-T01/T02/T03 accepted; P3-T04 ready for assignment
 
 Planning is prepared in [implementation-plan.md](phase-3/implementation-plan.md).
 **Approved at plan level by the independent Sol High/normal correction
@@ -95,9 +95,12 @@ Planning is prepared in [implementation-plan.md](phase-3/implementation-plan.md)
 findings are closed; no blocking regression was found. P3-T01 is implemented
 and independently accepted after correction re-review, with 48/48 focused tests
 passing. P3-T02 is independently accepted after correction re-review, with
-28/28 focused tests passing. P3-T03 is ready for a separate bounded Luna
-medium/normal assignment. This index does not authorize starting it. No agents,
-coordinator loop, automatic progression or commit is implied.
+28/28 focused tests passing. P3-T03 is independently accepted after its final
+correction re-review; 80/80 focused and 57/57 regression checks pass. See its
+[handoff](phase-3/handoffs/P3-T03.md) and retained review dispositions. P3-T04 is
+ready for a separate bounded Luna medium/normal assignment. This index does not
+authorize starting it. No agents, coordinator loop, automatic progression or
+commit is implied.
 
 Task identifiers are in intended execution order. Dependencies below abbreviate
 `P3-TNN` as `TNN`; they require accepted predecessor contracts/behavior. Each row
@@ -110,7 +113,7 @@ serving metadata is unavailable, not asserted as telemetry.
 | --- | --- | --- | --- |
 | P3-T01 atomic store companion/in-memory authority | Accepted plan; developer assignment | Implemented and independently accepted; focused tests 48/48 passed ([handoff](phase-3/handoffs/P3-T01.md)) | Accepted for P3-T01 scope; fresh 48/48 focused tests ([second correction re-review](phase-3/reviews/P3-T01-review.md#second-correction-re-review--2026-11-17-1728-utc)) |
 | P3-T02 canonical input/delta rules | T01 | Implemented and independently accepted; focused 28/28 tests passed ([handoff](phase-3/handoffs/P3-T02.md#correction-handoff--2026-11-17)) | Accepted for P3-T02 scope; fresh focused 28/28 ([correction re-review](phase-3/reviews/P3-T02-review.md#correction-re-review--2026-11-17-1843-utc)) |
-| P3-T03 committed bus/local publication order | T01, T02 | Planned; not started | Pending |
+| P3-T03 committed bus/local publication order | T01, T02 | Implemented and independently accepted; focused 80/80 and cancellation/aggregator/prerequisite 57/57 ([follow-up evidence](phase-3/handoffs/P3-T03.md#follow-up-test-synchronization-correction-2026-11-18)) | Accepted for P3-T03 scope; fresh 80/80 focused and 57/57 regressions ([final correction re-review](phase-3/reviews/P3-T03-review.md#final-correction-re-review--2026-11-18-1757-utc)) |
 | P3-T04 proposal provenance/local completion | T01, T03 | Planned; not started | Pending |
 | P3-T05 full-Task normalization/migration | T02, T04 | Planned; not started | Pending |
 | P3-T06 materialization config enrollment | T01, T03 | Planned; not started | Pending |
@@ -167,7 +170,7 @@ selected-task handoffs/reviews use `phase-3/handoffs/P3-TNN.md` and
 | 0: semantics/baseline | Retained completed research | [Historical evidence](phase-0/decisions.md); unresolved dependent gates still apply |
 | 1: exact interfaces/client versions | Committed checkpoint | [Historical handoff](phase-1/next-session.md) |
 | 2: models/adapters/public bindings | Complete within the approved experimental pinned-RC scope | [Close-out and evidence](phase-2/checkpoints/phase2-complete.md); Phase 3 needs a separate assignment |
-| 3: mutation/publication/client reducer | P3-T01/T02 implemented and independently accepted | [Approved 20-task plan](phase-3/implementation-plan.md); next ready developer assignment is P3-T03 |
+| 3: mutation/publication/client reducer | P3-T01/T02/T03 implemented and independently accepted | [Approved 20-task plan](phase-3/implementation-plan.md); next ready developer assignment is P3-T04 |
 | 4: observation/versioned delivery | Not assigned | Plan after prerequisites and gates are resolved |
 | 5: live execution/bindings | Not assigned | Plan only the supported, resolved specification contract |
 | 6: final audit/docs | Not assigned | Retain all final acceptance and independent evidence requirements |

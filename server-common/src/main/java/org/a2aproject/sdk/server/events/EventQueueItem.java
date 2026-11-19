@@ -1,6 +1,9 @@
 package org.a2aproject.sdk.server.events;
 
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Event;
+import org.a2aproject.sdk.spec.Task;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents an item that can be enqueued/dequeued in an EventQueue.
@@ -34,4 +37,24 @@ public interface EventQueueItem {
      * @return true if this event was replicated from another node, false if it's a local event
      */
     boolean isReplicated();
+
+    /** Final store snapshot attached to a canonical committed event, when available. */
+    default @Nullable TaskSnapshot committedSnapshot() {
+        return null;
+    }
+
+    /** True when this item is the last event of a canonical terminal committed batch. */
+    default boolean isCanonicalFinal() {
+        return false;
+    }
+
+    /** Whether local consumption and queue cleanup should treat this item as terminal. */
+    default boolean isFinalForLocalConsumption() {
+        return isCanonicalFinal();
+    }
+
+    /** Matching task result persisted for a legacy-compatible local event, when available. */
+    default @Nullable Task resultTaskSnapshot() {
+        return committedSnapshot() == null ? null : committedSnapshot().task();
+    }
 }

@@ -70,9 +70,34 @@ public class ResultAggregator {
     }
 
     public EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer, boolean blocking) throws A2AError {
+        return consumeAndBreakOnInterrupt(consumer, blocking, true);
+    }
+
+    /** Waits through progress, returning only at finality, AUTH_REQUIRED, or a stream failure. */
+    public EventTypeAndInterrupt consumeUntilFinalOrAuthRequired(EventConsumer consumer) throws A2AError {
+        return consumeUntilFinalOrAuthRequired(consumer, reconciliationTimeoutNanos, TimeUnit.NANOSECONDS);
+    }
+
+    /** Waits for a cancellation outcome with a finite deadline and no unrelated-state fallback. */
+    public EventTypeAndInterrupt consumeUntilFinalOrAuthRequired(EventConsumer consumer,
+            long timeout, TimeUnit unit) throws A2AError {
+        return consumeAndBreakOnInterrupt(consumer, true, false, true, unit.toNanos(timeout));
+    }
+
+    private EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer, boolean blocking,
+            boolean breakOnProgress) throws A2AError {
+        return consumeAndBreakOnInterrupt(consumer, blocking, breakOnProgress, false, 0);
+    }
+
+    private EventTypeAndInterrupt consumeAndBreakOnInterrupt(EventConsumer consumer, boolean blocking,
+            boolean breakOnProgress, boolean cancellationOutcomeRequired, long outcomeTimeoutNanos)
+            throws A2AError {
         Flow.Publisher<EventQueueItem> allItems = consumer.consumeAll();
         AtomicReference<Message> message = new AtomicReference<>();
         AtomicReference<Task> capturedTask = new AtomicReference<>();  // Capture Task events
+        AtomicReference<TaskSnapshot> committedSnapshot = new AtomicReference<>();
+        AtomicReference<TaskSnapshot> stoppingSnapshot = new AtomicReference<>();
+        AtomicReference<Task> stoppingTask = new AtomicReference<>();
         AtomicBoolean interrupted = new AtomicBoolean(false);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
         CompletableFuture<Void> completionFuture = new CompletableFuture<>();
@@ -95,6 +120,9 @@ public class ResultAggregator {
                 allItems,
                 (item) -> {
                     Event event = item.getEvent();
+                    if (item.committedSnapshot() != null) {
+                        committedSnapshot.set(item.committedSnapshot());
+                    }
 
                     // Handle Throwable events
                     if (event instanceof Throwable t) {
@@ -127,11 +155,23 @@ public class ResultAggregator {
 
                     // Determine interrupt behavior
                     boolean shouldInterrupt = false;
-                    boolean isFinalEvent = (event instanceof Task task && task.status().state().isFinal())
+                    boolean isFinalEvent = item.isFinalForLocalConsumption()
+                            || (event instanceof Task task && task.status().state().isFinal())
                             || (event instanceof TaskStatusUpdateEvent tsue && tsue.isFinal())
                             || (event instanceof A2AError);  // A2AError events are terminal
                     boolean isAuthRequired = (event instanceof Task task && task.status().state() == TaskState.TASK_STATE_AUTH_REQUIRED)
                             || (event instanceof TaskStatusUpdateEvent tsue && tsue.status().state() == TaskState.TASK_STATE_AUTH_REQUIRED);
+                    if (blocking && !breakOnProgress && (isFinalEvent || isAuthRequired)) {
+                        // Cancellation returns for this exact committed outcome. The consumer
+                        // may continue briefly in the background after AUTH_REQUIRED, so do not
+                        // let a later item replace the snapshot associated with this result.
+                        TaskSnapshot itemSnapshot = item.committedSnapshot();
+                        if (itemSnapshot != null) {
+                            stoppingSnapshot.compareAndSet(null, itemSnapshot);
+                        } else if (item.resultTaskSnapshot() != null) {
+                            stoppingTask.compareAndSet(null, item.resultTaskSnapshot());
+                        }
+                    }
 
                     LOGGER.debug("ResultAggregator: Evaluating interrupt (blocking={}, isFinal={}, isAuth={}, eventType={})",
                         blocking, isFinalEvent, isAuthRequired, event.getClass().getSimpleName());
@@ -152,7 +192,10 @@ public class ResultAggregator {
                         shouldInterrupt = true;
                         LOGGER.debug("ResultAggregator: Setting shouldInterrupt=true (non-blocking)");
                     }
-                    else if (blocking) {
+                    else if (!breakOnProgress && isFinalEvent) {
+                        shouldInterrupt = true;
+                    }
+                    else if (blocking && breakOnProgress) {
                         // For blocking calls: Interrupt to free Vert.x thread, but continue in background
                         // Python's async consumption doesn't block threads, but Java's does
                         // So we interrupt to return quickly, then rely on background consumption
@@ -188,7 +231,7 @@ public class ResultAggregator {
                             String reason = isAuthRequired ? "auth-required" : (blocking ? "blocking" : "non-blocking");
                             LOGGER.debug("Task {}: Continuing background consumption (reason: {})", taskIdForLogging(), reason);
                         }
-                        return true;
+                        return !cancellationOutcomeRequired;
                     }
 
                     // Continue processing
@@ -202,7 +245,14 @@ public class ResultAggregator {
                         consumptionCompletionFuture.completeExceptionally(throwable);
                     } else {
                         // onComplete - subscription finished normally
-                        completionFuture.complete(null);
+                        if (cancellationOutcomeRequired && !interrupted.get()) {
+                            InternalError missingOutcome = new InternalError(
+                                    "Cancellation stream closed without a terminal or AUTH_REQUIRED result");
+                            errorRef.set(missingOutcome);
+                            completionFuture.completeExceptionally(missingOutcome);
+                        } else {
+                            completionFuture.complete(null);
+                        }
                         consumptionCompletionFuture.complete(null);
                     }
                 }
@@ -220,7 +270,22 @@ public class ResultAggregator {
 
         // Wait for completion or interruption
         try {
-            completionFuture.join();
+            if (cancellationOutcomeRequired) {
+                completionFuture.get(outcomeTimeoutNanos, TimeUnit.NANOSECONDS);
+            } else {
+                completionFuture.join();
+            }
+        } catch (java.util.concurrent.TimeoutException e) {
+            throw new InternalError("Timed out waiting for terminal or AUTH_REQUIRED cancellation result");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InternalError("Interrupted waiting for cancellation result");
+        } catch (java.util.concurrent.ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                Utils.rethrow(cause);
+            }
+            throw new InternalError("Cancellation result failed");
         } catch (CompletionException e) {
             // CompletionException wraps the actual exception
             Throwable cause = e.getCause();
@@ -243,11 +308,27 @@ public class ResultAggregator {
         // Return Message if captured, otherwise Task if captured,
         // otherwise poll TaskStore with bounded timeout (blocking) or single read (non-blocking).
         EventKind eventKind = message.get();
+        TaskSnapshot matchingSnapshot = stoppingSnapshot.get();
+        if (matchingSnapshot == null) {
+            matchingSnapshot = committedSnapshot.get();
+        }
+        if (cancellationOutcomeRequired && eventKind == null) {
+            Task resultTask = stoppingTask.get();
+            if (resultTask != null) {
+                eventKind = resultTask;
+            }
+        }
+        if (cancellationOutcomeRequired && eventKind == null && matchingSnapshot != null) {
+            eventKind = matchingSnapshot.task();
+        }
         if (eventKind == null) {
             eventKind = capturedTask.get();
             if (LOGGER.isDebugEnabled() && eventKind instanceof Task t) {
                 LOGGER.debug("Returning capturedTask: id={}, state={}", t.id(), t.status().state());
             }
+        }
+        if (cancellationOutcomeRequired && eventKind == null) {
+            throw new InternalError("Cancellation stream closed without a matching task result");
         }
         if (eventKind == null) {
             eventKind = reconcileTaskStore(blocking);
@@ -262,7 +343,8 @@ public class ResultAggregator {
         return new EventTypeAndInterrupt(
                 eventKind,
                 interrupted.get(),
-                consumptionCompletionFuture);
+                consumptionCompletionFuture,
+                matchingSnapshot);
     }
 
     private @Nullable Task reconcileTaskStore(boolean blocking) throws A2AError {
@@ -297,7 +379,13 @@ public class ResultAggregator {
         return task != null ? task.id() : "unknown";
     }
 
-    public record EventTypeAndInterrupt(EventKind eventType, boolean interrupted, CompletableFuture<Void> consumptionFuture) {
+    public record EventTypeAndInterrupt(EventKind eventType, boolean interrupted,
+            CompletableFuture<Void> consumptionFuture, @Nullable TaskSnapshot committedSnapshot) {
+
+        public EventTypeAndInterrupt(EventKind eventType, boolean interrupted,
+                CompletableFuture<Void> consumptionFuture) {
+            this(eventType, interrupted, consumptionFuture, null);
+        }
 
     }
 }

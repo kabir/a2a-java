@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.annotation.Nullable;
@@ -12,10 +13,16 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
+import org.a2aproject.sdk.server.tasks.CommittedMutation;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskCommitSlot;
 import org.a2aproject.sdk.server.tasks.TaskManager;
+import org.a2aproject.sdk.server.tasks.TaskMutationNotCommittedException;
+import org.a2aproject.sdk.server.tasks.TaskMutationOutcomeUnknownException;
 import org.a2aproject.sdk.server.tasks.TaskPersistenceException;
 import org.a2aproject.sdk.server.tasks.TaskSerializationException;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
@@ -62,7 +69,12 @@ import org.slf4j.LoggerFactory;
 public class MainEventBusProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainEventBusProcessor.class);
 
-    private record UpdateResult(boolean isFinal, @Nullable Task taskSnapshot) {}
+    private record UpdateResult(boolean isFinal, @Nullable Task taskSnapshot,
+            @Nullable TaskSnapshot committedSnapshot,
+            boolean compatibilityBootstrap,
+            @Nullable CommittedTaskBatch committedBatch, @Nullable TaskCommitSlot slot) {}
+
+    private record PushAdmission(Runnable invokeSender, Runnable dropSender) {}
 
     /**
      * Callback for testing synchronization with async event processing.
@@ -88,6 +100,8 @@ public class MainEventBusProcessor implements Runnable {
      * it added) so the map does not grow forever.
      */
     private final ConcurrentHashMap<String, CompletableFuture<Void>> pushNotificationChains = new ConcurrentHashMap<>();
+
+    private final OrderedTaskPublisher orderedTaskPublisher = new OrderedTaskPublisher();
 
     private MainEventBus eventBus;
 
@@ -225,6 +239,7 @@ public class MainEventBusProcessor implements Runnable {
 
         Event eventToDistribute = null;
         UpdateResult updateResult = null;
+        boolean eventRoutedLocally = false;
         boolean isReplicated = context.eventQueueItem().isReplicated();
         try {
             // Step 1: Update TaskStore FIRST (persistence before clients see it)
@@ -234,25 +249,47 @@ public class MainEventBusProcessor implements Runnable {
                 updateResult = updateTaskStore(taskId, event, isReplicated);
                 boolean isFinal = updateResult.isFinal();
 
-                eventToDistribute = event; // Success - distribute original event
-
-                // Trigger replication AFTER successful persistence
-                // SKIP replication if task is final - ReplicatedQueueManager handles this via TaskFinalizedEvent
-                // to ensure final Task is sent before poison pill (QueueClosedEvent)
-                if (!isFinal) {
-                    EventEnqueueHook hook = mainQueue.getEnqueueHook();
-                    if (hook != null) {
-                        LOGGER.debug("Triggering replication hook for task {} after successful persistence", taskId);
-                        hook.onEnqueue(context.eventQueueItem());
-                    }
+                if (updateResult.committedBatch() != null && updateResult.slot() != null) {
+                    CommittedTaskBatch batch = updateResult.committedBatch();
+                    orderedTaskPublisher.publish(updateResult.slot(), batch,
+                            committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, isReplicated,
+                                    event instanceof A2AError error && !isReplicated ? error : null,
+                                    !isReplicated ? context.origin() : null))
+                            .toCompletableFuture().join();
                 } else {
-                    LOGGER.debug("Task {} is final - skipping replication hook (handled by ReplicatedQueueManager)", taskId);
+                    if (!isReplicated && taskStore instanceof AtomicTaskStore && event instanceof A2AError) {
+                        // An executor error with no changed task result still belongs to the
+                        // producer. Do not turn the protocol error into a shared child event.
+                        mainQueue.rejectProposal(context.eventQueueItem(), context.origin(), event);
+                        eventToDistribute = event;
+                        eventRoutedLocally = true;
+                    } else {
+                        eventToDistribute = event;
+                    }
+
+                    // Trigger replication AFTER successful persistence. Finalization and its
+                    // committed batch envelope remain the responsibility of T10.
+                    if (!isFinal) {
+                        EventEnqueueHook hook = mainQueue.getEnqueueHook();
+                        if (hook != null) {
+                            LOGGER.debug("Triggering replication hook for task {} after successful persistence", taskId);
+                            hook.onEnqueue(context.eventQueueItem());
+                        }
+                    }
                 }
             } catch (InternalError e) {
                 // Persistence failed - create error event to distribute instead
                 LOGGER.error("Failed to persist event for task {}, distributing error to clients", taskId, e);
                 String errorMessage = "Failed to persist event: " + e.getMessage();
                 eventToDistribute = e;
+            } catch (A2AError e) {
+                // Planner rejection is typed and non-mutating; it is not a storage failure or a
+                // reason to create a fresh task-failure mutation or fail unrelated consumers.
+                if (!isReplicated && taskStore instanceof AtomicTaskStore) {
+                    mainQueue.rejectProposal(context.eventQueueItem(), context.origin(), e);
+                } else {
+                    eventToDistribute = e;
+                }
             } catch (Exception e) {
                 LOGGER.error("Failed to persist event for task {}, distributing error to clients", taskId, e);
                 String errorMessage = "Failed to persist event: " + e.getMessage();
@@ -263,28 +300,38 @@ public class MainEventBusProcessor implements Runnable {
             // Skip push notifications for replicated events to avoid duplicate notifications in multi-instance deployments
             // Push notifications are sent for all StreamingEventKind events (Task, Message, TaskStatusUpdateEvent, TaskArtifactUpdateEvent)
             // per A2A spec section 4.3.3
-            if (!isReplicated && eventToDistribute == event && event instanceof StreamingEventKind streamingEvent) {
+            if (!isReplicated && updateResult != null && updateResult.committedBatch() == null
+                    && eventToDistribute == event && event instanceof StreamingEventKind streamingEvent) {
                 // Send the streaming event directly - it will be wrapped in StreamResponse format by PushNotificationSender
                 sendPushNotification(taskId, streamingEvent, updateResult != null ? updateResult.taskSnapshot() : null);
             }
 
             // Step 3: Then distribute to ChildQueues (clients see either event or error AFTER persistence attempt)
-            int childCount = mainQueue.getChildCount();
-            LOGGER.debug("MainEventBusProcessor: Distributing {} to {} children for task {}",
-                        eventToDistribute.getClass().getSimpleName(), childCount, taskId);
-            // Create new EventQueueItem with the event to distribute (original or error)
-            EventQueueItem itemToDistribute = new LocalEventQueueItem(eventToDistribute);
-            mainQueue.distributeToChildren(itemToDistribute);
-            LOGGER.debug("MainEventBusProcessor: Distributed {} to {} children for task {}",
-                        eventToDistribute.getClass().getSimpleName(), childCount, taskId);
+            if (eventToDistribute != null) {
+                int childCount = mainQueue.getChildCount();
+                LOGGER.debug("MainEventBusProcessor: Distributing {} to {} children for task {}",
+                            eventToDistribute.getClass().getSimpleName(), childCount, taskId);
+                // Direct Message and control/error behavior remains on the established single-event path.
+                TaskSnapshot committedSnapshot = updateResult == null || updateResult.compatibilityBootstrap()
+                        ? null : updateResult.committedSnapshot();
+                Task legacyTaskSnapshot = updateResult == null ? null : updateResult.taskSnapshot();
+                boolean localFinal = updateResult != null && updateResult.isFinal()
+                        && (updateResult.committedSnapshot() != null || updateResult.compatibilityBootstrap());
+                EventQueueItem itemToDistribute = new LocalEventQueueItem(
+                        eventToDistribute, committedSnapshot, false, legacyTaskSnapshot, localFinal);
+                if (!eventRoutedLocally) {
+                    mainQueue.distributeToChildren(itemToDistribute);
+                }
+                LOGGER.debug("MainEventBusProcessor: Distributed {} to {} children for task {}",
+                            eventToDistribute.getClass().getSimpleName(), childCount, taskId);
 
-            // Step 3b: Notify stream lifecycle hook after distribution (only if there were active subscribers)
-            TaskStreamLifecycleHook streamHook = mainQueue.getTaskStreamLifecycleHook();
-            if (streamHook != null && childCount > 0) {
-                try {
-                    streamHook.onEvent(taskId, eventToDistribute, mainQueue.getStreamCloseHandle());
-                } catch (Exception e) {
-                    LOGGER.error("Error in TaskStreamLifecycleHook.onEvent for task {}", taskId, e);
+                TaskStreamLifecycleHook streamHook = mainQueue.getTaskStreamLifecycleHook();
+                if (streamHook != null && childCount > 0) {
+                    try {
+                        streamHook.onEvent(taskId, eventToDistribute, mainQueue.getStreamCloseHandle());
+                    } catch (Exception e) {
+                        LOGGER.error("Error in TaskStreamLifecycleHook.onEvent for task {}", taskId, e);
+                    }
                 }
             }
 
@@ -295,12 +342,25 @@ public class MainEventBusProcessor implements Runnable {
                 // Step 4: Notify callback after all processing is complete
                 // Call callback with the distributed event (original or error)
                 if (eventToDistribute != null) {
-                    callback.onEventProcessed(taskId, eventToDistribute);
+                    try {
+                        callback.onEventProcessed(taskId, eventToDistribute);
+                    } catch (RuntimeException | Error callbackFailure) {
+                        LOGGER.error("Post-processing callback failed for task {} after distribution", taskId,
+                                callbackFailure);
+                    }
 
                     // Step 5: If this is a final event, notify task finalization
                     // Only for successful persistence (not for errors)
-                    if (eventToDistribute == event && isFinalEvent(event)) {
-                        callback.onTaskFinalized(taskId);
+                    if (eventToDistribute == event && updateResult != null
+                            && (EventQueue.isFinalEvent(event)
+                                    || (updateResult.committedSnapshot() != null
+                                            || updateResult.compatibilityBootstrap()) && updateResult.isFinal())) {
+                        try {
+                            callback.onTaskFinalized(taskId);
+                        } catch (RuntimeException | Error callbackFailure) {
+                            LOGGER.error("Finalization callback failed for task {} after distribution", taskId,
+                                    callbackFailure);
+                        }
                     }
                 }
             } finally {
@@ -337,12 +397,46 @@ public class MainEventBusProcessor implements Runnable {
             // Create temporary TaskManager instance for this event
             TaskManager taskManager = new TaskManager(taskId, contextId, taskStore, null);
 
-            // Use TaskManager.process() - handles all event types with existing logic
+            if (!isReplicated && taskStore instanceof AtomicTaskStore) {
+                AtomicReference<TaskCommitSlot> reservedSlot = new AtomicReference<>();
+                try {
+                    TaskManager.CommittedProcessingResult result = taskManager.processCommitted(event,
+                            (slot, mutation) -> {
+                                orderedTaskPublisher.reserve(slot);
+                                reservedSlot.set(slot);
+                            });
+                    CommittedMutation mutation = result.mutation();
+                    CommittedTaskBatch batch = mutation != null && mutation.changed()
+                            && !mutation.events().isEmpty()
+                                    ? new CommittedTaskBatch(mutation.snapshot(), mutation.events())
+                                    : null;
+                    TaskCommitSlot slot = reservedSlot.get();
+                    if (batch == null && slot != null) {
+                        orderedTaskPublisher.discard(slot);
+                        slot = null;
+                    }
+                    LOGGER.debug("TaskStore committed canonical result for task {}: {} (final: {})",
+                            taskId, event.getClass().getSimpleName(), result.isFinal());
+                    return new UpdateResult(result.isFinal(),
+                            mutation == null ? null : mutation.snapshot().task(),
+                            mutation == null ? null : mutation.snapshot(),
+                            mutation != null && mutation.changed() && mutation.events().isEmpty(), batch, slot);
+                } catch (RuntimeException | Error failure) {
+                    TaskCommitSlot slot = reservedSlot.get();
+                    if (slot != null) {
+                        orderedTaskPublisher.discard(slot);
+                    }
+                    throw failure;
+                }
+            }
+
+            // Legacy-only stores and already committed replicated copies retain their existing
+            // TaskStore contract; they are not adapted to an atomic get/save pair.
             AtomicReference<Task> taskSnapshot = new AtomicReference<>();
             boolean isFinal = taskManager.process(event, isReplicated, taskSnapshot);
             LOGGER.debug("TaskStore updated via TaskManager.process() for task {}: {} (final: {}, replicated: {})",
                         taskId, event.getClass().getSimpleName(), isFinal, isReplicated);
-            return new UpdateResult(isFinal, taskSnapshot.get());
+            return new UpdateResult(isFinal, taskSnapshot.get(), null, false, null, null);
 
         } catch (TaskSerializationException e) {
             // Data corruption or schema mismatch - ALWAYS permanent
@@ -361,11 +455,183 @@ public class MainEventBusProcessor implements Runnable {
             // Rethrow to prevent distributing unpersisted event to clients
             throw e;
 
+        } catch (TaskMutationOutcomeUnknownException e) {
+            LOGGER.error("Task {} mutation outcome is unknown; local publication is suppressed", taskId, e);
+            throw new InternalError("Storage outcome is unknown for task " + taskId);
+
+        } catch (TaskMutationNotCommittedException e) {
+            LOGGER.error("Task {} mutation was not committed", taskId, e);
+            throw new InternalError("Task mutation was not committed for task " + taskId);
+
+        } catch (A2AError e) {
+            // Typed planner errors represent a rejected proposal, not a storage failure.
+            throw e;
+
         } catch (Exception e) {
             // Unexpected exception type - treat as permanent failure
             LOGGER.error("Unexpected error updating TaskStore for task {}", taskId, e);
             // Rethrow to prevent distributing unpersisted event to clients
             throw new InternalError("TaskStore persistence failed: " + e.getMessage());
+        }
+    }
+
+    void deliverCommittedBatch(EventQueue.MainQueue mainQueue, CommittedTaskBatch batch,
+            boolean isReplicated) {
+        deliverCommittedBatch(mainQueue, batch, isReplicated, null, null);
+    }
+
+    private void deliverCommittedBatch(EventQueue.MainQueue mainQueue, CommittedTaskBatch batch,
+            boolean isReplicated, @Nullable A2AError originError,
+            @Nullable EventQueue.ChildQueue origin) {
+        String taskId = batch.taskId();
+        int childCount = mainQueue.getChildCount();
+        PushAdmission pushAdmission = isReplicated
+                ? new PushAdmission(() -> { }, () -> { })
+                : reserveCommittedPushBatch(batch);
+        AtomicBoolean admissionSettled = new AtomicBoolean();
+        Runnable admittedSender = () -> {
+            if (admissionSettled.compareAndSet(false, true)) {
+                pushAdmission.invokeSender().run();
+            }
+        };
+        java.util.function.Consumer<Throwable> failedAdmission = failure -> {
+            reportPostCommitFailure(taskId, batch, failure);
+            if (admissionSettled.compareAndSet(false, true)) {
+                pushAdmission.dropSender().run();
+            }
+        };
+        try {
+            callback.admitPushNotifications(batch, admittedSender, failedAdmission);
+        } catch (RuntimeException | Error failure) {
+            failedAdmission.accept(failure);
+        }
+
+        // The input error is request-scoped. Route it after the batch admission seam and before
+        // publishing the canonical FAILED event to every observer.
+        if (originError != null && origin != null) {
+            try {
+                origin.enqueueLocalOnly(new LocalEventQueueItem(originError, batch.snapshot(), batch.isFinal()));
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+        }
+
+        for (int index = 0; index < batch.events().size(); index++) {
+            StreamingEventKind event = batch.events().get(index);
+            boolean legacyFinal = batch.events().stream().anyMatch(batchEvent -> EventQueue.isFinalEvent(batchEvent));
+            if (!isReplicated && !legacyFinal) {
+                EventEnqueueHook hook = mainQueue.getEnqueueHook();
+                if (hook != null) {
+                    try {
+                        hook.onEnqueue(new LocalEventQueueItem(event, batch.snapshot(), false));
+                    } catch (RuntimeException | Error failure) {
+                        reportPostCommitFailure(taskId, batch, failure);
+                    }
+                }
+            }
+            boolean lastInFinalBatch = batch.isFinal() && index == batch.events().size() - 1;
+            try {
+                mainQueue.distributeToChildren(new LocalEventQueueItem(event, batch.snapshot(), lastInFinalBatch));
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+                if (lastInFinalBatch) {
+                    mainQueue.cancelSubmittedFinalEvents();
+                }
+            }
+        }
+
+        // Delay lifecycle callbacks until every event in the batch has reached child queues.
+        TaskStreamLifecycleHook streamHook = mainQueue.getTaskStreamLifecycleHook();
+        if (streamHook != null && childCount > 0) {
+            for (StreamingEventKind event : batch.events()) {
+                try {
+                    streamHook.onEvent(taskId, event, mainQueue.getStreamCloseHandle());
+                } catch (RuntimeException | Error e) {
+                    LOGGER.error("Error in TaskStreamLifecycleHook.onEvent for task {}", taskId, e);
+                    reportPostCommitFailure(taskId, batch, e);
+                }
+            }
+        }
+        for (StreamingEventKind event : batch.events()) {
+            try {
+                callback.onEventProcessed(taskId, event);
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+        }
+        if (batch.isFinal()) {
+            try {
+                callback.onTaskFinalized(taskId);
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+        }
+    }
+
+    /** Reserves a per-task push position before external webhook admission can defer the sender. */
+    private PushAdmission reserveCommittedPushBatch(CommittedTaskBatch batch) {
+        String taskId = batch.taskId();
+        CompletableFuture<Boolean> admission = new CompletableFuture<>();
+        Executor executor = pushNotificationExecutor != null ? pushNotificationExecutor : ForkJoinPool.commonPool();
+        CompletableFuture<Void> tail = pushNotificationChains.compute(taskId, (id, previous) -> {
+            CompletableFuture<Void> predecessor = previous == null
+                    ? CompletableFuture.completedFuture(null)
+                    : previous.handle((ignored, failure) -> null);
+            return predecessor.thenCompose(ignored -> admission.thenAcceptAsync(admitted -> {
+                if (admitted) {
+                    invokeCommittedPushBatch(batch);
+                }
+            }, executor));
+        });
+        tail.whenComplete((ignored, failure) -> {
+            pushNotificationChains.remove(taskId, tail);
+            if (failure != null) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+        });
+        AtomicBoolean settled = new AtomicBoolean();
+        Runnable invoke = () -> {
+            if (settled.compareAndSet(false, true)) {
+                admission.complete(true);
+            }
+        };
+        Runnable drop = () -> {
+            if (settled.compareAndSet(false, true)) {
+                admission.complete(false);
+            }
+        };
+        return new PushAdmission(invoke, drop);
+    }
+
+    private void invokeCommittedPushBatch(CommittedTaskBatch batch) {
+        String taskId = batch.taskId();
+        for (StreamingEventKind event : batch.events()) {
+            try {
+                boolean sent = pushSender.sendNotification(event, batch.snapshot().task());
+                if (!sent) {
+                    reportPostCommitFailure(taskId, batch,
+                            new IllegalStateException("Push notification delivery failed"));
+                }
+            } catch (Exception failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+        }
+    }
+
+    private void reportPostCommitFailure(String taskId, CommittedTaskBatch batch, Throwable failure) {
+        LOGGER.error("Post-commit delivery failed for task {} at generations {}", taskId,
+                batch.generationPositions(), failure);
+        MainEventBusProcessorCallback failureReporter = callback;
+        try {
+            ForkJoinPool.commonPool().execute(() -> {
+                try {
+                    failureReporter.onPostCommitFailure(taskId, batch, failure);
+                } catch (RuntimeException | Error reportFailure) {
+                    LOGGER.error("Could not report post-commit failure for task {}", taskId, reportFailure);
+                }
+            });
+        } catch (RuntimeException | Error reportFailure) {
+            LOGGER.error("Could not schedule post-commit failure report for task {}", taskId, reportFailure);
         }
     }
 
@@ -406,6 +672,11 @@ public class MainEventBusProcessor implements Runnable {
      * @param event the streaming event to send (Task, Message, TaskStatusUpdateEvent, or TaskArtifactUpdateEvent)
      */
     private void sendPushNotification(String taskId, StreamingEventKind event, @Nullable Task taskSnapshot) {
+        sendPushNotification(taskId, event, taskSnapshot, null);
+    }
+
+    private void sendPushNotification(String taskId, StreamingEventKind event, @Nullable Task taskSnapshot,
+            @Nullable CommittedTaskBatch committedBatch) {
         Runnable pushTask = () -> {
             try {
                 if (event != null) {
@@ -413,6 +684,10 @@ public class MainEventBusProcessor implements Runnable {
                     boolean sent = pushSender.sendNotification(event, taskSnapshot);
                     if (!sent) {
                         LOGGER.warn("One or more push notification deliveries failed for task {}", taskId);
+                        if (committedBatch != null) {
+                            reportPostCommitFailure(taskId, committedBatch,
+                                    new IllegalStateException("Push notification delivery failed"));
+                        }
                     }
                 } else {
                     LOGGER.debug("Skipping push notification - event is null for task {}", taskId);
@@ -420,6 +695,9 @@ public class MainEventBusProcessor implements Runnable {
             } catch (Exception e) {
                 LOGGER.error("Error sending push notification for task {}", taskId, e);
                 // Don't rethrow - push notifications are best-effort
+                if (committedBatch != null) {
+                    reportPostCommitFailure(taskId, committedBatch, e);
+                }
             }
         };
 
@@ -453,22 +731,4 @@ public class MainEventBusProcessor implements Runnable {
         return null;
     }
 
-    /**
-     * Checks if an event represents a final task state.
-     *
-     * @param event the event to check
-     * @return true if the event represents a final state (COMPLETED, FAILED, CANCELED, REJECTED, UNKNOWN, or A2AError)
-     */
-    private boolean isFinalEvent(Event event) {
-        if (event instanceof Task task) {
-            return task.status() != null && task.status().state() != null
-                    && task.status().state().isFinal();
-        } else if (event instanceof TaskStatusUpdateEvent statusUpdate) {
-            return statusUpdate.isFinal();
-        } else if (event instanceof A2AError) {
-            // A2AError events are terminal - they trigger FAILED state transition
-            return true;
-        }
-        return false;
-    }
 }

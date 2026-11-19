@@ -48,6 +48,10 @@ public final class ExternalAtomicTaskStoreFixture implements AtomicTaskStore {
         TaskRevision nextRevision = new TaskRevision(++revision);
         TaskSnapshot next = new TaskSnapshot(plan.task(), nextRevision);
         CommittedMutation committed = new CommittedMutation(next, plan.events(), true);
+        if (plan.events().isEmpty()) {
+            snapshots.put(taskId, next);
+            return committed;
+        }
         TaskCommitSlot.Reservation reservation = reserveSlot(taskId, nextRevision);
         TaskCommitSlot slot = reservation.slot();
         try {

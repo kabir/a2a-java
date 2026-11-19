@@ -12,10 +12,12 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
@@ -583,7 +585,7 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public void enqueueItem(EventQueueItem item) {
-            enqueueItemInternal(item, -1, null);
+            enqueueItemInternal(item, -1, null, null);
         }
 
         @Override
@@ -591,10 +593,19 @@ public abstract class EventQueue implements AutoCloseable {
             if (timeout < 0) {
                 throw new IllegalArgumentException("timeout must be non-negative");
             }
-            enqueueItemInternal(item, timeout, Objects.requireNonNull(unit, "unit"));
+            enqueueItemInternal(item, timeout, Objects.requireNonNull(unit, "unit"), null);
         }
 
-        private void enqueueItemInternal(EventQueueItem item, long timeout, @Nullable TimeUnit unit) {
+        private void enqueueItemFromChild(EventQueueItem item, ChildQueue origin) {
+            enqueueItemInternal(item, -1, null, origin);
+        }
+
+        private void enqueueItemFromChild(EventQueueItem item, long timeout, TimeUnit unit, ChildQueue origin) {
+            enqueueItemInternal(item, timeout, Objects.requireNonNull(unit, "unit"), origin);
+        }
+
+        private void enqueueItemInternal(EventQueueItem item, long timeout, @Nullable TimeUnit unit,
+                @Nullable ChildQueue origin) {
             // MainQueue must accept events even when closed to support:
             // 1. Late-arriving replicated events for non-finalized tasks
             // 2. Events enqueued during onClose callbacks (before super.doClose())
@@ -606,7 +617,7 @@ public abstract class EventQueue implements AutoCloseable {
             // Validate event taskId matches queue taskId
             validateEventIds(event);
 
-            boolean finalEvent = isFinalEvent(event);
+            boolean finalEvent = isFinalProposal(item);
 
             // Notify current children before waiting for capacity. A consumer may already be
             // marked complete (for example, while waiting for a replicated final event) and
@@ -651,7 +662,7 @@ public abstract class EventQueue implements AutoCloseable {
             // Note: Replication now happens in MainEventBusProcessor AFTER persistence
             try {
                 // Submit event to MainEventBus with our taskId
-                mainEventBus.submit(taskId, this, item);
+                mainEventBus.submit(taskId, this, item, origin);
             } catch (RuntimeException e) {
                 // The event never reached MainEventBusProcessor, so it will never call
                 // releaseSemaphore() (see MainEventBusProcessor.processEvent finally block).
@@ -792,6 +803,41 @@ public abstract class EventQueue implements AutoCloseable {
         }
 
         /**
+         * Routes a rejected proposal back to its producer without exposing it to other children.
+         * A rejected terminal proposal has no terminal event to satisfy consumers' pre-submitted
+         * final-event expectations, so release those expectations before routing the error.
+         */
+        void rejectProposal(EventQueueItem proposal, @Nullable ChildQueue origin, Event rejection) {
+            if (isFinalProposal(proposal)) {
+                children.forEach(ChildQueue::cancelSubmittedFinalEvent);
+            }
+            if (origin != null) {
+                origin.enqueueLocalOnly(new LocalEventQueueItem(rejection));
+            } else {
+                LOGGER.debug("Dropping uncorrelated rejected proposal for task {}", taskId);
+            }
+        }
+
+        private boolean isFinalProposal(EventQueueItem item) {
+            if (item.isFinalForLocalConsumption() || isFinalEvent(item.getEvent())) {
+                return true;
+            }
+            if (item.isReplicated() || !(taskStateProvider instanceof AtomicTaskStore)) {
+                return false;
+            }
+            Event event = item.getEvent();
+            return (event instanceof Task task && task.status() != null
+                    && task.status().state() == TaskState.TASK_STATE_UNSPECIFIED)
+                    || (event instanceof TaskStatusUpdateEvent update
+                            && update.status().state() == TaskState.TASK_STATE_UNSPECIFIED);
+        }
+
+        /** Clears producer-side final-event expectations when a committed batch cannot be delivered. */
+        void cancelSubmittedFinalEvents() {
+            children.forEach(ChildQueue::cancelSubmittedFinalEvent);
+        }
+
+        /**
          * Release the semaphore after event processing is complete.
          * Called by MainEventBusProcessor in finally block to ensure release even on exceptions.
          * Balances the acquire() in enqueueEvent() - protects MainEventBus throughput.
@@ -906,18 +952,18 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public void enqueueEvent(Event event) {
-            parent.enqueueEvent(event);
+            enqueueItem(new LocalEventQueueItem(event));
         }
 
         @Override
         public void enqueueItem(EventQueueItem item) {
             // ChildQueue delegates writes to parent MainQueue
-            parent.enqueueItem(item);
+            parent.enqueueItemFromChild(item, this);
         }
 
         @Override
         public void enqueueItem(EventQueueItem item, long timeout, TimeUnit unit) {
-            parent.enqueueItem(item, timeout, unit);
+            parent.enqueueItemFromChild(item, timeout, unit, this);
         }
 
         private void internalEnqueueItem(EventQueueItem item) {
@@ -937,7 +983,7 @@ public abstract class EventQueue implements AutoCloseable {
                 LOGGER.debug("Enqueued event {} {}", event instanceof Throwable ? event.toString() : event, this);
 
                 // If we were awaiting a final event and this is it, decrement the counter
-                if (isFinalEvent(event)) {
+                if (item.isFinalForLocalConsumption() || isFinalEvent(event)) {
                     synchronized (this) {
                         if (submittedFinalEvents > 0) {
                             submittedFinalEvents--;

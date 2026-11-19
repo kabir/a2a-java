@@ -1,6 +1,6 @@
 # A2A 1.1 Phase 3 Implementation Plan
 
-**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. P3-T01 and P3-T02 are implemented and independently accepted. P3-T03 is ready for a separate developer assignment; later rows remain planned.**
+**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. P3-T01, P3-T02 and P3-T03 are implemented and independently accepted. P3-T04 is ready for a separate developer assignment; later rows remain planned.**
 
 > Execute one developer-selected task per separate Luna medium/normal session;
 > stop with a handoff for a separate Sol medium/normal review. The user's manual
@@ -57,10 +57,11 @@ Carry these reviewed checkpoints into the assigned tasks:
   before dispatch, never as retry after an opening failure/wrapper rejection or
   where dispatch is uncertain. Test one subscription ingress and no wrapper bypass.
 
-P3-T01 and P3-T02 are implemented and independently accepted; later task
-implementation/review remains not started/pending.
-**Next ready assignment: P3-T03**, only when selected by the developer for a
-separate Luna medium/normal session. Stop at that task's evidence/handoff.
+P3-T01, P3-T02 and P3-T03 are implemented and independently accepted. P3-T03
+acceptance is recorded in its final correction re-review; original findings and
+intermediate dispositions remain preserved. Later task implementation/review
+remains not started/pending. P3-T04 is ready for a separate developer assignment;
+there is no automatic progression.
 
 ## Review correction record — 2026-11-17
 
@@ -278,8 +279,8 @@ latest-revision stamping. Snapshot revisions are not authorization credentials.
 ## Execution index
 
 Implementation status is tracked in [task-list.md](../task-list.md) and the
-per-task handoffs; review disposition remains separate. P3-T01 and P3-T02 are
-implemented and independently accepted; later rows remain planned. Dependencies
+per-task handoffs; review disposition remains separate. P3-T01, P3-T02 and
+P3-T03 are implemented and independently accepted; later rows remain planned. Dependencies
 mean accepted predecessor interfaces/behavior, not permission to run the next row.
 Identifiers are in intended execution order; no automatic progression is implied.
 

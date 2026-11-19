@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -1560,6 +1561,154 @@ public class DefaultRequestHandlerTest {
         } finally {
             releaseCancel.countDown();
             cancelExec.shutdownNow();
+        }
+    }
+
+    @Test
+    void cancellationWaitsPastProgressReturnsAuthRequiredAndClosesOnlyItsChild() throws Exception {
+        Task workingTask = Task.builder()
+                .id("task-cancel-auth-after-progress")
+                .contextId("ctx-cancel-auth")
+                .status(new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED))
+                .history(List.of())
+                .artifacts(List.of())
+                .build();
+        taskStore.save(workingTask, false);
+        EventQueue unrelatedWatcher = queueManager.createOrTap(workingTask.id());
+        List<TaskStatusUpdateEvent> publishedStatuses = new CopyOnWriteArrayList<>();
+        mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
+            @Override
+            public void onEventProcessed(String taskId, Event event) {
+                if (event instanceof TaskStatusUpdateEvent update) {
+                    publishedStatuses.add(update);
+                }
+            }
+
+            @Override
+            public void onTaskFinalized(String taskId) {
+            }
+        });
+        agentExecutorCancel = (context, emitter) -> {
+            emitter.startWork();
+            emitter.requiresAuth();
+        };
+
+        try {
+            TaskNotCancelableError error = assertThrows(TaskNotCancelableError.class,
+                    () -> requestHandler.onCancelTask(new CancelTaskParams(workingTask.id()), NULL_CONTEXT));
+            assertTrue(error.getMessage().contains("AUTH_REQUIRED"));
+            assertEquals(TaskState.TASK_STATE_AUTH_REQUIRED,
+                    taskStore.get(workingTask.id()).status().state());
+            assertEquals(List.of(TaskState.TASK_STATE_WORKING, TaskState.TASK_STATE_AUTH_REQUIRED),
+                    publishedStatuses.stream().map(update -> update.status().state()).toList(),
+                    "cancellation must consume progress before stopping at AUTH_REQUIRED");
+            assertFalse(unrelatedWatcher.isClosed(), "the unrelated task watcher must remain open");
+            assertEquals(1, queueManager.getActiveChildQueueCount(workingTask.id()),
+                    "the cancellation request's child must be cleaned up");
+        } finally {
+            unrelatedWatcher.close(true);
+        }
+    }
+
+    @Test
+    void progressOnlyCancellationTimesOutAndCleansUpItsChild() throws Exception {
+        Task workingTask = Task.builder()
+                .id("task-cancel-progress-only")
+                .contextId("ctx-cancel-progress-only")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING))
+                .history(List.of())
+                .artifacts(List.of())
+                .build();
+        taskStore.save(workingTask, false);
+        EventQueue unrelatedWatcher = queueManager.createOrTap(workingTask.id());
+        ((DefaultRequestHandler) requestHandler).consumptionCompletionTimeoutSeconds = 1;
+        agentExecutorCancel = (context, emitter) -> emitter.startWork();
+        ExecutorService cancelExecutor = Executors.newSingleThreadExecutor();
+        try {
+            Future<Task> cancellation = cancelExecutor.submit(() -> requestHandler.onCancelTask(
+                    new CancelTaskParams(workingTask.id()), NULL_CONTEXT));
+            ExecutionException failure = assertThrows(ExecutionException.class,
+                    () -> cancellation.get(3, TimeUnit.SECONDS),
+                    "progress without a terminal or AUTH_REQUIRED event must not hold cancellation indefinitely");
+            assertInstanceOf(InternalError.class, failure.getCause());
+            assertFalse(unrelatedWatcher.isClosed());
+            assertEquals(1, queueManager.getActiveChildQueueCount(workingTask.id()),
+                    "the cancellation child must close after timeout");
+        } finally {
+            cancelExecutor.shutdownNow();
+            unrelatedWatcher.close(true);
+        }
+    }
+
+    @Test
+    void completionWinningCancellationRaceReturnsTheCommittedCompletionOutcome() throws Exception {
+        Task workingTask = Task.builder()
+                .id("task-cancel-completion-race")
+                .contextId("ctx-cancel-race")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING))
+                .history(List.of())
+                .artifacts(List.of())
+                .build();
+        taskStore.save(workingTask, false);
+        CountDownLatch cancelEntered = new CountDownLatch(1);
+        CountDownLatch releaseCancel = new CountDownLatch(1);
+        CountDownLatch completionPublished = new CountDownLatch(1);
+        EventQueue completionProducer = queueManager.createOrTap(workingTask.id());
+        mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
+            @Override
+            public void onEventProcessed(String taskId, Event event) {
+                if (event instanceof TaskStatusUpdateEvent update
+                        && update.status().state() == TaskState.TASK_STATE_COMPLETED) {
+                    completionPublished.countDown();
+                }
+            }
+
+            @Override
+            public void onTaskFinalized(String taskId) {
+            }
+        });
+        agentExecutorCancel = (context, emitter) -> {
+            cancelEntered.countDown();
+            try {
+                if (!releaseCancel.await(5, TimeUnit.SECONDS)) {
+                    throw new AssertionError("Timed out waiting to release cancellation race");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError(e);
+            }
+            emitter.cancel();
+        };
+        ExecutorService cancelExecutor = Executors.newSingleThreadExecutor();
+        try {
+            Future<Task> cancellation = cancelExecutor.submit(() -> requestHandler.onCancelTask(
+                    new CancelTaskParams(workingTask.id()), NULL_CONTEXT));
+            assertTrue(cancelEntered.await(5, TimeUnit.SECONDS));
+
+            completionProducer.enqueueEvent(TaskStatusUpdateEvent.builder()
+                    .taskId(workingTask.id())
+                    .contextId(workingTask.contextId())
+                    .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED))
+                    .build());
+            assertTrue(completionPublished.await(5, TimeUnit.SECONDS));
+            Task laterState = Task.builder(taskStore.get(workingTask.id()))
+                    .status(new TaskStatus(TaskState.TASK_STATE_FAILED))
+                    .build();
+            taskStore.save(laterState, false);
+            releaseCancel.countDown();
+
+            ExecutionException failure = assertThrows(ExecutionException.class, cancellation::get);
+            TaskNotCancelableError outcome = assertInstanceOf(TaskNotCancelableError.class, failure.getCause());
+            assertTrue(outcome.getMessage().contains("TASK_STATE_COMPLETED"),
+                    "the cancellation result must use the delivered completion snapshot");
+            assertEquals(TaskState.TASK_STATE_FAILED,
+                    taskStore.get(workingTask.id()).status().state());
+            assertEquals(1, queueManager.getActiveChildQueueCount(workingTask.id()),
+                    "only the separate completion producer remains subscribed");
+        } finally {
+            releaseCancel.countDown();
+            completionProducer.close(true);
+            cancelExecutor.shutdownNow();
         }
     }
 
