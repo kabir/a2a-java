@@ -31,6 +31,7 @@ import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
+import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -236,10 +237,21 @@ public class MainEventBusProcessor implements Runnable {
         EventQueue.MainQueue mainQueue = (EventQueue.MainQueue) context.eventQueue();
 
         if (context.eventQueueItem() instanceof ExecutorSubmissionService.ProposalAdmission proposalItem) {
+            EventQueue.ProposalProcessingCapability capability =
+                    mainQueue.claimProposalProcessing(proposalItem);
             try {
-                proposalItem.process();
+                if (capability == null) {
+                    LOGGER.warn("Ignoring proposal without an owning MainQueue processing capability for task {}",
+                            taskId);
+                } else {
+                    processProposal(mainQueue, context.origin(), proposalItem, capability);
+                }
             } finally {
-                mainQueue.releaseSemaphore();
+                try {
+                    mainQueue.resolveProposalDelivery(proposalItem, context.origin());
+                } finally {
+                    mainQueue.releaseSemaphore();
+                }
             }
             return;
         }
@@ -264,7 +276,7 @@ public class MainEventBusProcessor implements Runnable {
                     orderedTaskPublisher.publish(updateResult.slot(), batch,
                             committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, isReplicated,
                                     event instanceof A2AError error && !isReplicated ? error : null,
-                                    !isReplicated ? context.origin() : null))
+                                    !isReplicated ? context.origin() : null, false))
                             .toCompletableFuture().join();
                 } else {
                     if (!isReplicated && taskStore instanceof AtomicTaskStore && event instanceof A2AError) {
@@ -381,6 +393,58 @@ public class MainEventBusProcessor implements Runnable {
         }
     }
 
+    private void processProposal(EventQueue.MainQueue mainQueue, @Nullable EventQueue.ChildQueue origin,
+            ExecutorSubmissionService.ProposalAdmission proposalItem,
+            EventQueue.ProposalProcessingCapability capability) {
+        AtomicReference<TaskCommitSlot> reservedSlot = new AtomicReference<>();
+        AtomicBoolean published = new AtomicBoolean();
+        try {
+            ExecutorSubmissionService.ProposalExecution execution = proposalItem.process(capability,
+                    (slot, mutation) -> {
+                orderedTaskPublisher.reserve(slot);
+                reservedSlot.set(slot);
+            });
+            if (execution == null || execution.mutation() == null) {
+                return;
+            }
+            CommittedMutation mutation = execution.mutation();
+            if (mutation.changed() && !mutation.events().isEmpty()) {
+                TaskCommitSlot slot = reservedSlot.get();
+                if (slot == null) {
+                    throw new IllegalStateException("Committed proposal has no reserved publication slot");
+                }
+                CommittedTaskBatch batch = new CommittedTaskBatch(mutation.snapshot(), mutation.events());
+                orderedTaskPublisher.publish(slot, batch,
+                        committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, false, null, null, true))
+                        .toCompletableFuture().join();
+                published.set(true);
+                return;
+            }
+
+            Task task = mutation.snapshot().task();
+            if (task.status().state().isFinal()
+                    || task.status().state() == TaskState.TASK_STATE_UNSPECIFIED) {
+                return;
+            }
+            if (origin != null && proposalItem.hasLegacyTaskSummaryRequest()) {
+                origin.enqueueLocalOnly(new LocalEventQueueItem(task, mutation.snapshot(), false, task, false, true));
+            }
+            sendLegacyTaskSnapshotInOrder(task);
+        } catch (RuntimeException | Error failure) {
+            LOGGER.error("Executor Task proposal processing or ordered delivery failed", failure);
+        } finally {
+            TaskCommitSlot slot = reservedSlot.get();
+            if (slot != null && !published.get()) {
+                try {
+                    orderedTaskPublisher.discard(slot);
+                } catch (RuntimeException discardFailure) {
+                    LOGGER.warn("Could not discard unpublished proposal slot for task {}", slot.taskId(),
+                            discardFailure);
+                }
+            }
+        }
+    }
+
     /**
      * Updates TaskStore using TaskManager.process().
      * <p>
@@ -487,17 +551,17 @@ public class MainEventBusProcessor implements Runnable {
 
     void deliverCommittedBatch(EventQueue.MainQueue mainQueue, CommittedTaskBatch batch,
             boolean isReplicated) {
-        deliverCommittedBatch(mainQueue, batch, isReplicated, null, null);
+        deliverCommittedBatch(mainQueue, batch, isReplicated, null, null, false);
     }
 
     private void deliverCommittedBatch(EventQueue.MainQueue mainQueue, CommittedTaskBatch batch,
             boolean isReplicated, @Nullable A2AError originError,
-            @Nullable EventQueue.ChildQueue origin) {
+            @Nullable EventQueue.ChildQueue origin, boolean legacyTaskSummary) {
         String taskId = batch.taskId();
         int childCount = mainQueue.getChildCount();
         PushAdmission pushAdmission = isReplicated
                 ? new PushAdmission(() -> { }, () -> { })
-                : reserveCommittedPushBatch(batch);
+                : reserveCommittedPushBatch(batch, legacyTaskSummary);
         AtomicBoolean admissionSettled = new AtomicBoolean();
         Runnable admittedSender = () -> {
             if (admissionSettled.compareAndSet(false, true)) {
@@ -541,7 +605,8 @@ public class MainEventBusProcessor implements Runnable {
             }
             boolean lastInFinalBatch = batch.isFinal() && index == batch.events().size() - 1;
             try {
-                mainQueue.distributeToChildren(new LocalEventQueueItem(event, batch.snapshot(), lastInFinalBatch));
+                mainQueue.distributeToChildren(new LocalEventQueueItem(event, batch.snapshot(), lastInFinalBatch,
+                        batch.snapshot().task(), lastInFinalBatch, legacyTaskSummary));
             } catch (RuntimeException | Error failure) {
                 reportPostCommitFailure(taskId, batch, failure);
                 if (lastInFinalBatch) {
@@ -579,7 +644,7 @@ public class MainEventBusProcessor implements Runnable {
     }
 
     /** Reserves a per-task push position before external webhook admission can defer the sender. */
-    private PushAdmission reserveCommittedPushBatch(CommittedTaskBatch batch) {
+    private PushAdmission reserveCommittedPushBatch(CommittedTaskBatch batch, boolean legacyTaskSummary) {
         String taskId = batch.taskId();
         CompletableFuture<Boolean> admission = new CompletableFuture<>();
         Executor executor = pushNotificationExecutor != null ? pushNotificationExecutor : ForkJoinPool.commonPool();
@@ -589,7 +654,7 @@ public class MainEventBusProcessor implements Runnable {
                     : previous.handle((ignored, failure) -> null);
             return predecessor.thenCompose(ignored -> admission.thenAcceptAsync(admitted -> {
                 if (admitted) {
-                    invokeCommittedPushBatch(batch);
+                    invokeCommittedPushBatch(batch, legacyTaskSummary);
                 }
             }, executor));
         });
@@ -613,11 +678,16 @@ public class MainEventBusProcessor implements Runnable {
         return new PushAdmission(invoke, drop);
     }
 
-    private void invokeCommittedPushBatch(CommittedTaskBatch batch) {
+    private void invokeCommittedPushBatch(CommittedTaskBatch batch, boolean legacyTaskSummary) {
         String taskId = batch.taskId();
         for (StreamingEventKind event : batch.events()) {
             try {
-                boolean sent = pushSender.sendNotification(event, batch.snapshot().task());
+                boolean sent;
+                if (legacyTaskSummary && event instanceof TaskStatusUpdateEvent status) {
+                    sent = pushSender.sendTaskProposalStatusNotification(status, batch.snapshot().task());
+                } else {
+                    sent = pushSender.sendNotification(event, batch.snapshot().task());
+                }
                 if (!sent) {
                     reportPostCommitFailure(taskId, batch,
                             new IllegalStateException("Push notification delivery failed"));
@@ -626,6 +696,28 @@ public class MainEventBusProcessor implements Runnable {
                 reportPostCommitFailure(taskId, batch, failure);
             }
         }
+    }
+
+    /** Appends a verified no-op summary after prior committed webhook admissions for this task. */
+    private void sendLegacyTaskSnapshotInOrder(Task task) {
+        String taskId = task.id();
+        Executor executor = pushNotificationExecutor != null ? pushNotificationExecutor : ForkJoinPool.commonPool();
+        CompletableFuture<Void> tail = pushNotificationChains.compute(taskId, (id, previous) -> {
+            CompletableFuture<Void> predecessor = previous == null
+                    ? CompletableFuture.completedFuture(null)
+                    : previous.handle((ignored, failure) -> null);
+            return predecessor.thenRunAsync(() -> {
+                if (!pushSender.sendLegacyTaskSnapshot(task)) {
+                    LOGGER.warn("Legacy no-op snapshot webhook delivery failed for task {}", taskId);
+                }
+            }, executor);
+        });
+        tail.whenComplete((ignored, failure) -> {
+            pushNotificationChains.remove(taskId, tail);
+            if (failure != null) {
+                LOGGER.warn("Legacy no-op snapshot webhook delivery failed for task {}", taskId, failure);
+            }
+        });
     }
 
     private void reportPostCommitFailure(String taskId, CommittedTaskBatch batch, Throwable failure) {

@@ -2,6 +2,7 @@ package org.a2aproject.sdk.server.tasks;
 
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -134,4 +135,21 @@ public interface PushNotificationSender {
      * @throws IllegalStateException if the event type is not recognized
      */
     boolean sendNotification(StreamingEventKind event, @Nullable Task taskSnapshot);
+
+    /**
+     * Delivers a status committed from a full-Task proposal. Version-aware senders may choose a
+     * Task summary for older configs and the canonical status event for 1.1 configs. Existing
+     * senders retain the canonical status fallback.
+     */
+    default boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task taskSnapshot) {
+        return sendNotification(event, taskSnapshot);
+    }
+
+    /**
+     * Delivers a verified active-task no-op snapshot to older-version configs. A sender without
+     * version-aware dispatch has no canonical mutation to report and therefore skips this delivery.
+     */
+    default boolean sendLegacyTaskSnapshot(Task taskSnapshot) {
+        return true;
+    }
 }

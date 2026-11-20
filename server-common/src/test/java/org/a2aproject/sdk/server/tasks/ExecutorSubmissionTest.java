@@ -300,6 +300,116 @@ class ExecutorSubmissionTest {
     }
 
     @Test
+    void productionProposalCannotCommitUntilProcessedByItsOrderedBus() throws Exception {
+        Task baseTask = fromJson(TASK_JSON, Task.class);
+        store.save(baseTask, false);
+        TaskSnapshot base = store.readSnapshot(baseTask.id());
+        Task completed = Task.builder(baseTask).status(new TaskStatus(TaskState.TASK_STATE_COMPLETED)).build();
+        EventQueue bypassQueue = mock(EventQueue.class);
+        when(bypassQueue.isForTask(anyString())).thenReturn(true);
+        AtomicReference<EventQueueItem> captured = new AtomicReference<>();
+        doAnswer(invocation -> {
+            EventQueueItem item = invocation.getArgument(0);
+            captured.set(item);
+            assertInstanceOf(ExecutorSubmissionService.ProposalAdmission.class, item).process();
+            return null;
+        }).when(bypassQueue).enqueueItem(any(), anyLong(), any());
+
+        ExecutorSubmissionService service = new ExecutorSubmissionService(
+                ExecutorSubmissionService.forTaskStore(store), Duration.ofSeconds(5), Duration.ofSeconds(5));
+        CompletionStage<ProposalResult> completion = service.submitTask(
+                new TaskProposal("ordered-only", base, completed), bypassQueue);
+        assertEquals(base, store.readSnapshot(baseTask.id()),
+                "calling the public admission method outside MainEventBus must not commit");
+        assertFalse(completion.toCompletableFuture().isDone(),
+                "a local process call is not an admitted proposal result");
+
+        EventQueue main = EventQueueUtil.getEventQueueBuilder(bus)
+                .taskId(baseTask.id()).taskStateProvider(store).mainEventBus(bus).build();
+        EventQueue observer = main.tap();
+        main.enqueueItem(captured.get());
+
+        ProposalResult result = completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertTrue(assertInstanceOf(ProposalResult.Committed.class, result).changed());
+        TaskStatusUpdateEvent published = assertInstanceOf(TaskStatusUpdateEvent.class,
+                observer.dequeueEventItem(5_000).getEvent());
+        assertEquals(TaskState.TASK_STATE_COMPLETED, published.status().state());
+        assertEquals(1, store.readSnapshot(baseTask.id()).task().generation());
+        observer.close(true);
+        main.close(true);
+    }
+
+    @Test
+    void productionAuthorityReturnedByFactoryCannotCommitDirectly() throws Exception {
+        Task baseTask = fromJson(TASK_JSON, Task.class);
+        store.save(baseTask, false);
+        TaskSnapshot base = store.readSnapshot(baseTask.id());
+        Task completed = Task.builder(baseTask).status(new TaskStatus(TaskState.TASK_STATE_COMPLETED)).build();
+
+        assertThrows(IllegalStateException.class, () -> ExecutorSubmissionService.forTaskStore(store)
+                .process(new TaskProposal("direct-authority", base, completed)));
+
+        assertEquals(base, store.readSnapshot(baseTask.id()),
+                "the public factory authority must not mutate outside ordered admission");
+    }
+
+    @Test
+    void failedDuplicateEnqueueCannotCancelTheAlreadyAcceptedProposal() throws Exception {
+        Task baseTask = fromJson(TASK_JSON, Task.class);
+        store.save(baseTask, false);
+        TaskSnapshot base = store.readSnapshot(baseTask.id());
+        Task completed = Task.builder(baseTask).status(new TaskStatus(TaskState.TASK_STATE_COMPLETED)).build();
+        MainEventBus parkedBus = new MainEventBus();
+        EventQueue main = EventQueueUtil.getEventQueueBuilder(parkedBus)
+                .taskId(baseTask.id()).queueSize(1).taskStateProvider(store).mainEventBus(parkedBus).build();
+        EventQueue origin = main.tap();
+        EventQueue observer = main.tap();
+        EventQueue duplicateForwarder = mock(EventQueue.class);
+        when(duplicateForwarder.isForTask(anyString())).thenReturn(true);
+        AtomicBoolean duplicateRejected = new AtomicBoolean();
+        doAnswer(invocation -> {
+            EventQueueItem item = invocation.getArgument(0);
+            origin.enqueueItem(item, 1, TimeUnit.SECONDS);
+            try {
+                origin.enqueueItem(item, 0, TimeUnit.SECONDS);
+            } catch (IllegalStateException expected) {
+                duplicateRejected.set(true);
+                throw expected;
+            }
+            return null;
+        }).when(duplicateForwarder).enqueueItem(any(), anyLong(), any());
+
+        ExecutorSubmissionService service = new ExecutorSubmissionService(
+                ExecutorSubmissionService.forTaskStore(store), Duration.ofSeconds(5), Duration.ofSeconds(5));
+        MainEventBusProcessor parkedProcessor = new MainEventBusProcessor(parkedBus, store,
+                PushNotificationSender.NOOP, new InMemoryQueueManager(store, parkedBus));
+        try {
+            CompletionStage<ProposalResult> observed = service.submitTask(
+                    new TaskProposal("duplicate-enqueue", base, completed), duplicateForwarder);
+            assertTrue(duplicateRejected.get());
+            assertEquals(1, parkedBus.size(), "only the first admission reaches the bus");
+            ProposalResult dispatch = observed.toCompletableFuture().get(2, TimeUnit.SECONDS);
+            assertEquals(ProposalResult.Failed.CommitCertainty.INDETERMINATE,
+                    assertInstanceOf(ProposalResult.Failed.class, dispatch).certainty());
+            assertEquals(base, store.readSnapshot(baseTask.id()),
+                    "the accepted proposal is still queued while its processor is parked");
+
+            EventQueueUtil.start(parkedProcessor);
+            ProposalResult result = service.completion("duplicate-enqueue").orElseThrow()
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            assertTrue(assertInstanceOf(ProposalResult.Committed.class, result).changed());
+            TaskStatusUpdateEvent published = assertInstanceOf(TaskStatusUpdateEvent.class,
+                    observer.dequeueEventItem(5_000).getEvent());
+            assertEquals(TaskState.TASK_STATE_COMPLETED, published.status().state());
+            assertEquals(1, store.readSnapshot(baseTask.id()).task().generation());
+            assertNull(observer.dequeueEventItem(0), "the original accepted proposal publishes exactly once");
+        } finally {
+            EventQueueUtil.stop(parkedProcessor);
+            main.close(true);
+        }
+    }
+
+    @Test
     void exposedFutureViewsCannotRewriteTheRetainedAuthorityResult() throws Exception {
         Task task = fromJson(TASK_JSON, Task.class);
         TaskSnapshot base = new TaskSnapshot(task, new TaskRevision(1));

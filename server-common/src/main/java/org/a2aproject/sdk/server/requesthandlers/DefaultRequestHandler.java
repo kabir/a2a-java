@@ -57,6 +57,8 @@ import org.a2aproject.sdk.server.tasks.TaskStoreException;
 import org.a2aproject.sdk.server.util.CdiUtils;
 import org.a2aproject.sdk.server.util.async.EventConsumerExecutorProducer.EventConsumerExecutor;
 import org.a2aproject.sdk.server.util.async.Internal;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
+import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.CancelTaskParams;
 import org.a2aproject.sdk.spec.DeleteTaskPushNotificationConfigParams;
@@ -1145,7 +1147,8 @@ public class DefaultRequestHandler implements RequestHandler {
             }));
 
             // Then convert EventQueueItem -> Event
-            Flow.Publisher<Event> eventPublisher = convertingProcessor(processed, EventQueueItem::getEvent);
+            Flow.Publisher<Event> eventPublisher = convertingProcessor(processed,
+                    item -> proposalSummaryOrEvent(item, context));
 
             Flow.Publisher<StreamingEventKind> finalPublisher = convertingProcessor(eventPublisher, event -> (StreamingEventKind) event);
 
@@ -1334,9 +1337,23 @@ public class DefaultRequestHandler implements RequestHandler {
         Flow.Publisher<EventQueueItem> results = resultAggregator.consumeAndEmit(consumer);
         LOGGER.debug("onSubscribeToTask - prepending initial task snapshot to stream, taskId: {}", params.id());
         return insertingProcessor(
-            convertingProcessor(results, item -> (StreamingEventKind) item.getEvent()),
+            convertingProcessor(results, item -> proposalSummaryOrEvent(item, context)),
             task
         );
+    }
+
+    private static StreamingEventKind proposalSummaryOrEvent(EventQueueItem item, ServerCallContext context) {
+        if (item.legacyTaskSummary()) {
+            ServerVersionPolicy policy = context.getVersionPolicy();
+            if (!policy.supportsPhase2Output()) {
+                @Nullable TaskSnapshot snapshot = item.committedSnapshot();
+                Task task = snapshot == null ? item.resultTaskSnapshot() : snapshot.task();
+                if (task != null) {
+                    return VersionedOutputProjector.projectTask(task, policy);
+                }
+            }
+        }
+        return (StreamingEventKind) item.getEvent();
     }
 
     @Override

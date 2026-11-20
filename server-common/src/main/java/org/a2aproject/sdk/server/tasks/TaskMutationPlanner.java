@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.InvalidParamsError;
@@ -150,6 +151,52 @@ public final class TaskMutationPlanner {
         Task finalTask = taskBuilder.build();
         TaskStatusUpdateEvent canonical = TaskStatusUpdateEvent.builder(supplied).generation(generation).build();
         return new MutationPlan(finalTask, List.of(canonical), true);
+    }
+
+    /** Plans the existing-task, status-only slice of a full Task proposal. */
+    public static MutationPlan planTaskProposal(TaskSnapshot current, Task proposed) {
+        Assert.checkNotNullParam("current", current);
+        Assert.checkNotNullParam("proposed", proposed);
+        Task task = current.task();
+        if (!task.id().equals(proposed.id()) || !task.contextId().equals(proposed.contextId())) {
+            throw invalid("Task proposal identity does not match the authoritative task");
+        }
+        if (proposed.metadata() != null && !proposed.metadata().equals(task.metadata())) {
+            throw invalid("Task proposal cannot change metadata");
+        }
+        List<Artifact> suppliedArtifacts = proposed.artifacts() == null ? List.of() : proposed.artifacts();
+        List<Artifact> storedArtifacts = task.artifacts() == null ? List.of() : task.artifacts();
+        for (Artifact supplied : suppliedArtifacts) {
+            Artifact stored = storedArtifacts.stream()
+                    .filter(artifact -> artifact.artifactId().equals(supplied.artifactId()))
+                    .findFirst()
+                    .orElseThrow(() -> invalid("Task proposal cannot add artifacts"));
+            if (!sameArtifactContent(stored, supplied)) {
+                throw invalid("Task proposal cannot change artifacts");
+            }
+        }
+        if (task.status().equals(proposed.status())) {
+            return new MutationPlan(task, List.of(), false);
+        }
+        rejectTerminal(task);
+        TaskStatusUpdateEvent status = TaskStatusUpdateEvent.builder()
+                .taskId(task.id())
+                .contextId(task.contextId())
+                .status(proposed.status())
+                .build();
+        return planStatus(current, status);
+    }
+
+    private static boolean sameArtifactContent(Artifact stored, Artifact supplied) {
+        Role storedRole = stored.role() == null ? Role.ROLE_AGENT : stored.role();
+        Role suppliedRole = supplied.role() == null ? Role.ROLE_AGENT : supplied.role();
+        return stored.artifactId().equals(supplied.artifactId())
+                && Objects.equals(stored.name(), supplied.name())
+                && Objects.equals(stored.description(), supplied.description())
+                && stored.parts().equals(supplied.parts())
+                && Objects.equals(stored.metadata(), supplied.metadata())
+                && Objects.equals(stored.extensions(), supplied.extensions())
+                && storedRole == suppliedRole;
     }
 
     private static Message canonicalMessage(Message message, PendingTaskInput.Admission admission) {

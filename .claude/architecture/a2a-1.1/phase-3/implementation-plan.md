@@ -1,6 +1,6 @@
 # A2A 1.1 Phase 3 Implementation Plan
 
-**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. P3-T01 through P3-T04 are implemented and independently accepted. The developer requested a full-reactor test checkpoint before the next assignment; P3-T05 remains unassigned and its prompt is held.**
+**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. P3-T01 through P3-T04 are implemented and independently accepted. The regression repair and follow-up corrections are independently accepted (fourth correction follow-up review, 2026-11-20); the accepted snapshot passed 216 targeted tests. P3-T05 remains unassigned and its prompt is held.**
 
 > Execute one developer-selected task per separate Luna medium/normal session;
 > stop with a handoff for a separate Sol medium/normal review. The user's manual
@@ -477,6 +477,20 @@ Document raw-queue and void-path migration in the handoff. Never turn enqueue
 success into committed acceptance or use Task.generation as a proposal receipt.
 
 ### P3-T05 — Normalize full Task proposals safely
+
+**Recorded scope adjustment — 2026-11-20:** The [full-reactor diagnosis](handoffs/P3-T04-full-reactor-diagnosis.md)
+moved matching-base normalization of existing-task equivalent/status-only proposals
+and their authoritative 0.3/1.0 Task projections into the T04 regression repair.
+Its [correction handoff](handoffs/P3-T04-full-reactor-correction.md) and the
+[full-run checkpoint](handoffs/P3-T04-full-reactor.md) record implementation and
+passing tests. The [fourth correction follow-up review](reviews/P3-T04-full-reactor-correction-review.md#fourth-follow-up-review--2026-11-20-1111-utc)
+accepts the repair and subsequent ordered-admission, stream-lifecycle and sender
+corrections, with 216 targeted tests passing. A verified active
+no-op produces no canonical mutation, generation, revision or replication; its
+legacy response remains a delivery-only summary. Initial materialization,
+opening-input deduplication, broader artifact/metadata normalization and the
+remaining T05 acceptance/migration work below stay in T05. The developer's hold
+on its assignment/prompt remains in force.
 
 **Scope/dependencies:** T02/T04. Replace full-object overwrite on the proposal
 path, including `addTask`, `emitEvent(Task)` and admitted raw proposals.

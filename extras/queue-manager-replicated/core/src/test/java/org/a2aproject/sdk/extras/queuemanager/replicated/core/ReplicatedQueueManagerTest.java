@@ -27,6 +27,7 @@ import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.server.events.QueueClosedEvent;
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -43,10 +44,11 @@ class ReplicatedQueueManagerTest {
     private StreamingEventKind testEvent;
     private MainEventBus mainEventBus;
     private MainEventBusProcessor mainEventBusProcessor;
+    private InMemoryTaskStore taskStore;
     @BeforeEach
     void setUp() {
         // Create MainEventBus first
-        InMemoryTaskStore taskStore = new InMemoryTaskStore();
+        taskStore = new InMemoryTaskStore();
         mainEventBus = new MainEventBus();
 
         // Create QueueManager before MainEventBusProcessor (processor needs it as parameter)
@@ -161,16 +163,27 @@ class ReplicatedQueueManagerTest {
         EventQueue queue = queueManager.createOrTap(taskId);
         TaskStatusUpdateEvent event = createEventForTask(taskId);
 
-        // Wait for MainEventBusProcessor to process each event
+        // The first status establishes an uncommitted generation-zero baseline.
         waitForEventProcessing(() -> queue.enqueueEvent(event));
+        TaskSnapshot baseline = taskStore.readSnapshot(taskId);
+        assertNotNull(baseline);
+        assertEquals(0, baseline.task().generation());
+        assertEquals(1, countingStrategy.getCallCount());
+
+        // Same-state progress on the existing task is stamped and replicated canonically.
         waitForEventProcessing(() -> queue.enqueueEvent(event));
 
         assertEquals(2, countingStrategy.getCallCount());
         assertEquals(taskId, countingStrategy.getLastTaskId());
-        assertEquals(event, countingStrategy.getLastEvent());
+        assertEquals(TaskStatusUpdateEvent.builder(event).generation(1).build(), countingStrategy.getLastEvent());
+        TaskSnapshot second = taskStore.readSnapshot(taskId);
+        assertNotNull(second);
+        assertEquals(1, second.task().generation());
+        assertEquals(TaskState.TASK_STATE_SUBMITTED, second.task().status().state());
+        assertTrue(second.revision().value() > baseline.revision().value());
 
         ReplicatedEventQueueItem replicatedEvent = new ReplicatedEventQueueItem(taskId, getTaskStatusUpdateEventWithNewId(taskId));
-        queueManager.onReplicatedEvent(replicatedEvent);
+        waitForEventProcessing(() -> queueManager.onReplicatedEvent(replicatedEvent));
 
         assertEquals(2, countingStrategy.getCallCount());
     }

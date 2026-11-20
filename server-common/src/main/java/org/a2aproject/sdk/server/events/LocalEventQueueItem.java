@@ -21,6 +21,7 @@ class LocalEventQueueItem implements EventQueueItem {
     private final boolean canonicalFinal;
     private final boolean finalForLocalConsumption;
     private final @Nullable Task resultTaskSnapshot;
+    private final boolean legacyTaskSummary;
 
     LocalEventQueueItem(Event event) {
         this(event, null, false);
@@ -38,12 +39,18 @@ class LocalEventQueueItem implements EventQueueItem {
 
     LocalEventQueueItem(Event event, @Nullable TaskSnapshot committedSnapshot, boolean canonicalFinal,
             @Nullable Task resultTaskSnapshot, boolean finalForLocalConsumption) {
+        this(event, committedSnapshot, canonicalFinal, resultTaskSnapshot, finalForLocalConsumption, false);
+    }
+
+    LocalEventQueueItem(Event event, @Nullable TaskSnapshot committedSnapshot, boolean canonicalFinal,
+            @Nullable Task resultTaskSnapshot, boolean finalForLocalConsumption, boolean legacyTaskSummary) {
         Assert.checkNotNullParam("event", event);
         this.event = event;
         this.committedSnapshot = committedSnapshot;
         this.canonicalFinal = canonicalFinal;
         this.finalForLocalConsumption = finalForLocalConsumption;
         this.resultTaskSnapshot = resultTaskSnapshot;
+        this.legacyTaskSummary = legacyTaskSummary;
     }
 
     @Override
@@ -79,5 +86,11 @@ class LocalEventQueueItem implements EventQueueItem {
     @Override
     public @Nullable Task resultTaskSnapshot() {
         return resultTaskSnapshot;
+    }
+
+    /** Whether older selected versions receive this committed Task snapshot in place of the event. */
+    @Override
+    public boolean legacyTaskSummary() {
+        return legacyTaskSummary;
     }
 }

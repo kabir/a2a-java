@@ -1868,3 +1868,46 @@ requested the accepted-task commit and a full-reactor checkpoint before the next
 task. P3-T05 remains unassigned and its prompt is held. An external tee process
 was actively writing test.log; it is excluded and a duplicate clean run was not
 started during commit preparation.
+
+
+### P3-T04 full-reactor regression repair checkpoint — 2026-11-20
+
+The Sol diagnosis identified a necessary existing-task slice of T05 to restore
+0.3/1.0 full-Task response and webhook contracts without blind replacement. The
+Luna correction implements equivalent/status-only normalization and legacy
+projection plus the snapshot, consumer and replication fixture migrations.
+Initial materialization and the remainder of T05 stay held. Details and the scope
+rationale are in the [diagnosis](phase-3/handoffs/P3-T04-full-reactor-diagnosis.md)
+and [correction handoff](phase-3/handoffs/P3-T04-full-reactor-correction.md).
+
+The developer's later saved full run completed 83 modules successfully, with
+4,241 executed tests, 123 skips and zero failures/errors. The coordinator verified
+all 328 Surefire/Failsafe reports and source/class/report freshness; no code was
+changed and no duplicate test run was performed. The [full-run record](phase-3/handoffs/P3-T04-full-reactor.md)
+preserves evidence and the earlier failing run. The developer explicitly requested
+a commit. Separate independent correction review is not recorded; original
+accepted task reviews remain unchanged. P3-T05 and its prompt remain held.
+
+
+### P3-T04 regression correction accepted; commit amendment authorized — 2026-11-20
+
+The [fourth independent follow-up review](phase-3/reviews/P3-T04-full-reactor-correction-review.md#fourth-follow-up-review--2026-11-20-1111-utc)
+accepts the repair and follow-up corrections with no remaining findings in
+this scope. Production proposal commits require exact ordered-bus admission;
+duplicate enqueue cannot invalidate an admitted proposal. Origin proposal waits
+and ordinary final-event timeouts are independently bounded, including custom
+EventQueue public-hook compatibility. Additive sender methods carry projection
+intent through wrappers, including OpenTelemetry, with conservative fallback.
+
+The reviewer ran 216 tests (199 server-common, eight binding, one replication,
+eight OpenTelemetry), zero failures/errors/skips, with failure-ignore disabled.
+Coordinator inspection verified the exact accepted tracked-diff hash and both
+untracked regression-test hashes, all 216 current XML results, the reviewer log
+and the unchanged test.log hash. No runtime code was edited or tests repeated.
+The earlier 83-module full run predates these follow-ups.
+
+The developer explicitly requested amending the repair commit. Amendment
+preparation started 11:17:55 UTC with a 13:17:55 UTC backstop; requested role
+is Sol medium/normal, with serving telemetry unavailable. Preserve all prior
+findings and correction handoffs. P3-T05 remains unassigned pending developer
+selection; its completed existing-task slice must not be repeated.

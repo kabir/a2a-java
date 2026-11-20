@@ -10,6 +10,7 @@ import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.PUSH
 import static org.a2aproject.sdk.extras.opentelemetry.server.OpenTelemetryPushNotificationSenderDecorator.SEND_PUSH_NOTIFICATION;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -95,6 +96,23 @@ class OpenTelemetryPushNotificationSenderDecoratorTest {
         verify(span).setStatus(StatusCode.OK);
         verify(span).end();
         verify(delegate).sendNotification(event, taskSnapshot);
+    }
+
+    @Test
+    void proposalDispatchMethodsPreserveIntentThroughDecorator() {
+        Task task = Task.builder().id("task-proposal").contextId("ctx-proposal")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build();
+        TaskStatusUpdateEvent status = TaskStatusUpdateEvent.builder()
+                .taskId(task.id()).contextId(task.contextId())
+                .status(new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED)).build();
+        when(delegate.sendTaskProposalStatusNotification(status, task)).thenReturn(true);
+        when(delegate.sendLegacyTaskSnapshot(task)).thenReturn(true);
+
+        assertTrue(decorator.sendTaskProposalStatusNotification(status, task));
+        assertTrue(decorator.sendLegacyTaskSnapshot(task));
+
+        verify(delegate).sendTaskProposalStatusNotification(status, task);
+        verify(delegate).sendLegacyTaskSnapshot(task);
     }
 
     @Test

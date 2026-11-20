@@ -1,10 +1,13 @@
 package org.a2aproject.sdk.server.events;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -39,6 +42,7 @@ import org.slf4j.LoggerFactory;
 public abstract class EventQueue implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EventQueue.class);
+    static final int PROPOSAL_DELIVERY_TIMEOUT_MILLISECONDS = 3_000;
 
     /**
      * Default maximum queue size for event queues.
@@ -302,6 +306,27 @@ public abstract class EventQueue implements AutoCloseable {
         }
     }
 
+    /** Opaque one-shot authority to process a proposal removed from its owning MainQueue. */
+    public static final class ProposalProcessingCapability {
+        private final MainQueue owner;
+        private final ExecutorSubmissionService.ProposalAdmission item;
+        private final QueueAdmissionToken admissionToken;
+        private final AtomicBoolean claimed = new AtomicBoolean();
+
+        private ProposalProcessingCapability(MainQueue owner,
+                ExecutorSubmissionService.ProposalAdmission item, QueueAdmissionToken admissionToken) {
+            this.owner = owner;
+            this.item = item;
+            this.admissionToken = admissionToken;
+        }
+
+        /** Claims this token for the exact proposal admitted by its owning MainQueue. */
+        public boolean claim(ExecutorSubmissionService.ProposalAdmission candidate) {
+            return item == candidate && admissionToken.authorizes(owner, candidate)
+                    && claimed.compareAndSet(false, true);
+        }
+    }
+
     /**
      * Enqueues an event directly to this specific queue only, bypassing the MainEventBus.
      * <p>
@@ -386,15 +411,15 @@ public abstract class EventQueue implements AutoCloseable {
     public abstract int size();
 
     /**
-     * Returns whether this queue is awaiting a final event to be delivered.
+     * Returns whether this queue is awaiting any ordered delivery that must keep its consumer open.
      * <p>
      * This is used by EventConsumer to determine if it should keep polling even when
      * the queue is empty. A final event may still be in-transit through MainEventBusProcessor.
      * </p>
      * <p>
      * For MainQueue: always returns false (MainQueue cannot be consumed).
-     * For ChildQueue: returns true if {@link ChildQueue#expectFinalEvent()} was called
-     * but the final event hasn't been received yet.
+     * For ChildQueue: returns true while an ordinary final event or admitted proposal delivery
+     * remains pending.
      * </p>
      *
      * @return true if awaiting a final event, false otherwise
@@ -405,9 +430,18 @@ public abstract class EventQueue implements AutoCloseable {
     }
 
     /**
-     * Clears the awaiting final event flag.
+     * Returns whether this queue is awaiting an ordinary final Task event, excluding proposal
+     * deliveries. EventConsumer uses this signal to apply the final-event timeout independently.
+     */
+    boolean isAwaitingOrdinaryFinalEvent() {
+        return isAwaitingFinalEvent();
+    }
+
+    /**
+     * Clears ordinary final-event expectations after their timeout.
      * <p>
-     * Default implementation is a no-op for queues that don't track this state.
+     * Proposal delivery expectations expire independently and are not cleared by this method.
+     * The default implementation is a no-op for queues that don't track this state.
      * ChildQueue overrides this to actually clear the flag.
      * </p>
      */
@@ -416,10 +450,10 @@ public abstract class EventQueue implements AutoCloseable {
     }
 
     /**
-     * Closes this queue if it is not currently waiting for an in-flight final event.
+     * Closes this queue if it has no in-flight final event or proposal delivery.
      * ChildQueue overrides this with an atomic check-and-close operation.
      *
-     * @return true if the queue was closed, false if a final event is still expected
+     * @return true if the queue was closed, false if a delivery is still expected
      */
     public boolean closeIfNotAwaitingFinalEvent() {
         if (isAwaitingFinalEvent()) {
@@ -524,6 +558,8 @@ public abstract class EventQueue implements AutoCloseable {
         private final @Nullable TaskStateProvider taskStateProvider;
         private final MainEventBus mainEventBus;
         private final @Nullable TaskStreamLifecycleHook streamLifecycleHook;
+        private final ConcurrentHashMap<ExecutorSubmissionService.ProposalAdmission, QueueAdmissionToken>
+                admittedProposals = new ConcurrentHashMap<>();
 
         private final ThreadLocal<Boolean> closingChildren = ThreadLocal.withInitial(() -> false);
 
@@ -594,6 +630,12 @@ public abstract class EventQueue implements AutoCloseable {
          */
         @Nullable EventEnqueueHook getEnqueueHook() {
             return enqueueHook;
+        }
+
+        @Nullable ProposalProcessingCapability claimProposalProcessing(
+                ExecutorSubmissionService.ProposalAdmission item) {
+            QueueAdmissionToken token = admittedProposals.remove(item);
+            return token == null ? null : new ProposalProcessingCapability(this, item, token);
         }
 
         @Override
@@ -668,6 +710,11 @@ public abstract class EventQueue implements AutoCloseable {
             validateEventIds(event);
 
             boolean finalEvent = isFinalProposal(item);
+            if (proposalAdmission != null && !proposalAdmission.claimQueueAdmission(admissionToken, this)) {
+                throw new IllegalStateException("proposal admission was already attempted on a MainQueue");
+            }
+            boolean awaitingProposalDelivery = proposalAdmission != null && origin != null
+                    && origin.expectProposalDelivery(proposalAdmission);
 
             // Notify current children before waiting for capacity. A consumer may already be
             // marked complete (for example, while waiting for a replicated final event) and
@@ -689,12 +736,18 @@ public abstract class EventQueue implements AutoCloseable {
                     if (proposalAdmission != null) {
                         proposalAdmission.markQueueAdmissionRejected(admissionToken, this);
                     }
+                    if (awaitingProposalDelivery && proposalAdmission != null && origin != null) {
+                        origin.resolveProposalDelivery(proposalAdmission);
+                    }
                     awaitingChildren.forEach(ChildQueue::cancelPendingFinalEvent);
                     throw new EnqueueTimeoutException();
                 }
             } catch (InterruptedException e) {
                 if (proposalAdmission != null) {
                     proposalAdmission.markQueueAdmissionRejected(admissionToken, this);
+                }
+                if (awaitingProposalDelivery && proposalAdmission != null && origin != null) {
+                    origin.resolveProposalDelivery(proposalAdmission);
                 }
                 awaitingChildren.forEach(ChildQueue::cancelPendingFinalEvent);
                 Thread.currentThread().interrupt();
@@ -717,12 +770,22 @@ public abstract class EventQueue implements AutoCloseable {
             // MainEventBus is guaranteed non-null by constructor requirement
             // Note: Replication now happens in MainEventBusProcessor AFTER persistence
             try {
+                if (proposalAdmission != null) {
+                    // Record admission before exposing the item to the processor. The bus can
+                    // dequeue immediately after submit() and must observe the accepted state.
+                    proposalAdmission.markQueueAdmissionAccepted(admissionToken, this);
+                    admittedProposals.put(proposalAdmission, admissionToken);
+                }
                 // Submit event to MainEventBus with our taskId
                 mainEventBus.submit(taskId, this, item, origin);
-                if (proposalAdmission != null) {
-                    proposalAdmission.markQueueAdmissionAccepted(admissionToken, this);
-                }
             } catch (RuntimeException e) {
+                if (proposalAdmission != null) {
+                    admittedProposals.remove(proposalAdmission, admissionToken);
+                    proposalAdmission.markQueueAdmissionRejected(admissionToken, this);
+                }
+                if (awaitingProposalDelivery && proposalAdmission != null && origin != null) {
+                    origin.resolveProposalDelivery(proposalAdmission);
+                }
                 // The event never reached MainEventBusProcessor, so it will never call
                 // releaseSemaphore() (see MainEventBusProcessor.processEvent finally block).
                 // Release the permit here to avoid leaking it and eventually blocking
@@ -858,6 +921,13 @@ public abstract class EventQueue implements AutoCloseable {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("MainQueue[{}]: Completed distribution of {} to {} children",
                         taskId, item.getEvent().getClass().getSimpleName(), childCount);
+            }
+        }
+
+        void resolveProposalDelivery(ExecutorSubmissionService.ProposalAdmission item,
+                @Nullable ChildQueue origin) {
+            if (origin != null) {
+                origin.resolveProposalDelivery(item);
             }
         }
 
@@ -1005,6 +1075,8 @@ public abstract class EventQueue implements AutoCloseable {
         private volatile boolean immediateClose = false;
         private int pendingFinalEvents;
         private int submittedFinalEvents;
+        private final Map<ExecutorSubmissionService.ProposalAdmission, Long> pendingProposalDeliveries =
+                new LinkedHashMap<>();
 
         public ChildQueue(MainQueue parent) {
             this.parent = parent;
@@ -1123,6 +1195,12 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         public synchronized boolean isAwaitingFinalEvent() {
+            expirePendingProposalDeliveries();
+            return pendingFinalEvents > 0 || submittedFinalEvents > 0 || !pendingProposalDeliveries.isEmpty();
+        }
+
+        @Override
+        synchronized boolean isAwaitingOrdinaryFinalEvent() {
             return pendingFinalEvents > 0 || submittedFinalEvents > 0;
         }
 
@@ -1144,6 +1222,7 @@ public abstract class EventQueue implements AutoCloseable {
                 this.immediateClose = true;
                 pendingFinalEvents = 0;
                 submittedFinalEvents = 0;
+                pendingProposalDeliveries.clear();
                 int clearedCount = queue.size();
                 queue.clear();
                 LOGGER.debug("Cleared {} events from ChildQueue for immediate close: {}", clearedCount, this);
@@ -1163,6 +1242,25 @@ public abstract class EventQueue implements AutoCloseable {
             pendingFinalEvents++;
             LOGGER.debug("ChildQueue {} now awaiting final event", System.identityHashCode(this));
             return true;
+        }
+
+        synchronized boolean expectProposalDelivery(ExecutorSubmissionService.ProposalAdmission item) {
+            if (isClosed()) {
+                return false;
+            }
+            expirePendingProposalDeliveries();
+            return pendingProposalDeliveries.putIfAbsent(item, System.nanoTime()) == null;
+        }
+
+        synchronized void resolveProposalDelivery(ExecutorSubmissionService.ProposalAdmission item) {
+            pendingProposalDeliveries.remove(item);
+        }
+
+        private void expirePendingProposalDeliveries() {
+            long now = System.nanoTime();
+            pendingProposalDeliveries.entrySet().removeIf(entry ->
+                    now - entry.getValue() >= TimeUnit.MILLISECONDS
+                            .toNanos(PROPOSAL_DELIVERY_TIMEOUT_MILLISECONDS));
         }
 
         synchronized void submitExpectedFinalEvent() {
@@ -1194,13 +1292,15 @@ public abstract class EventQueue implements AutoCloseable {
         public synchronized void clearAwaitingFinalEvent() {
             pendingFinalEvents = 0;
             submittedFinalEvents = 0;
+            expirePendingProposalDeliveries();
             LOGGER.debug("ChildQueue {} cleared awaitingFinalEvent flag (timeout)", System.identityHashCode(this));
         }
 
         @Override
         public boolean closeIfNotAwaitingFinalEvent() {
             synchronized (this) {
-                if (pendingFinalEvents > 0 || submittedFinalEvents > 0) {
+                expirePendingProposalDeliveries();
+                if (pendingFinalEvents > 0 || submittedFinalEvents > 0 || !pendingProposalDeliveries.isEmpty()) {
                     return false;
                 }
                 doClose(false);

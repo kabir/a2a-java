@@ -87,7 +87,7 @@ work and final conformance. See the [close-out](phase-2/checkpoints/phase2-compl
 [handoff](phase-2/next-session.md); do not begin Phase 3 without a separate
 developer assignment.
 
-## Phase 3 — P3-T01 through P3-T04 accepted; full-reactor checkpoint pending
+## Phase 3 — P3-T04 regression corrections independently accepted
 
 Planning is prepared in [implementation-plan.md](phase-3/implementation-plan.md).
 **Approved at plan level by the independent Sol High/normal correction
@@ -102,7 +102,17 @@ P3-T04 is independently accepted after its third correction re-review. Its
 required selector passed 109/109, with retained accepted handler 5/5 and T03
 regression 60/60 evidence in the [handoff](phase-3/handoffs/P3-T04.md). The developer
 requested a full-reactor test checkpoint before the next task and asked to hold
-the next prompt. P3-T05 remains unassigned. No automatic progression is implied.
+the next prompt. The existing-task compatibility correction and fixture
+migrations are implemented; the saved full run completed 83 modules with zero
+failures/errors, 4,241 executed tests and 123 skips. See the
+[updated checkpoint](phase-3/handoffs/P3-T04-full-reactor.md) and
+[correction handoff](phase-3/handoffs/P3-T04-full-reactor-correction.md).
+The regression repair and subsequent admission, stream-lifecycle and sender
+corrections are now accepted by the [fourth independent correction follow-up review](phase-3/reviews/P3-T04-full-reactor-correction-review.md#fourth-follow-up-review--2026-11-20-1111-utc).
+The accepted follow-up snapshot passed 216 targeted tests with zero failures,
+errors or skips and failure-ignore disabled. The full-reactor evidence above
+predates these follow-ups. P3-T05 remains unassigned and its prompt stays held
+pending developer selection. No automatic progression is implied.
 
 Task identifiers are in intended execution order. Dependencies below abbreviate
 `P3-TNN` as `TNN`; they require accepted predecessor contracts/behavior. Each row
@@ -172,7 +182,7 @@ selected-task handoffs/reviews use `phase-3/handoffs/P3-TNN.md` and
 | 0: semantics/baseline | Retained completed research | [Historical evidence](phase-0/decisions.md); unresolved dependent gates still apply |
 | 1: exact interfaces/client versions | Committed checkpoint | [Historical handoff](phase-1/next-session.md) |
 | 2: models/adapters/public bindings | Complete within the approved experimental pinned-RC scope | [Close-out and evidence](phase-2/checkpoints/phase2-complete.md); Phase 3 needs a separate assignment |
-| 3: mutation/publication/client reducer | P3-T01 through P3-T04 implemented and independently accepted | Full-reactor checkpoint requested before the next assignment; P3-T05 prompt held at developer request |
+| 3: mutation/publication/client reducer | P3-T01 through P3-T04 implemented and independently accepted | Full-reactor checks pass ([checkpoint](phase-3/handoffs/P3-T04-full-reactor.md)); regression-correction review not recorded; P3-T05 prompt held |
 | 4: observation/versioned delivery | Not assigned | Plan after prerequisites and gates are resolved |
 | 5: live execution/bindings | Not assigned | Plan only the supported, resolved specification contract |
 | 6: final audit/docs | Not assigned | Retain all final acceptance and independent evidence requirements |

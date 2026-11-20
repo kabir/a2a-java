@@ -4,6 +4,7 @@ import static org.a2aproject.sdk.client.http.A2AHttpClient.APPLICATION_JSON;
 import static org.a2aproject.sdk.client.http.A2AHttpClient.CONTENT_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -18,7 +19,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -31,9 +34,16 @@ import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
+import org.a2aproject.sdk.server.events.EventQueue;
+import org.a2aproject.sdk.server.events.EventQueueUtil;
+import org.a2aproject.sdk.server.events.InMemoryQueueManager;
+import org.a2aproject.sdk.server.events.MainEventBus;
+import org.a2aproject.sdk.server.events.MainEventBusProcessor;
+import org.a2aproject.sdk.server.events.MainEventBusProcessorCallback;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.AuthenticationInfo;
 import org.a2aproject.sdk.spec.DataPart;
+import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -122,6 +132,144 @@ public class PushNotificationSenderTest {
                 .getAsJsonObject("task");
         assertEquals(17, taskBody.get("generation").getAsInt());
         assertTrue(taskBody.has("timeline"));
+    }
+
+    @Test
+    void versionUnawareSenderFallsBackToCanonicalProposalStatusAndSkipsNoOpSnapshot() {
+        List<StreamingEventKind> delivered = new ArrayList<>();
+        PushNotificationSender versionUnaware = (event, snapshot) -> {
+            delivered.add(event);
+            return true;
+        };
+        Task task = createSampleTask("fallback-task", TaskState.TASK_STATE_WORKING);
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent(task.id(),
+                new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED), task.contextId(), null, 1);
+
+        assertTrue(versionUnaware.sendTaskProposalStatusNotification(status, task));
+        assertTrue(versionUnaware.sendLegacyTaskSnapshot(task));
+
+        assertEquals(List.of(status), delivered,
+                "legacy senders keep canonical changed-status fallback and invent no no-op mutation");
+    }
+
+    @Test
+    void proposalWebhookVersionSelectionSurvivesDelegatingSenderAndDeferredAdmission() throws Exception {
+        String taskId = "proposal-webhook-task";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        InMemoryTaskStore taskStore = new InMemoryTaskStore();
+        taskStore.save(initial, false);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                return sender.sendNotification(event, snapshot);
+            }
+
+            @Override
+            public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task snapshot) {
+                return sender.sendTaskProposalStatusNotification(event, snapshot);
+            }
+
+            @Override
+            public boolean sendLegacyTaskSnapshot(Task snapshot) {
+                return sender.sendLegacyTaskSnapshot(snapshot);
+            }
+        };
+        MainEventBus bus = new MainEventBus();
+        InMemoryQueueManager queueManager = new InMemoryQueueManager(taskStore, bus);
+        MainEventBusProcessor processor = new MainEventBusProcessor(bus, taskStore, delegatingSender, queueManager);
+        processor.setPushNotificationExecutor(Runnable::run);
+        EventQueue mainQueue = EventQueueUtil.getEventQueueBuilder(bus)
+                .taskId(taskId).taskStateProvider(taskStore).build();
+        EventQueue producer = mainQueue.tap();
+
+        CountDownLatch earlierAdmission = new CountDownLatch(1);
+        CountDownLatch laterDeltaProcessed = new CountDownLatch(1);
+        testHttpClient.latch = new CountDownLatch(7);
+        AtomicReference<Runnable> releaseEarlierPush = new AtomicReference<>();
+        AtomicBoolean deferred = new AtomicBoolean();
+        processor.setCallback(new MainEventBusProcessorCallback() {
+            @Override
+            public void admitPushNotifications(org.a2aproject.sdk.server.events.CommittedTaskBatch batch,
+                    Runnable invokeSender, java.util.function.Consumer<Throwable> reportFailure) {
+                if (deferred.compareAndSet(false, true)) {
+                    releaseEarlierPush.set(invokeSender);
+                    earlierAdmission.countDown();
+                    return;
+                }
+                invokeSender.run();
+            }
+
+            @Override
+            public void onEventProcessed(String processedTaskId, Event event) {
+                if (taskId.equals(processedTaskId) && event instanceof TaskStatusUpdateEvent status
+                        && status.status().state() == TaskState.TASK_STATE_COMPLETED) {
+                    laterDeltaProcessed.countDown();
+                }
+            }
+
+            @Override
+            public void onTaskFinalized(String finalizedTaskId) {
+            }
+        });
+
+        try {
+            processor.start();
+            producer.enqueueEvent(new TaskStatusUpdateEvent(taskId,
+                    new TaskStatus(TaskState.TASK_STATE_WORKING, null,
+                            OffsetDateTime.parse("2026-01-01T00:00:00Z")), "ctx456", Map.of("order", "earlier")));
+            assertTrue(earlierAdmission.await(5, TimeUnit.SECONDS));
+
+            ExecutorSubmissionService service = new ExecutorSubmissionService(
+                    ExecutorSubmissionService.forTaskStore(taskStore),
+                    java.time.Duration.ofSeconds(5), java.time.Duration.ofSeconds(5));
+            TaskSnapshot noOpBase = java.util.Objects.requireNonNull(taskStore.readSnapshot(taskId));
+            ProposalResult noOp = service.submitTask(
+                    new TaskProposal("webhook-noop", noOpBase, noOpBase.task()), producer)
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            assertFalse(((ProposalResult.Committed) noOp).changed());
+
+            TaskSnapshot changedBase = java.util.Objects.requireNonNull(taskStore.readSnapshot(taskId));
+            Task changed = Task.builder(changedBase.task())
+                    .status(new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED,
+                            null, OffsetDateTime.parse("2026-01-02T00:00:00Z"))).build();
+            ProposalResult changedResult = service.submitTask(
+                    new TaskProposal("webhook-change", changedBase, changed), producer)
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            assertTrue(((ProposalResult.Committed) changedResult).changed());
+
+            producer.enqueueEvent(new TaskStatusUpdateEvent(taskId,
+                    new TaskStatus(TaskState.TASK_STATE_COMPLETED, null,
+                            OffsetDateTime.parse("2026-01-03T00:00:00Z")), "ctx456", Map.of("order", "later")));
+            assertTrue(laterDeltaProcessed.await(5, TimeUnit.SECONDS));
+            assertTrue(testHttpClient.events.isEmpty(), "all later webhook work must remain behind deferred admission");
+
+            Runnable invokeEarlier = releaseEarlierPush.get();
+            invokeEarlier.run();
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS), "all versioned webhooks should be delivered");
+
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(4, legacyEvents.size());
+            assertInstanceOf(TaskStatusUpdateEvent.class, legacyEvents.get(0));
+            assertInstanceOf(Task.class, legacyEvents.get(1), "verified no-op sends an older-version Task snapshot");
+            assertInstanceOf(Task.class, legacyEvents.get(2), "changed proposal uses the older-version Task shape");
+            assertInstanceOf(TaskStatusUpdateEvent.class, legacyEvents.get(3));
+            assertEquals(3, currentEvents.size(), "1.1 skips the no-op and retains canonical changed/later statuses");
+            assertTrue(currentEvents.stream().allMatch(TaskStatusUpdateEvent.class::isInstance));
+        } finally {
+            if (releaseEarlierPush.get() != null) {
+                releaseEarlierPush.get().run();
+            }
+            EventQueueUtil.stop(processor);
+            mainQueue.close(true);
+        }
     }
 
     @Test
@@ -264,6 +412,7 @@ public class PushNotificationSenderTest {
         final List<String> urls = Collections.synchronizedList(new ArrayList<>());
         final List<Map<String, String>> headers = Collections.synchronizedList(new ArrayList<>());
         final List<String> rawBodies = Collections.synchronizedList(new ArrayList<>());
+        final List<CapturedNotification> notifications = Collections.synchronizedList(new ArrayList<>());
         volatile CountDownLatch latch;
         volatile boolean shouldThrowException = false;
         volatile int responseStatusCode = 200;
@@ -309,6 +458,7 @@ public class PushNotificationSenderTest {
                     StreamingEventKind event = JsonUtil.fromJson(body, StreamingEventKind.class);
                     events.add(event);
                     urls.add(url);
+                    notifications.add(new CapturedNotification(url, event));
                     headers.add(new java.util.HashMap<>(requestHeaders));
 
                     int status = responseStatusCode;
@@ -360,6 +510,9 @@ public class PushNotificationSenderTest {
                 return this;
             }
         }
+    }
+
+    private record CapturedNotification(String url, StreamingEventKind event) {
     }
 
     @BeforeEach

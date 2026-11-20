@@ -16,8 +16,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.MockTaskStateProvider;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
@@ -121,6 +124,38 @@ public class EventQueueTest {
         origin.close(true);
         observer.close(true);
         main.close(true);
+    }
+
+    @Test
+    public void expiringAnOlderProposalWaitPreservesANewerOriginExpectation() throws Exception {
+        Task task = Task.builder().id(TASK_ID).contextId("proposal-context")
+                .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED)).build();
+        taskStore.save(task, false);
+        TaskSnapshot base = Objects.requireNonNull(taskStore.readSnapshot(TASK_ID));
+        MainEventBus parkedBus = new MainEventBus();
+        EventQueue main = EventQueue.builder(parkedBus).taskId(TASK_ID).taskStateProvider(taskStore)
+                .mainEventBus(parkedBus).build();
+        EventQueue origin = main.tap();
+        ExecutorSubmissionService service = new ExecutorSubmissionService(
+                ExecutorSubmissionService.forTaskStore(taskStore), Duration.ofSeconds(10), Duration.ofSeconds(10));
+
+        try {
+            service.submitTask(new TaskProposal("older-pending-proposal", base, task), origin);
+            Thread.sleep(2_000);
+            service.submitTask(new TaskProposal("newer-pending-proposal", base, task), origin);
+            Thread.sleep(1_200);
+
+            assertTrue(origin.isAwaitingFinalEvent(),
+                    "the newer expectation remains after the older proposal delivery expires");
+            assertFalse(origin.closeIfNotAwaitingFinalEvent(),
+                    "the newer expectation still protects the origin from graceful close");
+
+            Thread.sleep(2_000);
+            assertFalse(origin.isAwaitingFinalEvent(), "the newer proposal also expires at its own deadline");
+            assertTrue(origin.closeIfNotAwaitingFinalEvent());
+        } finally {
+            main.close(true);
+        }
     }
 
     @AfterEach

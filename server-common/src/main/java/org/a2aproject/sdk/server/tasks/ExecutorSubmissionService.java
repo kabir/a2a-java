@@ -19,8 +19,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
 import org.a2aproject.sdk.server.events.EventQueue;
+import org.a2aproject.sdk.spec.A2AError;
+import org.a2aproject.sdk.spec.InvalidParamsError;
+import org.a2aproject.sdk.spec.Task;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -231,6 +235,7 @@ public final class ExecutorSubmissionService {
         private final AtomicBoolean claimed = new AtomicBoolean();
         private final AtomicReference<QueueAdmissionState> queueAdmission =
                 new AtomicReference<>(QueueAdmissionState.UNDECIDED);
+        private final AtomicReference<EventQueue.QueueAdmissionToken> queueAdmissionToken = new AtomicReference<>();
 
         private ProposalAdmission(ExecutorSubmissionService owner, Submission submission) {
             this.owner = owner;
@@ -252,18 +257,42 @@ public final class ExecutorSubmissionService {
             return submission.proposal;
         }
 
-        /** Internal queue handshake: called only after the owning MainQueue submits the item. */
-        public void markQueueAdmissionAccepted(EventQueue.QueueAdmissionToken token, EventQueue queue) {
-            requireQueueToken(token, queue);
-            queueAdmission.updateAndGet(state -> state == QueueAdmissionState.PROCESSING
-                    || state == QueueAdmissionState.REJECTED_FINAL
-                    ? state : QueueAdmissionState.ACCEPTED);
+        /** Whether the initiating request uses a protocol that consumes full Task summaries. */
+        public boolean hasLegacyTaskSummaryRequest() {
+            if (owner.openingContext == null) {
+                return false;
+            }
+            @Nullable ServerCallContext callContext = owner.openingContext.getCallContext();
+            return callContext != null && !callContext.getVersionPolicy().supportsPhase2Output();
         }
 
-        /** Internal queue handshake: called only when capacity acquisition fails before submit. */
+        /** Claims this admission for one exact attempt by its owning MainQueue. */
+        public boolean claimQueueAdmission(EventQueue.QueueAdmissionToken token, EventQueue queue) {
+            requireQueueToken(token, queue);
+            return queueAdmissionToken.compareAndSet(null, token);
+        }
+
+        /** Internal queue handshake: called after capacity is acquired, before bus submission. */
+        public void markQueueAdmissionAccepted(EventQueue.QueueAdmissionToken token, EventQueue queue) {
+            requireQueueToken(token, queue);
+            requireClaimedQueueToken(token);
+            queueAdmission.compareAndSet(QueueAdmissionState.UNDECIDED, QueueAdmissionState.ACCEPTED);
+        }
+
+        /** Internal queue handshake: rolls back only the exact claimed attempt that failed. */
         public void markQueueAdmissionRejected(EventQueue.QueueAdmissionToken token, EventQueue queue) {
             requireQueueToken(token, queue);
+            if (queueAdmissionToken.get() != token) {
+                return;
+            }
             queueAdmission.compareAndSet(QueueAdmissionState.UNDECIDED, QueueAdmissionState.REJECTED);
+            queueAdmission.compareAndSet(QueueAdmissionState.ACCEPTED, QueueAdmissionState.REJECTED);
+        }
+
+        private void requireClaimedQueueToken(EventQueue.QueueAdmissionToken token) {
+            if (queueAdmissionToken.get() != token) {
+                throw new IllegalStateException("queue admission token does not own this proposal attempt");
+            }
         }
 
         private void requireQueueToken(EventQueue.QueueAdmissionToken token, EventQueue queue) {
@@ -282,10 +311,13 @@ public final class ExecutorSubmissionService {
                             QueueAdmissionState.REJECTED_FINAL);
         }
 
-        private boolean markProcessing() {
+        private boolean markProcessing(boolean requiresQueueAdmission) {
             while (true) {
                 QueueAdmissionState state = queueAdmission.get();
                 if (state == QueueAdmissionState.REJECTED_FINAL || state == QueueAdmissionState.PROCESSING) {
+                    return false;
+                }
+                if (requiresQueueAdmission && state != QueueAdmissionState.ACCEPTED) {
                     return false;
                 }
                 if (queueAdmission.compareAndSet(state, QueueAdmissionState.PROCESSING)) {
@@ -294,9 +326,49 @@ public final class ExecutorSubmissionService {
             }
         }
 
-        public void process() {
-            owner.processAdmitted(this);
+        public @Nullable ProposalExecution process(TaskCommitSlotCallback slotCallback) {
+            return owner.processAdmitted(this, null, slotCallback);
         }
+
+        /** Production processing requires an unforgeable capability issued by the owning MainQueue. */
+        public @Nullable ProposalExecution process(EventQueue.ProposalProcessingCapability capability,
+                TaskCommitSlotCallback slotCallback) {
+            return owner.processAdmitted(this, capability, slotCallback);
+        }
+
+        /** Compatibility entry point for callers that do not own the processor's publisher. */
+        public void process() {
+            owner.processAdmitted(this, null, TaskCommitSlotCallback.NONE);
+        }
+    }
+
+    /** Internal production outcome; its constructor cannot be used by injected authorities. */
+    public static final class ProposalExecution {
+        private final ProposalResult result;
+        private final @Nullable CommittedMutation mutation;
+
+        private ProposalExecution(ProposalResult result, @Nullable CommittedMutation mutation) {
+            this.result = result;
+            this.mutation = mutation;
+        }
+
+        public ProposalResult result() {
+            return result;
+        }
+
+        public @Nullable CommittedMutation mutation() {
+            return mutation;
+        }
+    }
+
+    private interface OrderedProposalAuthority extends ProposalAuthority {
+        @Override
+        default ProposalResult process(TaskProposal proposal) {
+            throw new IllegalStateException(
+                    "production TaskStore proposals must be processed through ordered queue admission");
+        }
+
+        ProposalExecution processWithPublication(TaskProposal proposal, TaskCommitSlotCallback slotCallback);
     }
 
     private enum QueueAdmissionState {
@@ -308,16 +380,22 @@ public final class ExecutorSubmissionService {
     }
 
     /** Called only once by the event processor for the registered capability. */
-    private void processAdmitted(ProposalAdmission admission) {
+    private @Nullable ProposalExecution processAdmitted(ProposalAdmission admission,
+            EventQueue.@Nullable ProposalProcessingCapability capability, TaskCommitSlotCallback slotCallback) {
         Submission submission = admission.submission;
+        boolean orderedProduction = authority instanceof OrderedProposalAuthority;
         if (admission.owner != this || submissions.get(submission.proposal.correlationId()) != submission
-                || !admission.markProcessing() || !admission.claimed.compareAndSet(false, true)) {
-            return;
+                || (orderedProduction && (capability == null || !capability.claim(admission)))
+                || !admission.markProcessing(orderedProduction) || !admission.claimed.compareAndSet(false, true)) {
+            return null;
         }
         TaskProposal proposal = submission.proposal;
-        ProposalResult result;
+        ProposalExecution execution;
         try {
-            result = authority.process(proposal);
+            execution = authority instanceof OrderedProposalAuthority orderedAuthority
+                    ? orderedAuthority.processWithPublication(proposal, slotCallback)
+                    : new ProposalExecution(authority.process(proposal), null);
+            ProposalResult result = execution.result();
             if (!proposal.correlationId().equals(result.correlationId())) {
                 throw new IllegalStateException("proposal authority returned a mismatched correlation ID");
             }
@@ -327,13 +405,14 @@ public final class ExecutorSubmissionService {
                 throw new IllegalStateException("proposal authority returned a mismatched Task snapshot");
             }
         } catch (TaskMutationNotCommittedException e) {
-            result = failed(proposal, String.valueOf(e.getMessage()), e,
-                    ProposalResult.Failed.CommitCertainty.KNOWN_NOT_COMMITTED);
+            execution = new ProposalExecution(failed(proposal, String.valueOf(e.getMessage()), e,
+                    ProposalResult.Failed.CommitCertainty.KNOWN_NOT_COMMITTED), null);
         } catch (Throwable failure) {
-            result = failed(proposal, String.valueOf(failure.getMessage()), failure,
-                    ProposalResult.Failed.CommitCertainty.INDETERMINATE);
+            execution = new ProposalExecution(failed(proposal, String.valueOf(failure.getMessage()), failure,
+                    ProposalResult.Failed.CommitCertainty.INDETERMINATE), null);
         }
-        complete(submission, result);
+        complete(submission, execution.result());
+        return execution;
     }
 
     private void complete(String correlationId, ProposalResult result) {
@@ -486,38 +565,64 @@ public final class ExecutorSubmissionService {
         TaskSnapshot refreshTask(String taskId);
     }
 
-    /** Conservative authority until T05 supplies full Task normalization. */
+    /**
+     * Creates the atomic authority for existing-task equivalent and status-only proposals.
+     * Mutation is available only through this service's ordered queue admission path.
+     */
     public static ProposalAuthority forTaskStore(org.a2aproject.sdk.server.tasks.TaskStore taskStore) {
-        return new ProposalAuthority() {
+        return new OrderedProposalAuthority() {
             @Override
-            public ProposalResult process(TaskProposal proposal) {
+            public ProposalExecution processWithPublication(TaskProposal proposal,
+                    TaskCommitSlotCallback slotCallback) {
                 if (!(taskStore instanceof AtomicTaskStore atomicStore)) {
                     throw new TaskMutationNotCommittedException(proposal.proposedTask().id(),
                             "full Task proposal requires an AtomicTaskStore; legacy stores are unsupported");
                 }
-                TaskSnapshot current = atomicStore.readSnapshot(proposal.proposedTask().id());
-                if (current == null) {
-                    return new ProposalResult.Rejected(proposal.correlationId(),
-                            ProposalResult.Rejected.Kind.VALIDATION,
-                            "initial materialization requires the T05 normalization path", null);
+                AtomicReference<@Nullable TaskSnapshot> observed = new AtomicReference<>();
+                AtomicReference<Optional<ProposalResult.Rejected>> rejection =
+                        new AtomicReference<>(Optional.empty());
+                try {
+                    CommittedMutation mutation = new TaskMutationAuthority(atomicStore).mutate(
+                            proposal.proposedTask().id(), current -> {
+                                observed.set(current);
+                                if (current == null) {
+                                    throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.VALIDATION,
+                                            "initial materialization requires the T05 normalization path", null);
+                                }
+                                Task authoritativeTask = current.task();
+                                Task proposedTask = proposal.proposedTask();
+                                if (!authoritativeTask.id().equals(proposedTask.id())
+                                        || !authoritativeTask.contextId().equals(proposedTask.contextId())) {
+                                    throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.VALIDATION,
+                                            "Task proposal identity does not match the authoritative task",
+                                            current.revision());
+                                }
+                                TaskSnapshot base = proposal.baseSnapshot();
+                                if (base == null) {
+                                    throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.VALIDATION,
+                                            "an existing Task proposal requires its immutable base snapshot",
+                                            current.revision());
+                                }
+                                if (!base.equals(current)) {
+                                    throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.CONFLICT,
+                                            "Task changed since the proposal base was captured", current.revision());
+                                }
+                                return TaskMutationPlanner.planTaskProposal(current, proposedTask);
+                            }, slotCallback);
+                    ProposalResult.Committed result = new ProposalResult.Committed(proposal.correlationId(),
+                            mutation.snapshot(), mutation.events(), mutation.changed());
+                    return new ProposalExecution(result, mutation);
+                } catch (A2AError failure) {
+                    Optional<ProposalResult.Rejected> typedRejection = java.util.Objects.requireNonNull(rejection.get());
+                    if (typedRejection.isPresent()) {
+                        return new ProposalExecution(typedRejection.get(), null);
+                    }
+                    TaskSnapshot current = observed.get();
+                    ProposalResult.Rejected rejected = new ProposalResult.Rejected(proposal.correlationId(),
+                            ProposalResult.Rejected.Kind.VALIDATION, String.valueOf(failure.getMessage()),
+                            current == null ? null : current.revision());
+                    return new ProposalExecution(rejected, null);
                 }
-                if (proposal.baseSnapshot() == null) {
-                    return new ProposalResult.Rejected(proposal.correlationId(),
-                            ProposalResult.Rejected.Kind.VALIDATION,
-                            "an existing Task proposal requires its immutable base snapshot",
-                            current.revision());
-                }
-                if (!proposal.baseSnapshot().equals(current)) {
-                    return new ProposalResult.Rejected(proposal.correlationId(),
-                            ProposalResult.Rejected.Kind.CONFLICT,
-                            "Task changed since the proposal base was captured", current.revision());
-                }
-                if (proposal.proposedTask().equals(current.task())) {
-                    return new ProposalResult.Committed(proposal.correlationId(), current, List.of(), false);
-                }
-                return new ProposalResult.Rejected(proposal.correlationId(),
-                        ProposalResult.Rejected.Kind.VALIDATION,
-                        "changed full Task normalization is deferred to P3-T05", current.revision());
             }
 
             @Override
@@ -531,6 +636,13 @@ public final class ExecutorSubmissionService {
                     throw new IllegalStateException("no authoritative Task exists for " + taskId);
                 }
                 return snapshot;
+            }
+
+            private InvalidParamsError rejectProposal(TaskProposal proposal,
+                    AtomicReference<Optional<ProposalResult.Rejected>> rejection,
+                    ProposalResult.Rejected.Kind kind, String reason, @Nullable TaskRevision revision) {
+                rejection.set(Optional.of(new ProposalResult.Rejected(proposal.correlationId(), kind, reason, revision)));
+                return new InvalidParamsError(reason);
             }
         };
     }

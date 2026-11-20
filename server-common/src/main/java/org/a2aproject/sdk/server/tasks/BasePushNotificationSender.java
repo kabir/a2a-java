@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.http.A2AHttpClientConfiguration;
@@ -206,6 +207,44 @@ public class BasePushNotificationSender implements PushNotificationSender {
             throw new IllegalArgumentException("Cannot send push notification: event does not contain taskId");
         }
 
+        List<TaskPushNotificationConfig> configs = getPushConfigs(taskId);
+        if (configs.isEmpty()) {
+            LOGGER.debug("No push notification configs registered for taskId: {}", taskId);
+            return true;
+        }
+        Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
+        return dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, ignored -> event);
+    }
+
+    /** Delivers a proposal status using each stored config's selected wire version. */
+    @Override
+    public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task taskSnapshot) {
+        String taskId = event.taskId();
+        List<TaskPushNotificationConfig> configs = getPushConfigs(taskId);
+        if (configs.isEmpty()) {
+            return true;
+        }
+        Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
+        return dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, pushConfig ->
+                "1.1".equals(versionsByConfigId.getOrDefault(pushConfig.id(), "1.0")) ? event : taskSnapshot);
+    }
+
+    /** Delivers an active-task no-op snapshot only to configs using an older protocol version. */
+    @Override
+    public boolean sendLegacyTaskSnapshot(Task taskSnapshot) {
+        String taskId = taskSnapshot.id();
+        List<TaskPushNotificationConfig> configs = getPushConfigs(taskId);
+        if (configs.isEmpty()) {
+            return true;
+        }
+        Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
+        return dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, pushConfig -> {
+            String version = versionsByConfigId.getOrDefault(pushConfig.id(), "1.0");
+            return "0.3".equals(version) || "1.0".equals(version) ? taskSnapshot : null;
+        });
+    }
+
+    private List<TaskPushNotificationConfig> getPushConfigs(String taskId) {
         List<TaskPushNotificationConfig> configs = new ArrayList<>();
         String nextPageToken = null;
         do {
@@ -217,17 +256,22 @@ public class BasePushNotificationSender implements PushNotificationSender {
           nextPageToken = pageResult.nextPageToken();
         } while (nextPageToken != null);
 
-        if (configs.isEmpty()) {
-            LOGGER.debug("No push notification configs registered for taskId: {}", taskId);
+        return configs;
+    }
+
+    private boolean dispatchConfigs(String taskId, @Nullable Task taskSnapshot,
+            List<TaskPushNotificationConfig> configs, Map<String, String> versionsByConfigId,
+            Function<TaskPushNotificationConfig, @Nullable StreamingEventKind> eventSelector) {
+        List<CompletableFuture<Boolean>> dispatchResults = new ArrayList<>();
+        for (TaskPushNotificationConfig pushConfig : configs) {
+            StreamingEventKind event = eventSelector.apply(pushConfig);
+            if (event != null) {
+                dispatchResults.add(dispatch(event, taskSnapshot, pushConfig, versionsByConfigId));
+            }
+        }
+        if (dispatchResults.isEmpty()) {
             return true;
         }
-
-        Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
-
-        List<CompletableFuture<Boolean>> dispatchResults = configs
-                .stream()
-                .map(pushConfig -> dispatch(event, taskSnapshot, pushConfig, versionsByConfigId))
-                .toList();
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(dispatchResults.toArray(new CompletableFuture[0]));
         CompletableFuture<Boolean> dispatchResult = allFutures.thenApply(v -> dispatchResults.stream()
                 .allMatch(CompletableFuture::join));

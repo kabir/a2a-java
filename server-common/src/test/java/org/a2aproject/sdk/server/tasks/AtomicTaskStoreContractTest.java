@@ -136,7 +136,7 @@ class AtomicTaskStoreContractTest {
                     .map(event -> ((TaskStatusUpdateEvent) event).generation())
                     .toList());
             assertEquals(3, committed.snapshot().task().generation());
-            assertSame(committed.snapshot().task(), requireSnapshot(store, "batch").task());
+            assertEquals(committed.snapshot(), requireSnapshot(store, "batch"));
             assertTrue(committed.snapshot().revision().value() > before.revision().value());
             assertNotEquals(committed.snapshot().revision().value(), committed.snapshot().task().generation());
         } finally {
@@ -403,7 +403,7 @@ class AtomicTaskStoreContractTest {
 
         assertTrue(lastRevision.value() > firstRevision.value());
         assertTrue(recreated.snapshot().revision().value() > lastRevision.value());
-        assertSame(recreated.snapshot().task(), requireSnapshot(store, "recreated").task());
+        assertEquals(recreated.snapshot(), requireSnapshot(store, "recreated"));
     }
 
     private static boolean guardedWrite(TaskMutationAuthority authority, TaskSnapshot base,

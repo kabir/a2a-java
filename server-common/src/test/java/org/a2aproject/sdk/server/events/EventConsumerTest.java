@@ -161,7 +161,7 @@ public class EventConsumerTest {
                         .build());
 
         for (Event event : events) {
-            eventQueue.enqueueEvent(event);
+            eventQueue.enqueueEventLocalOnly(event);
         }
 
         Flow.Publisher<EventQueueItem> publisher = eventConsumer.consumeAll();
@@ -196,7 +196,7 @@ public class EventConsumerTest {
                         .build());
 
         for (Event event : events) {
-            eventQueue.enqueueEvent(event);
+            eventQueue.enqueueEventLocalOnly(event);
         }
 
         Flow.Publisher<EventQueueItem> publisher = eventConsumer.consumeAll();
@@ -308,7 +308,7 @@ public class EventConsumerTest {
         List<Event> events = List.of(task, artifactEvent, completedEvent);
 
         for (Event event : events) {
-            eventQueue.enqueueEvent(event);
+            eventQueue.enqueueEventLocalOnly(event);
         }
 
         Flow.Publisher<EventQueueItem> publisher = eventConsumer.consumeAll();
@@ -590,8 +590,11 @@ public class EventConsumerTest {
     }
 
     private void enqueueAndConsumeOneEvent(Event event) throws Exception {
-        // Use callback to wait for event processing
-        waitForEventProcessing(() -> eventQueue.enqueueEvent(event));
+        if (event instanceof Task) {
+            eventQueue.enqueueEventLocalOnly(event);
+        } else {
+            waitForEventProcessing(() -> eventQueue.enqueueEvent(event));
+        }
 
         // Event is now available, consume it directly
         Event result = eventConsumer.consumeOne();

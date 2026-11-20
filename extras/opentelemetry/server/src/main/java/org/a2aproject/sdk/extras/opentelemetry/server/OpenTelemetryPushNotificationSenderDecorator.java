@@ -9,6 +9,8 @@ import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.GENA
 import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.PUSH_NOTIFICATION_DELIVERY_FAILED;
 import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.PUSH_NOTIFICATION_EVENT_KIND;
 
+import java.util.function.BooleanSupplier;
+
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
@@ -19,6 +21,7 @@ import jakarta.decorator.Decorator;
 import jakarta.decorator.Delegate;
 import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
+
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
@@ -80,6 +83,22 @@ public abstract class OpenTelemetryPushNotificationSenderDecorator implements Pu
 
     @Override
     public boolean sendNotification(StreamingEventKind event, @Nullable Task taskSnapshot) {
+        return traceDelivery(event, taskSnapshot, () -> delegate.sendNotification(event, taskSnapshot));
+    }
+
+    @Override
+    public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task taskSnapshot) {
+        return traceDelivery(event, taskSnapshot,
+                () -> delegate.sendTaskProposalStatusNotification(event, taskSnapshot));
+    }
+
+    @Override
+    public boolean sendLegacyTaskSnapshot(Task taskSnapshot) {
+        return traceDelivery(taskSnapshot, taskSnapshot, () -> delegate.sendLegacyTaskSnapshot(taskSnapshot));
+    }
+
+    private boolean traceDelivery(StreamingEventKind event, @Nullable Task taskSnapshot,
+            BooleanSupplier delivery) {
         var spanBuilder = tracer.spanBuilder(SEND_PUSH_NOTIFICATION)
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(GENAI_OPERATION_NAME, SEND_PUSH_NOTIFICATION)
@@ -98,7 +117,7 @@ public abstract class OpenTelemetryPushNotificationSenderDecorator implements Pu
 
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
-            boolean result = delegate.sendNotification(event, taskSnapshot);
+            boolean result = delivery.getAsBoolean();
             if (result) {
                 span.setStatus(StatusCode.OK);
             } else {

@@ -70,4 +70,9 @@ public interface EventQueueItem {
     default @Nullable Task resultTaskSnapshot() {
         return committedSnapshot() == null ? null : committedSnapshot().task();
     }
+
+    /** Internal compatibility delivery hint for full-Task proposal summaries. */
+    default boolean legacyTaskSummary() {
+        return false;
+    }
 }
