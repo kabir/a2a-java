@@ -1147,7 +1147,8 @@ public class DefaultRequestHandler implements RequestHandler {
             }));
 
             // Then convert EventQueueItem -> Event
-            Flow.Publisher<Event> eventPublisher = convertingProcessor(processed,
+            Flow.Publisher<EventQueueItem> selected = suppressCoveredProposalEvents(processed, context);
+            Flow.Publisher<Event> eventPublisher = convertingProcessor(selected,
                     item -> proposalSummaryOrEvent(item, context));
 
             Flow.Publisher<StreamingEventKind> finalPublisher = convertingProcessor(eventPublisher, event -> (StreamingEventKind) event);
@@ -1337,9 +1338,89 @@ public class DefaultRequestHandler implements RequestHandler {
         Flow.Publisher<EventQueueItem> results = resultAggregator.consumeAndEmit(consumer);
         LOGGER.debug("onSubscribeToTask - prepending initial task snapshot to stream, taskId: {}", params.id());
         return insertingProcessor(
-            convertingProcessor(results, item -> proposalSummaryOrEvent(item, context)),
+            convertingProcessor(suppressCoveredProposalEvents(results, context),
+                    item -> proposalSummaryOrEvent(item, context)),
             task
         );
+    }
+
+    private static Flow.Publisher<EventQueueItem> suppressCoveredProposalEvents(
+            Flow.Publisher<EventQueueItem> source, ServerCallContext context) {
+        if (context.getVersionPolicy().supportsPhase2Output()) {
+            return source;
+        }
+        return subscriber -> source.subscribe(new Flow.Subscriber<>() {
+            private Flow.@Nullable Subscription sourceSubscription;
+            private boolean drainingTerminalProposalBatch;
+
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                sourceSubscription = subscription;
+                subscriber.onSubscribe(new Flow.Subscription() {
+                    @Override
+                    public void request(long count) {
+                        subscription.request(count);
+                    }
+
+                    @Override
+                    public void cancel() {
+                        subscription.cancel();
+                    }
+                });
+            }
+
+            @Override
+            public void onNext(EventQueueItem item) {
+                if (item.legacyTaskSummary() && item.proposalBatchEventIndex() > 0) {
+                    if (drainingTerminalProposalBatch) {
+                        if (item.isFinalForLocalConsumption()) {
+                            drainingTerminalProposalBatch = false;
+                        } else {
+                            requestOneFromSource();
+                        }
+                    } else {
+                        requestOneFromSource();
+                    }
+                } else {
+                    if (isTerminalProposalSummary(item)) {
+                        // The summary used the subscriber's last demand. Drain only this terminal
+                        // proposal's suppressed tail so the source can complete without asking for
+                        // an item that the legacy subscriber will never receive.
+                        drainingTerminalProposalBatch = !item.isFinalForLocalConsumption();
+                    }
+                    subscriber.onNext(item);
+                    if (drainingTerminalProposalBatch) {
+                        requestOneFromSource();
+                    }
+                }
+            }
+
+            private void requestOneFromSource() {
+                Flow.Subscription upstream = sourceSubscription;
+                if (upstream != null) {
+                    upstream.request(1);
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                subscriber.onError(throwable);
+            }
+
+            @Override
+            public void onComplete() {
+                subscriber.onComplete();
+            }
+        });
+    }
+
+    private static boolean isTerminalProposalSummary(EventQueueItem item) {
+        if (!item.legacyTaskSummary() || item.proposalBatchEventIndex() != 0) {
+            return false;
+        }
+        @Nullable TaskSnapshot snapshot = item.committedSnapshot();
+        Task task = snapshot == null ? item.resultTaskSnapshot() : snapshot.task();
+        return task != null && task.status().state().isFinal();
     }
 
     private static StreamingEventKind proposalSummaryOrEvent(EventQueueItem item, ServerCallContext context) {

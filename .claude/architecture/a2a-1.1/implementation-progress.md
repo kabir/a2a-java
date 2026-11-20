@@ -1911,3 +1911,25 @@ preparation started 11:17:55 UTC with a 13:17:55 UTC backstop; requested role
 is Sol medium/normal, with serving telemetry unavailable. Preserve all prior
 findings and correction handoffs. P3-T05 remains unassigned pending developer
 selection; its completed existing-task slice must not be repeated.
+
+
+### P3-T05 independently accepted; task commit authorized — 2026-11-20
+
+The [correction 9 independent re-review](phase-3/reviews/P3-T05-review.md#correction-9-independent-re-review--2026-11-20-1645-utc)
+accepts P3-T05 within scope. The task adds atomic full-Task normalization, initial
+opening-input materialization/deduplication, artifact/metadata ordering and
+executor migration examples. Corrections preserve one selected legacy summary
+for multi-event proposals, canonical 1.1 output, immutable opening-input data,
+direct-Message branch exclusion and exact committed unary results. Sender
+forwarding controls cover copied values, worker delegation, independent SDK
+destinations and concurrent ordinary calls. Prior findings remain preserved.
+
+The developer requested the task commit. Preparation started 17:29:25 UTC with
+a 19:29:25 UTC backstop; requested coordination role is Sol medium/normal, with
+serving telemetry unavailable. Current tracked runtime diff and four new Java
+files match the accepted candidate hashes. Archived reviewer XML confirms
+44 required and 228 retained regression cases, plus overlapping focused/sender
+checks, with zero failures/errors/skips and failure-ignore disabled. No runtime
+code was edited or tests repeated during preparation. The earlier full-reactor
+result predates T05 and is not extended to this candidate. test.log remains
+excluded and unchanged. Issue association is #1303; P3-T06 remains unassigned.

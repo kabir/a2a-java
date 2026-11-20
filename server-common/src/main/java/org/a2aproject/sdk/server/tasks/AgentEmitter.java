@@ -585,8 +585,9 @@ public class AgentEmitter {
      * start. The void API delivers its correlated outcome asynchronously to
      * {@link #addProposalResultListener(Consumer)} and {@link #lastProposalResult()}.
      * Call {@link #refreshTask()} and submit a newly built TaskProposal to use a newer base;
-     * previously built proposals are never rebased. Changed full-Task replacement is rejected
-     * until the P3-T05 normalization path is available.
+     * previously built proposals are never rebased. Matching-base proposals normalize status,
+     * agent artifacts and metadata as ordered mutations; stale proposals are reported as local
+     * conflicts without failing the task.
      * <p>For an invocation with an existing Task, an unchanged legacy proposal can be observed
      * without advancing the captured base:
      * <pre>{@code
@@ -677,13 +678,15 @@ public class AgentEmitter {
 
     /**
      * Creates a Task.Builder pre-populated with the correct task and context IDs.
-     * Agents can customize other Task fields (status, artifacts, etc.) before calling build().
+     * Agents can customize status, agent artifacts and metadata before submitting a proposal.
      *
      * <p>Example usage:
      * <pre>{@code
-     * Task task = emitter.taskBuilder()
+     * TaskSnapshot base = emitter.refreshTask();
+     * Task task = Task.builder(base.task())
      *     .status(new TaskStatus(TaskState.WORKING))
      *     .build();
+     * emitter.submitTask(new TaskProposal("progress", base, task));
      * }</pre>
      *
      * @return a Task.Builder with id and contextId already set

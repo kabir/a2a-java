@@ -27,7 +27,10 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import java.util.Collections;
 import java.util.List;
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskRevision;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskState;
@@ -113,6 +116,24 @@ class OpenTelemetryPushNotificationSenderDecoratorTest {
 
         verify(delegate).sendTaskProposalStatusNotification(status, task);
         verify(delegate).sendLegacyTaskSnapshot(task);
+    }
+
+    @Test
+    void proposalBatchDispatchPreservesBatchBoundaryThroughDecorator() {
+        Task task = Task.builder().id("task-batch").contextId("ctx-batch")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build();
+        TaskStatusUpdateEvent status = TaskStatusUpdateEvent.builder().taskId(task.id())
+                .contextId(task.contextId()).status(new TaskStatus(TaskState.TASK_STATE_COMPLETED)).build();
+        CommittedTaskBatch batch = new CommittedTaskBatch(new TaskSnapshot(task, new TaskRevision(4)), List.of(status));
+        when(delegate.sendTaskProposalBatchNotification(batch)).thenReturn(true);
+
+        assertTrue(decorator.sendTaskProposalBatchNotification(batch));
+
+        verify(delegate).sendTaskProposalBatchNotification(batch);
+        verify(spanBuilder).setAttribute(GENAI_TASK_ID, task.id());
+        verify(spanBuilder).setAttribute(GENAI_CONTEXT_ID, task.contextId());
+        verify(span).setStatus(StatusCode.OK);
+        verify(span).end();
     }
 
     @Test

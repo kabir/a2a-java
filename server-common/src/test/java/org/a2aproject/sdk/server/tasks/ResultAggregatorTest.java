@@ -14,11 +14,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.a2aproject.sdk.server.events.EnhancedRunnable;
 import org.a2aproject.sdk.server.events.EventConsumer;
@@ -83,6 +85,19 @@ public class ResultAggregatorTest {
                 .contextId(contextId)
                 .status(new TaskStatus(statusState))
                 .build();
+    }
+
+    @Test
+    void immediateProposalSnapshotIsPublishedBeforeCompletionSignal() {
+        TaskSnapshot proposal = new TaskSnapshot(createSampleTask("proposal", TaskState.TASK_STATE_WORKING, "ctx"),
+                new TaskRevision(3));
+        CompletableFuture<Void> completion = new CompletableFuture<>();
+        AtomicReference<TaskSnapshot> selected = new AtomicReference<>();
+        AtomicReference<TaskSnapshot> observedAtSignal = new AtomicReference<>();
+        completion.thenRun(() -> observedAtSignal.set(selected.get()));
+
+        assertTrue(ResultAggregator.completeImmediateResult(completion, selected, proposal));
+        assertEquals(proposal, observedAtSignal.get());
     }
 
     /**

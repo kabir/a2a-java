@@ -8,7 +8,6 @@ import java.util.Map;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
-import org.a2aproject.sdk.spec.util.CollectionCopies;
 import org.a2aproject.sdk.spec.util.Utils;
 import org.a2aproject.sdk.util.Assert;
 import org.jspecify.annotations.Nullable;
@@ -30,8 +29,9 @@ public record PendingTaskInput(@Nullable Message message, List<TaskArtifactUpdat
     }
 
     public PendingTaskInput {
+        message = message == null ? null : ImmutableTaskCopy.copy(message);
         artifactUpdates = List.copyOf(Assert.checkNotNullParam("artifactUpdates", artifactUpdates));
-        metadata = CollectionCopies.unmodifiableNullableShallowMap(metadata);
+        metadata = ImmutableTaskCopy.copyMetadata(metadata);
         Assert.checkNotNullParam("admission", admission);
         Assert.checkNotNullParam("receivedAt", receivedAt);
     }

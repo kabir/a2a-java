@@ -28,6 +28,7 @@ import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.InternalError;
+import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
@@ -244,7 +245,10 @@ public class MainEventBusProcessor implements Runnable {
                     LOGGER.warn("Ignoring proposal without an owning MainQueue processing capability for task {}",
                             taskId);
                 } else {
-                    processProposal(mainQueue, context.origin(), proposalItem, capability);
+                    EventQueue.ChildQueue origin = context.origin();
+                    boolean directResponseAlreadySelected = origin != null
+                            && origin.hasSelectedDirectMessageResponse() && proposalItem.isInitialProposal();
+                    processProposal(mainQueue, origin, proposalItem, capability, directResponseAlreadySelected);
                 }
             } finally {
                 try {
@@ -339,6 +343,10 @@ public class MainEventBusProcessor implements Runnable {
                 Task legacyTaskSnapshot = updateResult == null ? null : updateResult.taskSnapshot();
                 boolean localFinal = updateResult != null && updateResult.isFinal()
                         && (updateResult.committedSnapshot() != null || updateResult.compatibilityBootstrap());
+                if (eventToDistribute == event && event instanceof Message
+                        && context.origin() != null && !isReplicated) {
+                    context.origin().markDirectMessageResponseSelected();
+                }
                 EventQueueItem itemToDistribute = new LocalEventQueueItem(
                         eventToDistribute, committedSnapshot, false, legacyTaskSnapshot, localFinal);
                 if (!eventRoutedLocally) {
@@ -395,11 +403,12 @@ public class MainEventBusProcessor implements Runnable {
 
     private void processProposal(EventQueue.MainQueue mainQueue, @Nullable EventQueue.ChildQueue origin,
             ExecutorSubmissionService.ProposalAdmission proposalItem,
-            EventQueue.ProposalProcessingCapability capability) {
+            EventQueue.ProposalProcessingCapability capability, boolean directResponseAlreadySelected) {
         AtomicReference<TaskCommitSlot> reservedSlot = new AtomicReference<>();
         AtomicBoolean published = new AtomicBoolean();
         try {
             ExecutorSubmissionService.ProposalExecution execution = proposalItem.process(capability,
+                    directResponseAlreadySelected,
                     (slot, mutation) -> {
                 orderedTaskPublisher.reserve(slot);
                 reservedSlot.set(slot);
@@ -606,7 +615,8 @@ public class MainEventBusProcessor implements Runnable {
             boolean lastInFinalBatch = batch.isFinal() && index == batch.events().size() - 1;
             try {
                 mainQueue.distributeToChildren(new LocalEventQueueItem(event, batch.snapshot(), lastInFinalBatch,
-                        batch.snapshot().task(), lastInFinalBatch, legacyTaskSummary));
+                        batch.snapshot().task(), lastInFinalBatch, legacyTaskSummary,
+                        legacyTaskSummary ? index : -1));
             } catch (RuntimeException | Error failure) {
                 reportPostCommitFailure(taskId, batch, failure);
                 if (lastInFinalBatch) {
@@ -680,14 +690,20 @@ public class MainEventBusProcessor implements Runnable {
 
     private void invokeCommittedPushBatch(CommittedTaskBatch batch, boolean legacyTaskSummary) {
         String taskId = batch.taskId();
+        if (legacyTaskSummary) {
+            try {
+                if (!pushSender.sendTaskProposalBatchNotification(batch)) {
+                    reportPostCommitFailure(taskId, batch,
+                            new IllegalStateException("Push notification delivery failed"));
+                }
+            } catch (Exception failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+            return;
+        }
         for (StreamingEventKind event : batch.events()) {
             try {
-                boolean sent;
-                if (legacyTaskSummary && event instanceof TaskStatusUpdateEvent status) {
-                    sent = pushSender.sendTaskProposalStatusNotification(status, batch.snapshot().task());
-                } else {
-                    sent = pushSender.sendNotification(event, batch.snapshot().task());
-                }
+                boolean sent = pushSender.sendNotification(event, batch.snapshot().task());
                 if (!sent) {
                     reportPostCommitFailure(taskId, batch,
                             new IllegalStateException("Push notification delivery failed"));

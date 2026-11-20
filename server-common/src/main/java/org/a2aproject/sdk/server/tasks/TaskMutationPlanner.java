@@ -2,9 +2,11 @@ package org.a2aproject.sdk.server.tasks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.InvalidParamsError;
@@ -153,38 +155,182 @@ public final class TaskMutationPlanner {
         return new MutationPlan(finalTask, List.of(canonical), true);
     }
 
-    /** Plans the existing-task, status-only slice of a full Task proposal. */
+    /** Plans a matching-base full Task proposal for an existing task. */
     public static MutationPlan planTaskProposal(TaskSnapshot current, Task proposed) {
-        Assert.checkNotNullParam("current", current);
+        return planTaskProposal(current, proposed, null);
+    }
+
+    /**
+     * Plans a full Task proposal. A null current snapshot is an initial materialization and may
+     * include request-local opening input; it never persists that input before this atomic plan.
+     */
+    public static MutationPlan planTaskProposal(@Nullable TaskSnapshot current, Task proposed,
+            @Nullable PendingTaskInput openingInput) {
         Assert.checkNotNullParam("proposed", proposed);
+        if (current == null) {
+            return planInitialTaskProposal(proposed, openingInput);
+        }
+
         Task task = current.task();
         if (!task.id().equals(proposed.id()) || !task.contextId().equals(proposed.contextId())) {
             throw invalid("Task proposal identity does not match the authoritative task");
         }
-        if (proposed.metadata() != null && !proposed.metadata().equals(task.metadata())) {
-            throw invalid("Task proposal cannot change metadata");
+        return normalizeProposal(task, proposed, new ArrayList<>(), false);
+    }
+
+    private static MutationPlan planInitialTaskProposal(Task proposed, @Nullable PendingTaskInput openingInput) {
+        List<StreamingEventKind> events = new ArrayList<>();
+        Task initial;
+        if (openingInput == null) {
+            initial = Task.builder().id(proposed.id()).contextId(proposed.contextId())
+                    .status(new TaskStatus(TaskState.TASK_STATE_SUBMITTED))
+                    .artifacts(List.of()).history(List.of()).timeline(List.of()).generation(0).build();
+        } else {
+            PendingTaskInput.Admission admission = openingInput.admission();
+            if (!proposed.id().equals(admission.taskId()) || !proposed.contextId().equals(admission.contextId())) {
+                throw invalid("Initial Task identity does not match the opening request");
+            }
+            MutationPlan opening = planInput(null, openingInput, MutationOrigin.USER);
+            initial = opening.task();
+            events.addAll(opening.events());
         }
-        List<Artifact> suppliedArtifacts = proposed.artifacts() == null ? List.of() : proposed.artifacts();
-        List<Artifact> storedArtifacts = task.artifacts() == null ? List.of() : task.artifacts();
-        for (Artifact supplied : suppliedArtifacts) {
-            Artifact stored = storedArtifacts.stream()
-                    .filter(artifact -> artifact.artifactId().equals(supplied.artifactId()))
-                    .findFirst()
-                    .orElseThrow(() -> invalid("Task proposal cannot add artifacts"));
-            if (!sameArtifactContent(stored, supplied)) {
-                throw invalid("Task proposal cannot change artifacts");
+
+        List<Message> bootstrapHistory = new ArrayList<>();
+        Message openingMessage = openingInput == null ? null : openingInput.message();
+        Message canonicalOpening = null;
+        for (StreamingEventKind event : events) {
+            if (event instanceof TaskMessageUpdateEvent messageUpdate) {
+                canonicalOpening = messageUpdate.message();
+                break;
             }
         }
-        if (task.status().equals(proposed.status())) {
-            return new MutationPlan(task, List.of(), false);
+        boolean openingIncluded = false;
+        if (proposed.history() != null) {
+            for (Message message : proposed.history()) {
+                if (openingMessage != null && Objects.equals(openingMessage.messageId(), message.messageId())) {
+                    if (!openingIncluded) {
+                        bootstrapHistory.add(canonicalOpening == null ? openingMessage : canonicalOpening);
+                        openingIncluded = true;
+                    }
+                } else {
+                    bootstrapHistory.add(message);
+                }
+            }
         }
-        rejectTerminal(task);
-        TaskStatusUpdateEvent status = TaskStatusUpdateEvent.builder()
-                .taskId(task.id())
-                .contextId(task.contextId())
-                .status(proposed.status())
-                .build();
-        return planStatus(current, status);
+        if (openingMessage != null && !openingIncluded) {
+            bootstrapHistory.add(canonicalOpening == null ? openingMessage : canonicalOpening);
+        }
+        Task bootstrapped = Task.builder(initial).history(bootstrapHistory).build();
+        return normalizeProposal(bootstrapped, proposed, events, true);
+    }
+
+    private static MutationPlan normalizeProposal(Task startingTask, Task proposed,
+            List<StreamingEventKind> events, boolean initial) {
+        List<Artifact> suppliedArtifacts = proposed.artifacts() == null ? List.of() : proposed.artifacts();
+        List<Artifact> artifacts = new ArrayList<>(startingTask.artifacts());
+        List<Artifact> changedArtifacts = new ArrayList<>();
+        Set<String> suppliedIds = new HashSet<>();
+        for (Artifact supplied : suppliedArtifacts) {
+            if (!suppliedIds.add(supplied.artifactId())) {
+                throw invalid("Task proposal contains duplicate artifact IDs");
+            }
+            Artifact stored = findArtifact(artifacts, supplied.artifactId());
+            if (stored != null && sameArtifactContent(stored, supplied)) {
+                continue;
+            }
+            Role suppliedRole = supplied.role();
+            if (suppliedRole != null && suppliedRole != Role.ROLE_AGENT) {
+                throw invalid("Task proposal cannot create or edit a non-agent artifact");
+            }
+            if (stored != null && (stored.role() == Role.ROLE_USER)) {
+                throw invalid("Task proposal cannot edit an artifact created by another origin");
+            }
+            changedArtifacts.add(supplied);
+        }
+
+        TaskStatus suppliedStatus = proposed.status();
+        boolean statusChanged = !startingTask.status().equals(suppliedStatus);
+        Map<String, Object> metadata = proposed.metadata() == null
+                ? startingTask.metadata() : mergeMetadata(startingTask.metadata(), proposed.metadata());
+        boolean metadataChanged = !Objects.equals(metadata, startingTask.metadata());
+        boolean hasChanges = statusChanged || metadataChanged || !changedArtifacts.isEmpty();
+        if (!hasChanges && !initial) {
+            return new MutationPlan(startingTask, List.of(), false);
+        }
+        if (!initial && hasChanges) {
+            rejectTerminal(startingTask);
+        }
+
+        long generation = startingTask.generation();
+        Task task = startingTask;
+        @Nullable Map<String, Object> metadataUpdate = metadataChanged ? proposed.metadata() : null;
+        boolean terminalStatus = statusChanged && suppliedStatus.state().isFinal();
+        boolean statusObservation = statusChanged || metadataChanged;
+
+        if (statusObservation && !terminalStatus) {
+            generation = nextGeneration(generation);
+            task = applyProposalStatus(task, statusChanged ? suppliedStatus : task.status(), metadataUpdate,
+                    metadata, generation, !statusChanged, events);
+        }
+
+        for (Artifact supplied : changedArtifacts) {
+            generation = nextGeneration(generation);
+            TaskArtifactUpdateEvent rawEvent = TaskArtifactUpdateEvent.builder()
+                    .taskId(task.id()).contextId(task.contextId()).artifact(supplied)
+                    .append(false).lastChunk(true).generation(generation).build();
+            CanonicalArtifact canonical = canonicalArtifact(artifacts, rawEvent, MutationOrigin.AGENT, generation);
+            TaskArtifactUpdateEvent event = TaskArtifactUpdateEvent.builder(rawEvent)
+                    .artifact(canonical.eventArtifact()).build();
+            events.add(event);
+            task = Task.builder(task).artifacts(artifacts).generation(generation).build();
+        }
+
+        if (terminalStatus) {
+            generation = nextGeneration(generation);
+            task = applyProposalStatus(task, suppliedStatus, metadataUpdate, metadata, generation, false, events);
+        }
+
+        if (metadata != null && !Objects.equals(task.metadata(), metadata)) {
+            task = Task.builder(task).metadata(metadata).build();
+        }
+        boolean changed = initial || !events.isEmpty();
+        if (!changed) {
+            return new MutationPlan(startingTask, List.of(), false);
+        }
+        return new MutationPlan(task, events, true);
+    }
+
+    private static Task applyProposalStatus(Task task, TaskStatus status,
+            @Nullable Map<String, Object> metadataUpdate, @Nullable Map<String, Object> mergedMetadata,
+            long generation, boolean syntheticMetadata, List<StreamingEventKind> events) {
+        List<Message> history = new ArrayList<>(task.history());
+        if (!syntheticMetadata && task.status().message() != null) {
+            history.add(task.status().message());
+        }
+        List<TimelineEntry> timeline = new ArrayList<>(task.timeline() == null ? List.of() : task.timeline());
+        timeline.add(new TimelineEntry(generation, new StatusValue(status)));
+        Task.Builder builder = Task.builder(task).status(status).history(history).timeline(timeline)
+                .generation(generation);
+        if (mergedMetadata != null) {
+            builder.metadata(mergedMetadata);
+        }
+        TaskStatusUpdateEvent.Builder eventBuilder = TaskStatusUpdateEvent.builder().taskId(task.id())
+                .contextId(task.contextId()).status(status).generation(generation);
+        if (metadataUpdate != null) {
+            eventBuilder.metadata(metadataUpdate);
+        }
+        TaskStatusUpdateEvent event = eventBuilder.build();
+        events.add(event);
+        return builder.build();
+    }
+
+    private static @Nullable Artifact findArtifact(List<Artifact> artifacts, String artifactId) {
+        for (Artifact artifact : artifacts) {
+            if (artifact.artifactId().equals(artifactId)) {
+                return artifact;
+            }
+        }
+        return null;
     }
 
     private static boolean sameArtifactContent(Artifact stored, Artifact supplied) {

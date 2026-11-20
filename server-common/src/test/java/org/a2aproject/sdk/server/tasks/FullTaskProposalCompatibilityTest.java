@@ -78,13 +78,17 @@ class FullTaskProposalCompatibilityTest {
     }
 
     @Test
-    void metadataAndArtifactEditsRemainValidationRejections() throws Exception {
+    void metadataAndAgentArtifactChangesNormalizeButUserArtifactEditsRemainRejected() throws Exception {
         InMemoryTaskStore store = storeWithTask();
         TaskSnapshot base = requireSnapshot(store);
         Task changedMetadata = Task.builder().id(TASK_ID).contextId(CONTEXT_ID)
                 .status(base.task().status()).metadata(Map.of("different", true)).build();
 
-        assertThrows(InvalidParamsError.class, () -> TaskMutationPlanner.planTaskProposal(base, changedMetadata));
+        MutationPlan metadataPlan = TaskMutationPlanner.planTaskProposal(base, changedMetadata);
+        assertTrue(metadataPlan.changed());
+        assertEquals(1, metadataPlan.events().size());
+        assertEquals(4, assertInstanceOf(TaskStatusUpdateEvent.class, metadataPlan.events().get(0)).generation());
+        assertEquals(Map.of("stored", true, "different", true), metadataPlan.task().metadata());
 
         Artifact changedUserArtifact = Artifact.builder(base.task().artifacts().get(0))
                 .parts(List.of(new TextPart("changed user artifact"))).build();

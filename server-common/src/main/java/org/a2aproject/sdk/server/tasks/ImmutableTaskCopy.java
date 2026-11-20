@@ -57,9 +57,13 @@ final class ImmutableTaskCopy {
                 .metadata(copyMap(artifact.metadata())).build();
     }
 
-    private static Message copy(Message message) {
+    static Message copy(Message message) {
         return Message.builder(message).parts(copyParts(message.parts()))
                 .metadata(copyMap(message.metadata())).build();
+    }
+
+    static @Nullable Map<String, Object> copyMetadata(@Nullable Map<String, Object> metadata) {
+        return copyMap(metadata);
     }
 
     private static List<Part<?>> copyParts(List<Part<?>> parts) {

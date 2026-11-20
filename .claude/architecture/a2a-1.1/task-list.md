@@ -111,8 +111,9 @@ The regression repair and subsequent admission, stream-lifecycle and sender
 corrections are now accepted by the [fourth independent correction follow-up review](phase-3/reviews/P3-T04-full-reactor-correction-review.md#fourth-follow-up-review--2026-11-20-1111-utc).
 The accepted follow-up snapshot passed 216 targeted tests with zero failures,
 errors or skips and failure-ignore disabled. The full-reactor evidence above
-predates these follow-ups. P3-T05 remains unassigned and its prompt stays held
-pending developer selection. No automatic progression is implied.
+predates these follow-ups. The developer assigned P3-T05 implementation only
+for this task; its hold is lifted only for that assignment. No automatic
+progression is implied.
 
 Task identifiers are in intended execution order. Dependencies below abbreviate
 `P3-TNN` as `TNN`; they require accepted predecessor contracts/behavior. Each row
@@ -127,7 +128,7 @@ serving metadata is unavailable, not asserted as telemetry.
 | P3-T02 canonical input/delta rules | T01 | Implemented and independently accepted; focused 28/28 tests passed ([handoff](phase-3/handoffs/P3-T02.md#correction-handoff--2026-11-17)) | Accepted for P3-T02 scope; fresh focused 28/28 ([correction re-review](phase-3/reviews/P3-T02-review.md#correction-re-review--2026-11-17-1843-utc)) |
 | P3-T03 committed bus/local publication order | T01, T02 | Implemented and independently accepted; focused 80/80 and cancellation/aggregator/prerequisite 57/57 ([follow-up evidence](phase-3/handoffs/P3-T03.md#follow-up-test-synchronization-correction-2026-11-18)) | Accepted for P3-T03 scope; fresh 80/80 focused and 57/57 regressions ([final correction re-review](phase-3/reviews/P3-T03-review.md#final-correction-re-review--2026-11-18-1757-utc)) |
 | P3-T04 proposal provenance/local completion | T01, T03 | Implemented and independently accepted; required 109/109 selector, handler/cancellation/config 5/5, T03 regressions 60/60; see [latest correction handoff](phase-3/handoffs/P3-T04.md#third-correction-implementation-addendum--2026-11-19) | Accepted for P3-T04 scope ([third correction re-review](phase-3/reviews/P3-T04-review.md#third-correction-re-review--2026-11-19-1412-utc)) |
-| P3-T05 full-Task normalization/migration | T02, T04 | Planned; not started | Pending |
+| P3-T05 full-Task normalization/migration | T02, T04 | Implemented through correction 9; required selector 44/44 and retained correction regression 228/228; see [correction 9 handoff](phase-3/handoffs/P3-T05-correction-9.md), [correction 8](phase-3/handoffs/P3-T05-correction-8.md), [correction 7](phase-3/handoffs/P3-T05-correction-7.md), [correction 6](phase-3/handoffs/P3-T05-correction-6.md), [correction 5](phase-3/handoffs/P3-T05-correction-5.md), [correction 4](phase-3/handoffs/P3-T05-correction-4.md), [correction 3](phase-3/handoffs/P3-T05-correction-3.md), [correction 2](phase-3/handoffs/P3-T05-correction-2.md), [correction 1](phase-3/handoffs/P3-T05-correction-1.md), and [original handoff](phase-3/handoffs/P3-T05.md) | Accepted within P3-T05 scope ([correction 9 independent re-review](phase-3/reviews/P3-T05-review.md#correction-9-independent-re-review--2026-11-20-1645-utc)) |
 | P3-T06 materialization config enrollment | T01, T03 | Planned; not started | Pending |
 | P3-T07 ordinary-send branches/read projections | T02–T06 | Planned; not started | Pending |
 | P3-T08 JPA transactional authority | T01–T03, T06, T07 | Planned; not started | Pending |
@@ -182,7 +183,7 @@ selected-task handoffs/reviews use `phase-3/handoffs/P3-TNN.md` and
 | 0: semantics/baseline | Retained completed research | [Historical evidence](phase-0/decisions.md); unresolved dependent gates still apply |
 | 1: exact interfaces/client versions | Committed checkpoint | [Historical handoff](phase-1/next-session.md) |
 | 2: models/adapters/public bindings | Complete within the approved experimental pinned-RC scope | [Close-out and evidence](phase-2/checkpoints/phase2-complete.md); Phase 3 needs a separate assignment |
-| 3: mutation/publication/client reducer | P3-T01 through P3-T04 implemented and independently accepted | Full-reactor checks pass ([checkpoint](phase-3/handoffs/P3-T04-full-reactor.md)); regression-correction review not recorded; P3-T05 prompt held |
+| 3: mutation/publication/client reducer | P3-T01 through P3-T05 implemented and independently accepted within scope | T05 [correction 9 review](phase-3/reviews/P3-T05-review.md#correction-9-independent-re-review--2026-11-20-1645-utc): 44 required and 228 retained regression cases pass (overlapping selectors). Earlier full-reactor evidence predates follow-ups. T06 unassigned |
 | 4: observation/versioned delivery | Not assigned | Plan after prerequisites and gates are resolved |
 | 5: live execution/bindings | Not assigned | Plan only the supported, resolved specification contract |
 | 6: final audit/docs | Not assigned | Retain all final acceptance and independent evidence requirements |

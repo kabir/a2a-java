@@ -26,6 +26,7 @@ import org.a2aproject.sdk.client.http.A2AHttpClientFactory;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.server.Instrumented;
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.server.version.ServerVersionPolicy;
 import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.AuthenticationInfo;
@@ -213,6 +214,14 @@ public class BasePushNotificationSender implements PushNotificationSender {
             return true;
         }
         Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
+        if (TaskProposalDispatchContext.contains(event, taskSnapshot)
+                || TaskProposalDispatchContext.isForwardedArtifactCopy(event, taskSnapshot)) {
+            StreamingEventKind legacySummary = TaskProposalDispatchContext.claimLegacySummary(event, taskSnapshot,
+                    this)
+                    ? taskSnapshot : null;
+            return dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, pushConfig ->
+                    "1.1".equals(versionsByConfigId.getOrDefault(pushConfig.id(), "1.0")) ? event : legacySummary);
+        }
         return dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, ignored -> event);
     }
 
@@ -225,8 +234,38 @@ public class BasePushNotificationSender implements PushNotificationSender {
             return true;
         }
         Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
+        if (TaskProposalDispatchContext.contains(event, taskSnapshot)) {
+            return dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, pushConfig ->
+                    "1.1".equals(versionsByConfigId.getOrDefault(pushConfig.id(), "1.0")) ? event : null);
+        }
         return dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, pushConfig ->
                 "1.1".equals(versionsByConfigId.getOrDefault(pushConfig.id(), "1.0")) ? event : taskSnapshot);
+    }
+
+    /** Selects one legacy Task summary or the complete canonical 1.1 batch per webhook config. */
+    @Override
+    public boolean sendTaskProposalBatchNotification(CommittedTaskBatch batch) {
+        String taskId = batch.taskId();
+        Task taskSnapshot = batch.snapshot().task();
+        List<TaskPushNotificationConfig> configs = getPushConfigs(taskId);
+        if (configs.isEmpty()) {
+            return true;
+        }
+        Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
+        boolean delivered = true;
+        for (int index = 0; index < batch.events().size(); index++) {
+            StreamingEventKind event = batch.events().get(index);
+            boolean firstEvent = index == 0;
+            boolean eventDelivered = dispatchConfigs(taskId, taskSnapshot, configs, versionsByConfigId, pushConfig -> {
+                String version = versionsByConfigId.getOrDefault(pushConfig.id(), "1.0");
+                if ("1.1".equals(version)) {
+                    return event;
+                }
+                return firstEvent ? taskSnapshot : null;
+            });
+            delivered &= eventDelivered;
+        }
+        return delivered;
     }
 
     /** Delivers an active-task no-op snapshot only to configs using an older protocol version. */

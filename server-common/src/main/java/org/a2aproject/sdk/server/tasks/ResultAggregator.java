@@ -96,6 +96,7 @@ public class ResultAggregator {
         AtomicReference<Message> message = new AtomicReference<>();
         AtomicReference<Task> capturedTask = new AtomicReference<>();  // Capture Task events
         AtomicReference<TaskSnapshot> committedSnapshot = new AtomicReference<>();
+        AtomicReference<TaskSnapshot> immediateProposalSnapshot = new AtomicReference<>();
         AtomicReference<TaskSnapshot> stoppingSnapshot = new AtomicReference<>();
         AtomicReference<Task> stoppingTask = new AtomicReference<>();
         AtomicBoolean interrupted = new AtomicBoolean(false);
@@ -127,7 +128,7 @@ public class ResultAggregator {
                     // Handle Throwable events
                     if (event instanceof Throwable t) {
                         errorRef.set(t);
-                        completionFuture.completeExceptionally(t);
+                        completeExceptionally(completionFuture, t);
                         return false;
                     }
 
@@ -135,7 +136,7 @@ public class ResultAggregator {
                     if (event instanceof Message msg) {
                         ResultAggregator.this.message = msg;
                         message.set(msg);
-                        completionFuture.complete(null);
+                        complete(completionFuture);
                         return false;
                     }
 
@@ -211,7 +212,9 @@ public class ResultAggregator {
                         LOGGER.debug("ResultAggregator: Interrupting consumption (setting interrupted=true)");
                         // Complete the future to unblock the main thread
                         interrupted.set(true);
-                        completionFuture.complete(null);
+                        TaskSnapshot proposalSnapshot = !blocking && item.legacyTaskSummary()
+                                ? item.committedSnapshot() : null;
+                        completeImmediateResult(completionFuture, immediateProposalSnapshot, proposalSnapshot);
 
                         // For blocking calls, DON'T complete consumptionCompletionFuture here.
                         // Let it complete naturally when subscription finishes (onComplete callback below).
@@ -241,7 +244,7 @@ public class ResultAggregator {
                     // Handle onError and onComplete
                     if (throwable != null) {
                         errorRef.set(throwable);
-                        completionFuture.completeExceptionally(throwable);
+                        completeExceptionally(completionFuture, throwable);
                         consumptionCompletionFuture.completeExceptionally(throwable);
                     } else {
                         // onComplete - subscription finished normally
@@ -249,9 +252,9 @@ public class ResultAggregator {
                             InternalError missingOutcome = new InternalError(
                                     "Cancellation stream closed without a terminal or AUTH_REQUIRED result");
                             errorRef.set(missingOutcome);
-                            completionFuture.completeExceptionally(missingOutcome);
+                            completeExceptionally(completionFuture, missingOutcome);
                         } else {
-                            completionFuture.complete(null);
+                            complete(completionFuture);
                         }
                         consumptionCompletionFuture.complete(null);
                     }
@@ -311,6 +314,11 @@ public class ResultAggregator {
         TaskSnapshot matchingSnapshot = stoppingSnapshot.get();
         if (matchingSnapshot == null) {
             matchingSnapshot = committedSnapshot.get();
+        }
+        TaskSnapshot immediateResult = immediateProposalSnapshot.get();
+        if (!blocking && immediateResult != null) {
+            eventKind = immediateResult.task();
+            matchingSnapshot = immediateResult;
         }
         if (cancellationOutcomeRequired && eventKind == null) {
             Task resultTask = stoppingTask.get();
@@ -377,6 +385,31 @@ public class ResultAggregator {
     private String taskIdForLogging() {
         Task task = taskManager.getTask();
         return task != null ? task.id() : "unknown";
+    }
+
+    static boolean completeImmediateResult(CompletableFuture<Void> completionFuture,
+            AtomicReference<TaskSnapshot> selectedSnapshot, @Nullable TaskSnapshot proposalSnapshot) {
+        synchronized (completionFuture) {
+            if (completionFuture.isDone()) {
+                return false;
+            }
+            if (proposalSnapshot != null) {
+                selectedSnapshot.compareAndSet(null, proposalSnapshot);
+            }
+            return completionFuture.complete(null);
+        }
+    }
+
+    private static boolean complete(CompletableFuture<Void> completionFuture) {
+        synchronized (completionFuture) {
+            return completionFuture.complete(null);
+        }
+    }
+
+    private static boolean completeExceptionally(CompletableFuture<Void> completionFuture, Throwable failure) {
+        synchronized (completionFuture) {
+            return completionFuture.completeExceptionally(failure);
+        }
     }
 
     public record EventTypeAndInterrupt(EventKind eventType, boolean interrupted,

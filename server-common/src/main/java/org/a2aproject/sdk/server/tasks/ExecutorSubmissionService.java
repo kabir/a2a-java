@@ -45,6 +45,7 @@ public final class ExecutorSubmissionService {
     private final Duration admissionTimeout;
     private final Duration observationTimeout;
     private final @Nullable RequestContext openingContext;
+    private final @Nullable PendingTaskInput openingTaskInput;
     private final int maxRetainedSubmissions;
     private final long resultRetentionNanos;
     private final LongSupplier nanoClock;
@@ -82,6 +83,7 @@ public final class ExecutorSubmissionService {
             Runnable afterPruneCompletionSnapshot) {
         this.authority = java.util.Objects.requireNonNull(authority, "authority");
         this.openingContext = openingContext;
+        this.openingTaskInput = openingTaskInput(openingContext);
         this.admissionTimeout = positive(admissionTimeout, "admissionTimeout");
         this.observationTimeout = positive(observationTimeout, "observationTimeout");
         if (maxRetainedSubmissions <= 0) {
@@ -257,6 +259,11 @@ public final class ExecutorSubmissionService {
             return submission.proposal;
         }
 
+        /** Whether this is a null-base proposal that attempts initial materialization. */
+        public boolean isInitialProposal() {
+            return submission.proposal.baseSnapshot() == null;
+        }
+
         /** Whether the initiating request uses a protocol that consumes full Task summaries. */
         public boolean hasLegacyTaskSummaryRequest() {
             if (owner.openingContext == null) {
@@ -333,7 +340,13 @@ public final class ExecutorSubmissionService {
         /** Production processing requires an unforgeable capability issued by the owning MainQueue. */
         public @Nullable ProposalExecution process(EventQueue.ProposalProcessingCapability capability,
                 TaskCommitSlotCallback slotCallback) {
-            return owner.processAdmitted(this, capability, slotCallback);
+            return owner.processAdmitted(this, capability, slotCallback, false);
+        }
+
+        /** Production path can reject an initial proposal after this invocation selected a direct response. */
+        public @Nullable ProposalExecution process(EventQueue.ProposalProcessingCapability capability,
+                boolean directResponseAlreadySelected, TaskCommitSlotCallback slotCallback) {
+            return owner.processAdmitted(this, capability, slotCallback, directResponseAlreadySelected);
         }
 
         /** Compatibility entry point for callers that do not own the processor's publisher. */
@@ -369,6 +382,11 @@ public final class ExecutorSubmissionService {
         }
 
         ProposalExecution processWithPublication(TaskProposal proposal, TaskCommitSlotCallback slotCallback);
+
+        default ProposalExecution processWithPublication(TaskProposal proposal,
+                @Nullable PendingTaskInput openingInput, TaskCommitSlotCallback slotCallback) {
+            return processWithPublication(proposal, slotCallback);
+        }
     }
 
     private enum QueueAdmissionState {
@@ -382,6 +400,12 @@ public final class ExecutorSubmissionService {
     /** Called only once by the event processor for the registered capability. */
     private @Nullable ProposalExecution processAdmitted(ProposalAdmission admission,
             EventQueue.@Nullable ProposalProcessingCapability capability, TaskCommitSlotCallback slotCallback) {
+        return processAdmitted(admission, capability, slotCallback, false);
+    }
+
+    private @Nullable ProposalExecution processAdmitted(ProposalAdmission admission,
+            EventQueue.@Nullable ProposalProcessingCapability capability, TaskCommitSlotCallback slotCallback,
+            boolean directResponseAlreadySelected) {
         Submission submission = admission.submission;
         boolean orderedProduction = authority instanceof OrderedProposalAuthority;
         if (admission.owner != this || submissions.get(submission.proposal.correlationId()) != submission
@@ -392,9 +416,15 @@ public final class ExecutorSubmissionService {
         TaskProposal proposal = submission.proposal;
         ProposalExecution execution;
         try {
-            execution = authority instanceof OrderedProposalAuthority orderedAuthority
-                    ? orderedAuthority.processWithPublication(proposal, slotCallback)
-                    : new ProposalExecution(authority.process(proposal), null);
+            if (directResponseAlreadySelected && openingTaskInput != null && proposal.baseSnapshot() == null) {
+                execution = new ProposalExecution(new ProposalResult.Rejected(proposal.correlationId(),
+                        ProposalResult.Rejected.Kind.VALIDATION,
+                        "this invocation already selected a direct Message response", null), null);
+            } else {
+                execution = authority instanceof OrderedProposalAuthority orderedAuthority
+                        ? orderedAuthority.processWithPublication(proposal, openingTaskInput, slotCallback)
+                        : new ProposalExecution(authority.process(proposal), null);
+            }
             ProposalResult result = execution.result();
             if (!proposal.correlationId().equals(result.correlationId())) {
                 throw new IllegalStateException("proposal authority returned a mismatched correlation ID");
@@ -516,6 +546,19 @@ public final class ExecutorSubmissionService {
         return value;
     }
 
+    private static @Nullable PendingTaskInput openingTaskInput(@Nullable RequestContext context) {
+        if (context == null || context.getTask() != null || context.getTaskSnapshot() != null) {
+            return null;
+        }
+        org.a2aproject.sdk.spec.Message message = context.getMessage();
+        if (message == null) {
+            return null;
+        }
+        return new PendingTaskInput(message, List.of(), context.getConfiguration(), context.getMetadata(),
+                new PendingTaskInput.Admission(context.getTaskId(), context.getContextId(), context.getTenant(),
+                        true, false));
+    }
+
     private static ThreadFactory daemonThreadFactory() {
         return runnable -> {
             Thread thread = new Thread(runnable, "a2a-proposal-result-timeouts");
@@ -565,15 +608,18 @@ public final class ExecutorSubmissionService {
         TaskSnapshot refreshTask(String taskId);
     }
 
-    /**
-     * Creates the atomic authority for existing-task equivalent and status-only proposals.
-     * Mutation is available only through this service's ordered queue admission path.
-     */
+    /** Creates the atomic authority for full-Task proposals on the ordered queue path. */
     public static ProposalAuthority forTaskStore(org.a2aproject.sdk.server.tasks.TaskStore taskStore) {
         return new OrderedProposalAuthority() {
             @Override
             public ProposalExecution processWithPublication(TaskProposal proposal,
                     TaskCommitSlotCallback slotCallback) {
+                return processWithPublication(proposal, null, slotCallback);
+            }
+
+            @Override
+            public ProposalExecution processWithPublication(TaskProposal proposal,
+                    @Nullable PendingTaskInput openingInput, TaskCommitSlotCallback slotCallback) {
                 if (!(taskStore instanceof AtomicTaskStore atomicStore)) {
                     throw new TaskMutationNotCommittedException(proposal.proposedTask().id(),
                             "full Task proposal requires an AtomicTaskStore; legacy stores are unsupported");
@@ -585,20 +631,32 @@ public final class ExecutorSubmissionService {
                     CommittedMutation mutation = new TaskMutationAuthority(atomicStore).mutate(
                             proposal.proposedTask().id(), current -> {
                                 observed.set(current);
-                                if (current == null) {
-                                    throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.VALIDATION,
-                                            "initial materialization requires the T05 normalization path", null);
-                                }
-                                Task authoritativeTask = current.task();
                                 Task proposedTask = proposal.proposedTask();
-                                if (!authoritativeTask.id().equals(proposedTask.id())
-                                        || !authoritativeTask.contextId().equals(proposedTask.contextId())) {
+                                if (current == null && proposal.baseSnapshot() != null) {
+                                    throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.CONFLICT,
+                                            "Task was removed after the proposal base was captured", null);
+                                }
+                                if (current != null && (!current.task().id().equals(proposedTask.id())
+                                        || !current.task().contextId().equals(proposedTask.contextId()))) {
                                     throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.VALIDATION,
                                             "Task proposal identity does not match the authoritative task",
                                             current.revision());
                                 }
+                                if (current == null) {
+                                    if (openingInput == null) {
+                                        throw rejectProposal(proposal, rejection,
+                                                ProposalResult.Rejected.Kind.VALIDATION,
+                                                "initial materialization requires retained opening request input", null);
+                                    }
+                                    return TaskMutationPlanner.planTaskProposal(null, proposedTask, openingInput);
+                                }
                                 TaskSnapshot base = proposal.baseSnapshot();
                                 if (base == null) {
+                                    if (openingInput != null) {
+                                        throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.CONFLICT,
+                                                "Task was materialized after the initial proposal was captured",
+                                                current.revision());
+                                    }
                                     throw rejectProposal(proposal, rejection, ProposalResult.Rejected.Kind.VALIDATION,
                                             "an existing Task proposal requires its immutable base snapshot",
                                             current.revision());

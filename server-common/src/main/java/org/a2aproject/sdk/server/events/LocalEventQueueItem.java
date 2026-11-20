@@ -22,6 +22,7 @@ class LocalEventQueueItem implements EventQueueItem {
     private final boolean finalForLocalConsumption;
     private final @Nullable Task resultTaskSnapshot;
     private final boolean legacyTaskSummary;
+    private final int proposalBatchEventIndex;
 
     LocalEventQueueItem(Event event) {
         this(event, null, false);
@@ -44,6 +45,13 @@ class LocalEventQueueItem implements EventQueueItem {
 
     LocalEventQueueItem(Event event, @Nullable TaskSnapshot committedSnapshot, boolean canonicalFinal,
             @Nullable Task resultTaskSnapshot, boolean finalForLocalConsumption, boolean legacyTaskSummary) {
+        this(event, committedSnapshot, canonicalFinal, resultTaskSnapshot, finalForLocalConsumption,
+                legacyTaskSummary, -1);
+    }
+
+    LocalEventQueueItem(Event event, @Nullable TaskSnapshot committedSnapshot, boolean canonicalFinal,
+            @Nullable Task resultTaskSnapshot, boolean finalForLocalConsumption, boolean legacyTaskSummary,
+            int proposalBatchEventIndex) {
         Assert.checkNotNullParam("event", event);
         this.event = event;
         this.committedSnapshot = committedSnapshot;
@@ -51,6 +59,7 @@ class LocalEventQueueItem implements EventQueueItem {
         this.finalForLocalConsumption = finalForLocalConsumption;
         this.resultTaskSnapshot = resultTaskSnapshot;
         this.legacyTaskSummary = legacyTaskSummary;
+        this.proposalBatchEventIndex = proposalBatchEventIndex;
     }
 
     @Override
@@ -92,5 +101,10 @@ class LocalEventQueueItem implements EventQueueItem {
     @Override
     public boolean legacyTaskSummary() {
         return legacyTaskSummary;
+    }
+
+    @Override
+    public int proposalBatchEventIndex() {
+        return proposalBatchEventIndex;
     }
 }

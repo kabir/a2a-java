@@ -23,6 +23,7 @@ import jakarta.enterprise.inject.Any;
 import jakarta.inject.Inject;
 
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -90,6 +91,14 @@ public abstract class OpenTelemetryPushNotificationSenderDecorator implements Pu
     public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task taskSnapshot) {
         return traceDelivery(event, taskSnapshot,
                 () -> delegate.sendTaskProposalStatusNotification(event, taskSnapshot));
+    }
+
+    @Override
+    public boolean sendTaskProposalBatchNotification(CommittedTaskBatch batch) {
+        StreamingEventKind firstEvent = batch.events().get(0);
+        Task taskSnapshot = batch.snapshot().task();
+        return traceDelivery(firstEvent, taskSnapshot,
+                () -> delegate.sendTaskProposalBatchNotification(batch));
     }
 
     @Override

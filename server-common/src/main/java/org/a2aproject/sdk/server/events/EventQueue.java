@@ -1072,6 +1072,7 @@ public abstract class EventQueue implements AutoCloseable {
     static class ChildQueue extends EventQueue {
         private final MainQueue parent;
         private final BlockingQueue<EventQueueItem> queue;
+        private final AtomicBoolean directMessageResponseSelected = new AtomicBoolean();
         private volatile boolean immediateClose = false;
         private int pendingFinalEvents;
         private int submittedFinalEvents;
@@ -1084,6 +1085,14 @@ public abstract class EventQueue implements AutoCloseable {
             // subscriber cannot grow the deque unboundedly. internalEnqueueItem() detects
             // a full queue and closes the child immediately (see offer() below).
             this.queue = new LinkedBlockingDeque<>(parent.getQueueSize());
+        }
+
+        void markDirectMessageResponseSelected() {
+            directMessageResponseSelected.set(true);
+        }
+
+        boolean hasSelectedDirectMessageResponse() {
+            return directMessageResponseSelected.get();
         }
 
         @Override

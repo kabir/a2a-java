@@ -17,12 +17,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.google.gson.JsonObject;
@@ -34,6 +39,7 @@ import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.server.events.EventQueue;
 import org.a2aproject.sdk.server.events.EventQueueUtil;
 import org.a2aproject.sdk.server.events.InMemoryQueueManager;
@@ -153,6 +159,499 @@ public class PushNotificationSenderTest {
     }
 
     @Test
+    void batchAwareSenderSelectsOneLegacySummaryAndAllCanonicalEvents() throws InterruptedException {
+        String taskId = "batch-aware-webhook";
+        Task task = createSampleTask(taskId, TaskState.TASK_STATE_INPUT_REQUIRED);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        TaskArtifactUpdateEvent artifact = new TaskArtifactUpdateEvent(taskId,
+                Artifact.builder().artifactId("answer").parts(List.of(new TextPart("bytes"))).build(),
+                task.contextId(), false, true, null, 1);
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent(taskId,
+                new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED), task.contextId(), null, 2);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(task, new TaskRevision(1)), List.of(artifact, status));
+        testHttpClient.latch = new CountDownLatch(3);
+
+        assertTrue(sender.sendTaskProposalBatchNotification(batch));
+        assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+        List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                .filter(notification -> notification.url().endsWith("/v10"))
+                .map(CapturedNotification::event).toList();
+        List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                .filter(notification -> notification.url().endsWith("/v11"))
+                .map(CapturedNotification::event).toList();
+        assertEquals(List.of(Task.class), legacyEvents.stream().map(Object::getClass).toList());
+        assertEquals(List.of(TaskArtifactUpdateEvent.class, TaskStatusUpdateEvent.class),
+                currentEvents.stream().map(Object::getClass).toList());
+        TaskArtifactUpdateEvent deliveredArtifact = assertInstanceOf(TaskArtifactUpdateEvent.class,
+                currentEvents.get(0));
+        assertEquals("bytes", assertInstanceOf(TextPart.class, deliveredArtifact.artifact().parts().get(0)).text());
+        assertEquals(2, assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(1)).generation());
+    }
+
+    @Test
+    void statusOnlyProposalUsesStatusHookWhenWrapperInheritsNoOpSnapshotHook() throws Exception {
+        String taskId = "status-only-inherited-noop";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(event, snapshot));
+            }
+
+            @Override
+            public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendTaskProposalStatusNotification(event, snapshot));
+            }
+        };
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent(taskId,
+                new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED), initial.contextId(), null, 1);
+        CommittedTaskBatch batch = statusOnlyBatch(initial, status);
+        testHttpClient.latch = new CountDownLatch(1);
+
+        try {
+            assertTrue(delegatingSender.sendLegacyTaskSnapshot(initial));
+            assertTrue(testHttpClient.notifications.isEmpty(), "the inherited no-op hook keeps no-op delivery disabled");
+
+            assertTrue(delegatingSender.sendTaskProposalBatchNotification(batch));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(List.of(Task.class), legacyEvents.stream().map(Object::getClass).toList());
+            assertEquals(List.of(status), currentEvents);
+        } finally {
+            forwardingWorker.shutdownNow();
+        }
+    }
+
+    @Test
+    void statusOnlyProposalWithCopiedStatusKeepsOneLegacySummary() throws Exception {
+        String taskId = "status-only-copied-event";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(event, snapshot));
+            }
+
+            @Override
+            public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task snapshot) {
+                TaskStatusUpdateEvent copy = TaskStatusUpdateEvent.builder(event).build();
+                return awaitWorker(forwardingWorker, () -> sender.sendTaskProposalStatusNotification(copy, snapshot));
+            }
+
+            @Override
+            public boolean sendLegacyTaskSnapshot(Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendLegacyTaskSnapshot(snapshot));
+            }
+        };
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent(taskId,
+                new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED), initial.contextId(), null, 1);
+        CommittedTaskBatch batch = statusOnlyBatch(initial, status);
+        testHttpClient.latch = new CountDownLatch(3);
+
+        try {
+            assertTrue(delegatingSender.sendLegacyTaskSnapshot(initial));
+            assertTrue(delegatingSender.sendTaskProposalBatchNotification(batch));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(List.of(Task.class, Task.class), legacyEvents.stream().map(Object::getClass).toList(),
+                    "the active no-op and changed status each select exactly one legacy Task summary");
+            assertEquals(List.of(status), currentEvents);
+        } finally {
+            forwardingWorker.shutdownNow();
+        }
+    }
+
+    @Test
+    void statusAndArtifactProposalUsesStatusHookWhenWrapperInheritsNoOpSnapshotHook() throws Exception {
+        String taskId = "mixed-inherited-noop";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(event, snapshot));
+            }
+
+            @Override
+            public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendTaskProposalStatusNotification(event, snapshot));
+            }
+        };
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent(taskId,
+                new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED), initial.contextId(), null, 1);
+        Artifact artifact = Artifact.builder().artifactId("mixed-output")
+                .parts(List.of(new TextPart("proposal output"))).build();
+        CommittedTaskBatch batch = statusAndArtifactBatch(initial, status, artifact);
+        testHttpClient.latch = new CountDownLatch(2);
+
+        try {
+            assertTrue(delegatingSender.sendLegacyTaskSnapshot(initial));
+            assertTrue(testHttpClient.notifications.isEmpty(), "the inherited no-op hook keeps no-op delivery disabled");
+
+            assertTrue(delegatingSender.sendTaskProposalBatchNotification(batch));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(List.of(Task.class), legacyEvents.stream().map(Object::getClass).toList());
+            Task summary = assertInstanceOf(Task.class, legacyEvents.get(0));
+            assertProposalArtifact(summary, artifact.artifactId());
+            assertEquals(2, currentEvents.size());
+            assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(0));
+            assertInstanceOf(TaskArtifactUpdateEvent.class, currentEvents.get(1));
+        } finally {
+            forwardingWorker.shutdownNow();
+        }
+    }
+
+    @Test
+    void statusAndArtifactProposalWithCopiedStatusKeepsOneLegacySummary() throws Exception {
+        String taskId = "mixed-copied-status";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(event, snapshot));
+            }
+
+            @Override
+            public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task snapshot) {
+                TaskStatusUpdateEvent copy = TaskStatusUpdateEvent.builder(event).build();
+                return awaitWorker(forwardingWorker, () -> sender.sendTaskProposalStatusNotification(copy, snapshot));
+            }
+
+            @Override
+            public boolean sendLegacyTaskSnapshot(Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendLegacyTaskSnapshot(snapshot));
+            }
+        };
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent(taskId,
+                new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED), initial.contextId(), null, 1);
+        Artifact artifact = Artifact.builder().artifactId("mixed-output")
+                .parts(List.of(new TextPart("proposal output"))).build();
+        CommittedTaskBatch batch = statusAndArtifactBatch(initial, status, artifact);
+        testHttpClient.latch = new CountDownLatch(4);
+
+        try {
+            assertTrue(delegatingSender.sendLegacyTaskSnapshot(initial));
+            assertTrue(delegatingSender.sendTaskProposalBatchNotification(batch));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(List.of(Task.class, Task.class), legacyEvents.stream().map(Object::getClass).toList(),
+                    "the active no-op and changed proposal each select exactly one legacy Task summary");
+            assertTrue(assertInstanceOf(Task.class, legacyEvents.get(0)).artifacts().isEmpty());
+            assertProposalArtifact(assertInstanceOf(Task.class, legacyEvents.get(1)), artifact.artifactId());
+            assertEquals(2, currentEvents.size());
+            assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(0));
+            assertInstanceOf(TaskArtifactUpdateEvent.class, currentEvents.get(1));
+        } finally {
+            forwardingWorker.shutdownNow();
+        }
+    }
+
+    @Test
+    void artifactOnlyProposalUsesTaskSummaryWhenWrapperInheritsNoOpSnapshotHook() throws Exception {
+        String taskId = "artifact-only-inherited-noop";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(event, snapshot));
+            }
+        };
+        Artifact artifact = Artifact.builder().artifactId("answer")
+                .parts(List.of(new TextPart("proposal output"))).build();
+        TaskArtifactUpdateEvent artifactUpdate = new TaskArtifactUpdateEvent(taskId, artifact,
+                initial.contextId(), false, true, null, 1);
+        Task proposed = Task.builder(initial).artifacts(List.of(artifact)).generation(1).build();
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(proposed, new TaskRevision(1)), List.of(artifactUpdate));
+        testHttpClient.latch = new CountDownLatch(2);
+
+        try {
+            assertTrue(delegatingSender.sendLegacyTaskSnapshot(initial));
+            assertTrue(testHttpClient.notifications.isEmpty(), "the inherited no-op hook keeps no-op delivery disabled");
+
+            assertTrue(delegatingSender.sendTaskProposalBatchNotification(batch));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(List.of(Task.class), legacyEvents.stream().map(Object::getClass).toList());
+            assertProposalArtifact(assertInstanceOf(Task.class, legacyEvents.get(0)), "answer");
+            assertEquals(1, currentEvents.size());
+            assertEquals("answer", assertInstanceOf(TaskArtifactUpdateEvent.class, currentEvents.get(0))
+                    .artifact().artifactId());
+        } finally {
+            forwardingWorker.shutdownNow();
+        }
+    }
+
+    @Test
+    void copiedArtifactProposalUsesOneTaskSummaryAndLeavesEqualOrdinaryArtifactVisible() throws Exception {
+        String taskId = "artifact-copy-mixed";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                StreamingEventKind forwarded = event instanceof TaskArtifactUpdateEvent artifactUpdate
+                        ? TaskArtifactUpdateEvent.builder(artifactUpdate).build()
+                        : event;
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(forwarded, snapshot));
+            }
+
+            @Override
+            public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendTaskProposalStatusNotification(event, snapshot));
+            }
+
+            @Override
+            public boolean sendLegacyTaskSnapshot(Task snapshot) {
+                return awaitWorker(forwardingWorker, () -> sender.sendLegacyTaskSnapshot(snapshot));
+            }
+        };
+        TaskStatusUpdateEvent status = new TaskStatusUpdateEvent(taskId,
+                new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED), initial.contextId(), null, 1);
+        Artifact artifact = Artifact.builder().artifactId("answer")
+                .parts(List.of(new TextPart("proposal output"))).build();
+        CommittedTaskBatch batch = statusAndArtifactBatch(initial, status, artifact);
+        TaskArtifactUpdateEvent proposalArtifact = assertInstanceOf(TaskArtifactUpdateEvent.class,
+                batch.events().get(1));
+        TaskArtifactUpdateEvent equalOrdinaryArtifact = TaskArtifactUpdateEvent.builder(proposalArtifact).build();
+        testHttpClient.latch = new CountDownLatch(6);
+
+        try {
+            assertTrue(delegatingSender.sendLegacyTaskSnapshot(initial));
+            assertTrue(delegatingSender.sendTaskProposalBatchNotification(batch));
+            assertTrue(delegatingSender.sendNotification(equalOrdinaryArtifact, batch.snapshot().task()));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(List.of(Task.class, Task.class, TaskArtifactUpdateEvent.class),
+                    legacyEvents.stream().map(Object::getClass).toList());
+            assertTrue(assertInstanceOf(Task.class, legacyEvents.get(0)).artifacts().isEmpty());
+            assertProposalArtifact(assertInstanceOf(Task.class, legacyEvents.get(1)), "answer");
+            assertEquals(3, currentEvents.size());
+            assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(0));
+            assertInstanceOf(TaskArtifactUpdateEvent.class, currentEvents.get(1));
+            assertEquals("answer", assertInstanceOf(TaskArtifactUpdateEvent.class, currentEvents.get(2))
+                    .artifact().artifactId());
+        } finally {
+            forwardingWorker.shutdownNow();
+        }
+    }
+
+    @Test
+    void versionUnawareSenderReceivesOnlyCanonicalArtifactForArtifactOnlyProposal() {
+        String taskId = "artifact-only-version-unaware";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        Artifact artifact = Artifact.builder().artifactId("answer")
+                .parts(List.of(new TextPart("proposal output"))).build();
+        TaskArtifactUpdateEvent artifactUpdate = new TaskArtifactUpdateEvent(taskId, artifact,
+                initial.contextId(), false, true, null, 1);
+        Task proposed = Task.builder(initial).artifacts(List.of(artifact)).generation(1).build();
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(proposed, new TaskRevision(1)), List.of(artifactUpdate));
+        List<StreamingEventKind> received = new ArrayList<>();
+        PushNotificationSender versionUnawareSender = (event, snapshot) -> {
+            received.add(event);
+            return true;
+        };
+
+        assertTrue(versionUnawareSender.sendTaskProposalBatchNotification(batch));
+
+        assertEquals(List.of(artifactUpdate), received);
+    }
+
+    @Test
+    void equalOrdinaryArtifactDuringProposalForwardingStillReachesBothVersions() throws Exception {
+        String taskId = "artifact-copy-concurrent-ordinary";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
+        CountDownLatch workerReadyToForward = new CountDownLatch(1);
+        CountDownLatch releaseForwardingWorker = new CountDownLatch(1);
+        PushNotificationSender delegatingSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                if (event instanceof TaskArtifactUpdateEvent artifactUpdate) {
+                    TaskArtifactUpdateEvent forwarded = TaskArtifactUpdateEvent.builder(artifactUpdate).build();
+                    return awaitWorker(forwardingWorker, () -> {
+                        workerReadyToForward.countDown();
+                        try {
+                            assertTrue(releaseForwardingWorker.await(5, TimeUnit.SECONDS));
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new AssertionError("worker forwarding was interrupted", e);
+                        }
+                        return sender.sendNotification(forwarded, snapshot);
+                    });
+                }
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(event, snapshot));
+            }
+        };
+        Artifact artifact = Artifact.builder().artifactId("answer")
+                .parts(List.of(new TextPart("proposal output"))).build();
+        TaskArtifactUpdateEvent proposalArtifact = new TaskArtifactUpdateEvent(taskId, artifact,
+                initial.contextId(), false, true, null, 1);
+        Task proposed = Task.builder(initial).artifacts(List.of(artifact)).generation(1).build();
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(proposed, new TaskRevision(1)), List.of(proposalArtifact));
+        TaskArtifactUpdateEvent equalOrdinaryArtifact = TaskArtifactUpdateEvent.builder(proposalArtifact).build();
+        testHttpClient.latch = new CountDownLatch(2);
+
+        try {
+            CompletableFuture<Boolean> proposalDispatch = CompletableFuture.supplyAsync(
+                    () -> delegatingSender.sendTaskProposalBatchNotification(batch));
+            assertTrue(workerReadyToForward.await(5, TimeUnit.SECONDS));
+
+            assertTrue(sender.sendNotification(proposalArtifact, batch.snapshot().task()));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+            List<StreamingEventKind> legacyDuringPause = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentDuringPause = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(List.of(TaskArtifactUpdateEvent.class),
+                    legacyDuringPause.stream().map(Object::getClass).toList());
+            assertEquals(List.of(TaskArtifactUpdateEvent.class),
+                    currentDuringPause.stream().map(Object::getClass).toList());
+            assertEquals("answer", assertInstanceOf(TaskArtifactUpdateEvent.class, currentDuringPause.get(0))
+                    .artifact().artifactId());
+
+            testHttpClient.latch = new CountDownLatch(2);
+            assertTrue(sender.sendNotification(equalOrdinaryArtifact, batch.snapshot().task()));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+            testHttpClient.latch = new CountDownLatch(2);
+            releaseForwardingWorker.countDown();
+
+            assertTrue(proposalDispatch.get(5, TimeUnit.SECONDS));
+            assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+            List<StreamingEventKind> legacyEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v10"))
+                    .map(CapturedNotification::event).toList();
+            List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
+                    .filter(notification -> notification.url().endsWith("/v11"))
+                    .map(CapturedNotification::event).toList();
+            assertEquals(1, legacyEvents.stream().filter(Task.class::isInstance).count());
+            assertEquals(2, legacyEvents.stream().filter(TaskArtifactUpdateEvent.class::isInstance).count());
+            assertEquals(3, currentEvents.stream().filter(TaskArtifactUpdateEvent.class::isInstance).count());
+        } finally {
+            releaseForwardingWorker.countDown();
+            forwardingWorker.shutdownNow();
+        }
+    }
+
+    @Test
+    void artifactOnlyProposalProjectsOneLegacySummaryToEachDelegatedSender() throws Exception {
+        String taskId = "artifact-only-multi-delegate";
+        Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/primary-v10", "primary-v10", null),
+                "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/primary-v11", "primary-v11", null),
+                "1.1");
+        InMemoryPushNotificationConfigStore secondaryStore = new InMemoryPushNotificationConfigStore();
+        secondaryStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/secondary-v10", "secondary-v10",
+                null), "1.0");
+        secondaryStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/secondary-v11", "secondary-v11",
+                null), "1.1");
+        TestHttpClient secondaryClient = new TestHttpClient();
+        BasePushNotificationSender secondarySender = new BasePushNotificationSender(secondaryStore, secondaryClient,
+                PushNotificationUrlValidator.ALLOW_ALL);
+        PushNotificationSender delegatingSender = (event, snapshot) -> {
+            boolean primaryDelivered = sender.sendNotification(event, snapshot);
+            boolean secondaryDelivered = secondarySender.sendNotification(event, snapshot);
+            return primaryDelivered && secondaryDelivered;
+        };
+        Artifact artifact = Artifact.builder().artifactId("answer")
+                .parts(List.of(new TextPart("proposal output"))).build();
+        TaskArtifactUpdateEvent artifactUpdate = new TaskArtifactUpdateEvent(taskId, artifact,
+                initial.contextId(), false, true, null, 1);
+        Task proposed = Task.builder(initial).artifacts(List.of(artifact)).generation(1).build();
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(proposed, new TaskRevision(1)), List.of(artifactUpdate));
+        testHttpClient.latch = new CountDownLatch(2);
+        secondaryClient.latch = new CountDownLatch(2);
+
+        assertTrue(delegatingSender.sendTaskProposalBatchNotification(batch));
+        assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+        assertTrue(secondaryClient.latch.await(5, TimeUnit.SECONDS));
+
+        List<StreamingEventKind> primaryLegacy = testHttpClient.notifications.stream()
+                .filter(notification -> notification.url().endsWith("/primary-v10"))
+                .map(CapturedNotification::event).toList();
+        List<StreamingEventKind> primaryCurrent = testHttpClient.notifications.stream()
+                .filter(notification -> notification.url().endsWith("/primary-v11"))
+                .map(CapturedNotification::event).toList();
+        List<StreamingEventKind> secondaryLegacy = secondaryClient.notifications.stream()
+                .filter(notification -> notification.url().endsWith("/secondary-v10"))
+                .map(CapturedNotification::event).toList();
+        List<StreamingEventKind> secondaryCurrent = secondaryClient.notifications.stream()
+                .filter(notification -> notification.url().endsWith("/secondary-v11"))
+                .map(CapturedNotification::event).toList();
+        assertEquals(List.of(Task.class), primaryLegacy.stream().map(Object::getClass).toList());
+        assertProposalArtifact(assertInstanceOf(Task.class, primaryLegacy.get(0)), "answer");
+        assertEquals(List.of(TaskArtifactUpdateEvent.class), primaryCurrent.stream().map(Object::getClass).toList());
+        assertEquals(List.of(Task.class), secondaryLegacy.stream().map(Object::getClass).toList());
+        assertProposalArtifact(assertInstanceOf(Task.class, secondaryLegacy.get(0)), "answer");
+        assertEquals(List.of(TaskArtifactUpdateEvent.class),
+                secondaryCurrent.stream().map(Object::getClass).toList());
+    }
+
+    @Test
     void proposalWebhookVersionSelectionSurvivesDelegatingSenderAndDeferredAdmission() throws Exception {
         String taskId = "proposal-webhook-task";
         Task initial = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
@@ -161,20 +660,25 @@ public class PushNotificationSenderTest {
         configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
         configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
 
+        ExecutorService forwardingWorker = Executors.newSingleThreadExecutor();
         PushNotificationSender delegatingSender = new PushNotificationSender() {
             @Override
             public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
-                return sender.sendNotification(event, snapshot);
+                StreamingEventKind forwardedEvent = event instanceof TaskArtifactUpdateEvent artifactUpdate
+                        ? TaskArtifactUpdateEvent.builder(artifactUpdate).build()
+                        : event;
+                Task forwardedSnapshot = snapshot == null ? null : Task.builder(snapshot).build();
+                return awaitWorker(forwardingWorker, () -> sender.sendNotification(forwardedEvent, forwardedSnapshot));
             }
 
             @Override
             public boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task snapshot) {
-                return sender.sendTaskProposalStatusNotification(event, snapshot);
+                return awaitWorker(forwardingWorker, () -> sender.sendTaskProposalStatusNotification(event, snapshot));
             }
 
             @Override
             public boolean sendLegacyTaskSnapshot(Task snapshot) {
-                return sender.sendLegacyTaskSnapshot(snapshot);
+                return awaitWorker(forwardingWorker, () -> sender.sendLegacyTaskSnapshot(snapshot));
             }
         };
         MainEventBus bus = new MainEventBus();
@@ -187,7 +691,7 @@ public class PushNotificationSenderTest {
 
         CountDownLatch earlierAdmission = new CountDownLatch(1);
         CountDownLatch laterDeltaProcessed = new CountDownLatch(1);
-        testHttpClient.latch = new CountDownLatch(7);
+        testHttpClient.latch = new CountDownLatch(12);
         AtomicReference<Runnable> releaseEarlierPush = new AtomicReference<>();
         AtomicBoolean deferred = new AtomicBoolean();
         processor.setCallback(new MainEventBusProcessorCallback() {
@@ -234,15 +738,38 @@ public class PushNotificationSenderTest {
             TaskSnapshot changedBase = java.util.Objects.requireNonNull(taskStore.readSnapshot(taskId));
             Task changed = Task.builder(changedBase.task())
                     .status(new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED,
-                            null, OffsetDateTime.parse("2026-01-02T00:00:00Z"))).build();
+                            null, OffsetDateTime.parse("2026-01-02T00:00:00Z")))
+                    .artifacts(List.of(Artifact.builder().artifactId("proposal-artifact")
+                            .parts(List.of(new TextPart("proposal output"))).build()))
+                    .build();
             ProposalResult changedResult = service.submitTask(
                     new TaskProposal("webhook-change", changedBase, changed), producer)
                     .toCompletableFuture().get(5, TimeUnit.SECONDS);
             assertTrue(((ProposalResult.Committed) changedResult).changed());
 
+            TaskSnapshot artifactBase = java.util.Objects.requireNonNull(taskStore.readSnapshot(taskId));
+            Task artifactOnly = Task.builder(artifactBase.task()).artifacts(List.of(
+                    artifactBase.task().artifacts().get(0),
+                    Artifact.builder().artifactId("proposal-artifact-two")
+                            .parts(List.of(new TextPart("second output"))).build())).build();
+            ProposalResult artifactResult = service.submitTask(
+                    new TaskProposal("webhook-artifact-only", artifactBase, artifactOnly), producer)
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            assertTrue(((ProposalResult.Committed) artifactResult).changed());
+
+            TaskSnapshot statusBase = java.util.Objects.requireNonNull(taskStore.readSnapshot(taskId));
+            Task statusOnly = Task.builder(statusBase.task())
+                    .status(new TaskStatus(TaskState.TASK_STATE_WORKING,
+                            null, OffsetDateTime.parse("2026-01-03T00:00:00Z")))
+                    .build();
+            ProposalResult statusResult = service.submitTask(
+                    new TaskProposal("webhook-status-only", statusBase, statusOnly), producer)
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            assertTrue(((ProposalResult.Committed) statusResult).changed());
+
             producer.enqueueEvent(new TaskStatusUpdateEvent(taskId,
                     new TaskStatus(TaskState.TASK_STATE_COMPLETED, null,
-                            OffsetDateTime.parse("2026-01-03T00:00:00Z")), "ctx456", Map.of("order", "later")));
+                            OffsetDateTime.parse("2026-01-04T00:00:00Z")), "ctx456", Map.of("order", "later")));
             assertTrue(laterDeltaProcessed.await(5, TimeUnit.SECONDS));
             assertTrue(testHttpClient.events.isEmpty(), "all later webhook work must remain behind deferred admission");
 
@@ -256,20 +783,57 @@ public class PushNotificationSenderTest {
             List<StreamingEventKind> currentEvents = testHttpClient.notifications.stream()
                     .filter(notification -> notification.url().endsWith("/v11"))
                     .map(CapturedNotification::event).toList();
-            assertEquals(4, legacyEvents.size());
-            assertInstanceOf(TaskStatusUpdateEvent.class, legacyEvents.get(0));
-            assertInstanceOf(Task.class, legacyEvents.get(1), "verified no-op sends an older-version Task snapshot");
-            assertInstanceOf(Task.class, legacyEvents.get(2), "changed proposal uses the older-version Task shape");
-            assertInstanceOf(TaskStatusUpdateEvent.class, legacyEvents.get(3));
-            assertEquals(3, currentEvents.size(), "1.1 skips the no-op and retains canonical changed/later statuses");
-            assertTrue(currentEvents.stream().allMatch(TaskStatusUpdateEvent.class::isInstance));
+            assertEquals(List.of(TaskStatusUpdateEvent.class, Task.class, Task.class, Task.class, Task.class,
+                    TaskStatusUpdateEvent.class), legacyEvents.stream().map(Object::getClass).toList(),
+                    "older-version outputs contain one summary per no-op/proposal and no covered deltas");
+            assertEquals(6, currentEvents.size(), "1.1 retains canonical proposal events and skips the no-op");
+            assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(0));
+            assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(1));
+            assertInstanceOf(TaskArtifactUpdateEvent.class, currentEvents.get(2));
+            assertInstanceOf(TaskArtifactUpdateEvent.class, currentEvents.get(3));
+            assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(4));
+            assertInstanceOf(TaskStatusUpdateEvent.class, currentEvents.get(5));
         } finally {
             if (releaseEarlierPush.get() != null) {
                 releaseEarlierPush.get().run();
             }
             EventQueueUtil.stop(processor);
             mainQueue.close(true);
+            forwardingWorker.shutdownNow();
         }
+    }
+
+    private static <T> T awaitWorker(Executor worker, Supplier<T> operation) {
+        try {
+            return CompletableFuture.supplyAsync(operation, worker).get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("worker forwarding was interrupted", e);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new AssertionError("worker forwarding failed", e);
+        }
+    }
+
+    private static CommittedTaskBatch statusOnlyBatch(Task initial, TaskStatusUpdateEvent status) {
+        Task proposed = Task.builder(initial).status(status.status()).generation(status.generation()).build();
+        return new CommittedTaskBatch(new TaskSnapshot(proposed, new TaskRevision(1)), List.of(status));
+    }
+
+    private static CommittedTaskBatch statusAndArtifactBatch(Task initial, TaskStatusUpdateEvent status,
+            Artifact artifact) {
+        TaskArtifactUpdateEvent artifactEvent = new TaskArtifactUpdateEvent(initial.id(), artifact,
+                initial.contextId(), false, true, null, 2);
+        Task proposed = Task.builder(initial).status(status.status()).artifacts(List.of(artifact))
+                .generation(artifactEvent.generation()).build();
+        return new CommittedTaskBatch(new TaskSnapshot(proposed, new TaskRevision(2)),
+                List.of(status, artifactEvent));
+    }
+
+    private static void assertProposalArtifact(Task summary, String expectedArtifactId) {
+        assertEquals(1, summary.artifacts().size());
+        Artifact artifact = summary.artifacts().get(0);
+        assertEquals(expectedArtifactId, artifact.artifactId());
+        assertEquals("proposal output", assertInstanceOf(TextPart.class, artifact.parts().get(0)).text());
     }
 
     @Test

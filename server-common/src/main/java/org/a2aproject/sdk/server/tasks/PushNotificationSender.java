@@ -1,7 +1,9 @@
 package org.a2aproject.sdk.server.tasks;
 
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.jspecify.annotations.Nullable;
 
@@ -142,6 +144,53 @@ public interface PushNotificationSender {
      * senders retain the canonical status fallback.
      */
     default boolean sendTaskProposalStatusNotification(TaskStatusUpdateEvent event, Task taskSnapshot) {
+        return sendNotification(event, taskSnapshot);
+    }
+
+    /**
+     * Delivers a committed Task proposal as one output choice per configured protocol version.
+     * Version-aware senders should override this method to send one Task summary to older
+     * configurations and every canonical event to 1.1 configurations. The default routes a
+     * proposal containing a status through the existing status method. Other proposals forward
+     * canonical events through the existing notification method; version-aware SDK senders
+     * project the final Task summary for older configurations from the scoped batch context.
+     */
+    default boolean sendTaskProposalBatchNotification(CommittedTaskBatch batch) {
+        Task taskSnapshot = batch.snapshot().task();
+        Task dispatchSnapshot = ImmutableTaskCopy.copy(taskSnapshot);
+        TaskStatusUpdateEvent statusSummary = batch.events().stream()
+                .filter(TaskStatusUpdateEvent.class::isInstance)
+                .map(TaskStatusUpdateEvent.class::cast)
+                .findFirst().orElse(null);
+        if (statusSummary != null) {
+            return TaskProposalDispatchContext.withBatchExcept(batch, statusSummary, dispatchSnapshot, () -> {
+                boolean delivered = true;
+                for (StreamingEventKind event : batch.events()) {
+                    boolean sent = event instanceof TaskStatusUpdateEvent status
+                            ? sendTaskProposalStatusNotification(status, dispatchSnapshot)
+                            : sendProposalEvent(event, dispatchSnapshot);
+                    delivered &= sent;
+                }
+                return delivered;
+            });
+        }
+        return TaskProposalDispatchContext.withBatch(batch, dispatchSnapshot, () -> {
+            boolean delivered = true;
+            for (StreamingEventKind event : batch.events()) {
+                delivered &= sendProposalEvent(event, dispatchSnapshot);
+            }
+            return delivered;
+        });
+    }
+
+    private boolean sendProposalEvent(StreamingEventKind event, Task taskSnapshot) {
+        if (event instanceof TaskStatusUpdateEvent status) {
+            return sendTaskProposalStatusNotification(status, taskSnapshot);
+        }
+        if (event instanceof TaskArtifactUpdateEvent artifactUpdate) {
+            return TaskProposalDispatchContext.withArtifactForwarding(artifactUpdate, taskSnapshot,
+                    () -> sendNotification(event, taskSnapshot));
+        }
         return sendNotification(event, taskSnapshot);
     }
 

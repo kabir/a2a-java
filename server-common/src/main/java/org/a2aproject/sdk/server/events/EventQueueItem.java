@@ -75,4 +75,9 @@ public interface EventQueueItem {
     default boolean legacyTaskSummary() {
         return false;
     }
+
+    /** Zero-based position in a proposal batch, or {@code -1} outside a proposal batch. */
+    default int proposalBatchEventIndex() {
+        return -1;
+    }
 }

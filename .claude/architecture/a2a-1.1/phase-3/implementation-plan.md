@@ -1,6 +1,6 @@
 # A2A 1.1 Phase 3 Implementation Plan
 
-**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. P3-T01 through P3-T04 are implemented and independently accepted. The regression repair and follow-up corrections are independently accepted (fourth correction follow-up review, 2026-11-20); the accepted snapshot passed 216 targeted tests. P3-T05 remains unassigned and its prompt is held.**
+**Status: APPROVED AT PLAN LEVEL — independent Sol High re-review, 2026-11-17. P3-T01 through P3-T05 are implemented and independently accepted within their reviewed scopes. The regression repair and follow-up corrections are independently accepted (fourth correction follow-up review, 2026-11-20); the accepted snapshot passed 216 targeted tests. P3-T05 correction 9 is independently accepted (2026-11-20), with 44 required and 228 retained regression cases passing; selectors overlap. P3-T06 remains unassigned.**
 
 > Execute one developer-selected task per separate Luna medium/normal session;
 > stop with a handoff for a separate Sol medium/normal review. The user's manual
@@ -489,8 +489,9 @@ corrections, with 216 targeted tests passing. A verified active
 no-op produces no canonical mutation, generation, revision or replication; its
 legacy response remains a delivery-only summary. Initial materialization,
 opening-input deduplication, broader artifact/metadata normalization and the
-remaining T05 acceptance/migration work below stay in T05. The developer's hold
-on its assignment/prompt remains in force.
+remaining T05 acceptance/migration work below were subsequently implemented
+and independently accepted in the [correction 9 review](reviews/P3-T05-review.md#correction-9-independent-re-review--2026-11-20-1645-utc).
+The developer lifted the earlier assignment hold. P3-T06 remains unassigned.
 
 **Scope/dependencies:** T02/T04. Replace full-object overwrite on the proposal
 path, including `addTask`, `emitEvent(Task)` and admitted raw proposals.
