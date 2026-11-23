@@ -138,6 +138,25 @@ public class InMemoryPushNotificationConfigStore implements PushNotificationConf
     }
 
     @Override
+    public boolean deleteInfoIfUnchanged(TaskPushNotificationConfig expected) {
+        String taskId = expected.taskId();
+        String configId = expected.id();
+        if (taskId == null || configId == null) {
+            return false;
+        }
+        boolean[] removed = {false};
+        pushNotificationInfos.computeIfPresent(taskId, (key, list) -> {
+            List<TaskPushNotificationConfig> mutable = new ArrayList<>(list);
+            removed[0] = mutable.removeIf(config -> configId.equals(config.id()) && config.equals(expected));
+            if (removed[0]) {
+                protocolVersions.remove(taskId + ":" + configId);
+            }
+            return mutable.isEmpty() ? null : List.copyOf(mutable);
+        });
+        return removed[0];
+    }
+
+    @Override
     public String getProtocolVersion(String taskId, String configId) {
         String version = protocolVersions.get(taskId + ":" + configId);
         return PushNotificationConfigStore.resolveProtocolVersion(version);

@@ -190,6 +190,22 @@ public interface PushNotificationConfigStore {
     void deleteInfo(String taskId, String configId);
 
     /**
+     * Deletes a configuration only if the stored value still equals {@code expected}.
+     * <p>
+     * Used to clean up an enrollment written by one attempt without removing a value that
+     * another operation replaced since. Stores that cannot make this comparison atomic
+     * should keep this default, which deletes nothing and returns {@code false}; the
+     * enrollment then remains a hidden orphan rather than risking deletion of a concurrent update.
+     * </p>
+     *
+     * @param expected the exact configuration written by the caller (task ID and ID must be set)
+     * @return {@code true} if the configuration was found unchanged and deleted
+     */
+    default boolean deleteInfoIfUnchanged(TaskPushNotificationConfig expected) {
+        return false;
+    }
+
+    /**
      * Gets the protocol version associated with a push notification configuration.
      *
      * @param taskId the task ID
