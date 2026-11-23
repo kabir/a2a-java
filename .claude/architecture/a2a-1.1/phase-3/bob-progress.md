@@ -29,8 +29,9 @@ self-review is labelled as such and does not satisfy a mandatory independent gat
 | Task | Base SHA | Started (UTC) | Two-hour deadline (UTC) | Status |
 | --- | --- | --- | --- | --- |
 | P3-T06 | `aa78cc261` | 2026-11-23 11:30 | 2026-11-23 13:30 | committed `e229ce160` |
-| P3-T15 | `e229ce160` | 2026-11-23 12:51 | 2026-11-23 14:51 | Bob review accepted; committing (see commit log) |
-| P3-T07 | `e229ce160` | 2026-11-23 11:50 | 2026-11-23 13:50 | **PARKED: two-hour budget expired (13:50 UTC) before resumption; no code was ever edited. Must NOT be restarted automatically with a fresh budget; requires developer-granted new assignment.** Restart notes below. |
+| P3-T15 | `e229ce160` | 2026-11-23 12:51 | 2026-11-23 14:51 | committed `399b6b047` (Bob review accepted) |
+| P3-T16 | `399b6b047` | not started | n/a | NOT STARTED (no code edited). Coordinator stopped before starting it: T07-T14 server branch was skipped in error (see note below); awaiting developer direction. |
+| P3-T07 | `e229ce160` | 2026-11-23 11:50 | 2026-11-23 13:50 | **PARKED (budget expired 13:50 UTC). COORDINATOR ERROR: T07 was READY and not blocked by infrastructure; the assignment allowed T15/T16 only if infrastructure blocked the server branch. Bob deferred T07 without a block, did T15 (committed `399b6b047`), and the budget lapsed. No T07 code was ever edited. Not restarted: needs a developer-granted decision on a fresh budget.** |
 
 ## Known blockers / notes
 
