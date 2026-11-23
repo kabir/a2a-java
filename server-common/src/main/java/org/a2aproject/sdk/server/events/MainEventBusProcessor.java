@@ -16,9 +16,13 @@ import jakarta.inject.Inject;
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.CommittedMutation;
 import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
+import org.a2aproject.sdk.server.tasks.OpeningTaskInput;
+import org.a2aproject.sdk.server.tasks.TaskEnrollmentCoordinator;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.TaskCommitSlot;
 import org.a2aproject.sdk.server.tasks.TaskManager;
+import org.a2aproject.sdk.server.tasks.TaskMutation;
+import org.a2aproject.sdk.server.tasks.TaskMutationAuthority;
 import org.a2aproject.sdk.server.tasks.TaskMutationNotCommittedException;
 import org.a2aproject.sdk.server.tasks.TaskMutationOutcomeUnknownException;
 import org.a2aproject.sdk.server.tasks.TaskPersistenceException;
@@ -28,6 +32,7 @@ import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.InternalError;
+import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -272,7 +277,8 @@ public class MainEventBusProcessor implements Runnable {
             // If this throws, we distribute an error to ensure "persist before client visibility"
 
             try {
-                updateResult = updateTaskStore(taskId, event, isReplicated);
+                rejectTaskOutputAfterDirectResponse(context, event, isReplicated);
+                updateResult = updateTaskStore(taskId, event, isReplicated, context.origin());
                 boolean isFinal = updateResult.isFinal();
 
                 if (updateResult.committedBatch() != null && updateResult.slot() != null) {
@@ -472,7 +478,8 @@ public class MainEventBusProcessor implements Runnable {
      * @return true if the task reached a final state, false otherwise
      * @throws InternalError if persistence fails
      */
-    private UpdateResult updateTaskStore(String taskId, Event event, boolean isReplicated) throws InternalError {
+    private UpdateResult updateTaskStore(String taskId, Event event, boolean isReplicated,
+            @Nullable EventQueue.ChildQueue origin) throws InternalError {
         try {
             // Extract contextId from event (all relevant events have it)
             String contextId = extractContextId(event);
@@ -480,15 +487,31 @@ public class MainEventBusProcessor implements Runnable {
             // Create temporary TaskManager instance for this event
             TaskManager taskManager = new TaskManager(taskId, contextId, taskStore, null);
 
-            if (!isReplicated && taskStore instanceof AtomicTaskStore) {
+            if (!isReplicated && taskStore instanceof AtomicTaskStore atomicStore) {
                 AtomicReference<TaskCommitSlot> reservedSlot = new AtomicReference<>();
+                OpeningTaskInput opening = pendingOpeningInput(origin, event);
+                TaskEnrollmentCoordinator.Enrollment enrollment = null;
+                boolean openingRetained = false;
                 try {
+                    if (opening != null && atomicStore.readSnapshot(taskId) == null) {
+                        // Enrollment precedes the task mutation that may notify it; nothing is
+                        // persisted for the task itself unless this succeeds.
+                        enrollment = opening.enroll();
+                        taskManager.retainOpeningInput(opening.input());
+                        openingRetained = true;
+                    }
                     TaskManager.CommittedProcessingResult result = taskManager.processCommitted(event,
                             (slot, mutation) -> {
                                 orderedTaskPublisher.reserve(slot);
                                 reservedSlot.set(slot);
                             });
                     CommittedMutation mutation = result.mutation();
+                    if (opening != null && openingRetained && mutation != null) {
+                        opening.markMaterialized();
+                        if (enrollment != null) {
+                            enrollment.taskCommitted();
+                        }
+                    }
                     CommittedTaskBatch batch = mutation != null && mutation.changed()
                             && !mutation.events().isEmpty()
                                     ? new CommittedTaskBatch(mutation.snapshot(), mutation.events())
@@ -509,6 +532,10 @@ public class MainEventBusProcessor implements Runnable {
                     if (slot != null) {
                         orderedTaskPublisher.discard(slot);
                     }
+                    settleEnrollment(enrollment, failure);
+                    throw failure;
+                } catch (Exception failure) {
+                    settleEnrollment(enrollment, failure);
                     throw failure;
                 }
             }
@@ -555,6 +582,82 @@ public class MainEventBusProcessor implements Runnable {
             LOGGER.error("Unexpected error updating TaskStore for task {}", taskId, e);
             // Rethrow to prevent distributing unpersisted event to clients
             throw new InternalError("TaskStore persistence failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Commits one request-originated mutation of an existing task through the authority and publishes
+     * its committed batch in order to this task's live observers, if any. Nothing is published when the
+     * store reports a non-commit. A task with no live queue has no local observers to notify.
+     *
+     * @throws TaskMutationNotCommittedException if the store definitively did not commit
+     * @throws TaskMutationOutcomeUnknownException if the commit outcome cannot be established
+     */
+    public CommittedMutation commitAndPublish(String taskId, TaskMutation mutation) {
+        if (!(taskStore instanceof AtomicTaskStore atomicStore)) {
+            throw new IllegalStateException("Committed input requires an AtomicTaskStore");
+        }
+        EventQueue queue = queueManager.get(taskId);
+        EventQueue.MainQueue mainQueue = queue instanceof EventQueue.MainQueue main ? main : null;
+        AtomicReference<TaskCommitSlot> reservedSlot = new AtomicReference<>();
+        boolean published = false;
+        try {
+            CommittedMutation committed = new TaskMutationAuthority(atomicStore).mutate(taskId, mutation,
+                    (slot, planned) -> {
+                        orderedTaskPublisher.reserve(slot);
+                        reservedSlot.set(slot);
+                    });
+            TaskCommitSlot slot = reservedSlot.get();
+            if (slot != null && committed.changed() && !committed.events().isEmpty() && mainQueue != null) {
+                CommittedTaskBatch batch = new CommittedTaskBatch(committed.snapshot(), committed.events());
+                orderedTaskPublisher.publish(slot, batch,
+                        committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, false, null, null, false))
+                        .toCompletableFuture().join();
+                published = true;
+            }
+            return committed;
+        } finally {
+            TaskCommitSlot slot = reservedSlot.get();
+            if (slot != null && !published) {
+                try {
+                    orderedTaskPublisher.discard(slot);
+                } catch (RuntimeException discardFailure) {
+                    LOGGER.warn("Could not discard unpublished input slot for task {}", taskId, discardFailure);
+                }
+            }
+        }
+    }
+
+    /** Returns the request's unmaterialized opening input if this event may materialize the task. */
+    private static @Nullable OpeningTaskInput pendingOpeningInput(@Nullable EventQueue.ChildQueue origin,
+            Event event) {
+        if (origin == null || !(event instanceof Task || event instanceof TaskStatusUpdateEvent
+                || event instanceof TaskArtifactUpdateEvent)) {
+            return null;
+        }
+        OpeningTaskInput opening = origin.openingInput();
+        return opening == null || opening.isMaterialized() ? null : opening;
+    }
+
+    private static void settleEnrollment(@Nullable TaskEnrollmentCoordinator.Enrollment enrollment,
+            Throwable failure) {
+        if (enrollment == null) {
+            return;
+        }
+        if (failure instanceof TaskMutationOutcomeUnknownException) {
+            enrollment.outcomeUnknown();
+        } else {
+            enrollment.taskNotCommitted();
+        }
+    }
+
+    /** A completed direct Message response cannot be followed by task creation in the same exchange. */
+    private static void rejectTaskOutputAfterDirectResponse(MainEventBusContext context, Event event,
+            boolean isReplicated) {
+        EventQueue.ChildQueue origin = context.origin();
+        if (!isReplicated && origin != null && origin.hasSelectedDirectMessageResponse()
+                && pendingOpeningInput(origin, event) != null) {
+            throw new InvalidParamsError("this invocation already selected a direct Message response");
         }
     }
 

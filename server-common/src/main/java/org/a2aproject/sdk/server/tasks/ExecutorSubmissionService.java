@@ -415,7 +415,22 @@ public final class ExecutorSubmissionService {
         }
         TaskProposal proposal = submission.proposal;
         ProposalExecution execution;
+        OpeningTaskInput opening = openingContext == null || proposal.baseSnapshot() != null
+                || directResponseAlreadySelected ? null : openingContext.getOpeningTaskInput();
+        if (opening != null && opening.isMaterialized()) {
+            opening = null;
+        }
+        TaskEnrollmentCoordinator.Enrollment enrollment = null;
         try {
+            if (opening != null) {
+                try {
+                    enrollment = opening.enroll();
+                } catch (RuntimeException enrollmentFailure) {
+                    // Enrollment precedes the task mutation, so nothing was attempted or committed.
+                    throw new TaskMutationNotCommittedException(proposal.proposedTask().id(),
+                            String.valueOf(enrollmentFailure.getMessage()), enrollmentFailure);
+                }
+            }
             if (directResponseAlreadySelected && openingTaskInput != null && proposal.baseSnapshot() == null) {
                 execution = new ProposalExecution(new ProposalResult.Rejected(proposal.correlationId(),
                         ProposalResult.Rejected.Kind.VALIDATION,
@@ -429,15 +444,30 @@ public final class ExecutorSubmissionService {
             if (!proposal.correlationId().equals(result.correlationId())) {
                 throw new IllegalStateException("proposal authority returned a mismatched correlation ID");
             }
+            if (opening != null && result instanceof ProposalResult.Committed) {
+                opening.markMaterialized();
+                if (enrollment != null) {
+                    enrollment.taskCommitted();
+                }
+            } else if (enrollment != null) {
+                enrollment.taskNotCommitted();
+            }
             if (result instanceof ProposalResult.Committed committed
                     && (!proposal.proposedTask().id().equals(committed.snapshot().task().id())
                             || !proposal.proposedTask().contextId().equals(committed.snapshot().task().contextId()))) {
                 throw new IllegalStateException("proposal authority returned a mismatched Task snapshot");
             }
         } catch (TaskMutationNotCommittedException e) {
+            if (enrollment != null) {
+                enrollment.taskNotCommitted();
+            }
             execution = new ProposalExecution(failed(proposal, String.valueOf(e.getMessage()), e,
                     ProposalResult.Failed.CommitCertainty.KNOWN_NOT_COMMITTED), null);
         } catch (Throwable failure) {
+            if (enrollment != null) {
+                // A failure after enrollment cannot prove the task did not commit.
+                enrollment.outcomeUnknown();
+            }
             execution = new ProposalExecution(failed(proposal, String.valueOf(failure.getMessage()), failure,
                     ProposalResult.Failed.CommitCertainty.INDETERMINATE), null);
         }
@@ -549,6 +579,10 @@ public final class ExecutorSubmissionService {
     private static @Nullable PendingTaskInput openingTaskInput(@Nullable RequestContext context) {
         if (context == null || context.getTask() != null || context.getTaskSnapshot() != null) {
             return null;
+        }
+        OpeningTaskInput retained = context.getOpeningTaskInput();
+        if (retained != null) {
+            return retained.input();
         }
         org.a2aproject.sdk.spec.Message message = context.getMessage();
         if (message == null) {

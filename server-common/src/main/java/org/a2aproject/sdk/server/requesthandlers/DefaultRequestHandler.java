@@ -47,10 +47,19 @@ import org.a2aproject.sdk.server.tasks.AgentEmitter;
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.ExecutionProposalContext;
 import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
+import org.a2aproject.sdk.server.tasks.MutationOrigin;
+import org.a2aproject.sdk.server.tasks.OpeningTaskInput;
+import org.a2aproject.sdk.server.tasks.PendingTaskInput;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.ResultAggregator;
+import org.a2aproject.sdk.server.tasks.TaskReadProjection;
+import org.a2aproject.sdk.server.tasks.TaskEnrollmentCoordinator;
 import org.a2aproject.sdk.server.tasks.TaskManager;
+import org.a2aproject.sdk.server.tasks.TaskMutationAuthority;
+import org.a2aproject.sdk.server.tasks.TaskMutationNotCommittedException;
+import org.a2aproject.sdk.server.tasks.TaskMutationOutcomeUnknownException;
+import org.a2aproject.sdk.server.tasks.TaskMutationPlanner;
 import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.server.tasks.TaskStoreException;
@@ -71,6 +80,8 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.SendInputParams;
+import org.a2aproject.sdk.spec.MessageSendConfiguration;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.PushNotificationNotSupportedError;
 import org.a2aproject.sdk.spec.StreamingEventKind;
@@ -302,6 +313,7 @@ public class DefaultRequestHandler implements RequestHandler {
     private PushNotificationConfigStore pushConfigStore;
     private MainEventBusProcessor mainEventBusProcessor;
     private Supplier<RequestContext.Builder> requestContextBuilder;
+    private volatile @Nullable TaskEnrollmentCoordinator enrollmentCoordinator;
 
     private final ConcurrentMap<String, CompletableFuture<Void>> runningAgents = new ConcurrentHashMap<>();
 
@@ -612,31 +624,9 @@ public class DefaultRequestHandler implements RequestHandler {
             LOGGER.debug("No task found for {}. Throwing TaskNotFoundError", params.id());
             throw new TaskNotFoundError();
         }
-        task = limitTaskHistory(task, params.historyLength());
+        task = TaskReadProjection.project(task, params.historyLength(), params.timelineLength());
         LOGGER.debug("Task found {}", task);
         return task;
-    }
-
-    /**
-     * Limits the history of a task to the most recent N messages.
-     *
-     * @param task the task to limit
-     * @param historyLength the maximum number of recent messages to keep ({@code null} = no limit, 0 = empty history)
-     * @return the task with limited history, or the original task if no limiting needed
-     */
-    private static Task limitTaskHistory(Task task, @Nullable Integer historyLength) {
-        // Negative values leave history untouched (defensive guard against IndexOutOfBoundsException)
-        if (task.history() == null || historyLength == null || historyLength < 0
-                || historyLength >= task.history().size()) {
-            return task;
-        }
-        // Keep only the most recent historyLength messages
-        List<Message> limitedHistory = task.history().subList(
-                task.history().size() - historyLength,
-                task.history().size());
-        return Task.builder(task)
-                .history(limitedHistory)
-                .build();
     }
 
     private static final String LIST_TASKS_SCOPE_ID = "";
@@ -860,6 +850,52 @@ public class DefaultRequestHandler implements RequestHandler {
     @Override
     @SuppressWarnings("NullAway")
     public EventKind onMessageSend(MessageSendParams rawParams, ServerCallContext context) throws A2AError {
+        return sendOrdinary(rawParams, List.of(), context);
+    }
+
+    @Override
+    public EventKind onSendInput(SendInputParams params, ServerCallContext context) throws A2AError {
+        if (params.message() == null) {
+            return commitArtifactOnlyInput(params, context);
+        }
+        return sendOrdinary(MessageSendParams.builder().message(params.message())
+                .configuration(params.configuration()).metadata(params.metadata()).tenant(params.tenant()).build(),
+                params.artifactUpdates(), context);
+    }
+
+    @Override
+    public Flow.Publisher<StreamingEventKind> onSendInputStream(SendInputParams params, ServerCallContext context)
+            throws A2AError {
+        if (params.message() == null) {
+            EventKind committed = commitArtifactOnlyInput(params, context);
+            return subscriber -> {
+                subscriber.onSubscribe(new Flow.Subscription() {
+                    private boolean done;
+
+                    @Override
+                    public void request(long n) {
+                        if (!done && n > 0) {
+                            done = true;
+                            subscriber.onNext((StreamingEventKind) committed);
+                            subscriber.onComplete();
+                        }
+                    }
+
+                    @Override
+                    public void cancel() {
+                        done = true;
+                    }
+                });
+            };
+        }
+        return sendOrdinaryStream(MessageSendParams.builder().message(params.message())
+                .configuration(params.configuration()).metadata(params.metadata()).tenant(params.tenant()).build(),
+                params.artifactUpdates(), context);
+    }
+
+    @SuppressWarnings("NullAway")
+    private EventKind sendOrdinary(MessageSendParams rawParams, List<TaskArtifactUpdateEvent> artifactUpdates,
+            ServerCallContext context) throws A2AError {
         MessageSendParams params = normalizeBlankIds(rawParams);
         validateEmbeddedPushConfig(params, context);
         LOGGER.debug("onMessageSend - task: {}; context {}", params.message().taskId(), params.message().contextId());
@@ -871,7 +907,7 @@ public class DefaultRequestHandler implements RequestHandler {
         }
 
         // Build MessageSendSetup which creates RequestContext with real taskId (auto-generated if needed)
-        MessageSendSetup mss = initMessageSend(params, context);
+        MessageSendSetup mss = initMessageSend(params, artifactUpdates, context);
 
         // Use the taskId from RequestContext for queue management (no temp ID needed!)
         // RequestContext.build() guarantees taskId is non-null via checkOrGenerateTaskId()
@@ -881,6 +917,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
         // Create queue with real taskId (no tempId parameter needed)
         EventQueue queue = queueManager.createOrTap(queueTaskId);
+        retainOpening(queue, mss);
         final java.util.concurrent.atomic.AtomicReference<@NonNull String> taskId = new java.util.concurrent.atomic.AtomicReference<>(queueTaskId);
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor,
                         SECONDS.toNanos(reconciliationTimeoutSeconds));
@@ -932,11 +969,10 @@ public class DefaultRequestHandler implements RequestHandler {
 
             // No ID switching needed - agent uses context.getTaskId() which is the same as queue key
 
-            // Store push notification config for newly created tasks (mirrors streaming logic)
-            // Only for NEW tasks - existing tasks are handled by initMessageSend()
-            if (mss.task() == null && kind instanceof Task createdTask && shouldAddPushInfo(params)) {
-                LOGGER.debug("Storing push notification config for new task {} (original taskId from params: {})",
-                        createdTask.id(), params.message().taskId());
+            // Atomic stores enroll new-task webhooks at materialization (before the task mutation);
+            // legacy stores have no opening input, so enrollment keeps its original post-creation timing.
+            if (mss.task() == null && mss.opening() == null && kind instanceof Task createdTask
+                    && shouldAddPushInfo(params)) {
                 String version = context != null ? context.getRequestedProtocolVersion() : null;
                 pushConfigStore.setInfo(TaskPushNotificationConfig.builder(params.configuration().taskPushNotificationConfig())
                         .taskId(createdTask.id()).build(), version);
@@ -1061,7 +1097,8 @@ public class DefaultRequestHandler implements RequestHandler {
 
         if (kind instanceof Task task) {
             Integer historyLength = params.configuration() != null ? params.configuration().historyLength() : null;
-            kind = limitTaskHistory(task, historyLength);
+            Integer timelineLength = params.configuration() != null ? params.configuration().timelineLength() : null;
+            kind = TaskReadProjection.project(task, historyLength, timelineLength);
         }
 
         recordOwnershipIfNeeded(context, extractTaskId(kind), TaskOperation.MESSAGE_SEND);
@@ -1074,6 +1111,12 @@ public class DefaultRequestHandler implements RequestHandler {
     @SuppressWarnings("NullAway")
     public Flow.Publisher<StreamingEventKind> onMessageSendStream(
             MessageSendParams rawParams, ServerCallContext context) throws A2AError {
+        return sendOrdinaryStream(rawParams, List.of(), context);
+    }
+
+    @SuppressWarnings("NullAway")
+    private Flow.Publisher<StreamingEventKind> sendOrdinaryStream(MessageSendParams rawParams,
+            List<TaskArtifactUpdateEvent> artifactUpdates, ServerCallContext context) throws A2AError {
         MessageSendParams params = normalizeBlankIds(rawParams);
         validateEmbeddedPushConfig(params, context);
         LOGGER.debug("onMessageSendStream START - task: {}; context: {}; runningAgents: {}",
@@ -1086,7 +1129,7 @@ public class DefaultRequestHandler implements RequestHandler {
         }
 
         // Build MessageSendSetup which creates RequestContext with real taskId (auto-generated if needed)
-        MessageSendSetup mss = initMessageSend(params, context);
+        MessageSendSetup mss = initMessageSend(params, artifactUpdates, context);
 
         // Use the taskId from RequestContext for queue management (no temp ID needed!)
         // RequestContext.build() guarantees taskId is non-null via checkOrGenerateTaskId()
@@ -1096,6 +1139,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
         // Create queue with real taskId (no tempId parameter needed)
         EventQueue queue = queueManager.createOrTap(queueTaskId);
+        retainOpening(queue, mss);
         LOGGER.debug("Created/tapped queue for task {}: {}", taskId.get(), queue);
 
         // Record ownership synchronously for new tasks before agent starts
@@ -1103,17 +1147,11 @@ public class DefaultRequestHandler implements RequestHandler {
             recordOwnershipIfNeeded(context, queueTaskId, TaskOperation.MESSAGE_SEND_STREAM);
         }
 
-        // Store push notification config SYNCHRONOUSLY for new tasks before agent starts
-        // This ensures config is available when MainEventBusProcessor sends push notifications
-        // For existing tasks, config is stored in initMessageSend()
-        if (mss.task() == null && shouldAddPushInfo(params)) {
-            // Satisfy Nullaway
-            Objects.requireNonNull(taskId.get(), "taskId was null");
-            LOGGER.debug("Storing push notification config for new streaming task {} EARLY (original taskId from params: {})",
-                    taskId.get(), params.message().taskId());
+        // Atomic stores enroll at materialization; legacy stores keep the original early enrollment.
+        if (mss.task() == null && mss.opening() == null && shouldAddPushInfo(params)) {
             String version = context != null ? context.getRequestedProtocolVersion() : null;
             pushConfigStore.setInfo(TaskPushNotificationConfig.builder(params.configuration().taskPushNotificationConfig())
-                    .taskId(taskId.get()).build(), version);
+                    .taskId(queueTaskId).build(), version);
         }
 
         ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor,
@@ -1189,7 +1227,8 @@ public class DefaultRequestHandler implements RequestHandler {
                         LOGGER.debug("onNext: {} for task {}", item.getClass().getSimpleName(), taskId.get());
                         if (item instanceof Task task) {
                             Integer historyLength = params.configuration() != null ? params.configuration().historyLength() : null;
-                            item = limitTaskHistory(task, historyLength);
+                            Integer timelineLength = params.configuration() != null ? params.configuration().timelineLength() : null;
+                            item = TaskReadProjection.project(task, historyLength, timelineLength);
                         }
                         subscriber.onNext(item);
                     }
@@ -1695,7 +1734,8 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     @SuppressWarnings("NullAway") // shouldAddPushInfo guarantees pushConfigStore != null
-    private MessageSendSetup initMessageSend(MessageSendParams params, ServerCallContext context) throws A2AError {
+    private MessageSendSetup initMessageSend(MessageSendParams params, List<TaskArtifactUpdateEvent> artifactUpdates,
+            ServerCallContext context) throws A2AError {
         Task task = authorizeTaskAccess(params, context);
         TaskSnapshot taskSnapshot = task != null && taskStore instanceof AtomicTaskStore atomicStore
                 ? atomicStore.readSnapshot(task.id()) : null;
@@ -1718,6 +1758,7 @@ public class DefaultRequestHandler implements RequestHandler {
                 .build();
 
         String taskId = Objects.requireNonNull(requestContext.getTaskId());
+        boolean atomic = taskStore instanceof AtomicTaskStore;
 
         TaskManager taskManager = new TaskManager(
                 taskId,
@@ -1725,26 +1766,13 @@ public class DefaultRequestHandler implements RequestHandler {
                 taskStore,
                 requestParams.message());
 
-        if (task != null) {
-            LOGGER.debug("Found task updating with message {}", params.message());
-            task = taskManager.updateWithMessage(params.message(), task);
-
-            taskSnapshot = taskStore instanceof AtomicTaskStore atomicStore
-                    ? atomicStore.readSnapshot(task.id()) : null;
-            if (taskStore instanceof AtomicTaskStore && taskSnapshot == null) {
+        if (task != null && atomic) {
+            task = commitExistingTaskInput(params, requestParams, artifactUpdates, task, context);
+            taskSnapshot = ((AtomicTaskStore) taskStore).readSnapshot(task.id());
+            if (taskSnapshot == null) {
                 throw new TaskNotFoundError();
             }
-            if (taskSnapshot != null) {
-                task = taskSnapshot.task();
-            }
-
-            if (shouldAddPushInfo(params)) {
-                LOGGER.debug("Adding push info");
-                String version = context != null ? context.getRequestedProtocolVersion() : null;
-                pushConfigStore.setInfo(TaskPushNotificationConfig.builder(params.configuration().taskPushNotificationConfig())
-                        .taskId(task.id()).build(), version);
-            }
-
+            task = taskSnapshot.task();
             requestContext = requestContextBuilder.get()
                     .setParams(requestParams)
                     .setTask(task)
@@ -1753,9 +1781,140 @@ public class DefaultRequestHandler implements RequestHandler {
                     .setTenant(requestParams.tenant())
                     .setServerCallContext(context)
                     .build();
+        } else if (task != null) {
+            LOGGER.debug("Found task updating with message {}", params.message());
+            task = taskManager.updateWithMessage(params.message(), task);
+            if (shouldAddPushInfo(params)) {
+                LOGGER.debug("Adding push info");
+                String version = context != null ? context.getRequestedProtocolVersion() : null;
+                pushConfigStore.setInfo(TaskPushNotificationConfig.builder(params.configuration().taskPushNotificationConfig())
+                        .taskId(task.id()).build(), version);
+            }
+            requestContext = requestContextBuilder.get()
+                    .setParams(requestParams)
+                    .setTask(task)
+                    .setContextId(task.contextId())
+                    .setTenant(requestParams.tenant())
+                    .setServerCallContext(context)
+                    .build();
         }
 
-        return new MessageSendSetup(taskManager, task, requestContext);
+        OpeningTaskInput opening = null;
+        if (task == null && atomic) {
+            Message openingMessage = Objects.requireNonNull(requestContext.getMessage());
+            PendingTaskInput pending = new PendingTaskInput(openingMessage, artifactUpdates,
+                    requestParams.configuration(), requestParams.metadata(),
+                    new PendingTaskInput.Admission(taskId, requestContext.getContextId(), requestParams.tenant(),
+                            true, userArtifactsEnabled(context)));
+            String version = context != null ? context.getRequestedProtocolVersion() : null;
+            opening = new OpeningTaskInput(pending, shouldAddPushInfo(requestParams)
+                    ? () -> taskEnrollment().enrollNewTask(
+                            requestParams.configuration().taskPushNotificationConfig(), taskId, version)
+                    : null);
+            requestContext = requestContext.withOpeningTaskInput(opening);
+        }
+
+        return new MessageSendSetup(taskManager, task, requestContext, opening);
+    }
+
+    /** Hands the request-local opening input to this request's own queue view, if it can retain it. */
+    private static void retainOpening(EventQueue queue, MessageSendSetup mss) {
+        OpeningTaskInput opening = mss.opening();
+        if (opening != null) {
+            queue.retainOpeningInput(opening);
+        }
+    }
+
+    /** Artifact-only input to an existing task: one guarded atomic commit, no executor invocation. */
+    @SuppressWarnings("NullAway")
+    private EventKind commitArtifactOnlyInput(SendInputParams params, ServerCallContext context) throws A2AError {
+        TaskArtifactUpdateEvent first = params.artifactUpdates().get(0);
+        String requestedTaskId = first.taskId();
+        validateRequiredId(context, "taskId", requestedTaskId);
+        enforceWrite(context, requestedTaskId, TaskOperation.MESSAGE_SEND);
+        if (!(taskStore instanceof AtomicTaskStore atomicStore)) {
+            throw new UnsupportedOperationError();
+        }
+        TaskSnapshot snapshot = atomicStore.readSnapshot(requestedTaskId);
+        if (snapshot == null) {
+            throw new TaskNotFoundError();
+        }
+        Task task = snapshot.task();
+        PendingTaskInput pending = new PendingTaskInput(null, params.artifactUpdates(), params.configuration(),
+                params.metadata(), new PendingTaskInput.Admission(task.id(), task.contextId(), params.tenant(), true,
+                        userArtifactsEnabled(context)));
+        try {
+            Task committed = mainEventBusProcessor.commitAndPublish(task.id(),
+                    current -> TaskMutationPlanner.planInput(current, pending, MutationOrigin.USER))
+                    .snapshot().task();
+            recordOwnershipIfNeeded(context, task.id(), TaskOperation.MESSAGE_SEND);
+            MessageSendConfiguration config = params.configuration();
+            return TaskReadProjection.project(committed, config == null ? null : config.historyLength(),
+                    config == null ? null : config.timelineLength());
+        } catch (TaskMutationNotCommittedException | TaskMutationOutcomeUnknownException failure) {
+            throw toInternalError(failure);
+        }
+    }
+
+    private static boolean userArtifactsEnabled(@Nullable ServerCallContext context) {
+        EffectiveAgentCard card = context != null ? context.getEffectiveAgentCard() : null;
+        return card != null && card.card().capabilities().userArtifacts();
+    }
+
+    private TaskEnrollmentCoordinator taskEnrollment() {
+        TaskEnrollmentCoordinator coordinator = enrollmentCoordinator;
+        if (coordinator == null) {
+            synchronized (this) {
+                coordinator = enrollmentCoordinator;
+                if (coordinator == null) {
+                    coordinator = new TaskEnrollmentCoordinator(pushConfigStore, java.time.Clock.systemUTC(),
+                            java.time.Duration.ofMinutes(5));
+                    enrollmentCoordinator = coordinator;
+                }
+            }
+        }
+        return coordinator;
+    }
+
+    /**
+     * Commits guarded input for an existing task. Webhook enrollment precedes the input commit; if the
+     * input then fails, the visible enrollment is reported rather than deleted or restored, since a
+     * concurrent configuration update may have changed it.
+     */
+    @SuppressWarnings("NullAway")
+    private Task commitExistingTaskInput(MessageSendParams params, MessageSendParams requestParams,
+            List<TaskArtifactUpdateEvent> artifactUpdates, Task task, ServerCallContext context) throws A2AError {
+        TaskEnrollmentCoordinator.Enrollment enrollment = null;
+        if (shouldAddPushInfo(params)) {
+            String version = context != null ? context.getRequestedProtocolVersion() : null;
+            enrollment = taskEnrollment().enrollExistingTask(
+                    params.configuration().taskPushNotificationConfig(), task.id(), version);
+        }
+        PendingTaskInput pending = new PendingTaskInput(requestParams.message(), artifactUpdates,
+                requestParams.configuration(), requestParams.metadata(),
+                new PendingTaskInput.Admission(task.id(), task.contextId(), requestParams.tenant(), true,
+                        userArtifactsEnabled(context)));
+        try {
+            return mainEventBusProcessor.commitAndPublish(task.id(),
+                    current -> TaskMutationPlanner.planInput(current, pending, MutationOrigin.USER))
+                    .snapshot().task();
+        } catch (A2AError | TaskMutationNotCommittedException | TaskMutationOutcomeUnknownException failure) {
+            if (enrollment == null) {
+                throw failure instanceof A2AError error ? error : toInternalError(failure);
+            }
+            throw enrollment.partialEffectError(failure, failure instanceof TaskMutationOutcomeUnknownException);
+        } catch (java.util.concurrent.CompletionException publicationFailure) {
+            // The input committed but ordered publication failed: the commit cannot be claimed as not-committed.
+            Throwable cause = publicationFailure.getCause() != null ? publicationFailure.getCause() : publicationFailure;
+            if (enrollment == null) {
+                throw toInternalError(cause);
+            }
+            throw enrollment.partialEffectError(cause, true);
+        }
+    }
+
+    private static InternalError toInternalError(Throwable failure) {
+        return new InternalError(failure.getMessage() == null ? "Task input did not commit" : failure.getMessage());
     }
 
     private ExecutionProposalContext createExecutionProposalContext(RequestContext requestContext) {
@@ -1918,5 +2077,6 @@ public class DefaultRequestHandler implements RequestHandler {
         THREAD_STATS_LOGGER.debug("=== END THREAD STATS ===");
     }
 
-    private record MessageSendSetup(TaskManager taskManager, @Nullable Task task, RequestContext requestContext) {}
+    private record MessageSendSetup(TaskManager taskManager, @Nullable Task task, RequestContext requestContext,
+            @Nullable OpeningTaskInput opening) {}
 }

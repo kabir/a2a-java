@@ -30,13 +30,20 @@ self-review is labelled as such and does not satisfy a mandatory independent gat
 | --- | --- | --- | --- | --- |
 | P3-T06 | `aa78cc261` | 2026-11-23 11:30 | 2026-11-23 13:30 | committed `e229ce160` |
 | P3-T15 | `e229ce160` | 2026-11-23 12:51 | 2026-11-23 14:51 | committed `399b6b047` (Bob review accepted) |
-| P3-T16 | `399b6b047` | not started | n/a | NOT STARTED (no code edited). Coordinator stopped before starting it: T07-T14 server branch was skipped in error (see note below); awaiting developer direction. |
-| P3-T07 | `e229ce160` | 2026-11-23 11:50 | 2026-11-23 13:50 | **PARKED (budget expired 13:50 UTC). COORDINATOR ERROR: T07 was READY and not blocked by infrastructure; the assignment allowed T15/T16 only if infrastructure blocked the server branch. Bob deferred T07 without a block, did T15 (committed `399b6b047`), and the budget lapsed. No T07 code was ever edited. Not restarted: needs a developer-granted decision on a fresh budget.** |
+| P3-T16 | `399b6b047` | not started | n/a | NOT STARTED. Deliberately held until the server branch (T07-T14) is worked in dependency order. |
+| P3-T07 | `a60ea0259` | 2026-11-23 14:05 (renewed 16:08) | 2026-11-23 18:08 | COMMITTED locally (see git log: `feat(a2a-1.1): materialize ordinary input atomically`). Review 3 (Bob): Accepted within scope. Hash `069307d6d5ae06e73d995e6484176555772f4f77f74140b48e7313d2e39e74d5`. Next ready by dependency: T08 (not started). |
+
+### P3-T07 renewed budget (developer-granted)
+
+The developer explicitly granted a NEW two-hour backstop for P3-T07 (Bob cannot renew budgets itself; this is the developer's
+grant). Started 2026-11-23 16:08 UTC, deadline 2026-11-23 18:08 UTC. Build/test commands bounded to min(20 min, remaining) + 30 s.
+Candidate hash verified unchanged at start: `069307d6d5ae06e73d995e6484176555772f4f77f74140b48e7313d2e39e74d5`. Scope: third
+(correction) review, then local commit if accepted; stop after T07.
 
 ## Known blockers / notes
 
-- T09 requires a disposable storage-enforced writer-fencing fixture; T13 requires
-  real PostgreSQL/Kafka/two-node execution. Availability of Docker is not yet checked.
+- T09/T13: developer started Podman at ~14:04 UTC. `/var/run/docker.sock` -> podman socket answers `_ping` OK (`podman ps` works; `docker` CLI absent). Testcontainers should work; real PostgreSQL/Kafka execution must still be demonstrated when T09/T13 run.
+
 - T15/T16 are an independent ready branch (after T05) if infrastructure blocks T08+.
 
 ## T07 inspection notes (no code edited; restart here)

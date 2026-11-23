@@ -8,9 +8,7 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.TaskAuthorizationProvider;
 import org.a2aproject.sdk.server.util.CdiUtils;
-import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.ListTasksParams;
-import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.util.PageToken;
@@ -367,10 +365,11 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
         // Transform tasks: limit history and optionally remove artifacts
         int historyLength = params.getEffectiveHistoryLength();
+        @Nullable Integer timelineLength = params.timelineLength();
         boolean includeArtifacts = params.shouldIncludeArtifacts();
 
         List<Task> transformedTasks = pageTasks.stream()
-                .map(task -> transformTask(task, historyLength, includeArtifacts))
+                .map(task -> transformTask(task, historyLength, timelineLength, includeArtifacts))
                 .toList();
 
         return new ListTasksResult(transformedTasks, totalSize, transformedTasks.size(), nextPageToken);
@@ -390,29 +389,17 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
         }
     }
 
-    private Task transformTask(Task task, int historyLength, boolean includeArtifacts) {
-        // Limit history if needed (keep most recent N messages)
-        List<Message> history = task.history();
-        if (historyLength == 0) {
-            // When historyLength is 0, return empty history
-            history = List.of();
-        } else if (historyLength > 0 && history != null && history.size() > historyLength) {
-            history = history.subList(history.size() - historyLength, history.size());
-        }
+    private Task transformTask(Task task, int historyLength, @Nullable Integer timelineLength,
+            boolean includeArtifacts) {
+        // History keeps the most recent N messages (list defaults to zero); the timeline window is
+        // independent and left as stored when its limit is omitted.
+        Task windowed = TaskReadProjection.project(task, historyLength, timelineLength);
 
         // Remove artifacts if not requested
-        List<Artifact> artifacts = includeArtifacts ? task.artifacts() : List.of();
-
-        // If no transformation needed, return original task
-        if (history == task.history() && artifacts == task.artifacts()) {
-            return task;
+        if (includeArtifacts) {
+            return windowed;
         }
-
-        // Build new task with transformed data
-        return Task.builder(task)
-                .artifacts(artifacts)
-                .history(history)
-                .build();
+        return Task.builder(windowed).artifacts(List.of()).build();
     }
 
     @Override

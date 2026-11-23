@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.a2aproject.sdk.server.ServerCallContext;
+import org.a2aproject.sdk.server.tasks.OpeningTaskInput;
 import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.Message;
@@ -82,6 +83,7 @@ public class RequestContext {
     private final @Nullable String tenant;
     private final @Nullable Task task;
     private final @Nullable TaskSnapshot taskSnapshot;
+    private final @Nullable OpeningTaskInput openingTaskInput;
     private final List<Task> relatedTasks;
     private final @Nullable ServerCallContext callContext;
 
@@ -107,6 +109,7 @@ public class RequestContext {
             @Nullable String tenant,
             @Nullable Task task,
             @Nullable TaskSnapshot taskSnapshot,
+            @Nullable OpeningTaskInput openingTaskInput,
             List<Task> relatedTasks,
             @Nullable ServerCallContext callContext) {
         this.params = params;
@@ -115,6 +118,7 @@ public class RequestContext {
         this.tenant = tenant;
         this.task = task;
         this.taskSnapshot = taskSnapshot;
+        this.openingTaskInput = openingTaskInput;
         this.relatedTasks = relatedTasks;
         this.callContext = callContext;
     }
@@ -171,6 +175,20 @@ public class RequestContext {
     /** Returns the invocation-start Task and storage revision captured atomically, when available. */
     public @Nullable TaskSnapshot getTaskSnapshot() {
         return taskSnapshot;
+    }
+
+    /**
+     * Framework-internal: request-local opening input that has not been materialized into a task yet.
+     * Present only for an ordinary send that may create a new task; holding it persists nothing.
+     */
+    public @Nullable OpeningTaskInput getOpeningTaskInput() {
+        return openingTaskInput;
+    }
+
+    /** Returns a copy of this context that retains the given not-yet-materialized opening input. */
+    public RequestContext withOpeningTaskInput(@Nullable OpeningTaskInput input) {
+        return new RequestContext(params, taskId, contextId, tenant, task, taskSnapshot, input, relatedTasks,
+                callContext);
     }
 
     /**
@@ -472,7 +490,7 @@ public class RequestContext {
 
             // 6. Call constructor with finalized values (IDs guaranteed non-null)
             return new RequestContext(finalParams, finalTaskId, finalContextId,
-                    tenant, task, taskSnapshot, finalRelatedTasks, serverCallContext);
+                    tenant, task, taskSnapshot, null, finalRelatedTasks, serverCallContext);
         }
     }
 

@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
+import org.a2aproject.sdk.server.tasks.OpeningTaskInput;
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
@@ -358,6 +359,17 @@ public abstract class EventQueue implements AutoCloseable {
      */
     public void enqueueEventLocalOnly(Event event) {
         enqueueLocalOnly(new LocalEventQueueItem(event));
+    }
+
+    /**
+     * Retains request-local opening input for the invocation that owns this queue view until the
+     * first task-bearing output materializes the task. Holding the input persists nothing.
+     *
+     * @return {@code true} if this queue retained it; {@code false} if it cannot, in which case the
+     *         caller keeps the previous (non-deferred) behavior
+     */
+    public boolean retainOpeningInput(OpeningTaskInput input) {
+        return false;
     }
 
     /**
@@ -854,6 +866,13 @@ public abstract class EventQueue implements AutoCloseable {
             pollingStarted.set(true);
           }
 
+        private volatile boolean closedForDirectBranch;
+
+        /** True once this queue closed because its only invocation ended with a direct Message and no task. */
+        boolean isClosedForDirectBranch() {
+            return closedForDirectBranch;
+        }
+
         void childClosing(ChildQueue child, boolean immediate) {
             if (!children.remove(child)) {
                 return;  // Already removed by a concurrent close
@@ -879,7 +898,15 @@ public abstract class EventQueue implements AutoCloseable {
             // to prevent closing queues for non-final tasks (fire-and-forget, resubscription support)
             if (taskStateProvider != null && taskId != null) {
                 boolean isFinalized = taskStateProvider.isTaskFinalized(taskId);
-                if (!isFinalized) {
+                boolean directBranchWithoutTask = child.hasSelectedDirectMessageResponse()
+                        && !isFinalized && !taskStateProvider.isTaskActive(taskId);
+                if (directBranchWithoutTask) {
+                    // A no-task direct Message never created a task, so there is nothing to resubscribe to.
+                    // New task IDs are server-generated per request, and a client-supplied ID must name an
+                    // existing task, so no other request can materialize a task under this queue's ID.
+                    this.closedForDirectBranch = true;
+                    LOGGER.debug("MainQueue for task {} served a direct Message and no task exists - closing queue", taskId);
+                } else if (!isFinalized) {
                     LOGGER.debug("MainQueue for task {} has no children, but task is not finalized - keeping queue open for potential resubscriptions", taskId);
                     return;  // Don't close - keep queue open for fire-and-forget or late subscribes
                 }
@@ -1073,6 +1100,7 @@ public abstract class EventQueue implements AutoCloseable {
         private final MainQueue parent;
         private final BlockingQueue<EventQueueItem> queue;
         private final AtomicBoolean directMessageResponseSelected = new AtomicBoolean();
+        private volatile @Nullable OpeningTaskInput openingInput;
         private volatile boolean immediateClose = false;
         private int pendingFinalEvents;
         private int submittedFinalEvents;
@@ -1089,6 +1117,16 @@ public abstract class EventQueue implements AutoCloseable {
 
         void markDirectMessageResponseSelected() {
             directMessageResponseSelected.set(true);
+        }
+
+        @Override
+        public boolean retainOpeningInput(OpeningTaskInput input) {
+            this.openingInput = Objects.requireNonNull(input, "input");
+            return true;
+        }
+
+        @Nullable OpeningTaskInput openingInput() {
+            return openingInput;
         }
 
         boolean hasSelectedDirectMessageResponse() {

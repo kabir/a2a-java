@@ -800,6 +800,53 @@ public class EventQueueTest {
         assertEquals(customSize, childDeque.remainingCapacity());
     }
 
+    private EventQueue.MainQueue directBranchMain(String taskId) {
+        return (EventQueue.MainQueue) EventQueue.builder(mainEventBus).taskId(taskId)
+                .taskStateProvider(taskStore).mainEventBus(mainEventBus).build();
+    }
+
+    @Test
+    public void directBranchChildClosingWithNoTaskClosesTheMainQueue() {
+        EventQueue.MainQueue main = directBranchMain("direct-only");
+        EventQueue.ChildQueue child = (EventQueue.ChildQueue) main.tap();
+        child.markDirectMessageResponseSelected();
+        child.close();
+        assertTrue(main.isClosed(), "a direct Message with no task leaves nothing to keep the queue for");
+        assertTrue(main.isClosedForDirectBranch());
+    }
+
+    @Test
+    public void directBranchChildClosingKeepsTheMainQueueWhileAnotherChildRemains() {
+        EventQueue.MainQueue main = directBranchMain("direct-with-sibling");
+        EventQueue.ChildQueue direct = (EventQueue.ChildQueue) main.tap();
+        EventQueue.ChildQueue sibling = (EventQueue.ChildQueue) main.tap();
+        direct.markDirectMessageResponseSelected();
+        direct.close();
+        assertFalse(main.isClosed(), "a remaining observer keeps the queue open");
+        assertFalse(main.isClosedForDirectBranch());
+        sibling.close(true);
+    }
+
+    @Test
+    public void directBranchChildClosingKeepsTheMainQueueOfAnActiveTask() {
+        taskStore.save(Task.builder().id("active-task").contextId("ctx")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build(), false);
+        EventQueue.MainQueue main = directBranchMain("active-task");
+        EventQueue.ChildQueue child = (EventQueue.ChildQueue) main.tap();
+        child.markDirectMessageResponseSelected();
+        child.close();
+        assertFalse(main.isClosed(), "an existing non-final task keeps its queue for resubscription");
+        assertFalse(main.isClosedForDirectBranch());
+    }
+
+    @Test
+    public void nonDirectChildClosingWithNoTaskKeepsTheMainQueueOpen() {
+        EventQueue.MainQueue main = directBranchMain("fire-and-forget");
+        EventQueue.ChildQueue child = (EventQueue.ChildQueue) main.tap();
+        child.close();
+        assertFalse(main.isClosed(), "only a selected direct Message response may close an unmaterialized queue");
+    }
+
     @Test
     public void testSemaphorePermitReleasedWhenSubmitFails() {
         MainEventBus failingBus = mock(MainEventBus.class);

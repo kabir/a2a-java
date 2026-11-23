@@ -47,6 +47,7 @@ public class TaskManager {
     private final TaskStore taskStore;
     private final @Nullable Message initialMessage;
     private volatile @Nullable Task currentTask;
+    private volatile @Nullable PendingTaskInput openingInput;
 
     public TaskManager(@Nullable String taskId, @Nullable String contextId, TaskStore taskStore, @Nullable Message initialMessage) {
         checkNotNullParam("taskStore", taskStore);
@@ -54,6 +55,14 @@ public class TaskManager {
         this.contextId = contextId;
         this.taskStore = taskStore;
         this.initialMessage = initialMessage;
+    }
+
+    /**
+     * Retains request-local opening input to be materialized atomically with the first task-bearing
+     * event when no task exists yet. Retaining it persists nothing.
+     */
+    public void retainOpeningInput(@Nullable PendingTaskInput input) {
+        this.openingInput = input;
     }
 
     @Nullable String getTaskId() {
@@ -257,6 +266,10 @@ public class TaskManager {
                     throw new InvalidParamsError(
                             "Full Task replacement is not supported by committed mutation processing");
                 }
+                PendingTaskInput opening = openingInput;
+                if (opening != null) {
+                    return TaskMutationPlanner.planTaskProposal(null, task, opening);
+                }
                 Task initial = normalizeInitialTaskAuthority(task);
                 return new MutationPlan(initial, List.of(initial), true);
             }, reservation);
@@ -266,7 +279,8 @@ public class TaskManager {
             checkIdsAndUpdateIfNecessary(statusEvent.taskId(), statusEvent.contextId());
             CommittedMutation mutation = mutate(atomicTaskStore, statusEvent.taskId(), current ->
                     current == null
-                            ? initialMessage == null ? planLegacyInitialDelta(statusEvent)
+                            ? openingInput != null ? planOpeningThen(statusEvent)
+                            : initialMessage == null ? planLegacyInitialDelta(statusEvent)
                                     : planInitialStatus(statusEvent)
                             : TaskMutationPlanner.planStatus(current, statusEvent),
                     reservation);
@@ -275,7 +289,8 @@ public class TaskManager {
         if (event instanceof TaskArtifactUpdateEvent artifactEvent) {
             checkIdsAndUpdateIfNecessary(artifactEvent.taskId(), artifactEvent.contextId());
             CommittedMutation mutation = mutate(atomicTaskStore, artifactEvent.taskId(), current -> current == null
-                    ? initialMessage == null ? planLegacyInitialDelta(artifactEvent)
+                    ? openingInput != null ? planOpeningThen(artifactEvent)
+                    : initialMessage == null ? planLegacyInitialDelta(artifactEvent)
                             : TaskMutationPlanner.planInput(null,
                                     new PendingTaskInput(initialMessage, List.of(artifactEvent), null, null,
                                             new PendingTaskInput.Admission(artifactEvent.taskId(),
@@ -427,6 +442,32 @@ public class TaskManager {
             }
             throw failure;
         }
+    }
+
+    /** Plans the pending opening batch and then the first executor status/artifact output, atomically. */
+    private MutationPlan planOpeningThen(Event event) {
+        PendingTaskInput opening = openingInput;
+        if (opening == null) {
+            throw new IllegalStateException("No retained opening input");
+        }
+        MutationPlan open = TaskMutationPlanner.planInput(null, opening, MutationOrigin.USER);
+        // The planner reads only the task of its base snapshot; the placeholder revision is never stored.
+        TaskSnapshot base = new TaskSnapshot(open.task(), new TaskRevision(1));
+        MutationPlan next;
+        if (event instanceof TaskStatusUpdateEvent statusEvent) {
+            next = TaskMutationPlanner.planStatus(base, statusEvent);
+        } else if (event instanceof TaskArtifactUpdateEvent artifactEvent) {
+            next = TaskMutationPlanner.planInput(base,
+                    new PendingTaskInput(null, List.of(artifactEvent), null, null,
+                            new PendingTaskInput.Admission(artifactEvent.taskId(), artifactEvent.contextId(), null,
+                                    true, true)),
+                    MutationOrigin.AGENT);
+        } else {
+            throw new IllegalArgumentException("Only status or artifact output can follow opening input");
+        }
+        List<StreamingEventKind> events = new ArrayList<>(open.events());
+        events.addAll(next.events());
+        return new MutationPlan(next.task(), events, true);
     }
 
     private MutationPlan planInitialStatus(TaskStatusUpdateEvent event) {

@@ -191,7 +191,9 @@ public class InMemoryQueueManager implements QueueManager {
             // Check if task is finalized before removing queue
             boolean isFinalized = (taskStateProvider != null) && taskStateProvider.isTaskFinalized(taskId);
 
-            if (!isFinalized) {
+            EventQueue current = queues.get(taskId);
+            boolean directBranchOnly = current instanceof EventQueue.MainQueue main && main.isClosedForDirectBranch();
+            if (!isFinalized && !directBranchOnly) {
                 LOGGER.debug("Task {} is not finalized, keeping queue in map for late-arriving events", taskId);
                 return;  // Don't remove from map - task is still active
             }
