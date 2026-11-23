@@ -138,7 +138,7 @@ serving metadata is unavailable, not asserted as telemetry.
 | P3-T12 topology/provisioning gate | T07–T11 | Planned; not started | Pending |
 | P3-T13 real multi-instance evidence | T10, T12 | Planned; not started; requires DB/Kafka/Docker evidence | Pending |
 | P3-T14 bounded publication-gap handling | T03, T07, T10 | Planned; not started | Pending; G3 limits retained |
-| P3-T15 generation/timeline reducer/TaskView | Phase 2; T02/T05 rules | Planned; not started | Pending |
+| P3-T15 generation/timeline reducer/TaskView | Phase 2; T02/T05 rules | Accepted; see [handoff](phase-3/handoffs/P3-T15.md), [review](phase-3/reviews/P3-T15-review.md) | Bob review accepted |
 | P3-T16 public ordinary entry-point views/reliability | T15 | Planned; not started | Pending |
 | P3-T17 JSON-RPC production integration | T07, T12, T14, T16 | Planned; not started | Pending |
 | P3-T18 REST production integration | Accepted T17 shared fixture and prerequisites | Planned; not started | Pending |
