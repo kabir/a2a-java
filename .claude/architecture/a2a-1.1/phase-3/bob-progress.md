@@ -6,7 +6,7 @@ Start 16:43 UTC (first date -u 16:43:43); deadline 18:43 UTC. Same candidate v2 
 
 ## CHECKPOINT 2026-11-24 17:46 UTC — P3-T10 COMMITTED; read this first
 
-- **P3-T10 finished** in its resumed window (16:43–18:43 UTC); commit follows base `bcc3bdef2` (see `git log -1`). Reviews (fresh Bob contexts, reading only, not Sol):
+- **P3-T10 finished** in its resumed window (16:43–18:43 UTC); commit `3943f313d` on base `bcc3bdef2`. Reviews (fresh Bob contexts, reading only, not Sol):
   Review 1 Incomplete evidence; A and B Changes required (A2-1 pill/terminal leak, A3-1/A3-2 sequencer wedge, A1 test gap, B1-1 finality predicates: all fixed in v3);
   C correction review Accepted within scope. Record `reviews/P3-T10-review.md` (+ `-A`, `-B`, `-C`).
 - Evidence: server-common 834/834 (`/private/tmp/t10-v3-server-common-full.log`), JPA 95/95 + core 48 + reactive 6 (`t10-v3-extras-full.log`), core 50/50 after

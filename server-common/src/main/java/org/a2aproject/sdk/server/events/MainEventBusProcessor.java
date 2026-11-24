@@ -727,7 +727,7 @@ public class MainEventBusProcessor implements Runnable {
         boolean snapshotTerminal = batch.snapshot().task().status().state().isFinal();
         boolean replicateWholeBatch = !isReplicated && !snapshotTerminal && batchHook != null
                 && batchHook.handlesCommittedBatches();
-        if (replicateWholeBatch) {
+        if (replicateWholeBatch && batchHook != null) {
             // One call per committed batch, in publication order, before local fan-out.
             try {
                 batchHook.onCommittedBatch(batch);
