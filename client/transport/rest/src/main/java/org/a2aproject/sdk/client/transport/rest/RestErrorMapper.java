@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.a2aproject.sdk.client.http.A2AHttpResponse;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
@@ -68,7 +69,7 @@ public class RestErrorMapper {
                 // Google Cloud API error format: { "error": { "code", "status", "message", "details" } }
                 if (node.has("error") && node.get("error").isJsonObject()) {
                     JsonObject errorObj = node.getAsJsonObject("error");
-                    String errorMessage = errorObj.has("message") ? errorObj.get("message").getAsString() : "";
+                    String errorMessage = stringField(errorObj, "message");
                     ReasonAndMetadata reasonAndMetadata = extractReasonAndMetadata(errorObj);
                     if (reasonAndMetadata != null) {
                         A2AClientException known = mapRestErrorByReason(reasonAndMetadata.reason(), errorMessage, reasonAndMetadata.metadata());
@@ -83,8 +84,8 @@ public class RestErrorMapper {
                             new A2AClientHTTPError(code, errorMessage, body, headers));
                 }
                 // Legacy format (error class name, message)
-                String className = node.has("error") ? node.get("error").getAsString() : "";
-                String errorMessage = node.has("message") ? node.get("message").getAsString() : "";
+                String className = stringField(node, "error");
+                String errorMessage = stringField(node, "message");
                 if (!className.isEmpty()) {
                     A2AClientException known = mapRestErrorByClassName(className, errorMessage, code);
                     if (known.getCause() != null) {
@@ -105,6 +106,11 @@ public class RestErrorMapper {
         }
     }
 
+    private static String stringField(JsonObject obj, String name) {
+        JsonElement value = obj.get(name);
+        return value != null && value.isJsonPrimitive() ? value.getAsString() : "";
+    }
+
     /**
      * Extracts the "reason" and "metadata" fields from the first entry in the "details" array.
      */
@@ -113,7 +119,7 @@ public class RestErrorMapper {
             var details = errorObj.getAsJsonArray("details");
             if (!details.isEmpty() && details.get(0).isJsonObject()) {
                 JsonObject detail = details.get(0).getAsJsonObject();
-                if (detail.has("reason")) {
+                if (detail.has("reason") && detail.get("reason").isJsonPrimitive()) {
                     String reason = detail.get("reason").getAsString();
                     Map<String, Object> metadata = null;
                     if (detail.has("metadata") && detail.get("metadata").isJsonObject()) {

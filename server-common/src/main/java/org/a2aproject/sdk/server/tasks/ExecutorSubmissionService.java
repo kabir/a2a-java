@@ -237,7 +237,7 @@ public final class ExecutorSubmissionService {
         private final AtomicBoolean claimed = new AtomicBoolean();
         private final AtomicReference<QueueAdmissionState> queueAdmission =
                 new AtomicReference<>(QueueAdmissionState.UNDECIDED);
-        private final AtomicReference<EventQueue.QueueAdmissionToken> queueAdmissionToken = new AtomicReference<>();
+        private final AtomicReference<EventQueue.@Nullable QueueAdmissionToken> queueAdmissionToken = new AtomicReference<>();
 
         private ProposalAdmission(ExecutorSubmissionService owner, Submission submission) {
             this.owner = owner;

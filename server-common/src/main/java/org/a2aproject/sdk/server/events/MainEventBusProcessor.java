@@ -110,6 +110,19 @@ public class MainEventBusProcessor implements Runnable {
     private final ConcurrentHashMap<String, CompletableFuture<Void>> pushNotificationChains = new ConcurrentHashMap<>();
 
     private final OrderedTaskPublisher orderedTaskPublisher = new OrderedTaskPublisher();
+    /**
+     * Initial client messages for tasks that have not emitted their first event yet. Event
+     * persistence creates its own TaskManager, so this preserves the message that opened a task
+     * when that first event creates the task in the TaskStore.
+     */
+    private final ConcurrentHashMap<String, Message> initialMessages = new ConcurrentHashMap<>();
+
+    /**
+     * Initial Tasks for new streaming tasks that have not emitted their first event yet. When that
+     * first event is a status or artifact update, this Task is what the TaskStore creates for the
+     * task, so the streaming response can begin with the same Task object.
+     */
+    private final ConcurrentHashMap<String, Task> initialTasks = new ConcurrentHashMap<>();
 
     private MainEventBus eventBus;
 
@@ -150,6 +163,36 @@ public class MainEventBusProcessor implements Runnable {
      */
     public void setCallback(MainEventBusProcessorCallback callback) {
         this.callback = callback != null ? callback : MainEventBusProcessorCallback.NOOP;
+    }
+
+    /**
+     * Registers the message that opens a new task until its first event is persisted.
+     *
+     * @param taskId the new task identifier
+     * @param message the opening client message
+     */
+    public void registerInitialMessage(String taskId, Message message) {
+        initialMessages.put(taskId, message);
+    }
+
+    /**
+     * Registers the Task that a new task's first event creates in the TaskStore when that event is a
+     * status or artifact update, until its first event is persisted. Without a registration, the
+     * TaskManager creates it.
+     *
+     * @param taskId the new task identifier
+     * @param initialTask the Task to create: SUBMITTED, with the opening message as its history
+     */
+    public void registerInitialTask(String taskId, Task initialTask) {
+        initialTasks.put(taskId, initialTask);
+    }
+
+    /** Remove a registration after all events already submitted by the agent are processed. */
+    public void clearInitialMessageAfterEvents(String taskId) {
+        eventBus.submit(() -> {
+            initialMessages.remove(taskId);
+            initialTasks.remove(taskId);
+        });
     }
 
     /**
@@ -220,10 +263,12 @@ public class MainEventBusProcessor implements Runnable {
         while (running) {
             try {
                 LOGGER.debug("MainEventBusProcessor: Waiting for event from MainEventBus...");
-                MainEventBusContext context = eventBus.take();
-                LOGGER.debug("MainEventBusProcessor: Retrieved event for task {} from MainEventBus",
-                            context.taskId());
-                processEvent(context);
+                Object item = eventBus.take();
+                if (item instanceof MainEventBusContext context) {
+                    processEvent(context);
+                } else if (item instanceof Runnable action) {
+                    action.run();
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 LOGGER.info("MainEventBusProcessor interrupted, shutting down");
@@ -238,7 +283,7 @@ public class MainEventBusProcessor implements Runnable {
 
     private void processEvent(MainEventBusContext context) {
         String taskId = context.taskId();
-        Event event = context.eventQueueItem().getEvent();
+        Event event = resolveMessageTaskAssociation(context);
         // MainEventBus.submit() guarantees this is always a MainQueue
         EventQueue.MainQueue mainQueue = (EventQueue.MainQueue) context.eventQueue();
 
@@ -284,6 +329,7 @@ public class MainEventBusProcessor implements Runnable {
                     taskId, event.getClass().getSimpleName());
 
         Event eventToDistribute = null;
+        boolean persisted = false;
         UpdateResult updateResult = null;
         boolean eventRoutedLocally = false;
         boolean isReplicated = context.eventQueueItem().isReplicated();
@@ -294,6 +340,11 @@ public class MainEventBusProcessor implements Runnable {
             try {
                 rejectTaskOutputAfterDirectResponse(context, event, isReplicated);
                 updateResult = updateTaskStore(taskId, event, isReplicated, context.origin());
+                if (!isReplicated && (event instanceof Task || event instanceof TaskStatusUpdateEvent
+                        || event instanceof TaskArtifactUpdateEvent || event instanceof A2AError)) {
+                    initialMessages.remove(taskId);
+                    initialTasks.remove(taskId);
+                }
                 boolean isFinal = updateResult.isFinal();
 
                 if (updateResult.committedBatch() != null && updateResult.slot() != null) {
@@ -311,19 +362,22 @@ public class MainEventBusProcessor implements Runnable {
                         eventToDistribute = event;
                         eventRoutedLocally = true;
                     } else {
-                        eventToDistribute = event;
+                        eventToDistribute = event instanceof Task && updateResult.taskSnapshot() != null
+                                ? updateResult.taskSnapshot() : event;
                     }
 
                     // Trigger replication AFTER successful persistence. Finalization and its
                     // committed batch envelope remain the responsibility of T10.
-                    if (!isFinal) {
+                    if (!isFinal && !isUnassociatedMessage(eventToDistribute)) {
                         EventEnqueueHook hook = mainQueue.getEnqueueHook();
                         if (hook != null) {
                             LOGGER.debug("Triggering replication hook for task {} after successful persistence", taskId);
-                            hook.onEnqueue(context.eventQueueItem());
+                            hook.onEnqueue(eventToDistribute == event ? context.eventQueueItem()
+                                    : new LocalEventQueueItem(eventToDistribute));
                         }
                     }
                 }
+                persisted = true;
             } catch (InternalError e) {
                 // Persistence failed - create error event to distribute instead
                 LOGGER.error("Failed to persist event for task {}, distributing error to clients", taskId, e);
@@ -347,8 +401,9 @@ public class MainEventBusProcessor implements Runnable {
             // Skip push notifications for replicated events to avoid duplicate notifications in multi-instance deployments
             // Push notifications are sent for all StreamingEventKind events (Task, Message, TaskStatusUpdateEvent, TaskArtifactUpdateEvent)
             // per A2A spec section 4.3.3
-            if (!isReplicated && updateResult != null && updateResult.committedBatch() == null
-                    && eventToDistribute == event && event instanceof StreamingEventKind streamingEvent) {
+            if (!isReplicated && persisted && updateResult != null && updateResult.committedBatch() == null
+                    && eventToDistribute instanceof StreamingEventKind streamingEvent
+                    && !isUnassociatedMessage(streamingEvent)) {
                 // Send the streaming event directly - it will be wrapped in StreamResponse format by PushNotificationSender
                 sendPushNotification(taskId, streamingEvent, updateResult != null ? updateResult.taskSnapshot() : null);
             }
@@ -365,7 +420,7 @@ public class MainEventBusProcessor implements Runnable {
                 boolean localFinal = updateResult != null && updateResult.isFinal()
                         && (updateResult.committedSnapshot() != null || updateResult.compatibilityBootstrap());
                 if (eventToDistribute == event && event instanceof Message
-                        && context.origin() != null && !isReplicated) {
+                        && context.origin() != null && context.origin().openingInput() != null && !isReplicated) {
                     context.origin().markDirectMessageResponseSelected();
                 }
                 EventQueueItem itemToDistribute = new LocalEventQueueItem(
@@ -402,8 +457,8 @@ public class MainEventBusProcessor implements Runnable {
 
                     // Step 5: If this is a final event, notify task finalization
                     // Only for successful persistence (not for errors)
-                    if (eventToDistribute == event && updateResult != null
-                            && (EventQueue.isFinalEvent(event)
+                    if (persisted && updateResult != null
+                            && (EventQueue.isFinalEvent(eventToDistribute)
                                     || (updateResult.committedSnapshot() != null
                                             || updateResult.compatibilityBootstrap()) && updateResult.isFinal())) {
                         try {
@@ -496,11 +551,20 @@ public class MainEventBusProcessor implements Runnable {
     private UpdateResult updateTaskStore(String taskId, Event event, boolean isReplicated,
             @Nullable EventQueue.ChildQueue origin) throws InternalError {
         try {
+            // A new task opened by a status or artifact update: create it as registered (see
+            // registerInitialTask); TaskManager then finds it in the TaskStore and applies the update
+            Task initialTask = initialTasks.get(taskId);
+            if (!isReplicated && !(taskStore instanceof AtomicTaskStore) && initialTask != null
+                    && (event instanceof TaskStatusUpdateEvent || event instanceof TaskArtifactUpdateEvent)
+                    && taskStore.get(taskId) == null) {
+                taskStore.save(initialTask, false);
+            }
+
             // Extract contextId from event (all relevant events have it)
             String contextId = extractContextId(event);
 
             // Create temporary TaskManager instance for this event
-            TaskManager taskManager = new TaskManager(taskId, contextId, taskStore, null);
+            TaskManager taskManager = new TaskManager(taskId, contextId, taskStore, isReplicated ? null : initialMessages.get(taskId));
 
             if (!isReplicated && taskStore instanceof AtomicTaskStore atomicStore) {
                 AtomicReference<TaskCommitSlot> reservedSlot = new AtomicReference<>();
@@ -641,6 +705,23 @@ public class MainEventBusProcessor implements Runnable {
                 }
             }
         }
+    }
+
+    private static Event resolveMessageTaskAssociation(MainEventBusContext context) {
+        Event event = context.eventQueueItem().getEvent();
+        EventQueue.ChildQueue origin = context.origin();
+        if (!context.eventQueueItem().isReplicated() && origin != null
+                && event instanceof Message message && message.taskId() != null) {
+            OpeningTaskInput opening = origin.openingInput();
+            if (opening != null && !opening.isMaterialized()) {
+                return Message.builder(message).taskId(null).build();
+            }
+        }
+        return event;
+    }
+
+    private static boolean isUnassociatedMessage(Event event) {
+        return event instanceof Message message && message.taskId() == null;
     }
 
     /** Returns the request's unmaterialized opening input if this event may materialize the task. */

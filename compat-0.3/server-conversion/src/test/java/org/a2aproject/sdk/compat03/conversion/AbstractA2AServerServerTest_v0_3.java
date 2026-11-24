@@ -1108,9 +1108,13 @@ public abstract class AbstractA2AServerServerTest_v0_3 {
         CountDownLatch streamEventLatch = new CountDownLatch(2);  // artifact-2 + completion
         List<UpdateEvent_v0_3> streamReceivedEvents = new CopyOnWriteArrayList<>();
         AtomicBoolean streamUnexpectedEvent = new AtomicBoolean(false);
+        AtomicBoolean streamReceivedInitialTask = new AtomicBoolean(false);
 
         BiConsumer<ClientEvent_v0_3, AgentCard_v0_3> streamConsumer = (event, agentCard) -> {
-            if (event instanceof TaskUpdateEvent_v0_3 tue) {
+            // Per A2A spec 3.1.2, the stream begins with the Task, then its updates
+            if (event instanceof TaskEvent_v0_3 && !streamReceivedInitialTask.get() && streamReceivedEvents.isEmpty()) {
+                streamReceivedInitialTask.set(true);
+            } else if (event instanceof TaskUpdateEvent_v0_3 tue) {
                 streamReceivedEvents.add(tue.getUpdateEvent());
                 streamEventLatch.countDown();
             } else {
@@ -1139,6 +1143,7 @@ public abstract class AbstractA2AServerServerTest_v0_3 {
 
         assertFalse(resubUnexpectedEvent.get());
         assertFalse(streamUnexpectedEvent.get());
+        assertTrue(streamReceivedInitialTask.get(), "The send stream must begin with the Task");
         assertNull(resubErrorRef.get());
 
         // Both should have received 2 events: artifact-2 and completion
@@ -1968,14 +1973,14 @@ public abstract class AbstractA2AServerServerTest_v0_3 {
      * 2. Task reaches COMPLETED state (final)
      * 3. ChildQueue closes after receiving final event
      * 4. MainQueue should close because task is finalized
-     * 5. Resubscription should fail with TaskNotFoundError
+     * 5. Resubscription should fail with UnsupportedOperationError
      */
     @Test
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
     public void testMainQueueClosesForFinalizedTasks() throws Exception {
         // Send a message without taskId - server generates one
         Message_v0_3 message = new Message_v0_3.Builder(MESSAGE)
-                .parts(new TextPart_v0_3("complete task"))
+                .parts(new TextPart_v0_3("queue-finalization:complete task"))
                 .build();
 
         CountDownLatch completionLatch = new CountDownLatch(1);
@@ -1989,10 +1994,6 @@ public abstract class AbstractA2AServerServerTest_v0_3 {
                 if (te.getTask().status().state().isFinal()) {
                     completionLatch.countDown();
                 }
-            } else if (event instanceof MessageEvent_v0_3 me) {
-                // Message is considered a final event - capture taskId from the message
-                generatedTaskId.compareAndSet(null, me.getMessage().taskId());
-                completionLatch.countDown();
             } else if (event instanceof TaskUpdateEvent_v0_3 tue &&
                     tue.getUpdateEvent() instanceof TaskStatusUpdateEvent_v0_3 status) {
                 generatedTaskId.compareAndSet(null, status.taskId());
@@ -2020,8 +2021,8 @@ public abstract class AbstractA2AServerServerTest_v0_3 {
             String taskId = generatedTaskId.get();
             assertNotNull(taskId, "Should have captured server-generated taskId");
 
-            // Give cleanup time to run after final event
-            Thread.sleep(2000);
+            assertTrue(waitForChildQueueCountToBe(taskId, -1, 15000),
+                    "MainQueue should close after the task reaches a final state");
 
             // Try to resubscribe to finalized task - should fail
             CountDownLatch errorLatch = new CountDownLatch(1);
@@ -2051,24 +2052,24 @@ public abstract class AbstractA2AServerServerTest_v0_3 {
                 Throwable error = resubErrorRef.get();
                 assertNotNull(error, "Resubscription should fail for finalized task");
 
-                // Verify it's a TaskNotFoundError
+                // Verify it's an UnsupportedOperationError
                 Throwable cause = error;
-                boolean foundTaskNotFound = false;
-                while (cause != null && !foundTaskNotFound) {
-                    if (cause instanceof TaskNotFoundError_v0_3 ||
+                boolean foundUnsupportedOperation = false;
+                while (cause != null && !foundUnsupportedOperation) {
+                    if (cause instanceof UnsupportedOperationError_v0_3 ||
                             (cause instanceof A2AClientException_v0_3 &&
-                                    ((A2AClientException_v0_3) cause).getCause() instanceof TaskNotFoundError_v0_3)) {
-                        foundTaskNotFound = true;
+                                    ((A2AClientException_v0_3) cause).getCause() instanceof UnsupportedOperationError_v0_3)) {
+                        foundUnsupportedOperation = true;
                     }
                     cause = cause.getCause();
                 }
-                assertTrue(foundTaskNotFound,
-                        "Should receive TaskNotFoundError - MainQueue closed for finalized task");
+                assertTrue(foundUnsupportedOperation,
+                        "Should receive UnsupportedOperationError - finalized task rejects resubscription");
 
             } catch (A2AClientException_v0_3 e) {
                 // Exception might be thrown immediately instead of via error handler
-                assertInstanceOf(TaskNotFoundError_v0_3.class, e.getCause(),
-                        "Should fail with TaskNotFoundError - MainQueue cleaned up for finalized task");
+                assertInstanceOf(UnsupportedOperationError_v0_3.class, e.getCause(),
+                        "Should fail with UnsupportedOperationError - finalized task rejects resubscription");
             }
 
         } finally {

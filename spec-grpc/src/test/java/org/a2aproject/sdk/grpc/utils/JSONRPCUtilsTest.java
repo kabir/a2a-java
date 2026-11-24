@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import com.google.gson.JsonArray;
@@ -30,6 +31,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
+import java.util.List;
 import org.a2aproject.sdk.grpc.SendMessageResponse;
 import org.a2aproject.sdk.grpc.StreamResponse;
 import org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException;
@@ -41,11 +43,13 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConf
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskPushNotificationConfigResponse;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest;
 import org.a2aproject.sdk.spec.DataPart;
 import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.JSONParseError;
@@ -54,6 +58,8 @@ import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
+import org.a2aproject.sdk.spec.TaskState;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.util.ErrorDetail;
 import org.junit.jupiter.api.Test;
@@ -61,6 +67,23 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class JSONRPCUtilsTest {
+
+    @Test
+    public void testListTasksResponseOmitsEmptyArtifacts() {
+        Task task = Task.builder()
+                .id("task-without-artifacts")
+                .contextId("context")
+                .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED))
+                .build();
+        ListTasksResult result = new ListTasksResult(List.of(task));
+
+        String json = JSONRPCUtils.toJsonRPCListTasksResultResponse("request-1",
+                ProtoUtils.ToProto.listTasksResult(result));
+
+        JsonObject listedTask = JsonParser.parseString(json).getAsJsonObject()
+                .getAsJsonObject("result").getAsJsonArray("tasks").get(0).getAsJsonObject();
+        assertFalse(listedTask.has("artifacts"));
+    }
 
     @Test
     public void testSendMessage_WithExplicitNulls_RoundTrips() throws JsonProcessingException {
@@ -388,7 +411,7 @@ public class JSONRPCUtilsTest {
               "method": "CreateTaskPushNotificationConfig",
               "id": "4",
               "params": {
-                "invalid_field": "value"
+                "authentication": "not-an-object"
               }
             }
             """;
@@ -398,7 +421,7 @@ public class JSONRPCUtilsTest {
             () -> JSONRPCUtils.parseRequestBody(invalidStructure, null)
         );
         assertEquals("4", exception.getId());
-        assertEquals(ERROR_MESSAGE.formatted("invalid_field in message lf.a2a.v1.TaskPushNotificationConfig"), exception.getMessage());
+        assertEquals(ERROR_MESSAGE.formatted("message object"), exception.getMessage());
     }
 
     @Test
@@ -438,6 +461,106 @@ public class JSONRPCUtilsTest {
     }
 
     @Test
+    public void testInvalidRoleDoesNotExposeProtoEnumType() {
+        String request = """
+            {"jsonrpc":"2.0","id":"1","method":"SendMessage","params":{
+              "message":{"role":"system_user","parts":[{"text":"hi"}],"metadata":{}}}}
+            """;
+        InvalidParamsJsonMappingException exception = assertThrows(InvalidParamsJsonMappingException.class,
+                () -> JSONRPCUtils.parseRequestBody(request, null));
+        assertEquals("1", exception.getId());
+        assertEquals(ERROR_MESSAGE.formatted("Invalid value for field role"), exception.getMessage());
+    }
+
+    @Test
+    public void testInvalidTaskStatusIdentifiesField() {
+        String request = """
+            {"jsonrpc":"2.0","id":"2","method":"ListTasks","params":{"status":"wrong"}}
+            """;
+        InvalidParamsJsonMappingException exception = assertThrows(InvalidParamsJsonMappingException.class,
+                () -> JSONRPCUtils.parseRequestBody(request, null));
+        assertEquals("2", exception.getId());
+        assertEquals(ERROR_MESSAGE.formatted("Invalid value for field status"), exception.getMessage());
+    }
+
+    @Test
+    public void testInvalidEnumWithTrailingJsonFallsBackToGenericError() {
+        InvalidParamsJsonMappingException exception = assertThrows(InvalidParamsJsonMappingException.class,
+                () -> JSONRPCUtils.parseJsonString("{\"status\":\"wrong\"} trailing",
+                        org.a2aproject.sdk.grpc.ListTasksRequest.newBuilder(), "2"));
+        assertEquals("2", exception.getId());
+        assertEquals(ERROR_MESSAGE.formatted("Invalid enum value: wrong"), exception.getMessage());
+    }
+
+    @Test
+    public void testInvalidNumericAndBooleanValues() {
+        for (String params : List.of("\"pageSize\":\"bad\"", "\"includeArtifacts\":\"bad\"",
+                "\"includeArtifacts\":123")) {
+            String request = """
+                {"jsonrpc":"2.0","id":"type-error","method":"ListTasks","params":{%s}}
+                """.formatted(params);
+            JsonProcessingException exception = assertThrows(JsonProcessingException.class,
+                    () -> JSONRPCUtils.parseRequestBody(request, null), params);
+            assertTrue(exception.getMessage().contains("Invalid request content"), exception.getMessage());
+            assertFalse(exception.getMessage().contains("lf.a2a.v1."), exception.getMessage());
+            assertFalse(exception.getMessage().contains("google.protobuf."), exception.getMessage());
+        }
+    }
+
+    @Test
+    public void testNumericStringIsAcceptedForIntegerField() throws JsonProcessingException {
+        String request = """
+            {"jsonrpc":"2.0","id":"numeric-string","method":"ListTasks","params":{"pageSize":"12"}}
+            """;
+        ListTasksRequest parsed = assertInstanceOf(ListTasksRequest.class, JSONRPCUtils.parseRequestBody(request, null));
+        assertEquals(12, parsed.getParams().pageSize());
+    }
+
+    @Test
+    public void testBooleanValuesAreAccepted() throws JsonProcessingException {
+        for (boolean value : new boolean[] {true, false}) {
+            String request = """
+                {"jsonrpc":"2.0","id":"boolean","method":"ListTasks","params":{"includeArtifacts":%s}}
+                """.formatted(value);
+            ListTasksRequest parsed = assertInstanceOf(ListTasksRequest.class, JSONRPCUtils.parseRequestBody(request, null));
+            assertEquals(value, parsed.getParams().shouldIncludeArtifacts());
+            if (!value) {
+                assertNull(parsed.getParams().includeArtifacts());
+            }
+        }
+    }
+
+    @Test
+    public void testNumericValueForStringField() throws JsonProcessingException {
+        String request = """
+            {"jsonrpc":"2.0","id":"number","method":"ListTasks","params":{"contextId":123}}
+            """;
+        ListTasksRequest parsed = assertInstanceOf(ListTasksRequest.class, JSONRPCUtils.parseRequestBody(request, null));
+        assertEquals("123", parsed.getParams().contextId());
+    }
+
+    @Test
+    public void testTimestampValues() throws JsonProcessingException {
+        String valid = """
+            {"jsonrpc":"2.0","id":"timestamp","method":"ListTasks",
+             "params":{"statusTimestampAfter":"2023-10-27T10:00:00Z"}}
+            """;
+        ListTasksRequest parsed = assertInstanceOf(ListTasksRequest.class, JSONRPCUtils.parseRequestBody(valid, null));
+        assertEquals(java.time.Instant.parse("2023-10-27T10:00:00Z"), parsed.getParams().statusTimestampAfter());
+
+        for (String value : List.of("\"not-a-timestamp\"", "123")) {
+            String invalid = """
+                {"jsonrpc":"2.0","id":"timestamp","method":"ListTasks",
+                 "params":{"statusTimestampAfter":%s}}
+                """.formatted(value);
+            JsonProcessingException exception = assertThrows(JsonProcessingException.class,
+                    () -> JSONRPCUtils.parseRequestBody(invalid, null), value);
+            assertFalse(exception.getMessage().contains("lf.a2a.v1."), exception.getMessage());
+            assertFalse(exception.getMessage().contains("google.protobuf."), exception.getMessage());
+        }
+    }
+
+    @Test
     public void testParseMissingField_ThrowsInvalidParamsError() throws JsonMappingException {
         String missingRoleMessage=  """
            {
@@ -467,8 +590,8 @@ public class JSONRPCUtilsTest {
     }
 
     @Test
-    public void testParseUnknownField_ThrowsJsonMappingException() throws JsonMappingException {
-        String unknownFieldMessage=  """
+    public void testParseUnknownFields_AreIgnored() throws JsonProcessingException {
+        String unknownFieldMessage = """
            {
               "jsonrpc":"2.0",
               "method":"SendMessage",
@@ -485,16 +608,192 @@ public class JSONRPCUtilsTest {
                     }
                   ],
                   "metadata":{
-                    
+
                   }
-                }
+                },
+                "unknownParam": 42
               }
             }""";
-        JsonMappingException exception = assertThrows(
-            JsonMappingException.class,
-            () -> JSONRPCUtils.parseRequestBody(unknownFieldMessage, null)
+        SendMessageRequest request = assertInstanceOf(SendMessageRequest.class,
+                JSONRPCUtils.parseRequestBody(unknownFieldMessage, null));
+        assertEquals("18", request.getId());
+        assertEquals("message-1234", request.getParams().message().messageId());
+        assertEquals(Message.Role.ROLE_AGENT, request.getParams().message().role());
+    }
+
+    @Test
+    public void testParseResponseUnknownFields_AreIgnored() throws JsonProcessingException {
+        String json = """
+                {
+                  "jsonrpc": "2.0",
+                  "id": "1",
+                  "result": {
+                    "id": "task-1",
+                    "contextId": "context-1",
+                    "status": {
+                      "state": "TASK_STATE_COMPLETED",
+                      "unknownStatusField": true
+                    },
+                    "unknownTaskField": {"nested": "value"}
+                  }
+                }
+                """;
+        GetTaskResponse response = assertInstanceOf(GetTaskResponse.class,
+                JSONRPCUtils.parseResponseBody(json, GET_TASK_METHOD));
+        Task task = response.getResult();
+        assertNotNull(task);
+        assertEquals("task-1", task.id());
+        assertEquals("context-1", task.contextId());
+    }
+
+    @Test
+    public void testSendMessageAcceptsExtraRequestParameter() throws Exception {
+        String json = """
+                {"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{
+                  "message":{"messageId":"dm-extra-001-msg","role":"ROLE_USER",
+                    "parts":[{"text":"tck-complete-task extra field"}]},
+                  "x_custom_field":"test"
+                }}
+                """;
+
+        SendMessageRequest request = assertInstanceOf(SendMessageRequest.class, JSONRPCUtils.parseRequestBody(json, null));
+        assertEquals("dm-extra-001-msg", request.getParams().message().messageId());
+    }
+
+    @Test
+    public void testStreamingMessageAcceptsExtraRequestParameter() throws Exception {
+        String json = """
+                {"jsonrpc":"2.0","id":1,"method":"SendStreamingMessage","params":{
+                  "message":{"messageId":"message-1","role":"ROLE_USER","parts":[{"text":"hello"}]},
+                  "extra":{"arbitrary":true}
+                }}
+                """;
+        assertInstanceOf(SendStreamingMessageRequest.class, JSONRPCUtils.parseRequestBody(json, null));
+    }
+
+    @Test
+    public void testSendMessageStillRequiresMessageAndIgnoresNestedExtras() throws Exception {
+        for (String method : List.of("SendMessage", "SendStreamingMessage")) {
+            String missing = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"" + method
+                    + "\",\"params\":{\"extra\":true}}";
+            assertThrows(JsonProcessingException.class, () -> JSONRPCUtils.parseRequestBody(missing, null));
+            String nested = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"" + method
+                    + "\",\"params\":{\"message\":{\"role\":\"ROLE_USER\",\"messageId\":\"m\","
+                    + "\"parts\":[{\"text\":\"hello\"}],\"extra\":true}}}";
+            A2ARequest<?> request = JSONRPCUtils.parseRequestBody(nested, null);
+            MessageSendParams params = request instanceof SendMessageRequest send
+                    ? send.getParams()
+                    : assertInstanceOf(SendStreamingMessageRequest.class, request).getParams();
+            assertEquals("m", params.message().messageId());
+        }
+    }
+
+    @Test
+    void ignoresExtraParametersForOtherMethods() throws Exception {
+        String json = """
+                {"jsonrpc":"2.0","id":1,"method":"GetTask",
+                 "params":{"id":"task-1","histroyLength":2}}
+                """;
+        GetTaskRequest request = assertInstanceOf(GetTaskRequest.class, JSONRPCUtils.parseRequestBody(json, null));
+        assertEquals("task-1", request.getParams().id());
+        assertNull(request.getParams().historyLength());
+    }
+
+    @Test
+    void streamingMessageWithoutTaskIdOmitsItFromJsonRpcResult() {
+        Message message = Message.builder().role(Message.Role.ROLE_AGENT)
+                .parts(Collections.singletonList(new TextPart("hello")))
+                .messageId("stream-message").contextId("context").build();
+        String json = JSONRPCUtils.toJsonRPCResultResponse("id", ProtoUtils.ToProto.taskOrMessageStream(message));
+        JsonObject resultMessage = JsonParser.parseString(json).getAsJsonObject()
+                .getAsJsonObject("result").getAsJsonObject("message");
+        assertFalse(resultMessage.has("taskId"));
+        assertEquals("context", resultMessage.get("contextId").getAsString());
+    }
+
+    @Test
+    public void testParseListTasks_UnknownFieldIgnoredAndStatusKept() throws JsonProcessingException {
+        String request = """
+            {
+              "jsonrpc": "2.0",
+              "method": "ListTasks",
+              "id": "20",
+              "params": {
+                "status": "TASK_STATE_WORKING",
+                "unknownParam": 42
+              }
+            }
+            """;
+        ListTasksRequest parsed = assertInstanceOf(ListTasksRequest.class,
+            JSONRPCUtils.parseRequestBody(request, null));
+        assertEquals(TaskState.TASK_STATE_WORKING, parsed.getParams().status());
+    }
+
+    @Test
+    public void testParseListTasks_UnrecognizedStatusValue_ThrowsInvalidParams() {
+        // Unknown field names are ignored, but an unrecognized value for a known enum field is
+        // still rejected. Dropping it would turn the status filter into no filter at all.
+        String request = """
+            {
+              "jsonrpc": "2.0",
+              "method": "ListTasks",
+              "id": "21",
+              "params": {
+                "status": "NOT_A_TASK_STATE"
+              }
+            }
+            """;
+        InvalidParamsJsonMappingException exception = assertThrows(
+            InvalidParamsJsonMappingException.class,
+            () -> JSONRPCUtils.parseRequestBody(request, null)
         );
-        assertEquals(ERROR_MESSAGE.formatted("unknown in message lf.a2a.v1.Message"), exception.getMessage());
+        assertEquals("21", exception.getId());
+    }
+
+    @Test
+    public void testParseResponse_UnrecognizedEnumValue_Throws() {
+        String json = """
+                {
+                  "jsonrpc": "2.0",
+                  "id": "1",
+                  "result": {
+                    "id": "task-1",
+                    "contextId": "context-1",
+                    "status": {
+                      "state": "NOT_A_TASK_STATE"
+                    },
+                    "unknownTaskField": true
+                  }
+                }
+                """;
+        assertThrows(
+            JsonProcessingException.class,
+            () -> JSONRPCUtils.parseResponseBody(json, GET_TASK_METHOD)
+        );
+    }
+
+    @Test
+    public void testParseResponseEvent_UnrecognizedEnumValue_Throws() {
+        String json = """
+                {
+                  "jsonrpc": "2.0",
+                  "id": "1",
+                  "result": {
+                    "statusUpdate": {
+                      "taskId": "task-1",
+                      "contextId": "context-1",
+                      "status": {
+                        "state": "NOT_A_TASK_STATE"
+                      },
+                      "unknownEventField": true
+                    }
+                  }
+                }
+                """;
+        assertThrows(
+            JsonProcessingException.class,
+            () -> JSONRPCUtils.parseResponseEvent(json)
+        );
     }
 
     @Test

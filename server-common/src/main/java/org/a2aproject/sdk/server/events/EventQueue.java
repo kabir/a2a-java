@@ -224,6 +224,33 @@ public abstract class EventQueue implements AutoCloseable {
     public abstract void signalQueuePollerStarted();
 
     /**
+     * Waits until no event enqueued on this queue is still in flight.
+     * <p>
+     * An event is in flight from the moment it is accepted by {@link #enqueueItem(EventQueueItem)}
+     * until {@link MainEventBusProcessor} is done with it, i.e. until it has been persisted to the
+     * {@link org.a2aproject.sdk.server.tasks.TaskStore} and distributed to the child queues.
+     * Waiting for the consumer alone is not enough: an event may have been accepted but not yet
+     * handed to a child queue, in which case a consumer that is already done sees nothing.
+     * <p>
+     * Callers that read a task back from the {@code TaskStore} right after consuming it (see
+     * {@code DefaultRequestHandler#onMessageSend}) use this to make sure the read reflects every
+     * event the agent produced, not just the ones that happened to be processed in time.
+     *
+     * <p>
+     * The default implementation returns {@code true} right away, so a custom queue that does
+     * not track in-flight events keeps working. {@code MainQueue} waits for its in-flight count
+     * to reach zero, and {@code ChildQueue} delegates to its parent.
+     *
+     * @param timeout the maximum time to wait
+     * @param unit the timeout unit
+     * @return {@code true} if the queue drained, {@code false} if the timeout elapsed first
+     * @throws InterruptedException if the thread is interrupted while waiting
+     */
+    public boolean awaitDrained(long timeout, TimeUnit unit) throws InterruptedException {
+        return true;
+    }
+
+    /**
      * Enqueues an event for processing.
      *
      * @param event the event to enqueue
@@ -395,7 +422,8 @@ public abstract class EventQueue implements AutoCloseable {
      * </p>
      *
      * @param waitMilliSeconds the maximum time to wait in milliseconds
-     * @return the EventQueueItem, or null if timeout occurs
+     * @return the EventQueueItem, or null if timeout occurs or the wait is interrupted
+     *         (in which case the thread's interrupt flag is set)
      * @throws EventQueueClosedException if the queue is closed and empty
      * @throws UnsupportedOperationException if called on MainQueue
      */
@@ -574,6 +602,9 @@ public abstract class EventQueue implements AutoCloseable {
                 admittedProposals = new ConcurrentHashMap<>();
 
         private final ThreadLocal<Boolean> closingChildren = ThreadLocal.withInitial(() -> false);
+        // Notified every time a permit is released, so awaitDrained() wakes up as soon as the
+        // last in-flight event is done instead of polling.
+        private final Object drainLock = new Object();
 
         private final StreamCloseHandle streamCloseHandle = new StreamCloseHandle() {
             @Override
@@ -803,7 +834,7 @@ public abstract class EventQueue implements AutoCloseable {
                 // releaseSemaphore() (see MainEventBusProcessor.processEvent finally block).
                 // Release the permit here to avoid leaking it and eventually blocking
                 // all event processing for this task.
-                semaphore.release();
+                releaseSemaphore();
                 awaitingChildren.forEach(ChildQueue::cancelSubmittedFinalEvent);
                 throw e;
             }
@@ -872,6 +903,25 @@ public abstract class EventQueue implements AutoCloseable {
         /** True once this queue closed because its only invocation ended with a direct Message and no task. */
         boolean isClosedForDirectBranch() {
             return closedForDirectBranch;
+        }
+
+        @Override
+        public boolean awaitDrained(long timeout, TimeUnit unit) throws InterruptedException {
+            long deadline = System.nanoTime() + unit.toNanos(timeout);
+            synchronized (drainLock) {
+                int inFlight = size();
+                while (inFlight > 0) {
+                    long remainingNanos = deadline - System.nanoTime();
+                    if (remainingNanos <= 0) {
+                        LOGGER.warn("MainQueue {} did not drain within {} {}; {} event(s) still in flight",
+                                taskId, timeout, unit, inFlight);
+                        return false;
+                    }
+                    TimeUnit.NANOSECONDS.timedWait(drainLock, remainingNanos);
+                    inFlight = size();
+                }
+            }
+            return true;
         }
 
         void childClosing(ChildQueue child, boolean immediate) {
@@ -1006,6 +1056,9 @@ public abstract class EventQueue implements AutoCloseable {
          */
         void releaseSemaphore() {
             semaphore.release();
+            synchronized (drainLock) {
+                drainLock.notifyAll();
+            }
         }
 
         /**
@@ -1057,6 +1110,9 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         protected void doClose(boolean immediate) {
+            if (isClosed()) {
+                return;
+            }
             // Invoke all callbacks BEFORE closing, so they can still enqueue events
             if (!onCloseCallbacks.isEmpty()) {
                 LOGGER.debug("Invoking {} onClose callbacks for task {} BEFORE closing", onCloseCallbacks.size(), taskId);
@@ -1260,6 +1316,13 @@ public abstract class EventQueue implements AutoCloseable {
         @Override
         public void signalQueuePollerStarted() {
             parent.signalQueuePollerStarted();
+        }
+
+        @Override
+        public boolean awaitDrained(long timeout, TimeUnit unit) throws InterruptedException {
+            // Events in flight belong to the parent queue: its semaphore tracks every enqueue,
+            // including the ones that have not been distributed to this child yet.
+            return parent.awaitDrained(timeout, unit);
         }
 
         @Override

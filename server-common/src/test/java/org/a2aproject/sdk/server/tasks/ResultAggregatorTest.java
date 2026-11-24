@@ -92,7 +92,7 @@ public class ResultAggregatorTest {
         TaskSnapshot proposal = new TaskSnapshot(createSampleTask("proposal", TaskState.TASK_STATE_WORKING, "ctx"),
                 new TaskRevision(3));
         CompletableFuture<Void> completion = new CompletableFuture<>();
-        AtomicReference<TaskSnapshot> selected = new AtomicReference<>();
+        AtomicReference<@org.jspecify.annotations.Nullable TaskSnapshot> selected = new AtomicReference<>();
         AtomicReference<TaskSnapshot> observedAtSignal = new AtomicReference<>();
         completion.thenRun(() -> observedAtSignal.set(selected.get()));
 

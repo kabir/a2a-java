@@ -4,6 +4,7 @@ import static org.a2aproject.sdk.common.MediaType.APPLICATION_JSON;
 import static org.a2aproject.sdk.server.AgentCardOperation.EXTENDED_CARD;
 import static org.a2aproject.sdk.server.AgentCardOperation.PUSH_NOTIFICATIONS;
 import static org.a2aproject.sdk.server.AgentCardOperation.STREAMING;
+import static org.a2aproject.sdk.common.MediaType.APPLICATION_A2A_JSON;
 import static org.a2aproject.sdk.server.util.async.AsyncUtils.createTubeConfig;
 
 import java.time.Instant;
@@ -43,6 +44,7 @@ import org.a2aproject.sdk.server.CachingAgentCardTransportValidator;
 import org.a2aproject.sdk.server.EffectiveAgentCard;
 import org.a2aproject.sdk.server.ExtendedAgentCard;
 import org.a2aproject.sdk.server.FixedInstance;
+import org.a2aproject.sdk.server.InputModeValidator;
 import org.a2aproject.sdk.server.PublicAgentCard;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.TaskOperation;
@@ -68,6 +70,7 @@ import org.a2aproject.sdk.spec.JSONParseError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
+import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.ObserveTaskParams;
 import org.a2aproject.sdk.spec.SendInputParams;
@@ -251,12 +254,18 @@ public class RestHandler {
             if (context.getVersionPolicy().supportsPhase2Output()) {
                 SendInputParams params = ProtoUtils.FromProto.sendInputParams(request);
                 rejectUnsupportedInputOptions(params);
+                Message message = params.message();
+                if (message != null) {
+                    InputModeValidator.validate(message, effectiveCard.card());
+                }
                 result = requestHandler.onSendInput(params, context);
             } else {
                 if (context.getVersionPolicy() == ServerVersionPolicy.V1_0) {
                     rejectVersion10AdvancedInput(ProtoUtils.FromProto.sendInputParams(request));
                 }
-                result = requestHandler.onMessageSend(ProtoUtils.FromProto.messageSendParams(request), context);
+                MessageSendParams params = ProtoUtils.FromProto.messageSendParams(request);
+                InputModeValidator.validate(params.message(), effectiveCard.card());
+                result = requestHandler.onMessageSend(params, context);
             }
             EventKind projectedResult = result instanceof Task task
                     ? VersionedOutputProjector.projectTask(task, context.getVersionPolicy()) : result;
@@ -333,6 +342,10 @@ public class RestHandler {
             if (context.getVersionPolicy().supportsPhase2Output()) {
                 SendInputParams params = ProtoUtils.FromProto.sendInputParams(request);
                 rejectUnsupportedStreamingInput(params);
+                Message message = params.message();
+                if (message != null) {
+                    InputModeValidator.validate(message, effectiveCard.card());
+                }
                 String taskId = params.message() != null ? params.message().taskId() : params.artifactUpdates().get(0).taskId();
                 try {
                     requestHandler.authorizeTaskAccess(taskId, context, TaskOperation.MESSAGE_SEND_STREAM);
@@ -345,6 +358,7 @@ public class RestHandler {
                     rejectVersion10AdvancedInput(ProtoUtils.FromProto.sendInputParams(request));
                 }
                 MessageSendParams params = ProtoUtils.FromProto.messageSendParams(request);
+                InputModeValidator.validate(params.message(), effectiveCard.card());
                 try {
                     requestHandler.authorizeTaskAccess(params.message().taskId(), context, TaskOperation.MESSAGE_SEND_STREAM);
                 } catch (A2AError e) {
@@ -726,7 +740,7 @@ public class RestHandler {
             ListTasksResult projected = new ListTasksResult(result.tasks().stream()
                     .map(task -> VersionedOutputProjector.projectTask(task, context.getVersionPolicy())).toList(),
                     result.totalSize(), result.pageSize(), result.nextPageToken());
-            return createSuccessResponse(200, org.a2aproject.sdk.grpc.ListTasksResponse.newBuilder(
+            return createListTasksSuccessResponse(200, org.a2aproject.sdk.grpc.ListTasksResponse.newBuilder(
                     ProtoUtils.ToProto.listTasksResult(projected)), context.getVersionPolicy());
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
@@ -829,7 +843,7 @@ public class RestHandler {
             EffectiveAgentCard effectiveCard = preflight(tenant, context, PUSH_NOTIFICATIONS);
             DeleteTaskPushNotificationConfigParams params = new DeleteTaskPushNotificationConfigParams(requiredTaskId, requiredConfigId, effectiveCard.tenant());
             requestHandler.onDeleteTaskPushNotificationConfig(params, context);
-            return new HTTPRestResponse(204, APPLICATION_JSON, "");
+            return new HTTPRestResponse(204, APPLICATION_A2A_JSON, "");
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
         } catch (Throwable throwable) {
@@ -870,7 +884,8 @@ public class RestHandler {
                 throw new InvalidRequestError("Request body is required");
             }
             validate(body);
-            JsonFormat.parser().merge(body, builder);
+            // Spec Section 5.7: ignore unrecognized field names for forward compatibility.
+            ProtoJsonUtils.mergeIgnoringUnknownFields(body, builder);
         } catch (InvalidProtocolBufferException e) {
             LOGGER.log(Level.SEVERE, "Error parsing JSON request body (length={0})", 
                     body != null ? body.length() : 0);
@@ -893,7 +908,23 @@ public class RestHandler {
             // Include default value fields to ensure empty arrays, zeros, etc. are present in JSON
             String jsonBody = ProtoJsonUtils.toJsonForVersion(
                     JsonFormat.printer().alwaysPrintFieldsWithNoPresence(), builder, policy.protocolVersion());
-            return new HTTPRestResponse(statusCode, APPLICATION_JSON, jsonBody);
+            if (builder instanceof org.a2aproject.sdk.grpc.SendMessageResponseOrBuilder) {
+                jsonBody = ProtoJsonUtils.omitEmptyMessageTaskId(jsonBody);
+            }
+            return new HTTPRestResponse(statusCode, APPLICATION_A2A_JSON, jsonBody);
+        } catch (InvalidProtocolBufferException e) {
+            LOGGER.log(Level.SEVERE, "Failed to serialize response", e);
+            return createErrorResponse(new InternalError("Internal error"));
+        }
+    }
+
+    private HTTPRestResponse createListTasksSuccessResponse(int statusCode, com.google.protobuf.Message.Builder builder,
+            ServerVersionPolicy policy) {
+        try {
+            String jsonBody = ProtoJsonUtils.toJsonForVersion(
+                    JsonFormat.printer().alwaysPrintFieldsWithNoPresence(), builder, policy.protocolVersion());
+            jsonBody = ProtoJsonUtils.omitEmptyTaskArtifacts(jsonBody);
+            return new HTTPRestResponse(statusCode, APPLICATION_A2A_JSON, jsonBody);
         } catch (InvalidProtocolBufferException e) {
             LOGGER.log(Level.SEVERE, "Failed to serialize response", e);
             return createErrorResponse(new InternalError("Internal error"));
@@ -915,13 +946,13 @@ public class RestHandler {
         if (policy != ServerVersionPolicy.V1_1) {
             return createErrorResponse(error);
         }
-        return new HTTPRestResponse(policy.httpStatus(error.getCode()), APPLICATION_JSON,
+        return new HTTPRestResponse(policy.httpStatus(error.getCode()), APPLICATION_A2A_JSON,
                 new HTTPRestErrorResponse(error, policy).toJson());
     }
 
     private HTTPRestResponse createErrorResponse(int statusCode, A2AError error) {
         String jsonBody = new HTTPRestErrorResponse(error).toJson();
-        return new HTTPRestResponse(statusCode, APPLICATION_JSON, jsonBody);
+        return new HTTPRestResponse(statusCode, APPLICATION_A2A_JSON, jsonBody);
     }
 
     /**
@@ -1105,7 +1136,7 @@ public class RestHandler {
             if (extCard == null) {
                 throw new ExtendedAgentCardNotConfiguredError(null, "Extended Card not configured", null);
             }
-            return new HTTPRestResponse(200, APPLICATION_JSON, JsonUtil.toJson(extCard));
+            return new HTTPRestResponse(200, APPLICATION_A2A_JSON, JsonUtil.toJson(extCard));
         } catch (A2AError e) {
             return createErrorResponse(e, context.getVersionPolicy());
         } catch (Throwable t) {

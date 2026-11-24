@@ -7,6 +7,9 @@ import java.net.http.HttpResponse;
 
 import org.a2aproject.sdk.client.ClientBuilder;
 import org.a2aproject.sdk.server.apps.common.AbstractA2AServerTest;
+import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskState;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,6 +32,28 @@ public abstract class QuarkusA2ARestTest extends AbstractA2AServerTest {
 
     @Override
     protected abstract void configureTransport(ClientBuilder builder);
+
+    @Test
+    public void testRestResponsesUseA2aJsonContentType() throws Exception {
+        String taskId = "rest-content-type-test";
+        saveTaskInTaskStore(Task.builder().id(taskId).contextId("rest-content-type-context")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build());
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            for (String id : new String[] { taskId, "missing-rest-content-type-test" }) {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(getTransportUrl() + "/tasks/" + id))
+                        .header("A2A-Version", "1.0")
+                        .GET().build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                Assertions.assertEquals(id.equals(taskId) ? 200 : 404, response.statusCode());
+                Assertions.assertTrue(response.headers().firstValue("Content-Type").orElse("")
+                        .startsWith("application/a2a+json"));
+            }
+        } finally {
+            deleteTaskInTaskStore(taskId);
+        }
+    }
 
     @Test
     public void testSendMessageWithUnsupportedContentType() throws Exception {

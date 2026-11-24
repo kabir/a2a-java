@@ -12,6 +12,7 @@ import java.util.List;
 
 import jakarta.inject.Inject;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -99,6 +100,22 @@ public class MultiVersionJSONRPCTest extends AbstractPairedVersionServerTest {
         }
     }
 
+
+    @Test
+    public void testDirectMessageWireFormat() throws Exception {
+        HttpResponse<String> response = decodeResponse("1.0", "", """
+                {"jsonrpc":"2.0","id":"wire-format-003","method":"SendMessage","params":{
+                  "message":{"messageId":"wire-format-003-msg","role":"ROLE_USER",
+                    "parts":[{"text":"tck-message-response test defaults"}]}}}
+                """);
+
+        JsonObject message = JsonParser.parseString(response.body()).getAsJsonObject()
+                .getAsJsonObject("result").getAsJsonObject("message");
+        assertEquals("ROLE_AGENT", message.get("role").getAsString());
+        assertTrue(message.has("contextId"));
+        assertFalse(message.get("contextId").getAsString().isEmpty());
+        assertFalse(message.has("taskId"), "A direct message must omit taskId");
+    }
     @Test
     public void testUnsupportedVersionBeforeBodyValidation() throws Exception {
         for (String body : new String[] {"{", "{\"id\":\"recoverable\",\"method\":false}"}) {

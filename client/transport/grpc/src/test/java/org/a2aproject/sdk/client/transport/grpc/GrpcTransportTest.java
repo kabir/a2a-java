@@ -69,6 +69,8 @@ class GrpcTransportTest {
 
     private final AtomicReference<GetTaskPushNotificationConfigRequest> receivedRequest = new AtomicReference<>();
     private final AtomicReference<Metadata> receivedMetadata = new AtomicReference<>();
+    private final AtomicReference<org.a2aproject.sdk.grpc.TaskPushNotificationConfig> receivedCreateRequest =
+            new AtomicReference<>();
     private Server server;
     private AgentCard CARD;
     private final List<GrpcTransport> providerTransports = new ArrayList<>();
@@ -87,6 +89,17 @@ class GrpcTransportTest {
                         responseObserver.onNext(org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder()
                                 .setTaskId(request.getTaskId())
                                 .setId(request.getId().isEmpty() ? request.getTaskId() : request.getId())
+                                .setUrl(CALLBACK_URL)
+                                .build());
+                        responseObserver.onCompleted();
+                    }
+
+                    @Override
+                    public void createTaskPushNotificationConfig(
+                            org.a2aproject.sdk.grpc.TaskPushNotificationConfig request,
+                            StreamObserver<org.a2aproject.sdk.grpc.TaskPushNotificationConfig> responseObserver) {
+                        receivedCreateRequest.set(request);
+                        responseObserver.onNext(org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder(request)
                                 .setUrl(CALLBACK_URL)
                                 .build());
                         responseObserver.onCompleted();
@@ -338,5 +351,31 @@ class GrpcTransportTest {
                 context -> transport.deleteTaskPushNotificationConfigurations(new DeleteTaskPushNotificationConfigParams("task", "config"), context),
                 context -> transport.subscribeToTask(new TaskIdParams("task"), event -> { }, error -> { }, context),
                 context -> transport.getExtendedAgentCard(new GetExtendedAgentCardParams(null), context));
+    }
+
+    @Test
+    void testCreatePushNotificationConfigUsesDefaultTenant() throws Exception {
+        assertCreatePushNotificationConfig(
+                TaskPushNotificationConfig.builder().taskId(TASK_ID).url(CALLBACK_URL).build(),
+                "default-tenant", "default-tenant");
+    }
+
+    @Test
+    void testCreatePushNotificationConfigPrefersRequestTenant() throws Exception {
+        assertCreatePushNotificationConfig(
+                TaskPushNotificationConfig.builder().taskId(TASK_ID).url(CALLBACK_URL).tenant("request-tenant").build(),
+                "default-tenant", "request-tenant");
+    }
+
+    private void assertCreatePushNotificationConfig(TaskPushNotificationConfig config,
+            @Nullable String defaultTenant, String expectedTenant) throws Exception {
+        GrpcTransport transport = new GrpcTransport(channel(), CARD, defaultTenant, null);
+        TaskPushNotificationConfig result = transport.createTaskPushNotificationConfiguration(config, null);
+
+        org.a2aproject.sdk.grpc.TaskPushNotificationConfig request = receivedCreateRequest.get();
+        assertNotNull(request);
+        assertEquals(TASK_ID, request.getTaskId());
+        assertEquals(expectedTenant, request.getTenant());
+        assertEquals(CALLBACK_URL, result.url());
     }
 }

@@ -2,6 +2,7 @@ package org.a2aproject.sdk.server.requesthandlers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -29,6 +30,7 @@ import org.a2aproject.sdk.spec.TaskArtifactUpdateEvent;
 import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskState;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.TextPart;
 import org.junit.jupiter.api.AfterEach;
@@ -165,6 +167,27 @@ class DirectMessageMaterializationTest {
         assertTrue(events.stream().noneMatch(Task.class::isInstance), "no task may be revealed: " + events);
         assertNothingPersisted();
         assertTrue(fixture.pushed.stream().noneMatch(Task.class::isInstance), "no webhook push for a direct branch");
+    }
+
+    @Test
+    void rejectedProposalDoesNotAssociateTheFollowingDirectReply() throws Exception {
+        AtomicReference<String> taskId = new AtomicReference<>();
+        fixture = new OrdinaryInputTestSupport(capturing(taskId, emitter -> {
+            Artifact rejectedArtifact = Artifact.builder().artifactId("user-artifact")
+                    .role(Message.Role.ROLE_USER).parts(new TextPart("invalid proposal output")).build();
+            emitter.addTask(emitter.taskBuilder()
+                    .status(new TaskStatus(TaskState.TASK_STATE_WORKING))
+                    .artifacts(List.of(rejectedArtifact)).build());
+            emitter.sendMessage("direct reply");
+        }));
+
+        EventKind result = fixture.handler.onSendInput(SendInputParams.builder()
+                .message(OrdinaryInputTestSupport.userMessage("m1", "hi")).build(),
+                OrdinaryInputTestSupport.context(true));
+
+        assertNull(assertInstanceOf(Message.class, result).taskId());
+        assertNull(fixture.taskStore.get(taskId.get()));
+        assertTrue(fixture.pushed.isEmpty());
     }
 
     @Test

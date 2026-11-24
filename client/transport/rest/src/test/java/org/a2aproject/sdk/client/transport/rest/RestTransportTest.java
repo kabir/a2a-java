@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
@@ -51,6 +52,7 @@ import org.a2aproject.sdk.spec.ExtensionSupportRequiredError;
 import org.a2aproject.sdk.spec.FilePart;
 import org.a2aproject.sdk.spec.FileWithBytes;
 import org.a2aproject.sdk.spec.FileWithUri;
+import org.a2aproject.sdk.spec.GetExtendedAgentCardParams;
 import org.a2aproject.sdk.spec.GetTaskPushNotificationConfigParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
@@ -123,6 +125,68 @@ public class RestTransportTest {
     public RestTransportTest() {
     }
 
+    @Test
+    public void testExtendedAgentCardUsesInterceptedTenant() throws Exception {
+        ClientCallInterceptor interceptor = new ClientCallInterceptor() {
+            @Override
+            public PayloadAndHeaders intercept(String methodName, Object payload,
+                    java.util.Map<String, String> headers, AgentCard agentCard,
+                    ClientCallContext clientCallContext) {
+                org.a2aproject.sdk.grpc.GetExtendedAgentCardRequest.Builder request =
+                        (org.a2aproject.sdk.grpc.GetExtendedAgentCardRequest.Builder) payload;
+                assertEquals("original", request.getTenant());
+                return new PayloadAndHeaders(request.setTenant("intercepted").build(), headers);
+            }
+        };
+        server.when(request().withMethod("GET").withPath("/intercepted/extendedAgentCard"))
+                .respond(response().withStatusCode(200).withBody(new Gson().toJson(CARD)));
+
+        AgentInterface agentInterface = new AgentInterface("HTTP+JSON", "http://localhost:4001");
+        RestTransport client = new RestTransport(null, CARD, agentInterface, List.of(interceptor));
+        assertEquals(CARD.name(), client.getExtendedAgentCard(new GetExtendedAgentCardParams("original"), null).name());
+    }
+
+    @Test
+    public void testExtendedAgentCardInterceptorReceivesAbsentTenant() throws Exception {
+        AtomicReference<String> capturedTenant = new AtomicReference<>();
+        ClientCallInterceptor interceptor = new ClientCallInterceptor() {
+            @Override
+            public PayloadAndHeaders intercept(String methodName, Object payload,
+                    java.util.Map<String, String> headers, AgentCard agentCard,
+                    ClientCallContext clientCallContext) {
+                org.a2aproject.sdk.grpc.GetExtendedAgentCardRequestOrBuilder request =
+                        (org.a2aproject.sdk.grpc.GetExtendedAgentCardRequestOrBuilder) payload;
+                capturedTenant.set(request.getTenant());
+                return new PayloadAndHeaders(payload, headers);
+            }
+        };
+        server.when(request().withMethod("GET").withPath("/extendedAgentCard"))
+                .respond(response().withStatusCode(200).withBody(new Gson().toJson(CARD)));
+
+        AgentInterface agentInterface = new AgentInterface("HTTP+JSON", "http://localhost:4001");
+        RestTransport client = new RestTransport(null, CARD, agentInterface, List.of(interceptor));
+        client.getExtendedAgentCard(new GetExtendedAgentCardParams(null), null);
+        assertEquals("", capturedTenant.get());
+    }
+
+    @Test
+    public void testExtendedAgentCardRejectsUnrelatedInterceptorPayload() {
+        ClientCallInterceptor interceptor = new ClientCallInterceptor() {
+            @Override
+            public PayloadAndHeaders intercept(String methodName, Object payload,
+                    java.util.Map<String, String> headers, AgentCard agentCard, ClientCallContext context) {
+                return new PayloadAndHeaders("unexpected", headers);
+            }
+        };
+        AgentInterface agentInterface = new AgentInterface("HTTP+JSON", "http://localhost:4001");
+        RestTransport client = new RestTransport(null, CARD, agentInterface, List.of(interceptor));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> client.getExtendedAgentCard(new GetExtendedAgentCardParams(null), null));
+        assertEquals("Interceptor payload must be org.a2aproject.sdk.grpc.GetExtendedAgentCardRequestOrBuilder; got java.lang.String",
+                exception.getMessage());
+    }
+
     /**
      * Test of sendMessage method, of class JSONRestTransport.
      */
@@ -171,6 +235,79 @@ public class RestTransportTest {
         assertEquals("tell me a joke", ((TextPart) history.parts().get(0)).text());
         assertNull(task.metadata());
         assertNull(history.referenceTaskIds());
+    }
+
+    @Test
+    public void testSendMessageIgnoresUnknownResponseFields() throws Exception {
+        Message message = Message.builder()
+                .role(Message.Role.ROLE_USER)
+                .parts(Collections.singletonList(new TextPart("tell me a joke")))
+                .contextId("context-1234")
+                .messageId("message-1234")
+                .build();
+        this.server.when(
+                request()
+                        .withMethod("POST")
+                        .withPath("/message:send")
+        )
+                .respond(
+                        response()
+                                .withStatusCode(200)
+                                .withBody("""
+                                        {
+                                          "task": {
+                                            "id": "task-1234",
+                                            "contextId": "context-1234",
+                                            "status": {
+                                              "state": "TASK_STATE_SUBMITTED"
+                                            },
+                                            "unknownTaskField": "ignored"
+                                          },
+                                          "unknownResponseField": 42
+                                        }""")
+                );
+        MessageSendParams messageSendParams = new MessageSendParams(message, null, null, "");
+
+        RestTransport instance = new RestTransport(CARD, "1.0");
+        Task task = (Task) instance.sendMessage(messageSendParams, null);
+        assertEquals("task-1234", task.id());
+        assertEquals(TaskState.TASK_STATE_SUBMITTED, task.status().state());
+    }
+
+    @Test
+    public void testSendMessageRejectsUnrecognizedEnumValueInResponse() throws Exception {
+        Message message = Message.builder()
+                .role(Message.Role.ROLE_USER)
+                .parts(Collections.singletonList(new TextPart("tell me a joke")))
+                .contextId("context-1234")
+                .messageId("message-1234")
+                .build();
+        this.server.when(
+                request()
+                        .withMethod("POST")
+                        .withPath("/message:send")
+        )
+                .respond(
+                        response()
+                                .withStatusCode(200)
+                                .withBody("""
+                                        {
+                                          "task": {
+                                            "id": "task-1234",
+                                            "contextId": "context-1234",
+                                            "status": {
+                                              "state": "NOT_A_TASK_STATE"
+                                            },
+                                            "unknownTaskField": "ignored"
+                                          }
+                                        }""")
+                );
+        MessageSendParams messageSendParams = new MessageSendParams(message, null, null, "");
+
+        RestTransport instance = new RestTransport(CARD, "1.0");
+        A2AClientException exception = assertThrows(A2AClientException.class,
+                () -> instance.sendMessage(messageSendParams, null));
+        assertTrue(exception.getMessage().contains("NOT_A_TASK_STATE"), exception.getMessage());
     }
 
     /**

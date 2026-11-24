@@ -14,6 +14,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.gson.JsonParser;
+
 import org.a2aproject.sdk.client.config.ClientConfig;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransport;
 import org.a2aproject.sdk.client.transport.jsonrpc.JSONRPCTransportConfigBuilder;
@@ -78,7 +80,12 @@ class LegacyProviderCompatibilityTest {
                     body = new String(input.readAllBytes(), StandardCharsets.UTF_8);
                 }
                 server.when(request().withMethod("POST").withPath("/")
-                        .withHeader("A2A-Version", "1.0")).respond(response().withBody(body));
+                        .withHeader("A2A-Version", "1.0")).respond(incoming -> {
+                            var requestJson = JsonParser.parseString(incoming.getBodyAsString()).getAsJsonObject();
+                            var reply = JsonParser.parseString(body).getAsJsonObject();
+                            reply.add("id", requestJson.get("id"));
+                            return response().withBody(reply.toString());
+                        });
                 try (Client client = Client.builder(ClientBuilderVersionTest.card(
                         new AgentInterface(binding, url, null, "1.0")))
                         .clientConfig(new ClientConfig.Builder().setProtocolVersion("1.0").build())

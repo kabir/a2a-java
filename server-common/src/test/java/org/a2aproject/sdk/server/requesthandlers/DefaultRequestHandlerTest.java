@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.server.requesthandlers;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -49,6 +51,8 @@ import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.server.tasks.TaskStore;
+import org.a2aproject.sdk.server.version.ServerVersionPolicy;
+import org.a2aproject.sdk.server.version.VersionedOutputProjector;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -1010,6 +1014,380 @@ public class DefaultRequestHandlerTest {
         assertNull(taskStore.get(""), "No task should ever be stored under the empty-string id");
     }
 
+    @Test
+    void streamingMessageBeforeTaskPreservesOpeningHistory() throws Exception {
+        useLegacyTaskStore();
+        CountDownLatch taskPersisted = new CountDownLatch(1);
+        AtomicReference<String> taskId = new AtomicReference<>();
+        mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
+            @Override
+            public void onEventProcessed(String id, Event event) {
+                if (event instanceof TaskStatusUpdateEvent) {
+                    taskPersisted.countDown();
+                }
+            }
+            @Override
+            public void onTaskFinalized(String id) {
+            }
+        });
+        agentExecutorExecute = (context, emitter) -> {
+            taskId.set(context.getTaskId());
+            emitter.sendMessage(List.of(new TextPart("first")), null);
+            emitter.complete();
+        };
+        Message opening = Message.builder().messageId("opening")
+                .role(Message.Role.ROLE_USER).parts(new TextPart("hello")).build();
+        MessageSendParams params = MessageSendParams.builder().message(opening).build();
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        List<StreamingEventKind> events = new java.util.concurrent.CopyOnWriteArrayList<>();
+        requestHandler.onMessageSendStream(params, contextWithEffectiveCard(true)).subscribe(new Flow.Subscriber<>() {
+            public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+            public void onNext(StreamingEventKind event) { events.add(event); }
+            public void onError(Throwable throwable) { error.set(throwable); done.countDown(); }
+            public void onComplete() { done.countDown(); }
+        });
+        assertTrue(done.await(5, TimeUnit.SECONDS));
+        assertNull(error.get());
+        assertInstanceOf(Message.class, events.get(0));
+        assertTrue(taskPersisted.await(5, TimeUnit.SECONDS));
+        assertNotNull(taskId.get());
+        assertEquals("opening", taskStore.get(taskId.get()).history().get(0).messageId());
+    }
+
+    @Test
+    void streamingFullTaskMatchesPersistedHistory() throws Exception {
+        Message reply = Message.builder().messageId("reply").role(Message.Role.ROLE_AGENT)
+                .parts(new TextPart("response")).build();
+        agentExecutorExecute = (context, emitter) -> emitter.addTask(emitter.taskBuilder()
+                .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED)).history(List.of(reply)).build());
+        Message opening = Message.builder().messageId("opening").role(Message.Role.ROLE_USER)
+                .parts(new TextPart("hello")).build();
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<Task> streamed = new AtomicReference<>();
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        requestHandler.onMessageSendStream(MessageSendParams.builder().message(opening).build(),
+                contextWithEffectiveCard(true)).subscribe(new Flow.Subscriber<>() {
+            public void onSubscribe(Flow.Subscription subscription) { subscription.request(Long.MAX_VALUE); }
+            public void onNext(StreamingEventKind event) {
+                if (event instanceof Task task) {
+                    streamed.set(task);
+                }
+            }
+            public void onError(Throwable throwable) { error.set(throwable); done.countDown(); }
+            public void onComplete() { done.countDown(); }
+        });
+        assertTrue(done.await(5, TimeUnit.SECONDS));
+        assertNull(error.get());
+        Task task = streamed.get();
+        assertNotNull(task);
+        // The atomic bootstrap retains supplied history and adds the missing canonical opening once.
+        assertEquals(List.of("reply", "opening"), task.history().stream().map(Message::messageId).toList());
+        assertEquals(VersionedOutputProjector.projectTask(
+                taskStore.get(task.id()), ServerVersionPolicy.V1_0), task);
+    }
+
+    /**
+     * A2A spec 3.1.2: "If the agent returns a Task, the stream MUST begin with the Task object."
+     * An agent that opens a new task with a status update (the AgentExecutor javadoc pattern) gets the
+     * Task inserted before that update, as the TaskStore created it.
+     */
+    @Test
+    void streamingNewTaskStatusFirstBeginsWithTask() throws Exception {
+        agentExecutorExecute = (context, emitter) -> {
+            emitter.startWork();
+            emitter.complete();
+        };
+
+        List<StreamingEventKind> events = drainStream(streamParams(openingMessage("status-first"), null));
+
+        assertEquals(3, events.size(), "Expected Task, WORKING, COMPLETED but got " + events);
+        Task first = assertInstanceOf(Task.class, events.get(0), "The stream must begin with the Task");
+        TaskStatusUpdateEvent working = assertInstanceOf(TaskStatusUpdateEvent.class, events.get(1));
+        TaskStatusUpdateEvent completed = assertInstanceOf(TaskStatusUpdateEvent.class, events.get(2));
+        assertEquals(working.taskId(), first.id());
+        assertEquals(working.contextId(), first.contextId());
+        assertEquals(TaskState.TASK_STATE_SUBMITTED, first.status().state());
+        assertFalse(first.status().timestamp().isAfter(working.status().timestamp()),
+                "The opening Task's status must not be later than the update that follows it");
+        assertEquals(List.of("status-first"), first.history().stream().map(Message::messageId).toList());
+        assertTrue(first.artifacts().isEmpty());
+        assertEquals(TaskState.TASK_STATE_WORKING, working.status().state());
+        assertEquals(TaskState.TASK_STATE_COMPLETED, completed.status().state());
+
+        Task stored = taskStore.get(first.id());
+        assertNotNull(stored, "The task must be in the TaskStore");
+        assertEquals(TaskState.TASK_STATE_COMPLETED, stored.status().state());
+    }
+
+    /**
+     * An agent that opens a new task with an artifact and an append delta, while the client has not yet
+     * subscribed: the TaskStore holds both updates before the stream relays the first one. The opening
+     * Task is the Task the TaskStore created (same status, same timestamp) and contains neither update;
+     * each update arrives once.
+     */
+    @Test
+    void streamingNewTaskArtifactFirstBeginsWithTaskAsCreated() throws Exception {
+        CountDownLatch releaseAgent = new CountDownLatch(1);
+        AtomicReference<String> taskId = new AtomicReference<>();
+        agentExecutorExecute = (context, emitter) -> {
+            taskId.set(context.getTaskId());
+            emitter.addArtifact(List.of(new TextPart("part-1")), "artifact-1", null, null, null, null);
+            emitter.addArtifact(List.of(new TextPart("part-2")), "artifact-1", null, null, true, null);
+            try {
+                releaseAgent.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            emitter.complete();
+        };
+
+        Flow.Publisher<StreamingEventKind> publisher = requestHandler.onMessageSendStream(
+                streamParams(openingMessage("artifact-first"), null), contextWithEffectiveCard(true));
+
+        AtomicReference<Task> storedBeforeSubscribe = new AtomicReference<>();
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertNotNull(taskId.get());
+            Task stored = taskStore.get(taskId.get());
+            assertNotNull(stored);
+            assertEquals(1, stored.artifacts().size());
+            assertEquals(2, stored.artifacts().get(0).parts().size());
+            storedBeforeSubscribe.set(stored);
+        });
+
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        List<StreamingEventKind> events = new CopyOnWriteArrayList<>();
+        publisher.subscribe(collectingSubscriber(events, error, done));
+        releaseAgent.countDown();
+        assertTrue(done.await(5, TimeUnit.SECONDS), "Stream should complete");
+        assertNull(error.get());
+
+        assertEquals(4, events.size(), "Expected Task, artifact, append delta, COMPLETED but got " + events);
+        Task first = assertInstanceOf(Task.class, events.get(0), "The stream must begin with the Task");
+        TaskArtifactUpdateEvent artifact = assertInstanceOf(TaskArtifactUpdateEvent.class, events.get(1));
+        TaskArtifactUpdateEvent delta = assertInstanceOf(TaskArtifactUpdateEvent.class, events.get(2));
+        assertInstanceOf(TaskStatusUpdateEvent.class, events.get(3));
+        assertEquals(storedBeforeSubscribe.get().id(), first.id());
+        assertEquals(storedBeforeSubscribe.get().status(), first.status(),
+                "The opening Task must carry the status the TaskStore created, timestamp included");
+        assertTrue(first.artifacts().isEmpty(), "The opening Task must contain neither artifact update");
+        assertEquals("part-1", ((TextPart) artifact.artifact().parts().get(0)).text());
+        assertEquals("part-2", ((TextPart) delta.artifact().parts().get(0)).text());
+        assertEquals(Boolean.TRUE, delta.append());
+
+        Task stored = taskStore.get(first.id());
+        assertNotNull(stored);
+        assertEquals(2, stored.artifacts().get(0).parts().size());
+    }
+
+    /** The opening Task honours historyLength like any other streamed Task. */
+    @Test
+    void streamingNewTaskOpeningTaskHonoursHistoryLength() throws Exception {
+        agentExecutorExecute = (context, emitter) -> {
+            emitter.startWork();
+            emitter.complete();
+        };
+
+        List<StreamingEventKind> events = drainStream(streamParams(openingMessage("history-zero"),
+                MessageSendConfiguration.builder().historyLength(0).build()));
+
+        Task first = assertInstanceOf(Task.class, events.get(0), "The stream must begin with the Task");
+        assertTrue(first.history().isEmpty(), "historyLength=0 must strip the opening Task's history");
+        assertEquals(List.of("history-zero"),
+                taskStore.get(first.id()).history().stream().map(Message::messageId).toList());
+    }
+
+    /** An agent whose first event is the Task: the stream is relayed unchanged, with one Task. */
+    @Test
+    void streamingNewTaskTaskFirstIsUnchanged() throws Exception {
+        agentExecutorExecute = (context, emitter) -> {
+            emitter.addTask(emitter.taskBuilder().status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build());
+            emitter.complete();
+        };
+
+        List<StreamingEventKind> events = drainStream(streamParams(openingMessage("task-first"), null));
+
+        assertEquals(2, events.size(), "Expected Task, COMPLETED but got " + events);
+        Task first = assertInstanceOf(Task.class, events.get(0));
+        assertEquals(TaskState.TASK_STATE_WORKING, first.status().state());
+        TaskStatusUpdateEvent completed = assertInstanceOf(TaskStatusUpdateEvent.class, events.get(1));
+        assertEquals(TaskState.TASK_STATE_COMPLETED, completed.status().state());
+    }
+
+    /** An agent that answers with a Message: the stream is relayed unchanged, with no Task. */
+    @Test
+    void streamingNewTaskMessageIsUnchanged() throws Exception {
+        agentExecutorExecute = (context, emitter) -> emitter.sendMessage("reply");
+
+        List<StreamingEventKind> events = drainStream(streamParams(openingMessage("message-answer"), null));
+
+        assertEquals(1, events.size(), "Expected only the Message but got " + events);
+        assertInstanceOf(Message.class, events.get(0));
+    }
+
+    /**
+     * A message to an existing task: the stream also begins with the Task, as this request updated it
+     * before the agent ran (stored status and timestamp, the new message in its history).
+     */
+    @Test
+    void streamingExistingTaskBeginsWithTask() throws Exception {
+        Task existing = Task.builder()
+                .id("existing-task")
+                .contextId("existing-context")
+                .status(new TaskStatus(TaskState.TASK_STATE_INPUT_REQUIRED))
+                .build();
+        taskStore.save(existing, false);
+        agentExecutorExecute = (context, emitter) -> {
+            emitter.startWork();
+            emitter.complete();
+        };
+        Message followUp = Message.builder(openingMessage("second-turn"))
+                .taskId(existing.id())
+                .contextId(existing.contextId())
+                .build();
+
+        List<StreamingEventKind> events = drainStream(streamParams(followUp, null));
+
+        assertEquals(3, events.size(), "Expected Task, WORKING, COMPLETED but got " + events);
+        Task first = assertInstanceOf(Task.class, events.get(0), "The stream must begin with the Task");
+        assertEquals(existing.id(), first.id());
+        assertEquals(existing.status(), first.status(),
+                "The opening Task must carry the stored status, timestamp included");
+        assertEquals(List.of("second-turn"), first.history().stream().map(Message::messageId).toList());
+        TaskStatusUpdateEvent working = assertInstanceOf(TaskStatusUpdateEvent.class, events.get(1));
+        assertEquals(TaskState.TASK_STATE_WORKING, working.status().state());
+        TaskStatusUpdateEvent completed = assertInstanceOf(TaskStatusUpdateEvent.class, events.get(2));
+        assertEquals(TaskState.TASK_STATE_COMPLETED, completed.status().state());
+    }
+
+    private static Message openingMessage(String messageId) {
+        return Message.builder()
+                .messageId(messageId)
+                .role(Message.Role.ROLE_USER)
+                .parts(new TextPart("hello"))
+                .build();
+    }
+
+    private static MessageSendParams streamParams(Message message, MessageSendConfiguration configuration) {
+        return MessageSendParams.builder()
+                .message(message)
+                .configuration(configuration)
+                .build();
+    }
+
+    private List<StreamingEventKind> drainStream(MessageSendParams params) throws Exception {
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        List<StreamingEventKind> events = new CopyOnWriteArrayList<>();
+        requestHandler.onMessageSendStream(params, contextWithEffectiveCard(true))
+                .subscribe(collectingSubscriber(events, error, done));
+        assertTrue(done.await(5, TimeUnit.SECONDS), "Stream should complete");
+        assertNull(error.get());
+        return events;
+    }
+
+    private static Flow.Subscriber<StreamingEventKind> collectingSubscriber(List<StreamingEventKind> events,
+            AtomicReference<Throwable> error, CountDownLatch done) {
+        return new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(StreamingEventKind event) {
+                events.add(event);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                error.set(throwable);
+                done.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                done.countDown();
+            }
+        };
+    }
+
+    @Test
+    void initialMessageIsClearedWhenAgentEmitsNothing() throws Exception {
+        useLegacyTaskStore();
+        CountDownLatch finished = new CountDownLatch(1);
+        agentExecutorExecute = (context, emitter) -> finished.countDown();
+        MessageSendParams params = MessageSendParams.builder().message(Message.builder()
+                .messageId("no-event").role(Message.Role.ROLE_USER).parts(new TextPart("hello")).build()).build();
+        requestHandler.onMessageSendStream(params, contextWithEffectiveCard(true));
+        assertTrue(finished.await(5, TimeUnit.SECONDS));
+        assertInitialMessagesEventuallyEmpty();
+    }
+
+    @Test
+    void initialMessageIsClearedWhenExecutorSetupFails() throws Exception {
+        useLegacyTaskStore();
+        requestHandler = buildHandlerWithRouter(tenant -> { throw new IllegalStateException("setup failed"); });
+        MessageSendParams params = MessageSendParams.builder().message(Message.builder()
+                .messageId("setup-failure").role(Message.Role.ROLE_USER).parts(new TextPart("hello")).build()).build();
+        assertThrows(IllegalStateException.class,
+                () -> requestHandler.onMessageSendStream(params, contextWithEffectiveCard(true)));
+        assertInitialMessagesEventuallyEmpty();
+    }
+
+    @Test
+    void initialRegistrationsAreClearedWhenAgentAnswersWithMessage() throws Exception {
+        useLegacyTaskStore();
+        CountDownLatch finished = new CountDownLatch(1);
+        agentExecutorExecute = (context, emitter) -> {
+            emitter.sendMessage("reply");
+            finished.countDown();
+        };
+        requestHandler.onMessageSendStream(streamParams(openingMessage("message-cleanup"), null),
+                contextWithEffectiveCard(true));
+        assertTrue(finished.await(5, TimeUnit.SECONDS));
+        assertInitialMessagesEventuallyEmpty();
+    }
+
+    @Test
+    void initialRegistrationsAreClearedWhenAgentFailsWithError() throws Exception {
+        useLegacyTaskStore();
+        CountDownLatch finished = new CountDownLatch(1);
+        agentExecutorExecute = (context, emitter) -> {
+            emitter.fail(new InternalError("agent failed"));
+            finished.countDown();
+        };
+        requestHandler.onMessageSendStream(streamParams(openingMessage("error-cleanup"), null),
+                contextWithEffectiveCard(true));
+        assertTrue(finished.await(5, TimeUnit.SECONDS));
+        assertInitialMessagesEventuallyEmpty();
+    }
+
+    private void useLegacyTaskStore() {
+        EventQueueUtil.stop(mainEventBusProcessor);
+        taskStore = mock(TaskStore.class, org.mockito.AdditionalAnswers.delegatesTo(taskStore));
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, PushNotificationSender.NOOP, queueManager);
+        EventQueueUtil.start(mainEventBusProcessor);
+        requestHandler = buildHandlerWithRouter(tenant -> executor);
+    }
+
+    private void assertInitialMessagesEventuallyEmpty() throws Exception {
+        Map<?, ?> pendingMessages = mainEventBusProcessorMap("initialMessages");
+        Map<?, ?> pendingTasks = mainEventBusProcessorMap("initialTasks");
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertTrue(pendingMessages.isEmpty(), "opening messages should be cleared");
+            assertTrue(pendingTasks.isEmpty(), "initial tasks should be cleared");
+        });
+    }
+
+    private Map<?, ?> mainEventBusProcessorMap(String fieldName) throws Exception {
+        var field = MainEventBusProcessor.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (Map<?, ?>) field.get(mainEventBusProcessor);
+    }
+
     /**
      * Streaming counterpart of {@link #testSendMessage_WithBlankTaskId_TreatedAsNewTask(String)}.
      */
@@ -1280,6 +1658,20 @@ public class DefaultRequestHandlerTest {
 
         assertEquals(taskId, result.id());
         assertEquals("http://example.com/get-default-config-id", result.url());
+    }
+
+    @Test
+    void testGetTaskPushNotificationConfigReturnsTaskNotFoundWhenNoConfigExists() throws Exception {
+        String taskId = "get-missing-config";
+        taskStore.save(Task.builder()
+                .id(taskId)
+                .contextId("ctx-get-missing-config")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING))
+                .build(), false);
+
+        assertThrows(TaskNotFoundError.class,
+                () -> requestHandler.onGetTaskPushNotificationConfig(
+                        new GetTaskPushNotificationConfigParams(taskId, "missing-config"), NULL_CONTEXT));
     }
 
     @ParameterizedTest

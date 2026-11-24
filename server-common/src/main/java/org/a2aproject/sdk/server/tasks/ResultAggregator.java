@@ -96,9 +96,9 @@ public class ResultAggregator {
         AtomicReference<Message> message = new AtomicReference<>();
         AtomicReference<Task> capturedTask = new AtomicReference<>();  // Capture Task events
         AtomicReference<TaskSnapshot> committedSnapshot = new AtomicReference<>();
-        AtomicReference<TaskSnapshot> immediateProposalSnapshot = new AtomicReference<>();
-        AtomicReference<TaskSnapshot> stoppingSnapshot = new AtomicReference<>();
-        AtomicReference<Task> stoppingTask = new AtomicReference<>();
+        AtomicReference<@Nullable TaskSnapshot> immediateProposalSnapshot = new AtomicReference<>();
+        AtomicReference<@Nullable TaskSnapshot> stoppingSnapshot = new AtomicReference<>();
+        AtomicReference<@Nullable Task> stoppingTask = new AtomicReference<>();
         AtomicBoolean interrupted = new AtomicBoolean(false);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
         CompletableFuture<Void> completionFuture = new CompletableFuture<>();
@@ -388,7 +388,7 @@ public class ResultAggregator {
     }
 
     static boolean completeImmediateResult(CompletableFuture<Void> completionFuture,
-            AtomicReference<TaskSnapshot> selectedSnapshot, @Nullable TaskSnapshot proposalSnapshot) {
+            AtomicReference<@Nullable TaskSnapshot> selectedSnapshot, @Nullable TaskSnapshot proposalSnapshot) {
         synchronized (completionFuture) {
             if (completionFuture.isDone()) {
                 return false;

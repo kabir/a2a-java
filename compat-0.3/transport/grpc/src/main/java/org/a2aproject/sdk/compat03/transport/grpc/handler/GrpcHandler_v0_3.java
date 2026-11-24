@@ -12,6 +12,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.function.UnaryOperator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.enterprise.inject.Vetoed;
 
@@ -59,6 +61,8 @@ import org.a2aproject.sdk.spec.TransportProtocol;
  */
 @Vetoed
 public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.A2AServiceGrpc.A2AServiceImplBase {
+
+    private static final Logger LOGGER = Logger.getLogger(GrpcHandler_v0_3.class.getName());
 
     private Convert_v0_3_To10RequestHandler requestHandler;
 
@@ -479,7 +483,8 @@ public abstract class GrpcHandler_v0_3 extends org.a2aproject.sdk.compat03.grpc.
     }
 
     private <V> void handleInternalError(StreamObserver<V> responseObserver, Throwable t) {
-        handleError(responseObserver, new InternalError_v0_3(t.getMessage()));
+        LOGGER.log(Level.SEVERE, "Internal error while processing request", t);
+        handleError(responseObserver, new InternalError_v0_3("Internal error"));
     }
 
     public static void setStreamingSubscribedRunnable(Runnable runnable) {

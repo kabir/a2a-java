@@ -265,7 +265,6 @@ public class A2AServerRoutes {
         // GET /{tenant}/extendedAgentCard - Extended agent card (auth required)
         router.getWithRegex("^\\/(?<tenant>[^\\/]*\\/?)extendedAgentCard$")
             .order(1)
-            .produces(APPLICATION_JSON)
             .blockingHandler(authenticated(this::getExtendedAgentCard), false);
     }
 

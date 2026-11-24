@@ -81,6 +81,7 @@ import org.a2aproject.sdk.spec.TaskIdParams;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.util.Utils;
+import org.a2aproject.sdk.util.InterceptorPayloads;
 import org.jspecify.annotations.Nullable;
 
 public class RestTransport implements VersionedClientTransport {
@@ -141,7 +142,7 @@ public class RestTransport implements VersionedClientTransport {
         try {
             String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, messageSendParams.tenant()) + "/message:send", payloadAndHeaders);
             org.a2aproject.sdk.grpc.SendMessageResponse.Builder responseBuilder = org.a2aproject.sdk.grpc.SendMessageResponse.newBuilder();
-            JsonFormat.parser().merge(httpResponseBody, responseBuilder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(httpResponseBody, responseBuilder);
             if (responseBuilder.hasMessage()) {
                 return ProtoUtils.FromProto.message(responseBuilder.getMessage());
             }
@@ -343,7 +344,7 @@ public class RestTransport implements VersionedClientTransport {
             }
             String httpResponseBody = response.body();
             org.a2aproject.sdk.grpc.Task.Builder responseBuilder = org.a2aproject.sdk.grpc.Task.newBuilder();
-            JsonFormat.parser().merge(httpResponseBody, responseBuilder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(httpResponseBody, responseBuilder);
             return ProtoUtils.FromProto.task(responseBuilder);
         } catch (A2AClientException e) {
             throw e;
@@ -440,7 +441,7 @@ public class RestTransport implements VersionedClientTransport {
         try {
             String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, taskIdParams.tenant()) + String.format("/tasks/%1s:cancel", taskIdParams.id()), payloadAndHeaders);
             org.a2aproject.sdk.grpc.Task.Builder responseBuilder = org.a2aproject.sdk.grpc.Task.newBuilder();
-            JsonFormat.parser().merge(httpResponseBody, responseBuilder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(httpResponseBody, responseBuilder);
             return ProtoUtils.FromProto.task(responseBuilder);
         } catch (A2AClientException e) {
             throw e;
@@ -500,7 +501,7 @@ public class RestTransport implements VersionedClientTransport {
             }
             String httpResponseBody = response.body();
             org.a2aproject.sdk.grpc.ListTasksResponse.Builder responseBuilder = org.a2aproject.sdk.grpc.ListTasksResponse.newBuilder();
-            JsonFormat.parser().merge(httpResponseBody, responseBuilder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(httpResponseBody, responseBuilder);
 
             return new ListTasksResult(
                     responseBuilder.getTasksList().stream()
@@ -632,7 +633,7 @@ public class RestTransport implements VersionedClientTransport {
         try {
             String httpResponseBody = sendPostRequest(Utils.buildBaseUrl(agentInterface, request.tenant()) + String.format("/tasks/%1s/pushNotificationConfigs", request.taskId()), payloadAndHeaders);
             org.a2aproject.sdk.grpc.TaskPushNotificationConfig.Builder responseBuilder = org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder();
-            JsonFormat.parser().merge(httpResponseBody, responseBuilder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(httpResponseBody, responseBuilder);
             return ProtoUtils.FromProto.taskPushNotificationConfig(responseBuilder);
         } catch (A2AClientException e) {
             throw e;
@@ -667,7 +668,7 @@ public class RestTransport implements VersionedClientTransport {
             }
             String httpResponseBody = response.body();
             org.a2aproject.sdk.grpc.TaskPushNotificationConfig.Builder responseBuilder = org.a2aproject.sdk.grpc.TaskPushNotificationConfig.newBuilder();
-            JsonFormat.parser().merge(httpResponseBody, responseBuilder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(httpResponseBody, responseBuilder);
             return ProtoUtils.FromProto.taskPushNotificationConfig(responseBuilder);
         } catch (A2AClientException e) {
             throw e;
@@ -705,7 +706,7 @@ public class RestTransport implements VersionedClientTransport {
             }
             String httpResponseBody = response.body();
             org.a2aproject.sdk.grpc.ListTaskPushNotificationConfigsResponse.Builder responseBuilder = org.a2aproject.sdk.grpc.ListTaskPushNotificationConfigsResponse.newBuilder();
-            JsonFormat.parser().merge(httpResponseBody, responseBuilder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(httpResponseBody, responseBuilder);
             return ProtoUtils.FromProto.listTaskPushNotificationConfigsResult(responseBuilder);
         } catch (A2AClientException e) {
             throw e;
@@ -855,8 +856,15 @@ public class RestTransport implements VersionedClientTransport {
     @Override
     public AgentCard getExtendedAgentCard(GetExtendedAgentCardParams params, @Nullable ClientCallContext context) throws A2AClientException {
         try {
-            PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_EXTENDED_AGENT_CARD_METHOD, null, agentCard, context);
-            String url = Utils.buildBaseUrl(agentInterface, params.tenant()) + "/extendedAgentCard";
+            org.a2aproject.sdk.grpc.GetExtendedAgentCardRequest.Builder builder = org.a2aproject.sdk.grpc.GetExtendedAgentCardRequest.newBuilder();
+            if (params.tenant() != null) {
+                builder.setTenant(params.tenant());
+            }
+            PayloadAndHeaders payloadAndHeaders = applyInterceptors(GET_EXTENDED_AGENT_CARD_METHOD, builder, agentCard, context);
+            org.a2aproject.sdk.grpc.GetExtendedAgentCardRequestOrBuilder interceptedRequest =
+                    InterceptorPayloads.cast(payloadAndHeaders.getPayload(),
+                            org.a2aproject.sdk.grpc.GetExtendedAgentCardRequestOrBuilder.class);
+            String url = Utils.buildBaseUrl(agentInterface, interceptedRequest.getTenant()) + "/extendedAgentCard";
             A2AHttpClient.GetBuilder getBuilder = httpClient.createGet().url(url);
             addStandardHeaders(getBuilder, payloadAndHeaders);
             A2AHttpResponse response = getBuilder.get();
@@ -879,7 +887,7 @@ public class RestTransport implements VersionedClientTransport {
         }
     }
 
-    private PayloadAndHeaders applyInterceptors(String methodName, @Nullable MessageOrBuilder payload,
+    private PayloadAndHeaders applyInterceptors(String methodName, MessageOrBuilder payload,
             AgentCard agentCard, @Nullable ClientCallContext clientCallContext) {
         PayloadAndHeaders payloadAndHeaders = new PayloadAndHeaders(payload, ClientProtocolVersion.normalizeHeaders(getHttpHeaders(clientCallContext), protocolVersion));
         if (interceptors != null && !interceptors.isEmpty()) {
@@ -894,7 +902,7 @@ public class RestTransport implements VersionedClientTransport {
     }
 
     private String sendPostRequest(String url, PayloadAndHeaders payloadAndHeaders) throws IOException, InterruptedException, JsonProcessingException {
-        MessageOrBuilder payload = (MessageOrBuilder) payloadAndHeaders.getPayload();
+        MessageOrBuilder payload = InterceptorPayloads.cast(payloadAndHeaders.getPayload(), MessageOrBuilder.class);
         String body = payload != null ? ProtoJsonUtils.toJson(JsonFormat.printer(), payload) : "";
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(body);
@@ -913,7 +921,7 @@ public class RestTransport implements VersionedClientTransport {
     private A2AHttpClient.PostBuilder createPostBuilder(
             String url, PayloadAndHeaders payloadAndHeaders, boolean followRedirects)
             throws JsonProcessingException, InvalidProtocolBufferException {
-        String body = ProtoJsonUtils.toJson(JsonFormat.printer(), (MessageOrBuilder) payloadAndHeaders.getPayload());
+        String body = ProtoJsonUtils.toJson(JsonFormat.printer(), InterceptorPayloads.cast(payloadAndHeaders.getPayload(), MessageOrBuilder.class));
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(body);
         }

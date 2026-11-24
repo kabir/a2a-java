@@ -5,8 +5,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.util.JsonFormat;
 import org.a2aproject.sdk.client.http.ServerSentEvent;
 import org.a2aproject.sdk.client.transport.spi.ClientProtocolVersion;
 import org.a2aproject.sdk.client.transport.spi.TransportFrame;
@@ -14,6 +16,7 @@ import org.a2aproject.sdk.client.transport.spi.TransportObservation;
 import org.a2aproject.sdk.client.transport.spi.sse.AbstractSSEEventListener;
 import org.a2aproject.sdk.client.transport.rest.RestErrorMapper;
 import org.a2aproject.sdk.grpc.StreamResponse;
+import org.a2aproject.sdk.grpc.utils.ProtoJsonUtils;
 import org.a2aproject.sdk.grpc.utils.ProtoUtils;
 import org.a2aproject.sdk.grpc.utils.StreamDecodeResult;
 import org.a2aproject.sdk.grpc.utils.StreamDecoder;
@@ -58,7 +61,14 @@ public class SSEEventListener extends AbstractSSEEventListener {
         try {
             LOGGER.fine("REST SSE raw data: " + event.data());
             org.a2aproject.sdk.grpc.StreamResponse.Builder builder = org.a2aproject.sdk.grpc.StreamResponse.newBuilder();
-            JsonFormat.parser().merge(event.data(), builder);
+            ProtoJsonUtils.mergeIgnoringUnknownFields(event.data(), builder);
+            StreamResponse.PayloadCase payload = builder.getPayloadCase();
+            if (payload == StreamResponse.PayloadCase.ERROR
+                    || (payload == StreamResponse.PayloadCase.PAYLOAD_NOT_SET && isErrorEvent(event.data()))) {
+                // Legacy REST errors use the HTTP error envelope. The expanded proto also has an error field.
+                signalTerminal(RestErrorMapper.mapRestError(event.data(), 500));
+                return;
+            }
             parseAndHandleMessage(builder.build(), completableFuture);
         } catch (InvalidProtocolBufferException e) {
             signalTerminal(RestErrorMapper.mapRestError(event.data(), 500));
@@ -84,6 +94,15 @@ public class SSEEventListener extends AbstractSSEEventListener {
             handleFrame(new TransportFrame(null, false, java.util.List.of(), rejection.error(), encodedSize), future);
         } else if (decoded instanceof StreamDecodeResult.Malformed malformed) {
             failObservation(malformed.cause(), future);
+        }
+    }
+
+    private static boolean isErrorEvent(String data) {
+        try {
+            JsonElement json = JsonParser.parseString(data);
+            return json.isJsonObject() && json.getAsJsonObject().has("error");
+        } catch (JsonParseException e) {
+            return false;
         }
     }
 

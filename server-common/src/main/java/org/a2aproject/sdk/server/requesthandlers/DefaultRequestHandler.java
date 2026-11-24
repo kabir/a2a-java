@@ -27,6 +27,8 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import mutiny.zero.ZeroPublisher;
+
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksResult;
 import org.a2aproject.sdk.server.EffectiveAgentCard;
 import org.a2aproject.sdk.server.ServerCallContext;
@@ -93,6 +95,7 @@ import org.a2aproject.sdk.spec.TaskNotFoundError;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TaskState;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
 import org.a2aproject.sdk.util.Assert;
@@ -915,34 +918,49 @@ public class DefaultRequestHandler implements RequestHandler {
                 mss.requestContext.getTaskId(), "TaskId must be non-null after RequestContext.build()");
         LOGGER.debug("Queue taskId: {}", queueTaskId);
 
-        // Create queue with real taskId (no tempId parameter needed)
-        EventQueue queue = queueManager.createOrTap(queueTaskId);
-        retainOpening(queue, mss);
+        boolean agentStarted = false;
+        EventQueue queue;
+        ResultAggregator resultAggregator;
+        EventConsumer consumer;
+        boolean blocking;
         final java.util.concurrent.atomic.AtomicReference<@NonNull String> taskId = new java.util.concurrent.atomic.AtomicReference<>(queueTaskId);
-        ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor,
-                        SECONDS.toNanos(reconciliationTimeoutSeconds));
+        try {
+            if (mss.task() == null && mss.opening() == null) {
+                mainEventBusProcessor.registerInitialMessage(queueTaskId, params.message());
+            }
+            // Create queue with real taskId (no tempId parameter needed)
+            queue = queueManager.createOrTap(queueTaskId);
+            retainOpening(queue, mss);
+            resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor,
+                            SECONDS.toNanos(reconciliationTimeoutSeconds));
 
-        // Default to blocking per A2A spec (returnImmediately defaults to false, meaning wait for completion)
-        boolean returnImmediately = params.configuration() != null && Boolean.TRUE.equals(params.configuration().returnImmediately());
-        boolean blocking = !returnImmediately;
+            // Default to blocking per A2A spec (returnImmediately defaults to false, meaning wait for completion)
+            boolean returnImmediately = params.configuration() != null && Boolean.TRUE.equals(params.configuration().returnImmediately());
+            blocking = !returnImmediately;
 
-        // Log return behavior from client request
-        if (params.configuration() != null && params.configuration().returnImmediately() != null) {
-            LOGGER.debug("DefaultRequestHandler: Client requested returnImmediately={}, using blocking={} for task {}",
-                params.configuration().returnImmediately(), blocking, taskId.get());
-        } else if (params.configuration() != null) {
-            LOGGER.debug("DefaultRequestHandler: Client sent configuration but returnImmediately=null, using default blocking={} for task {}", blocking, taskId.get());
-        } else {
-            LOGGER.debug("DefaultRequestHandler: Client sent no configuration, using default blocking={} for task {}", blocking, taskId.get());
+            // Log return behavior from client request
+            if (params.configuration() != null && params.configuration().returnImmediately() != null) {
+                LOGGER.debug("DefaultRequestHandler: Client requested returnImmediately={}, using blocking={} for task {}",
+                    params.configuration().returnImmediately(), blocking, taskId.get());
+            } else if (params.configuration() != null) {
+                LOGGER.debug("DefaultRequestHandler: Client sent configuration but returnImmediately=null, using default blocking={} for task {}", blocking, taskId.get());
+            } else {
+                LOGGER.debug("DefaultRequestHandler: Client sent no configuration, using default blocking={} for task {}", blocking, taskId.get());
+            }
+            LOGGER.debug("DefaultRequestHandler: Final blocking decision: {} for task {}", blocking, taskId.get());
+
+            // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
+            consumer = new EventConsumer(queue, eventConsumerExecutor);
+
+            registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
+            agentStarted = true;
+        } finally {
+            if (!agentStarted) {
+                mainEventBusProcessor.clearInitialMessageAfterEvents(queueTaskId);
+            }
         }
-        LOGGER.debug("DefaultRequestHandler: Final blocking decision: {} for task {}", blocking, taskId.get());
 
         boolean interruptedOrNonBlocking = false;
-
-        // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
-        EventConsumer consumer = new EventConsumer(queue, eventConsumerExecutor);
-
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
 
         ResultAggregator.EventTypeAndInterrupt etai = null;
         EventKind kind = null;  // Declare outside try block so it's in scope for return
@@ -994,18 +1012,20 @@ public class DefaultRequestHandler implements RequestHandler {
                 // 1. Wait for agent to finish enqueueing events (or timeout)
                 // 2. Close the queue to signal consumption can complete
                 // 3. Wait for consumption to finish processing events
-                // 4. (Implicit) MainEventBusProcessor persistence guarantee via consumption completion
+                // 4. Wait for MainEventBusProcessor to finish the events the agent enqueued (skipped if the agent timed out)
                 // 5. Fetch current task state from TaskStore (includes all consumed & persisted events)
                 LOGGER.debug("DefaultRequestHandler: Entering blocking fire-and-forget handling for task {}", taskId.get());
 
                 try {
                     // Step 1: Wait for agent to finish (with configurable timeout)
+                    boolean agentCompleted = true;
                     if (agentFuture != null) {
                         try {
                             agentFuture.get(agentCompletionTimeoutSeconds, SECONDS);
                             LOGGER.debug("DefaultRequestHandler: Step 1 - Agent completed for task {}", taskId.get());
                         } catch (java.util.concurrent.TimeoutException e) {
                             // Agent still running after timeout - that's fine, events already being processed
+                            agentCompleted = false;
                             LOGGER.debug("DefaultRequestHandler: Step 1 - Agent still running for task {} after {}s timeout",
                                 taskId.get(), agentCompletionTimeoutSeconds);
                         }
@@ -1023,16 +1043,31 @@ public class DefaultRequestHandler implements RequestHandler {
                         LOGGER.debug("DefaultRequestHandler: Step 3 - Consumption completed for task {}", taskId.get());
                     }
 
-                    // Step 4: Implicit guarantee of persistence via consumption completion
-                    // We do NOT add an explicit wait for MainEventBusProcessor here because:
-                    // 1. MainEventBusProcessor persists BEFORE distributing to ChildQueues
-                    // 2. Step 3 (consumption completion) already guarantees all consumed events are persisted
-                    // 3. Adding another explicit synchronization point would require exposing
-                    //    MainEventBusProcessor internals and blocking event loop threads
+                    // Step 4: Wait until the queue has nothing left in flight
+                    // Completing the consumption (Step 3) only proves the consumer saw the events
+                    // that had already been distributed to it. The last event the agent enqueued -
+                    // for example the INPUT_REQUIRED status that ended the turn - may still be
+                    // sitting in MainEventBusProcessor, which persists it *after* the consumer is
+                    // done. Reading the TaskStore at that point returns the state from before that
+                    // event (SUBMITTED or WORKING instead of INPUT_REQUIRED) with no error raised.
+                    // Terminal states are not affected because the awaitingFinalEvent machinery
+                    // keeps the consumer waiting for the final event; interrupted states
+                    // (INPUT_REQUIRED, AUTH_REQUIRED) and artifact-only tails are.
                     //
-                    // Note: For fire-and-forget tasks, if the agent is still running after Step 1 timeout,
-                    // it may enqueue additional events. These will be persisted asynchronously but won't
-                    // be included in the task state returned to the client (already consumed in Step 3).
+                    // If the agent is still running after the Step 1 timeout, it can keep enqueueing
+                    // events, so the queue may never drain while we wait. Those events are persisted
+                    // asynchronously and are not part of the task returned here, so skip the wait
+                    // instead of adding up to consumptionCompletionTimeoutSeconds to the response.
+                    if (!agentCompleted) {
+                        LOGGER.debug("DefaultRequestHandler: Step 4 - Skipped for task {}; agent is still running",
+                            taskId.get());
+                    } else if (!queue.awaitDrained(consumptionCompletionTimeoutSeconds, SECONDS)) {
+                        LOGGER.warn("DefaultRequestHandler: Step 4 - Queue for task {} still has events in flight "
+                            + "after {}s; the returned task may not include the latest event",
+                            taskId.get(), consumptionCompletionTimeoutSeconds);
+                    } else {
+                        LOGGER.debug("DefaultRequestHandler: Step 4 - Queue drained for task {}", taskId.get());
+                    }
 
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -1137,30 +1172,64 @@ public class DefaultRequestHandler implements RequestHandler {
                 mss.requestContext.getTaskId(), "TaskId must be non-null after RequestContext.build()");
         final AtomicReference<@NonNull String> taskId = new AtomicReference<>(queueTaskId);
 
-        // Create queue with real taskId (no tempId parameter needed)
-        EventQueue queue = queueManager.createOrTap(queueTaskId);
-        retainOpening(queue, mss);
-        LOGGER.debug("Created/tapped queue for task {}: {}", taskId.get(), queue);
+        // Capture the opening view before the executor can advance the task. Legacy stores create
+        // this Task through the registration below. Atomic stores commit the opening input and
+        // first output together, so the opening view is used only for older-version streams.
+        OpeningTaskInput opening = mss.opening();
+        Task initialTask = mss.task() != null ? mss.task() : Task.builder()
+                .id(queueTaskId)
+                .contextId(mss.requestContext.getContextId())
+                .status(opening == null ? new TaskStatus(TaskState.TASK_STATE_SUBMITTED)
+                        : new TaskStatus(TaskState.TASK_STATE_SUBMITTED, null, opening.input().receivedAt()))
+                .history(List.of(opening == null ? params.message()
+                        : Message.builder(params.message()).taskId(queueTaskId).contextId(mss.requestContext.getContextId()).build()))
+                .build();
 
-        // Record ownership synchronously for new tasks before agent starts
-        if (mss.task() == null) {
-            recordOwnershipIfNeeded(context, queueTaskId, TaskOperation.MESSAGE_SEND_STREAM);
+        boolean agentStarted = false;
+        EventQueue queue;
+        ResultAggregator resultAggregator;
+        EventConsumer consumer;
+        try {
+            if (mss.task() == null && mss.opening() == null) {
+                mainEventBusProcessor.registerInitialMessage(queueTaskId, params.message());
+                mainEventBusProcessor.registerInitialTask(queueTaskId, initialTask);
+            }
+            // Create queue with real taskId (no tempId parameter needed)
+            queue = queueManager.createOrTap(queueTaskId);
+            retainOpening(queue, mss);
+            LOGGER.debug("Created/tapped queue for task {}: {}", taskId.get(), queue);
+
+            // Record ownership synchronously for new tasks before agent starts
+            if (mss.task() == null) {
+                recordOwnershipIfNeeded(context, queueTaskId, TaskOperation.MESSAGE_SEND_STREAM);
+            }
+
+            // Store push notification config SYNCHRONOUSLY for new tasks before agent starts
+            // This ensures config is available when MainEventBusProcessor sends push notifications
+            // For existing tasks, config is stored in initMessageSend()
+            if (mss.task() == null && opening == null && shouldAddPushInfo(params)) {
+                // Satisfy Nullaway
+                Objects.requireNonNull(taskId.get(), "taskId was null");
+                LOGGER.debug("Storing push notification config for new streaming task {} EARLY (original taskId from params: {})",
+                        taskId.get(), params.message().taskId());
+                String version = context != null ? context.getRequestedProtocolVersion() : null;
+                pushConfigStore.setInfo(TaskPushNotificationConfig.builder(params.configuration().taskPushNotificationConfig())
+                        .taskId(taskId.get()).build(), version);
+            }
+
+            resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor,
+                            SECONDS.toNanos(reconciliationTimeoutSeconds));
+
+            // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
+            consumer = new EventConsumer(queue, eventConsumerExecutor);
+
+            registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
+            agentStarted = true;
+        } finally {
+            if (!agentStarted) {
+                mainEventBusProcessor.clearInitialMessageAfterEvents(queueTaskId);
+            }
         }
-
-        // Atomic stores enroll at materialization; legacy stores keep the original early enrollment.
-        if (mss.task() == null && mss.opening() == null && shouldAddPushInfo(params)) {
-            String version = context != null ? context.getRequestedProtocolVersion() : null;
-            pushConfigStore.setInfo(TaskPushNotificationConfig.builder(params.configuration().taskPushNotificationConfig())
-                    .taskId(queueTaskId).build(), version);
-        }
-
-        ResultAggregator resultAggregator = new ResultAggregator(mss.taskManager, null, executor, eventConsumerExecutor,
-                        SECONDS.toNanos(reconciliationTimeoutSeconds));
-
-        // Create consumer BEFORE starting agent - callback is registered inside registerAndExecuteAgentAsync
-        EventConsumer consumer = new EventConsumer(queue, eventConsumerExecutor);
-
-        EnhancedRunnable producerRunnable = registerAndExecuteAgentAsync(queueTaskId, mss.requestContext, queue, consumer.createAgentRunnableDoneCallback());
 
         // Store cancel callback in context for closeHandler to access
         // When client disconnects, closeHandler can call this to stop EventConsumer polling loop
@@ -1188,6 +1257,10 @@ public class DefaultRequestHandler implements RequestHandler {
             Flow.Publisher<EventQueueItem> selected = suppressCoveredProposalEvents(processed, context);
             Flow.Publisher<Event> eventPublisher = convertingProcessor(selected,
                     item -> proposalSummaryOrEvent(item, context));
+
+            if (!context.getVersionPolicy().supportsPhase2Output()) {
+                eventPublisher = prependTaskBeforeFirstUpdate(eventPublisher, initialTask, context.getVersionPolicy());
+            }
 
             Flow.Publisher<StreamingEventKind> finalPublisher = convertingProcessor(eventPublisher, event -> (StreamingEventKind) event);
 
@@ -1278,6 +1351,63 @@ public class DefaultRequestHandler implements RequestHandler {
         }
     }
 
+    /**
+     * Per A2A Protocol Spec 3.1.2 (Send Streaming Message):
+     * "If the agent returns a Task, the stream MUST begin with the Task object."
+     * <p>
+     * An agent may begin with a status or artifact update (e.g. {@link AgentEmitter#startWork()}); the
+     * client would then receive an update of a Task it was never sent. This emits {@code initialTask}
+     * before such a first event. A first Task or Message passes unchanged.
+     * </p>
+     * <p>
+     * <p>{@code initialTask} is fixed before the agent runs. At relay time the store may already
+     * hold later updates, whose status and artifacts would appear in both the Task and the deltas.
+     * </p>
+     *
+     * @param source the stream's events
+     * @param initialTask the Task to emit before a first status or artifact update
+     * @param policy the legacy view that determines which updates can appear on the stream
+     * @return the events, with {@code initialTask} before a first status or artifact update
+     */
+    private static Flow.Publisher<Event> prependTaskBeforeFirstUpdate(Flow.Publisher<Event> source,
+            Task initialTask, ServerVersionPolicy policy) {
+        return ZeroPublisher.create(createTubeConfig(), tube -> {
+            source.subscribe(new Flow.Subscriber<Event>() {
+                private boolean firstEventSeen = false;
+
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    subscription.request(Long.MAX_VALUE);
+                }
+
+                @Override
+                public void onNext(Event event) {
+                    if (event instanceof StreamingEventKind streamingEvent
+                            && VersionedOutputProjector.projectEvent(streamingEvent, policy) == null) {
+                        return;
+                    }
+                    if (!firstEventSeen) {
+                        firstEventSeen = true;
+                        if (event instanceof TaskStatusUpdateEvent || event instanceof TaskArtifactUpdateEvent) {
+                            tube.send(initialTask);
+                        }
+                    }
+                    tube.send(event);
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                    tube.fail(throwable);
+                }
+
+                @Override
+                public void onComplete() {
+                    tube.complete();
+                }
+            });
+        });
+    }
+
     @Override
     public TaskPushNotificationConfig onCreateTaskPushNotificationConfig(
             TaskPushNotificationConfig params, ServerCallContext context) throws A2AError {
@@ -1314,7 +1444,7 @@ public class DefaultRequestHandler implements RequestHandler {
 
         ListTaskPushNotificationConfigsResult listTaskPushNotificationConfigsResult = pushConfigStore.getInfo(new ListTaskPushNotificationConfigsParams(params.taskId()));
         if (listTaskPushNotificationConfigsResult == null || listTaskPushNotificationConfigsResult.isEmpty()) {
-            throw new InternalError("No push notification config found");
+            throw new TaskNotFoundError("No push notification config found", null);
         }
 
         String requestedConfigId = params.id();
@@ -1610,6 +1740,7 @@ public class DefaultRequestHandler implements RequestHandler {
                     }
                     // Queue lifecycle is managed by EventConsumer.consumeAll()
                     // which closes the queue on final events.
+                    mainEventBusProcessor.clearInitialMessageAfterEvents(taskId);
                     logThreadStats("AGENT COMPLETE END");
                     runnable.invokeDoneCallbacks();
                 });

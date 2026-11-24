@@ -23,6 +23,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.google.gson.JsonSyntaxException;
+import com.google.protobuf.Descriptors.Descriptor;
 import org.a2aproject.sdk.grpc.StreamResponse;
 import org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException;
 import org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException;
@@ -540,12 +542,15 @@ public class JSONRPCUtils {
         JsonElement jelement = JsonParser.parseString(body);
         JsonObject jsonRpc = jelement.getAsJsonObject();
         String version = getAndValidateJsonrpc(jsonRpc);
-        Object id = getAndValidateId(jsonRpc);
-        JsonElement paramsNode = jsonRpc.get("result");
         JsonElement errorNode = jsonRpc.get("error");
         if (errorNode != null && !errorNode.isJsonNull()) {
-            return parseError(errorNode.getAsJsonObject(), id, method);
+            if (jsonRpc.has("id") && jsonRpc.get("id").isJsonNull()) {
+                return parseError(errorNode.getAsJsonObject(), null, method);
+            }
+            return parseError(errorNode.getAsJsonObject(), getAndValidateId(jsonRpc), method);
         }
+        Object id = getAndValidateId(jsonRpc);
+        JsonElement paramsNode = jsonRpc.get("result");
         switch (method) {
             case GET_TASK_METHOD -> {
                 org.a2aproject.sdk.grpc.Task.Builder builder = org.a2aproject.sdk.grpc.Task.newBuilder();
@@ -598,7 +603,7 @@ public class JSONRPCUtils {
         }
     }
 
-    public static A2AResponse<?> parseError(JsonObject error, Object id, String method) throws JsonMappingException {
+    public static A2AResponse<?> parseError(JsonObject error, @Nullable Object id, String method) throws JsonMappingException {
         A2AError rpcError = processError(error);
         switch (method) {
             case GET_TASK_METHOD -> {
@@ -625,8 +630,11 @@ public class JSONRPCUtils {
             case DELETE_TASK_PUSH_NOTIFICATION_CONFIG_METHOD -> {
                 return new DeleteTaskPushNotificationConfigResponse(id, rpcError);
             }
+            case GET_EXTENDED_AGENT_CARD_METHOD -> {
+                return new GetExtendedAgentCardResponse(id, rpcError);
+            }
             default ->
-                throw new MethodNotFoundJsonMappingException("Unsupported JSON-RPC method: '" + method + "'", id);
+                throw new MethodNotFoundJsonMappingException("Unsupported JSON-RPC method: '" + method + "'", id == null ? "UNDETERMINED ID" : id);
         }
     }
 
@@ -673,7 +681,9 @@ public class JSONRPCUtils {
     }
 
     protected static void parseRequestBody(JsonElement jsonRpc, com.google.protobuf.Message.Builder builder, Object id) throws JsonProcessingException {
-        parseJsonString(jsonRpc.toString(), builder, id);
+        // Spec Section 5.7: ignore unrecognized field names for forward compatibility. The values
+        // of recognized fields, such as enum values, are still checked by the strict parser.
+        parseJsonString(ProtoJsonUtils.removeUnknownFields(jsonRpc, builder.getDescriptorForType()).toString(), builder, id);
     }
 
     public static void parseJsonString(String body, com.google.protobuf.Message.Builder builder, Object id) throws JsonProcessingException {
@@ -687,8 +697,65 @@ public class JSONRPCUtils {
         } catch (InvalidProtocolBufferException e) {
             LOGGER.log(Level.FINE, "Protocol buffer parsing failed for JSON: {0}", body);
             LOGGER.log(Level.FINE, "Proto parsing error details", e);
+            String message = e.getMessage();
+            if (message != null && message.startsWith("Invalid enum value:") && message.contains(" for enum type: ")) {
+                int typeIndex = message.lastIndexOf(" for enum type: ");
+                String enumType = message.substring(typeIndex + " for enum type: ".length());
+                String value = message.substring("Invalid enum value:".length(), typeIndex).trim();
+                try {
+                    String field = findEnumField(JsonParser.parseString(body), builder.getDescriptorForType(), enumType, value);
+                    if (field != null) {
+                        throw new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted("Invalid value for field " + field), id);
+                    }
+                } catch (JsonSyntaxException ignored) {
+                    // Fall through to generic conversion.
+                }
+            }
             throw convertProtoBufExceptionToJsonProcessingException(e, id);
         }
+    }
+
+    private static @Nullable String findEnumField(JsonElement json, Descriptor descriptor, String enumType, String value) {
+        if (json.isJsonArray()) {
+            for (JsonElement element : json.getAsJsonArray()) {
+                String field = findEnumField(element, descriptor, enumType, value);
+                if (field != null) {
+                    return field;
+                }
+            }
+        } else if (json.isJsonObject()) {
+            for (FieldDescriptor field : descriptor.getFields()) {
+                JsonObject object = json.getAsJsonObject();
+                String name = object.has(field.getJsonName()) ? field.getJsonName() : field.getName();
+                JsonElement element = object.get(name);
+                if (element == null || element.isJsonNull()) {
+                    continue;
+                }
+                if (field.getJavaType() == FieldDescriptor.JavaType.ENUM
+                        && field.getEnumType().getFullName().equals(enumType) && containsEnumValue(element, value)) {
+                    return name;
+                }
+                if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
+                    String nested = findEnumField(element, field.getMessageType(), enumType, value);
+                    if (nested != null) {
+                        return nested;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean containsEnumValue(JsonElement element, String value) {
+        if (element.isJsonArray()) {
+            for (JsonElement item : element.getAsJsonArray()) {
+                if (containsEnumValue(item, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return element.isJsonPrimitive() && element.getAsString().equals(value);
     }
 
     /**
@@ -725,8 +792,17 @@ public class JSONRPCUtils {
             return new JsonProcessingException(ERROR_MESSAGE.formatted("unknown parsing error"));
         }
 
+        if (message.startsWith("Invalid enum value:")) {
+            String value = message.substring("Invalid enum value:".length());
+            int typeIndex = value.lastIndexOf(" for enum type:");
+            if (typeIndex >= 0) {
+                value = value.substring(0, typeIndex);
+            }
+            return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted("Invalid enum value: " + value.trim()), id);
+        }
+
         // Extract field name if present in error message - check common prefixes
-        String[] prefixes = {"Cannot find field: ", "Invalid value for", "Invalid enum value:", "Failed to parse"};
+        String[] prefixes = {"Cannot find field: ", "Invalid value for", "Failed to parse"};
         for (String prefix : prefixes) {
             if (message.contains(prefix)) {
                 return new InvalidParamsJsonMappingException(ERROR_MESSAGE.formatted(message.substring(message.indexOf(prefix) + prefix.length())), id);
@@ -841,6 +917,20 @@ public class JSONRPCUtils {
      */
     public static String toJsonRPCResultResponse(@Nullable Object requestId,
             MessageOrBuilder builder, @Nullable String protocolVersion) {
+        return toJsonRPCResultResponse(requestId, builder, protocolVersion, false);
+    }
+
+    public static String toJsonRPCListTasksResultResponse(@Nullable Object requestId, MessageOrBuilder builder) {
+        return toJsonRPCListTasksResultResponse(requestId, builder, "1.0");
+    }
+
+    public static String toJsonRPCListTasksResultResponse(@Nullable Object requestId,
+            MessageOrBuilder builder, @Nullable String protocolVersion) {
+        return toJsonRPCResultResponse(requestId, builder, protocolVersion, true);
+    }
+
+    private static String toJsonRPCResultResponse(@Nullable Object requestId,
+            MessageOrBuilder builder, @Nullable String protocolVersion, boolean omitEmptyTaskArtifacts) {
         try (StringWriter result = new StringWriter(); JsonWriter output = GSON.newJsonWriter(result)) {
             output.beginObject();
             output.name("jsonrpc").value("2.0");
@@ -849,6 +939,13 @@ public class JSONRPCUtils {
             validateResponseVersion(selectedVersion);
             rejectUnsupportedLegacyPayload(builder, selectedVersion);
             String resultValue = ProtoJsonUtils.toJsonForVersion(RESPONSE_PRINTER, builder, selectedVersion);
+            if (builder instanceof org.a2aproject.sdk.grpc.SendMessageResponseOrBuilder
+                    || builder instanceof org.a2aproject.sdk.grpc.StreamResponseOrBuilder) {
+                resultValue = ProtoJsonUtils.omitEmptyMessageTaskId(resultValue);
+            }
+            if (omitEmptyTaskArtifacts) {
+                resultValue = ProtoJsonUtils.omitEmptyTaskArtifacts(resultValue);
+            }
             output.name("result").jsonValue(resultValue);
             output.endObject();
             return result.toString();

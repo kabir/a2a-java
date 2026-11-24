@@ -122,7 +122,7 @@ public class JSONRPCTransportTest {
                 }
                 """;
         server.when(request().withMethod("POST").withPath("/"))
-                .respond(response().withStatusCode(200).withBody(body));
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response().withStatusCode(200).withBody(ResponseFixture.echoId(body, req)));
 
         ListTasksResult result = new JSONRPCTransport("http://localhost:4001", "1.0").listTasks(params, null);
 
@@ -155,11 +155,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(SEND_MESSAGE_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(SEND_MESSAGE_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(SEND_MESSAGE_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
@@ -203,11 +201,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(SEND_MESSAGE_TEST_REQUEST_WITH_MESSAGE_RESPONSE, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(SEND_MESSAGE_TEST_RESPONSE_WITH_MESSAGE_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
@@ -245,11 +241,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(SEND_MESSAGE_WITH_ERROR_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(SEND_MESSAGE_ERROR_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(SEND_MESSAGE_ERROR_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
@@ -284,11 +278,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(GET_TASK_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(GET_TASK_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(GET_TASK_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Task task = client.getTask(new TaskQueryParams("de38c76d-d54c-436c-8b9f-4c2703648d64",
@@ -337,11 +329,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(CANCEL_TASK_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(CANCEL_TASK_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(CANCEL_TASK_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Task task = client.cancelTask(new CancelTaskParams("de38c76d-d54c-436c-8b9f-4c2703648d64"), null);
@@ -360,11 +350,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(GET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         TaskPushNotificationConfig taskPushNotificationConfig = client.getTaskPushNotificationConfiguration(
@@ -384,11 +372,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(SET_TASK_PUSH_NOTIFICATION_CONFIG_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         TaskPushNotificationConfig taskPushNotificationConfig = client.createTaskPushNotificationConfiguration(
@@ -413,11 +399,9 @@ public class JSONRPCTransportTest {
                                 .withPath("/")
                                 .withBody(JsonBody.json(GET_AUTHENTICATED_EXTENDED_AGENT_CARD_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(GET_AUTHENTICATED_EXTENDED_AGENT_CARD_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(GET_AUTHENTICATED_EXTENDED_AGENT_CARD_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         GetExtendedAgentCardParams params = new GetExtendedAgentCardParams(null);
@@ -487,11 +471,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(SEND_MESSAGE_WITH_FILE_PART_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(SEND_MESSAGE_WITH_FILE_PART_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
@@ -540,11 +522,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(SEND_MESSAGE_WITH_DATA_PART_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(SEND_MESSAGE_WITH_DATA_PART_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
 
@@ -598,11 +578,9 @@ public class JSONRPCTransportTest {
                                 .withBody(JsonBody.json(SEND_MESSAGE_WITH_MIXED_PARTS_TEST_REQUEST, MatchType.ONLY_MATCHING_FIELDS))
 
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE)
-                );
+                                .withBody(ResponseFixture.echoId(SEND_MESSAGE_WITH_MIXED_PARTS_TEST_RESPONSE, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
 
@@ -669,11 +647,9 @@ public class JSONRPCTransportTest {
                                 .withMethod("POST")
                                 .withPath("/")
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(errorResponseBody)
-                );
+                                .withBody(ResponseFixture.echoId(errorResponseBody, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
@@ -818,11 +794,9 @@ public class JSONRPCTransportTest {
                                 .withMethod("POST")
                                 .withPath("/")
                 )
-                .respond(
-                        response()
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response()
                                 .withStatusCode(200)
-                                .withBody(errorResponseBody)
-                );
+                                .withBody(ResponseFixture.echoId(errorResponseBody, req)));
 
         JSONRPCTransport client = new JSONRPCTransport("http://localhost:4001", "1.0");
         Message message = Message.builder()
@@ -872,7 +846,7 @@ public class JSONRPCTransportTest {
                  "totalSize":1,"pageSize":1}
                 """.formatted(data);
         server.when(request().withMethod("POST").withPath("/"))
-                .respond(response().withStatusCode(200).withBody("{\"jsonrpc\":\"2.0\",\"id\":\"null-task\",\"result\":" + resultJson + "}"));
+                .respond((org.mockserver.mock.action.ExpectationResponseCallback) req -> response().withStatusCode(200).withBody(ResponseFixture.echoId("{\"jsonrpc\":\"2.0\",\"id\":\"null-task\",\"result\":" + resultJson + "}", req)));
 
         var result = new JSONRPCTransport("http://localhost:4001", "1.0").listTasks(new ListTasksParams(), null);
 

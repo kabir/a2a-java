@@ -23,6 +23,9 @@ import org.a2aproject.sdk.client.transport.rest.RestTransport;
 import org.a2aproject.sdk.client.transport.rest.RestTransportConfigBuilder;
 import org.a2aproject.sdk.server.apps.common.AbstractPairedVersionServerTest;
 import org.a2aproject.sdk.server.apps.common.PairedVersionTestProfile;
+import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskState;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -115,6 +118,29 @@ public class MultiVersionRestTest extends AbstractPairedVersionServerTest {
     }
 
     @Test
+    public void testResponseContentTypeMatchesSelectedVersion() throws Exception {
+        String taskId = "versioned-content-type-test";
+        saveTaskInTaskStore(Task.builder().id(taskId).contextId("versioned-content-type-context")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).build());
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            for (String version : new String[] {"0.3", "1.0"}) {
+                for (String id : new String[] {taskId, "missing-versioned-content-type-test"}) {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(getTransportUrl() + "/v1/tasks/" + id))
+                            .header("A2A-Version", version).GET().build();
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    assertEquals(id.equals(taskId) ? 200 : 404, response.statusCode());
+                    assertEquals("0.3".equals(version) ? "application/json" : "application/a2a+json",
+                            response.headers().firstValue("Content-Type").orElseThrow());
+                }
+            }
+        } finally {
+            deleteTaskInTaskStore(taskId);
+        }
+    }
+
+    @Test
     public void testUnsupportedVersionBeforeMalformedHistory() throws Exception {
         HttpResponse<String> response = historyResponse("2.0", "historyLength=bad");
         assertEquals(400, response.statusCode());
@@ -143,7 +169,8 @@ public class MultiVersionRestTest extends AbstractPairedVersionServerTest {
             request.header("A2A-Version", header);
         }
         HttpResponse<String> response = HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofString());
-        assertEquals("application/json", response.headers().firstValue("Content-Type").orElseThrow());
+        assertEquals("1.0".equals(header) ? "application/a2a+json" : "application/json",
+                response.headers().firstValue("Content-Type").orElseThrow());
         return response;
     }
 

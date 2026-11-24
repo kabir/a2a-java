@@ -39,6 +39,7 @@ import org.a2aproject.sdk.server.AgentCardResolver;
 import org.a2aproject.sdk.server.AgentCardTransportValidator;
 import org.a2aproject.sdk.server.AgentCardValidator;
 import org.a2aproject.sdk.server.CachingAgentCardTransportValidator;
+import org.a2aproject.sdk.server.InputModeValidator;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.TaskOperation;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
@@ -67,6 +68,7 @@ import org.a2aproject.sdk.spec.InvalidRequestError;
 import org.a2aproject.sdk.spec.JSONParseError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
+import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.ObserveTaskParams;
 import org.a2aproject.sdk.spec.SendInputParams;
@@ -226,12 +228,18 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             if (context.getVersionPolicy().supportsPhase2Output()) {
                 SendInputParams params = FromProto.sendInputParams(canonicalRequest);
                 rejectUnsupportedInputOptions(params);
+                Message message = params.message();
+                if (message != null) {
+                    InputModeValidator.validate(message, Objects.requireNonNull(context.getEffectiveAgentCard()).card());
+                }
                 taskOrMessage = getRequestHandler().onSendInput(params, context);
             } else {
                 if (context.getVersionPolicy() == ServerVersionPolicy.V1_0) {
                     rejectVersion10AdvancedInput(FromProto.sendInputParams(canonicalRequest));
                 }
-                taskOrMessage = getRequestHandler().onMessageSend(FromProto.messageSendParams(canonicalRequest), context);
+                MessageSendParams params = FromProto.messageSendParams(canonicalRequest);
+                InputModeValidator.validate(params.message(), Objects.requireNonNull(context.getEffectiveAgentCard()).card());
+                taskOrMessage = getRequestHandler().onMessageSend(params, context);
             }
             if (taskOrMessage instanceof Task task) {
                 taskOrMessage = VersionedOutputProjector.projectTask(task, context.getVersionPolicy());
@@ -455,6 +463,10 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
             if (context.getVersionPolicy().supportsPhase2Output()) {
                 SendInputParams params = FromProto.sendInputParams(canonicalRequest);
                 rejectUnsupportedStreamingInput(params);
+                Message message = params.message();
+                if (message != null) {
+                    InputModeValidator.validate(message, Objects.requireNonNull(context.getEffectiveAgentCard()).card());
+                }
                 String taskId = params.message() != null ? params.message().taskId() : params.artifactUpdates().get(0).taskId();
                 getRequestHandler().authorizeTaskAccess(taskId, context, TaskOperation.MESSAGE_SEND_STREAM);
                 publisher = getRequestHandler().onSendInputStream(params, context);
@@ -463,6 +475,7 @@ public abstract class GrpcHandler extends A2AServiceGrpc.A2AServiceImplBase {
                     rejectVersion10AdvancedInput(FromProto.sendInputParams(canonicalRequest));
                 }
                 MessageSendParams params = FromProto.messageSendParams(canonicalRequest);
+                InputModeValidator.validate(params.message(), Objects.requireNonNull(context.getEffectiveAgentCard()).card());
                 publisher = getRequestHandler().onMessageSendStream(params, context);
             }
             convertToStreamResponse(VersionedOutputProjector.projectStream(publisher, context.getVersionPolicy()),

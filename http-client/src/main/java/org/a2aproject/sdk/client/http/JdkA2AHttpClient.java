@@ -279,7 +279,15 @@ public class JdkA2AHttpClient implements A2AHttpClient {
                 Consumer<Throwable> errorConsumer,
                 Runnable completeRunnable
         ) {
-            return asyncRequestCancellable(client, request, messageConsumer, errorConsumer, completeRunnable, false).completion();
+            A2AHttpClient.AsyncSSECall call = asyncRequestCancellable(
+                    client, request, messageConsumer, errorConsumer, completeRunnable, false);
+            CompletableFuture<Void> completion = call.completion();
+            completion.whenComplete((ignored, failure) -> {
+                if (completion.isCancelled()) {
+                    call.cancel();
+                }
+            });
+            return completion;
         }
 
         protected A2AHttpClient.AsyncSSECall asyncRequestCancellable(

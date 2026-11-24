@@ -51,6 +51,7 @@ import org.a2aproject.sdk.server.CachingAgentCardTransportValidator;
 import org.a2aproject.sdk.server.EffectiveAgentCard;
 import org.a2aproject.sdk.server.ExtendedAgentCard;
 import org.a2aproject.sdk.server.FixedInstance;
+import org.a2aproject.sdk.server.InputModeValidator;
 import org.a2aproject.sdk.server.PublicAgentCard;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.TaskOperation;
@@ -72,6 +73,7 @@ import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
+import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.ObserveTaskParams;
 import org.a2aproject.sdk.spec.SendInputParams;
@@ -271,6 +273,7 @@ public class JSONRPCHandler {
             EffectiveAgentCard effective = preflight(tenant, context, AgentCardOperation.none());
             MessageSendParams params = request.getParams();
             rejectLegacyAdvancedInput(params, context);
+            InputModeValidator.validate(params.message(), effective.card());
             EventKind taskOrMessage = requestHandler.onMessageSend(new MessageSendParams(params.message(),
                     params.configuration(), params.metadata(), effective.tenant()), context);
             if (taskOrMessage instanceof Task task) {
@@ -290,6 +293,10 @@ public class JSONRPCHandler {
             SendInputParams params = request.getParams();
             rejectUnsupportedInputOptions(params);
             EffectiveAgentCard effective = preflight(params.tenant(), context, AgentCardOperation.none());
+            Message message = params.message();
+            if (message != null) {
+                InputModeValidator.validate(message, effective.card());
+            }
             EventKind result = requestHandler.onSendInput(withTenant(params, effective.tenant()), context);
             if (result instanceof Task task) {
                 result = VersionedOutputProjector.projectTask(task, context.getVersionPolicy());
@@ -345,6 +352,7 @@ public class JSONRPCHandler {
             EffectiveAgentCard effective = preflight(tenant, context, STREAMING);
             MessageSendParams params = request.getParams();
             rejectLegacyAdvancedInput(params, context);
+            InputModeValidator.validate(params.message(), effective.card());
             Flow.Publisher<StreamingEventKind> publisher =
                     requestHandler.onMessageSendStream(new MessageSendParams(params.message(), params.configuration(),
                             params.metadata(), effective.tenant()), context);
@@ -366,6 +374,10 @@ public class JSONRPCHandler {
             SendInputParams params = request.getParams();
             rejectUnsupportedStreamingInput(params);
             EffectiveAgentCard effective = preflight(params.tenant(), context, STREAMING);
+            Message message = params.message();
+            if (message != null) {
+                InputModeValidator.validate(message, effective.card());
+            }
             SendInputParams effectiveParams = withTenant(params, effective.tenant());
             String taskId = effectiveParams.message() != null ? effectiveParams.message().taskId()
                     : effectiveParams.artifactUpdates().get(0).taskId();
