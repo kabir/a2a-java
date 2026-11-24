@@ -13,6 +13,7 @@
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTask</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWriterEpoch</class>
         <class>org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfig</class>
         
         <!-- Exclude unlisted classes to avoid scanning issues in tests -->

@@ -105,7 +105,16 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
     private static final CommitFaultInjector NO_COMMIT_FAULT = (point, taskId, proposed) -> {
     };
 
-    private record StoredTask(Task task, TaskRevision revision) {
+    /**
+     * {@code baselined} is false only for a task written by the legacy {@link #save} path: the first atomic
+     * read or mutation of it in this process establishes legacy generation 0 as generation 1 exactly once.
+     * This stabilizes the task for the process lifetime only; in-memory tasks are still lost on restart.
+     */
+    private record StoredTask(Task task, TaskRevision revision, boolean baselined) {
+        StoredTask(Task task, TaskRevision revision) {
+            this(task, revision, true);
+        }
+
         TaskSnapshot snapshot() {
             return new TaskSnapshot(task, revision);
         }
@@ -155,7 +164,7 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
     @Override
     public void save(Task task, boolean isReplicated) {
-        tasks.compute(task.id(), (taskId, current) -> new StoredTask(task, nextRevision()));
+        tasks.compute(task.id(), (taskId, current) -> new StoredTask(task, nextRevision(), false));
         // InMemoryTaskStore doesn't fire TaskFinalizedEvent, so isReplicated is unused here
     }
 
@@ -173,7 +182,22 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
     @Override
     public @Nullable TaskSnapshot readSnapshot(String taskId) {
         StoredTask stored = tasks.get(taskId);
+        if (stored != null && !stored.baselined() && stored.task().generation() == 0) {
+            // Only a legacy generation-0 task needs a write (new generation and revision); every other
+            // snapshot is returned without waiting for a planner that holds the task's entry.
+            stored = tasks.computeIfPresent(taskId, (id, current) -> baseline(current));
+        }
         return stored == null ? null : stored.snapshot();
+    }
+
+    private StoredTask baseline(StoredTask stored) {
+        if (stored.baselined()) {
+            return stored;
+        }
+        Task task = stored.task();
+        return task.generation() == 0
+                ? new StoredTask(Task.builder(task).generation(1).build(), nextRevision(), true)
+                : new StoredTask(task, stored.revision(), true);
     }
 
     @Override
@@ -190,7 +214,8 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
         AtomicReference<MutationResult> result = new AtomicReference<>();
         AtomicReference<TaskCommitSlot.Reservation> reservedSlot = new AtomicReference<>();
         try {
-            tasks.compute(taskId, (id, current) -> {
+            tasks.compute(taskId, (id, unbaselined) -> {
+                StoredTask current = unbaselined == null ? null : baseline(unbaselined);
                 TaskSnapshot currentSnapshot = current == null ? null : current.snapshot();
                 MutationPlan plan;
                 try {

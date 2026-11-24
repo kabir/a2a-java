@@ -16,6 +16,26 @@ must stay untouched. Logs go under `/private/tmp`. Phases 4–6 are out of scope
 Independent review means a fresh Bob context labelled as Bob review; if unavailable,
 self-review is labelled as such and does not satisfy a mandatory independent gate.
 
+## CHECKPOINT 2026-11-24 14:42 UTC — P3-T09 COMMITTED; read this first
+
+- **P3-T09 finished** inside its 12:50–14:50 UTC window; commit follows base `300a005bd` (see `git log -1`). Reviews (fresh Bob contexts, not Sol):
+  1 Changes required (partial, F1 major docs), 2 correction re-review Accepted within scope (N1/N3 doc fixes applied; N2/N4 non-blocking notes). Record: `reviews/P3-T09-review.md`.
+- Evidence: `/private/tmp/t09-run3.log` migration 10 + PostgreSQL fence 3 (SQLSTATE 42501 denial, owner re-GRANT probe); `t09-fullmodule1.log` 93/93,
+  `t09-server-common-full2.log` 834/834 (pre-correction code; corrections were docs/tests/whitespace/suppressed-exception), `t09-exec-rerun.log` 34/34,
+  `t09-replicated.log` 15/15. Corrected candidate hash list `13b1b545...bd9`. Preserved failures: `t09-run1-preserved.log`, `t09-server-common*-preserved.log`.
+- Retained notes: epoch check best-effort (DB privilege fence is the exclusion); `get`/`list` do not baseline (run `migrateAll()` before traffic); T10 must account for
+  generation-0 replicated saves; MySQL concurrent-`activate` probe not run; no broker fencing/mixed-binary rolling writes claimed.
+- Completed in this assignment: T06 `e229ce160`, T15 `399b6b047`, T07 `3826b0333`, T08 `300a005bd`, T09 (this commit). T16 not started.
+- **Next ready by dependency:** P3-T10 (committed replication/finalization; T03–T05, T08, T09 satisfied) or independent T16. Each needs a fresh developer-granted
+  two-hour backstop; none active now. T13 requires real PostgreSQL/Kafka/two-node execution.
+
+## P3-T09 STARTED 2026-11-24 12:50 UTC (developer: "I believe the next task is T09"; resume authorization T06-T20)
+
+Verified: HEAD `300a005bd` (`feat(a2a-1.1): add transactional JPA task mutation authority` = T08), tree clean, `test.log` absent, no competing
+Maven/test processes. Base `300a005bd`. Start 12:50 UTC; two-hour backstop deadline 14:50 UTC. Failed approaches: none yet.
+Scope: baseline migration + enforced writer fencing per plan T09; PostgreSQL GRANT/REVOKE evidence in a disposable Testcontainers fixture only.
+
+
 ## CHECKPOINT 2026-11-24 12:50 UTC — P3-T08 COMMITTED; read this first
 
 - **P3-T08 finished** within its 10:27–12:27 UTC window for implementation/corrections/reviews; commit follows base `3826b0333`

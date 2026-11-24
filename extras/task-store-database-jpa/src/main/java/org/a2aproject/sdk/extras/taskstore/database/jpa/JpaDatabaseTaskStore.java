@@ -88,6 +88,9 @@ public class JpaDatabaseTaskStore implements AtomicTaskStore, TaskStateProvider 
     @Inject
     JpaTaskRevisionAllocator revisions;
 
+    @Inject
+    JpaTaskMigration migration;
+
     private final @Nullable TaskAuthorizationProvider authorizationProvider;
 
     public JpaDatabaseTaskStore() {
@@ -144,6 +147,7 @@ public class JpaDatabaseTaskStore implements AtomicTaskStore, TaskStateProvider 
             // writer epoch and migration marker. The revision still advances so snapshot guards see the write.
             // Same lock order as mutate(): never lock an absent row first (InnoDB gap locks deadlock racing
             // creators); a creator takes the revision counter row first, then re-reads the row under lock.
+            Long epoch = migration.checkWritable();
             JpaTask existing = em.find(JpaTask.class, task.id());
             long createRevision = 0;
             if (existing != null) {
@@ -154,12 +158,21 @@ public class JpaDatabaseTaskStore implements AtomicTaskStore, TaskStateProvider 
                 createRevision = revisions.newRevision();
                 existing = em.find(JpaTask.class, task.id(), LockModeType.PESSIMISTIC_WRITE);
             }
+            if (existing != null && epoch != null) {
+                migration.baseline(existing, epoch, revisions);
+                if (task.generation() < existing.getTask().generation()) {
+                    throw new TaskPersistenceException(task.id(),
+                            "Refusing to overwrite a migrated task with a lower generation");
+                }
+            }
             if (existing == null) {
                 JpaTask created = JpaTask.createFromTask(task);
                 created.setRevision(createRevision);
+                JpaTaskMigration.stamp(created, task, epoch);
                 em.persist(created);
             } else {
                 existing.setTask(task);
+                JpaTaskMigration.stamp(existing, task, epoch);
                 Long current = existing.getRevision();
                 existing.setRevision(current == null ? revisions.newRevision() : revisions.successor(current));
             }
@@ -289,6 +302,7 @@ public class JpaDatabaseTaskStore implements AtomicTaskStore, TaskStateProvider 
     public void delete(String taskId) {
         LOGGER.debug("Deleting task with ID: {}", taskId);
         try {
+            migration.checkWritable();
             em.createQuery("DELETE FROM JpaTaskOwner o WHERE o.taskId = :taskId")
                     .setParameter("taskId", taskId).executeUpdate();
             JpaTask jpaTask = em.find(JpaTask.class, taskId);

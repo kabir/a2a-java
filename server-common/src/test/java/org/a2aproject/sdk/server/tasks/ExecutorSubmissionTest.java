@@ -334,7 +334,8 @@ class ExecutorSubmissionTest {
         TaskStatusUpdateEvent published = assertInstanceOf(TaskStatusUpdateEvent.class,
                 observer.dequeueEventItem(5_000).getEvent());
         assertEquals(TaskState.TASK_STATE_COMPLETED, published.status().state());
-        assertEquals(1, store.readSnapshot(baseTask.id()).task().generation());
+        // The legacy-saved generation-0 base is baselined to 1 once, so the committed mutation is generation 2.
+        assertEquals(2, store.readSnapshot(baseTask.id()).task().generation());
         observer.close(true);
         main.close(true);
     }
@@ -401,7 +402,8 @@ class ExecutorSubmissionTest {
             TaskStatusUpdateEvent published = assertInstanceOf(TaskStatusUpdateEvent.class,
                     observer.dequeueEventItem(5_000).getEvent());
             assertEquals(TaskState.TASK_STATE_COMPLETED, published.status().state());
-            assertEquals(1, store.readSnapshot(baseTask.id()).task().generation());
+            // The legacy-saved generation-0 base is baselined to 1 once, so the committed mutation is generation 2.
+            assertEquals(2, store.readSnapshot(baseTask.id()).task().generation());
             assertNull(observer.dequeueEventItem(0), "the original accepted proposal publishes exactly once");
         } finally {
             EventQueueUtil.stop(parkedProcessor);
@@ -755,7 +757,7 @@ class ExecutorSubmissionTest {
         producer.enqueueEvent(progress);
         assertInstanceOf(TaskStatusUpdateEvent.class,
                 observer.dequeueEventItem(2_000).getEvent(), "the observer remains usable after rejection");
-        assertEquals(1, store.get(task.id()).generation());
+        assertEquals(2, store.get(task.id()).generation(), "legacy-saved base baselined to 1, then one committed event");
         assertEquals(1, replicationCalls.get(), "a later committed event still reaches replication");
     }
 
@@ -1133,7 +1135,8 @@ class ExecutorSubmissionTest {
         ProposalResult.Rejected rejected = assertInstanceOf(ProposalResult.Rejected.class, result);
         assertEquals(ProposalResult.Rejected.Kind.CONFLICT, rejected.kind());
         assertEquals(externallyCommitted.revision(), rejected.currentRevision());
-        assertEquals(externalMutation, store.get(initial.id()), "rejection preserves the external mutation");
+        // Reading the snapshot baselined the legacy-saved external mutation (generation 0 -> 1) before the rejection.
+        assertEquals(externallyCommitted.task(), store.get(initial.id()), "rejection preserves the external mutation");
     }
 
     @Test

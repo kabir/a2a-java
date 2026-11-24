@@ -57,6 +57,7 @@ Create or update your `persistence.xml`:
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTask</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWriterEpoch</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
@@ -69,7 +70,7 @@ Create or update your `persistence.xml`:
 
 ### 3. Database Schema
 
-Schema creation is controlled by the application. Production upgrades require an application-managed migration for both task and ownership tables before using the updated store. Register `JpaTask`, `JpaTaskOwner` and `JpaTaskRevisionCounter` in the same `a2a-java` unit; package scanning discovers them in Quarkus. The task schema includes:
+Schema creation is controlled by the application. Production upgrades require an application-managed migration for both task and ownership tables before using the updated store. Register `JpaTask`, `JpaTaskOwner`, `JpaTaskRevisionCounter` and `JpaWriterEpoch` in the same `a2a-java` unit; package scanning discovers them in Quarkus. The task schema includes:
 
 ```sql
 CREATE TABLE a2a_tasks (
@@ -88,21 +89,85 @@ CREATE TABLE a2a_task_revision_counter (
     counter_id INTEGER PRIMARY KEY,
     next_block BIGINT NOT NULL
 );
+
+CREATE TABLE a2a_writer_epoch (
+    epoch_id INTEGER PRIMARY KEY,
+    epoch BIGINT NOT NULL
+);
 ```
 
 `store_revision` is the storage revision of the row and is independent of the protocol generation inside `task_data`.
 Each task takes a never-used revision block from `a2a_task_revision_counter` when it is created, so deleting and recreating a
 task ID never reuses a revision. `store_revision`, `writer_epoch` and `migration_marker` are nullable: a row written by the
 legacy `save` path receives its revision the first time it is read as a snapshot or mutated. `writer_epoch` and
-`migration_marker` are reserved storage for the later writer-fencing migration and are not enforced by this release; they
-are not a fence against older binaries. The counter table must be registered with `JpaTaskRevisionCounter` in the same
-`a2a-java` unit, and `JpaTaskRevisionAllocator` creates the single counter row on first use.
+`migration_marker` are written by the new store once a storage writer epoch is activated (see "Upgrading shared task
+storage"); they are a cooperative check among new binaries only and are **not** a fence against older binaries. Register
+`JpaTaskRevisionCounter` and `JpaWriterEpoch` in the same `a2a-java` unit; `JpaTaskRevisionAllocator` creates the single
+counter row on first use.
 
 `JpaDatabaseTaskStore` implements `AtomicTaskStore`: each mutation locks the task row, plans, persists and commits in one
 transaction and is reported committed only after that transaction completes. A caller sharing the `a2a-java` unit with
 the JPA push notification configuration store can use `mutateInTransaction` so that configuration and task input commit or
 roll back together. Independent configuration stores are not all-or-nothing: an enrolled configuration stays visible if the
 later task input fails.
+
+### Upgrading shared task storage to A2A 1.1 (drain, fence, migrate)
+
+This is a **coordinated drain-and-upgrade, not a rolling upgrade**: mixed old/new writers on shared task data are not
+supported. This restriction concerns server binaries only; clients of all three protocol versions work against the
+upgraded instance. Merely removing old nodes from HTTP routing is not a fence. A column or JSON marker that an old binary
+ignores is not a fence either: exclusion of old writers must be enforced by the database. The schema version alone does
+not make a deployment 1.1-capable. Run the procedure against a disposable copy first; the SDK never migrates data for you
+at startup.
+
+1. **Stop admission and drain.** Stop accepting requests, then stop or drain every old executor and every scheduled or
+   background writer. In an embedded single-process deployment stop the old process: the new process needs exclusive
+   storage ownership.
+2. **Use distinct identities.** The new fleet connects with a database identity (and a broker identity, see
+   [Replicated Queue Manager](replicated-queue-manager.md)) that the old binaries never used.
+3. **Upgrade the schema** with the DDL above (new columns, `a2a_task_revision_counter`, `a2a_writer_epoch`) and
+   **transfer ownership of every task table to the new identity** (or to a dedicated owner role that is neither the old nor
+   the new application identity). The old identity must not own the tables, must not be a superuser and must not be a
+   member of the owner role: an owner holds all privileges implicitly and can `GRANT` them back to itself after the
+   `REVOKE`, which defeats the fence (`JpaWriterFencePostgresTest.revokeDoesNotFenceAnOwnerWhoCanGrantItselfBack` demonstrates this).
+   Granting the new identity write privileges while the old identity stays owner is **not** a supported fence. Keep read
+   access for the old identity only if you need it (`GRANT SELECT ... TO a2a_old`).
+   `a2a_writer_epoch` and `a2a_task_revision_counter` must exist even in legacy mode: the new store reads the (empty)
+   epoch table on every operation and refuses to run without it.
+4. **Fence the old identity at the database**, then terminate its sessions. PostgreSQL example (the commands exercised by
+   `JpaWriterFencePostgresTest`):
+
+   ```sql
+   REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON a2a_tasks, a2a_task_owners FROM a2a_old;
+   REVOKE ALL ON a2a_task_revision_counter, a2a_writer_epoch FROM a2a_old;
+   SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename = 'a2a_old';
+   ```
+
+   Verify enforcement before continuing: an `INSERT`, `UPDATE` and `DELETE` as the old identity must fail with
+   `permission denied` (SQLSTATE `42501`). If you cannot demonstrate this, do not migrate.
+5. **Activate the writer epoch and migrate.** Configure every new node with `a2a.task-store.writer-epoch=<n>` and call
+   `JpaTaskMigration.activate(n)` once, then `JpaTaskMigration.migrateAll()` (idempotent; it must complete before traffic is served, see step 6). Until a storage epoch is activated the store stays in legacy mode and neither stamps nor baselines rows.
+   Epochs only increase. After activation a node whose configured epoch differs from the stored epoch refuses every write,
+   delete and baseline.
+6. **Complete `migrateAll()` before serving traffic.** Lazy baselining happens only on the atomic paths (snapshot read and
+   mutation). `get` and `list` return the stored Task unchanged, so until a task is migrated a read through them can still
+   show generation `0` while the atomic path shows generation `1`.
+7. **Start the new fleet.** The epoch check among new nodes is best-effort: it takes no lock on the epoch row, so a write
+   that already passed the check can still commit just after `activate`. Exclusion of old writers comes from the database
+   fence in step 4, not from the epoch.
+
+Each legacy task is baselined exactly once, under its row lock: generation `0` becomes generation `1`; history, artifacts
+(including absent artifact roles, which keep their legacy agent meaning) and delivery metadata are kept unchanged, and no
+earlier timeline or chunk order is invented. The row's `migration_marker` and `writer_epoch` are stored outside the Task
+JSON. Restart keeps the persisted baseline. A marked row whose stored Task has no canonical generation is reported as
+corrupt (`TaskSerializationException`) and is never re-initialized to generation 1.
+
+**Rollback.** There is no in-place downgrade. Rolling back to an old binary requires an outage and restoring a consistent
+pre-upgrade snapshot of the task and push-configuration tables together with a compatible broker boundary; every change
+made after the upgrade is lost. Never point an old binary at migrated data or erase `migration_marker` to make it start.
+
+**Not provided.** In-memory storage has no persisted baseline: tasks are lost on restart, and a task written through the
+legacy `save` path is stabilized at generation 1 only for the lifetime of that process.
 
 ### 4. Ownership schema and authorization selection
 
@@ -233,6 +298,7 @@ When using both JPA stores, combine their entity classes in a single `persistenc
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTask</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWriterEpoch</class>
         <class>org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfig</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

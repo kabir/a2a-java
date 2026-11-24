@@ -51,13 +51,23 @@ public class JpaTaskMutationTransactions {
     @Inject
     JpaTaskRevisionAllocator revisions;
 
+    @Inject
+    JpaTaskMigration migration;
+
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public @Nullable TaskSnapshot read(String taskId) {
         JpaTask row = em.find(JpaTask.class, taskId);
         if (row == null) {
             return null;
         }
-        if (row.getRevision() == null) {
+        Long epoch = migration.storedEpoch();
+        if (epoch != null && row.getMigrationMarker() == null) {
+            // Active epoch: a legacy row is baselined once, under its lock, by a current-epoch writer only.
+            migration.checkWritable();
+            em.refresh(row, LockModeType.PESSIMISTIC_WRITE);
+            migration.baseline(row, epoch, revisions);
+            em.flush();
+        } else if (row.getRevision() == null) {
             // Row written before revisions existed: assign one exactly once under a lock.
             em.refresh(row, LockModeType.PESSIMISTIC_WRITE);
             if (row.getRevision() == null) {
@@ -82,6 +92,7 @@ public class JpaTaskMutationTransactions {
     private CommittedMutation apply(String taskId, TaskMutation mutation, TaskCommitSlotCallback slotCallback,
             @Nullable AtomicReference<TaskCommitSlot.@Nullable Reservation> reservationHolder) {
         try {
+            Long epoch = migration.checkWritable();
             JpaTask row = em.find(JpaTask.class, taskId);
             long createRevision = 0;
             if (row != null) {
@@ -95,6 +106,9 @@ public class JpaTaskMutationTransactions {
                 // creator that lost the race plans against the winner's committed row like any guarded update.
                 createRevision = revisions.newRevision();
                 row = em.find(JpaTask.class, taskId, LockModeType.PESSIMISTIC_WRITE);
+            }
+            if (row != null && epoch != null) {
+                migration.baseline(row, epoch, revisions);
             }
             TaskSnapshot current = row == null ? null : snapshotAssigningRevision(row);
             MutationPlan plan;
@@ -122,7 +136,7 @@ public class JpaTaskMutationTransactions {
                 reserve(taskId, next, committed, slotCallback, reservationHolder);
             }
 
-            persist(taskId, row, plan.task(), revision);
+            persist(taskId, row, plan.task(), revision, epoch);
             if (plan.task().status().state().isFinal()) {
                 // Delivered to AFTER_SUCCESS observers only once this transaction has committed.
                 taskFinalizedEvent.fire(new TaskFinalizedEvent(taskId, plan.task()));
@@ -130,6 +144,8 @@ public class JpaTaskMutationTransactions {
             return committed;
         } catch (TaskMutationNotCommittedException failure) {
             throw failure;
+        } catch (JpaTaskMigration.StaleWriterEpochException failure) {
+            throw new TaskMutationNotCommittedException(taskId, "Writer epoch is not the active storage epoch", failure);
         } catch (TaskSerializationException failure) {
             // A corrupt stored row is read before anything is written: a definite non-commit.
             throw new TaskMutationNotCommittedException(taskId, "Stored task could not be read", failure);
@@ -156,15 +172,17 @@ public class JpaTaskMutationTransactions {
         }
     }
 
-    private void persist(String taskId, @Nullable JpaTask row, Task task, long revision) {
+    private void persist(String taskId, @Nullable JpaTask row, Task task, long revision, @Nullable Long epoch) {
         try {
             if (row == null) {
                 JpaTask created = JpaTask.createFromTask(task);
                 created.setRevision(revision);
+                JpaTaskMigration.stamp(created, task, epoch);
                 em.persist(created);
             } else {
                 row.setTask(task);
                 row.setRevision(revision);
+                JpaTaskMigration.stamp(row, task, epoch);
             }
             em.flush();
         } catch (JsonProcessingException e) {
@@ -182,7 +200,9 @@ public class JpaTaskMutationTransactions {
 
     private static TaskSnapshot snapshot(JpaTask row) {
         try {
-            return new TaskSnapshot(row.getTask(), new TaskRevision(row.getRevision()));
+            Task task = row.getTask();
+            JpaTaskMigration.requireCanonicalGeneration(row, task);
+            return new TaskSnapshot(task, new TaskRevision(row.getRevision()));
         } catch (JsonProcessingException e) {
             throw new TaskSerializationException(row.getId(), "Failed to deserialize task from database", e);
         }

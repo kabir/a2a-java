@@ -127,6 +127,25 @@ mp.messaging.outgoing.replicated-events-out.key.serializer=org.apache.kafka.comm
 mp.messaging.incoming.replicated-events-in.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
 ```
 
+## Upgrading to A2A 1.1: broker fencing
+
+Upgrading a deployment that shares tasks across nodes is a coordinated drain-and-upgrade, never a rolling upgrade of mixed
+old and new writers. The task-store half of the procedure (drain, distinct database identities, database `REVOKE`, writer
+epoch activation, baseline migration, rollback) is in [Storage & Persistence](storage.md#upgrading-shared-task-storage-to-a2a-11-drain-fence-migrate).
+For the broker:
+
+1. Stop all old replication producers and consumers before migrating task data.
+2. Give the new fleet its own broker identity and topic access (for example a new Kafka principal with ACLs); revoke the
+   old principal's produce permission on the replication topic. Removing nodes from routing does not fence their producers.
+3. Do not let a delayed record from an old producer reach new nodes: use a new topic or consumer group for the new fleet, or
+   drain the old topic completely first. Once a writer epoch is active, `JpaDatabaseTaskStore.save` refuses to overwrite a
+   migrated task with a lower generation, but that is a last-resort guard, not broker fencing.
+4. Rolling back requires an outage, a consistent pre-upgrade task/configuration snapshot and a matching broker boundary;
+   changes after the upgrade are lost.
+
+This module does not itself enforce broker permissions or reject stale producers; that enforcement is a deployment
+precondition and is verified separately from the database fence.
+
 ## Production Considerations
 
 ### Kafka Partitioning Strategy
