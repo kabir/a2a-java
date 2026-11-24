@@ -64,6 +64,7 @@ Create or update your `persistence.xml`:
         
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTask</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
         
         <properties>
@@ -77,7 +78,7 @@ Create or update your `persistence.xml`:
 
 ### 3. Schema and production migrations
 
-The application controls schema creation. Register `JpaTask` and `JpaTaskOwner` in the same `a2a-java` JTA persistence unit, including when unlisted classes are excluded. The Quarkus package setting above discovers both. Development schema generation creates the ownership entity even without selecting an authorization provider. Production upgrades require an application-managed migration before using the updated store, whose deletion path also cleans up ownership.
+The application controls schema creation. Register `JpaTask`, `JpaTaskOwner` and `JpaTaskRevisionCounter` in the same `a2a-java` JTA persistence unit, including when unlisted classes are excluded. The Quarkus package setting above discovers both. Development schema generation creates the ownership entity even without selecting an authorization provider. Production upgrades require an application-managed migration before using the updated store, whose deletion path also cleans up ownership.
 
 The task schema includes all of these columns. Use the database dialect's timestamp representation for Java `Instant`:
 
@@ -88,9 +89,31 @@ CREATE TABLE a2a_tasks (
     state VARCHAR(255),
     status_timestamp TIMESTAMP,
     task_data TEXT NOT NULL,
-    finalized_at TIMESTAMP
+    finalized_at TIMESTAMP,
+    store_revision BIGINT,
+    writer_epoch BIGINT,
+    migration_marker VARCHAR(255)
+);
+
+CREATE TABLE a2a_task_revision_counter (
+    counter_id INTEGER PRIMARY KEY,
+    next_block BIGINT NOT NULL
 );
 ```
+
+`store_revision` is the storage revision of the row and is independent of the protocol generation inside `task_data`.
+Each task takes a never-used revision block from `a2a_task_revision_counter` when it is created, so deleting and recreating a
+task ID never reuses a revision. `store_revision`, `writer_epoch` and `migration_marker` are nullable: a row written by the
+legacy `save` path receives its revision the first time it is read as a snapshot or mutated. `writer_epoch` and
+`migration_marker` are reserved storage for the later writer-fencing migration and are not enforced by this release; they
+are not a fence against older binaries. The counter table must be registered with `JpaTaskRevisionCounter` in the same
+`a2a-java` unit, and `JpaTaskRevisionAllocator` creates the single counter row on first use.
+
+`JpaDatabaseTaskStore` implements `AtomicTaskStore`: each mutation locks the task row, plans, persists and commits in one
+transaction and is reported committed only after that transaction completes. A caller sharing the `a2a-java` unit with
+the JPA push notification configuration store can use `mutateInTransaction` so that configuration and task input commit or
+roll back together. Independent configuration stores are not all-or-nothing: an enrolled configuration stays visible if the
+later task input fails.
 
 PostgreSQL 16 ownership DDL:
 

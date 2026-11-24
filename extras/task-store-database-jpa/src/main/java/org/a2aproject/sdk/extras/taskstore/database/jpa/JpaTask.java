@@ -5,6 +5,7 @@ import java.time.Instant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -34,8 +35,26 @@ public class JpaTask {
     @Column(name = "finalized_at")
     private Instant finalizedAt;
 
+    /** Storage revision of this row; independent of the protocol generation inside {@code task_data}. */
+    @Column(name = "store_revision")
+    private Long revision;
+
+    /** Writer epoch that last wrote this row (enforced fencing is a later migration concern). */
+    @Column(name = "writer_epoch")
+    private Long writerEpoch;
+
+    /** Per-task migration marker kept outside the whole-Task JSON. */
+    @Column(name = "migration_marker")
+    private String migrationMarker;
+
     @Transient
     private Task task;
+
+    /** A (re)load, including {@code refresh}, discards any cached parsed task. */
+    @PostLoad
+    void clearCachedTask() {
+        this.task = null;
+    }
 
     // Default constructor required by JPA
     public JpaTask() {
@@ -88,6 +107,31 @@ public class JpaTask {
 
     public Instant getFinalizedAt() {
         return finalizedAt;
+    }
+
+    /** Returns the stored revision, or {@code null} for a row written before revisions existed. */
+    public Long getRevision() {
+        return revision;
+    }
+
+    public void setRevision(Long revision) {
+        this.revision = revision;
+    }
+
+    public Long getWriterEpoch() {
+        return writerEpoch;
+    }
+
+    public void setWriterEpoch(Long writerEpoch) {
+        this.writerEpoch = writerEpoch;
+    }
+
+    public String getMigrationMarker() {
+        return migrationMarker;
+    }
+
+    public void setMigrationMarker(String migrationMarker) {
+        this.migrationMarker = migrationMarker;
     }
 
     /**

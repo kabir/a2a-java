@@ -56,6 +56,7 @@ Create or update your `persistence.xml`:
 
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTask</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
@@ -68,7 +69,7 @@ Create or update your `persistence.xml`:
 
 ### 3. Database Schema
 
-Schema creation is controlled by the application. Production upgrades require an application-managed migration for both task and ownership tables before using the updated store. Register both entities in the same `a2a-java` unit; package scanning discovers them in Quarkus. The task schema includes:
+Schema creation is controlled by the application. Production upgrades require an application-managed migration for both task and ownership tables before using the updated store. Register `JpaTask`, `JpaTaskOwner` and `JpaTaskRevisionCounter` in the same `a2a-java` unit; package scanning discovers them in Quarkus. The task schema includes:
 
 ```sql
 CREATE TABLE a2a_tasks (
@@ -77,9 +78,31 @@ CREATE TABLE a2a_tasks (
     state VARCHAR(255),
     status_timestamp TIMESTAMP,
     task_data TEXT NOT NULL,
-    finalized_at TIMESTAMP
+    finalized_at TIMESTAMP,
+    store_revision BIGINT,
+    writer_epoch BIGINT,
+    migration_marker VARCHAR(255)
+);
+
+CREATE TABLE a2a_task_revision_counter (
+    counter_id INTEGER PRIMARY KEY,
+    next_block BIGINT NOT NULL
 );
 ```
+
+`store_revision` is the storage revision of the row and is independent of the protocol generation inside `task_data`.
+Each task takes a never-used revision block from `a2a_task_revision_counter` when it is created, so deleting and recreating a
+task ID never reuses a revision. `store_revision`, `writer_epoch` and `migration_marker` are nullable: a row written by the
+legacy `save` path receives its revision the first time it is read as a snapshot or mutated. `writer_epoch` and
+`migration_marker` are reserved storage for the later writer-fencing migration and are not enforced by this release; they
+are not a fence against older binaries. The counter table must be registered with `JpaTaskRevisionCounter` in the same
+`a2a-java` unit, and `JpaTaskRevisionAllocator` creates the single counter row on first use.
+
+`JpaDatabaseTaskStore` implements `AtomicTaskStore`: each mutation locks the task row, plans, persists and commits in one
+transaction and is reported committed only after that transaction completes. A caller sharing the `a2a-java` unit with
+the JPA push notification configuration store can use `mutateInTransaction` so that configuration and task input commit or
+roll back together. Independent configuration stores are not all-or-nothing: an enrolled configuration stays visible if the
+later task input fails.
 
 ### 4. Ownership schema and authorization selection
 
@@ -209,6 +232,7 @@ When using both JPA stores, combine their entity classes in a single `persistenc
 
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTask</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
         <class>org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfig</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
@@ -226,4 +250,4 @@ For Quarkus, include both store packages in the named persistence unit:
 quarkus.hibernate-orm."a2a-java".packages=org.a2aproject.sdk.extras.taskstore.database.jpa,org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa
 ```
 
-This discovers `JpaTask`, `JpaTaskOwner` and `JpaPushNotificationConfig`. Schema generation remains an application choice; production upgrades require migrations.
+This discovers `JpaTask`, `JpaTaskOwner`, `JpaTaskRevisionCounter` and `JpaPushNotificationConfig`. Schema generation remains an application choice; production upgrades require migrations.

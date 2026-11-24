@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Priority;
@@ -15,6 +16,7 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.TypedQuery;
@@ -27,17 +29,24 @@ import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.TaskAuthorizationProvider;
 import org.a2aproject.sdk.server.auth.TaskOperation;
 import org.a2aproject.sdk.server.config.A2AConfigProvider;
+import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
+import org.a2aproject.sdk.server.tasks.CommittedMutation;
+import org.a2aproject.sdk.server.tasks.TaskCommitSlot;
+import org.a2aproject.sdk.server.tasks.TaskCommitSlotCallback;
+import org.a2aproject.sdk.server.tasks.TaskMutation;
+import org.a2aproject.sdk.server.tasks.TaskMutationNotCommittedException;
+import org.a2aproject.sdk.server.tasks.TaskMutationOutcomeUnknownException;
 import org.a2aproject.sdk.server.tasks.TaskPersistenceException;
+import org.a2aproject.sdk.server.tasks.TaskReadProjection;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.server.tasks.TaskSerializationException;
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
-import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.server.tasks.TaskStoreException;
 import org.a2aproject.sdk.server.util.CdiUtils;
-import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.ListTasksParams;
-import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.util.PageToken;
+import org.a2aproject.sdk.util.Assert;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +65,7 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 @Alternative
 @Priority(50)
-public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
+public class JpaDatabaseTaskStore implements AtomicTaskStore, TaskStateProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JpaDatabaseTaskStore.class);
     private static final String A2A_REPLICATION_GRACE_PERIOD_SECONDS = "a2a.replication.grace-period-seconds";
@@ -72,6 +81,12 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
 
     @Inject
     private A2AConfigProvider configProvider;
+
+    @Inject
+    JpaTaskMutationTransactions mutationTransactions;
+
+    @Inject
+    JpaTaskRevisionAllocator revisions;
 
     private final @Nullable TaskAuthorizationProvider authorizationProvider;
 
@@ -125,8 +140,29 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
     public void save(Task task, boolean isReplicated) {
         LOGGER.debug("Saving task with ID: {} (replicated: {})", task.id(), isReplicated);
         try {
-            JpaTask jpaTask = JpaTask.createFromTask(task);
-            em.merge(jpaTask);
+            // Update the managed row in place (never merge a detached copy): that would null the revision,
+            // writer epoch and migration marker. The revision still advances so snapshot guards see the write.
+            // Same lock order as mutate(): never lock an absent row first (InnoDB gap locks deadlock racing
+            // creators); a creator takes the revision counter row first, then re-reads the row under lock.
+            JpaTask existing = em.find(JpaTask.class, task.id());
+            long createRevision = 0;
+            if (existing != null) {
+                // The caller's transaction may have persisted this row without flushing it yet.
+                em.flush();
+                em.refresh(existing, LockModeType.PESSIMISTIC_WRITE);
+            } else {
+                createRevision = revisions.newRevision();
+                existing = em.find(JpaTask.class, task.id(), LockModeType.PESSIMISTIC_WRITE);
+            }
+            if (existing == null) {
+                JpaTask created = JpaTask.createFromTask(task);
+                created.setRevision(createRevision);
+                em.persist(created);
+            } else {
+                existing.setTask(task);
+                Long current = existing.getRevision();
+                existing.setRevision(current == null ? revisions.newRevision() : revisions.successor(current));
+            }
             LOGGER.debug("Persisted/updated task with ID: {}", task.id());
 
             // Only fire TaskFinalizedEvent for locally-generated final states, NOT for replicated events
@@ -148,6 +184,75 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
             LOGGER.error("Database save failed for task with ID: {}", task.id(), e);
             throw new TaskPersistenceException(task.id(),
                 "Database save failed for task", e);
+        }
+    }
+
+    @Override
+    public @Nullable TaskSnapshot readSnapshot(String taskId) {
+        try {
+            return mutationTransactions.read(taskId);
+        } catch (PersistenceException e) {
+            throw new TaskPersistenceException(taskId, "Database retrieval failed for task", e);
+        }
+    }
+
+    @Override
+    public CommittedMutation mutate(String taskId, TaskMutation mutation) {
+        return mutate(taskId, mutation, TaskCommitSlotCallback.NONE);
+    }
+
+    /**
+     * Plans and commits in its own database transaction. A slot is made publishable only after that
+     * transaction has completed its commit; every failure after the commit started and not known to be
+     * a rollback is reported as an unknown outcome and never as a rollback.
+     */
+    @Override
+    public CommittedMutation mutate(String taskId, TaskMutation mutation, TaskCommitSlotCallback slotCallback) {
+        Assert.checkNotNullParam("taskId", taskId);
+        Assert.checkNotNullParam("mutation", mutation);
+        Assert.checkNotNullParam("slotCallback", slotCallback);
+        AtomicReference<TaskCommitSlot.@Nullable Reservation> reservation = new AtomicReference<>();
+        try {
+            CommittedMutation committed = mutationTransactions.commit(taskId, mutation, slotCallback, reservation);
+            TaskCommitSlot.Reservation reserved = reservation.get();
+            if (reserved != null) {
+                reserved.markCommitted();
+            }
+            return committed;
+        } catch (TaskMutationNotCommittedException failure) {
+            cancel(reservation);
+            throw failure;
+        } catch (TaskMutationOutcomeUnknownException failure) {
+            cancel(reservation);
+            throw failure;
+        } catch (RuntimeException failure) {
+            cancel(reservation);
+            throw new TaskMutationOutcomeUnknownException(taskId,
+                    "Task mutation storage outcome is unknown", failure);
+        } catch (Error failure) {
+            cancel(reservation);
+            throw failure;
+        }
+    }
+
+    /**
+     * Plans and applies a mutation inside the <em>caller's</em> transaction, for callers that share the
+     * persistence unit with other stores (for example the JPA push notification configuration store) and
+     * need both writes to commit or roll back together. The caller owns the commit; no publication slot is
+     * reserved and nothing is visible to other transactions until the caller commits. The returned events
+     * and snapshot are <em>proposed</em>: the caller must not publish or notify them before its own commit
+     * succeeds. A task row already loaded in the caller's persistence context is refreshed under lock.
+     */
+    @Transactional(Transactional.TxType.MANDATORY)
+    public CommittedMutation mutateInTransaction(String taskId, TaskMutation mutation) {
+        return mutationTransactions.joined(Assert.checkNotNullParam("taskId", taskId),
+                Assert.checkNotNullParam("mutation", mutation));
+    }
+
+    private static void cancel(AtomicReference<TaskCommitSlot.@Nullable Reservation> reservation) {
+        TaskCommitSlot.Reservation reserved = reservation.get();
+        if (reserved != null) {
+            reserved.cancel();
         }
     }
 
@@ -416,10 +521,11 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
 
             // Apply post-processing transformations (history limiting, artifact removal)
             int historyLength = params.getEffectiveHistoryLength();
+            @Nullable Integer timelineLength = params.timelineLength();
             boolean includeArtifacts = params.shouldIncludeArtifacts();
 
             List<Task> transformedTasks = tasks.stream()
-                    .map(task -> transformTask(task, historyLength, includeArtifacts))
+                    .map(task -> transformTask(task, historyLength, timelineLength, includeArtifacts))
                     .toList();
 
             LOGGER.debug("Returning {} tasks out of {} total", transformedTasks.size(), totalSize);
@@ -554,28 +660,10 @@ public class JpaDatabaseTaskStore implements TaskStore, TaskStateProvider {
         }
     }
 
-    private Task transformTask(Task task, int historyLength, boolean includeArtifacts) {
-        // Limit history if needed (keep most recent N messages)
-        List<Message> history = task.history();
-        if (historyLength == 0) {
-            // When historyLength is 0, return empty history
-            history = List.of();
-        } else if (historyLength > 0 && history != null && history.size() > historyLength) {
-            history = history.subList(history.size() - historyLength, history.size());
-        }
-
-        // Remove artifacts if not requested
-        List<Artifact> artifacts = includeArtifacts ? task.artifacts() : List.of();
-
-        // If no transformation needed, return original task
-        if (history == task.history() && artifacts == task.artifacts()) {
-            return task;
-        }
-
-        // Build new task with transformed data
-        return Task.builder(task)
-                .artifacts(artifacts)
-                .history(history)
-                .build();
+    private Task transformTask(Task task, int historyLength, @Nullable Integer timelineLength,
+            boolean includeArtifacts) {
+        // Independent history and timeline windows over the returned view only.
+        Task windowed = TaskReadProjection.project(task, historyLength, timelineLength);
+        return includeArtifacts ? windowed : Task.builder(windowed).artifacts(List.of()).build();
     }
 }

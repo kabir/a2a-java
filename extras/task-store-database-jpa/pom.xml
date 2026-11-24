@@ -114,6 +114,12 @@
         <!-- Additional dependencies for integration tests (from reference/jsonrpc) -->
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>a2a-java-extras-push-notification-config-store-database-jpa</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>a2a-java-sdk-reference-jsonrpc</artifactId>
             <scope>test</scope>
         </dependency>
