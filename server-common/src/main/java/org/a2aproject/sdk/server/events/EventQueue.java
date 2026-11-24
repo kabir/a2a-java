@@ -706,6 +706,7 @@ public abstract class EventQueue implements AutoCloseable {
             boolean carriesUntrustedProvenance = item.taskProposal() != null && !registeredProposal;
             boolean carriesUntrustedResult = !item.isReplicated() && !trustedLocalResult && !registeredProposal
                     && (item.committedSnapshot() != null || item.resultTaskSnapshot() != null
+                            || item.committedBatch() != null
                             || item.isCanonicalFinal() || item.isFinalForLocalConsumption());
             if (carriesUntrustedProvenance || carriesUntrustedResult) {
                 throw new IllegalArgumentException(

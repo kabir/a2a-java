@@ -146,6 +146,43 @@ For the broker:
 This module does not itself enforce broker permissions or reject stale producers; that enforcement is a deployment
 precondition and is verified separately from the database fence.
 
+## Committed replication (A2A 1.1 writer epoch)
+
+Setting `a2a.task-store.writer-epoch` (the same property the JPA task store uses) switches the node to committed replication.
+Without it the module behaves exactly as before (legacy per-event replication and a status-update-plus-poison-pill
+finalization), so legacy-only deployments are unchanged.
+
+Under a writer epoch:
+
+- Only a batch the task store has already committed is replicated, once per batch, as one epoch-stamped envelope that carries the
+  original ordered events (with their canonical generations) and the final snapshot with its store revision. Receivers never
+  call `mutate` or `save` for it: the shared store already holds that result. They only make it visible to local subscribers.
+- A terminal batch is forwarded after the database commit exactly as committed (no synthesized status update or extra
+  generation), followed by a poison pill that receivers apply only after that terminal batch. If a final task is saved without a
+  committed batch under an epoch, only the poison pill is sent and a warning is logged.
+- Receivers drop an own-broadcast echo, an unversioned record (for example one delayed from a pre-migration producer), a record
+  of another epoch, a bare event, and an incomplete or non-consecutive envelope. An identical repeat is shown once, a same-range
+  payload that differs is rejected, and an early batch is buffered (at most 64 per task) until its predecessor arrives.
+  A permanently missing predecessor is not recovered here; that is bounded publication-gap handling, not replay.
+  The first batch a node sees for a task is its starting point: if a later batch arrives first, an earlier one arriving
+  afterwards is dropped as stale (observers never see generations go backwards), and a poison pill that arrives before any
+  batch closes the queue immediately (a terminal batch arriving behind it is dropped as stale, so it cannot recreate a queue).
+  If delivering one batch throws, later buffered batches and the deferred poison pill still run, and the first failure is
+  rethrown; the failed batch is not retried by the receiver. A batch for a task this node considers expired does not create a queue unless it is
+  terminal.
+- Remote copies never dispatch webhooks. Only the node that committed the batch hands it to webhook dispatch.
+- `ReplicationStrategy` gains a default `send(ReplicatedEventQueueItem)`; a custom strategy must implement it to run under an
+  epoch. The reactive messaging strategy does.
+- Starting with a writer epoch on the in-memory task store fails fast: committed cluster replication needs a shared store.
+
+Limits: the epoch stamp is self-declared by the sender, so this is receiver-side validation, not broker authentication or
+fencing (see above). The broker may redeliver, but the receiver does not retry: a batch whose local delivery fails is still
+recorded as seen, so a redelivery is dropped. Ordering and deduplication are in-process and best-effort; receiver state is not
+persisted, so a restarted node starts a task from its first received batch, and per-task state is bounded (older tasks are
+evicted). A terminal batch is replicated only by a store that publishes the terminal batch with its finalization event (the
+JPA store does); a custom store that does not will not replicate terminal batches. There is no exactly-once delivery, replay or
+cursor recovery.
+
 ## Production Considerations
 
 ### Kafka Partitioning Strategy

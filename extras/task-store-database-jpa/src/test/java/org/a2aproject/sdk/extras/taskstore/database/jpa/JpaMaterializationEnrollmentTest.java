@@ -39,6 +39,7 @@ class JpaMaterializationEnrollmentTest {
     public static class FinalizationObserver {
         final ConcurrentMap<String, Boolean> configVisibleAtFinalization = new ConcurrentHashMap<>();
         final ConcurrentMap<String, Boolean> taskVisibleAtFinalization = new ConcurrentHashMap<>();
+        final ConcurrentMap<String, Object> committedBatches = new ConcurrentHashMap<>();
         final ConcurrentMap<String, java.util.concurrent.atomic.AtomicInteger> notifications = new ConcurrentHashMap<>();
         @Inject
         PushNotificationConfigStore configs;
@@ -54,6 +55,10 @@ class JpaMaterializationEnrollmentTest {
             return configVisibleAtFinalization.get(taskId);
         }
 
+        Object committedBatch(String taskId) {
+            return committedBatches.get(taskId);
+        }
+
         Boolean taskVisible(String taskId) {
             return taskVisibleAtFinalization.get(taskId);
         }
@@ -64,6 +69,9 @@ class JpaMaterializationEnrollmentTest {
             configVisibleAtFinalization.put(taskId, !configs.getInfo(
                     new ListTaskPushNotificationConfigsParams(taskId, 10, "", "")).configs().isEmpty());
             taskVisibleAtFinalization.put(taskId, tasks.get(taskId) != null);
+            if (event.getCommittedBatch() != null) {
+                committedBatches.put(taskId, event.getCommittedBatch());
+            }
         }
     }
 
@@ -120,6 +128,21 @@ class JpaMaterializationEnrollmentTest {
         });
         assertEquals(Boolean.TRUE, observer.configVisible(id));
         assertEquals(Boolean.TRUE, observer.taskVisible(id));
+    }
+
+    @Test
+    void finalizationCarriesTheOriginalCommittedTerminalBatchWithItsStoreRevision() {
+        String id = JpaAtomicTaskMutationTest.id();
+        org.a2aproject.sdk.server.tasks.CommittedMutation committed =
+                store.mutate(id, current -> create(id, TaskState.TASK_STATE_COMPLETED));
+
+        Object batch = observer.committedBatch(id);
+        assertNotNull(batch, "the terminal batch must travel with the finalization event");
+        org.a2aproject.sdk.server.events.CommittedTaskBatch terminal =
+                (org.a2aproject.sdk.server.events.CommittedTaskBatch) batch;
+        assertEquals(committed.events(), terminal.events(), "the original stamped events, not a synthesized status");
+        assertEquals(committed.snapshot().revision(), terminal.snapshot().revision());
+        assertEquals(1, observer.notifications(id));
     }
 
     @Test

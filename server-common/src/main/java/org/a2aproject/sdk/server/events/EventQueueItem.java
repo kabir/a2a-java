@@ -76,6 +76,15 @@ public interface EventQueueItem {
         return false;
     }
 
+    /**
+     * Committed batch carried by a trusted replicated envelope, or {@code null}. A receiver delivers it to
+     * local observers without any further task-store write. Honoured only for {@linkplain #isReplicated()
+     * replicated} items; a local item cannot establish committed state with it.
+     */
+    default @Nullable CommittedTaskBatch committedBatch() {
+        return null;
+    }
+
     /** Zero-based position in a proposal batch, or {@code -1} outside a proposal batch. */
     default int proposalBatchEventIndex() {
         return -1;

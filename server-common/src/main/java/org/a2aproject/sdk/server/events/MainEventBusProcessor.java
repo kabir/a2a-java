@@ -265,6 +265,21 @@ public class MainEventBusProcessor implements Runnable {
             return;
         }
 
+        CommittedTaskBatch replicatedBatch = context.eventQueueItem().isReplicated()
+                ? context.eventQueueItem().committedBatch() : null;
+        if (replicatedBatch != null) {
+            // A trusted committed envelope from another node: the shared store already holds this result, so
+            // nothing is mutated or saved here. It is only made visible to this node's local observers.
+            try {
+                deliverCommittedBatch(mainQueue, replicatedBatch, true);
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, replicatedBatch, failure);
+            } finally {
+                mainQueue.releaseSemaphore();
+            }
+            return;
+        }
+
         LOGGER.debug("MainEventBusProcessor: Processing event for task {}: {}",
                     taskId, event.getClass().getSimpleName());
 
@@ -686,10 +701,13 @@ public class MainEventBusProcessor implements Runnable {
                 pushAdmission.dropSender().run();
             }
         };
-        try {
-            callback.admitPushNotifications(batch, admittedSender, failedAdmission);
-        } catch (RuntimeException | Error failure) {
-            failedAdmission.accept(failure);
+        if (!isReplicated) {
+            // Remote copies never enter webhook admission; only the originating writer dispatches.
+            try {
+                callback.admitPushNotifications(batch, admittedSender, failedAdmission);
+            } catch (RuntimeException | Error failure) {
+                failedAdmission.accept(failure);
+            }
         }
 
         // The input error is request-scoped. Route it after the batch admission seam and before
@@ -702,11 +720,26 @@ public class MainEventBusProcessor implements Runnable {
             }
         }
 
+        boolean batchLegacyFinal = batch.events().stream().anyMatch(batchEvent -> EventQueue.isFinalEvent(batchEvent));
+        EventEnqueueHook batchHook = mainQueue.getEnqueueHook();
+        // Same terminal test as the store's TaskFinalizedEvent trigger (TaskState.isFinal()), so a batch is replicated
+        // exactly once: through the hook while the snapshot is non-terminal, through finalization once it is terminal.
+        boolean snapshotTerminal = batch.snapshot().task().status().state().isFinal();
+        boolean replicateWholeBatch = !isReplicated && !snapshotTerminal && batchHook != null
+                && batchHook.handlesCommittedBatches();
+        if (replicateWholeBatch) {
+            // One call per committed batch, in publication order, before local fan-out.
+            try {
+                batchHook.onCommittedBatch(batch);
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+        }
         for (int index = 0; index < batch.events().size(); index++) {
             StreamingEventKind event = batch.events().get(index);
-            boolean legacyFinal = batch.events().stream().anyMatch(batchEvent -> EventQueue.isFinalEvent(batchEvent));
-            if (!isReplicated && !legacyFinal) {
-                EventEnqueueHook hook = mainQueue.getEnqueueHook();
+            boolean legacyFinal = batchLegacyFinal;
+            if (!isReplicated && !legacyFinal && !replicateWholeBatch) {
+                EventEnqueueHook hook = batchHook;
                 if (hook != null) {
                     try {
                         hook.onEnqueue(new LocalEventQueueItem(event, batch.snapshot(), false));

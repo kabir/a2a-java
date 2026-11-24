@@ -7,14 +7,24 @@ package org.a2aproject.sdk.extras.common.events;
  *
  * <p>Used by the replicated queue manager to send the final task state before the poison pill,
  * ensuring correct event ordering across instances and eliminating race conditions.
+ *
+ * <p>A store that committed the terminal mutation through the atomic authority also supplies the
+ * original stamped committed batch as an opaque value. This module cannot name the server type, so
+ * consumers cast it. When it is absent (legacy {@code save} paths) consumers keep the legacy behavior.
  */
 public class TaskFinalizedEvent {
     private final String taskId;
     private final Object task;  // Task type from org.a2aproject.sdk.spec - using Object to avoid dependency
+    private final Object committedBatch;  // CommittedTaskBatch from server-common, or null - opaque to avoid dependency
 
     public TaskFinalizedEvent(String taskId, Object task) {
+        this(taskId, task, null);
+    }
+
+    public TaskFinalizedEvent(String taskId, Object task, Object committedBatch) {
         this.taskId = taskId;
         this.task = task;
+        this.committedBatch = committedBatch;
     }
 
     public String getTaskId() {
@@ -25,8 +35,17 @@ public class TaskFinalizedEvent {
         return task;
     }
 
+    /**
+     * Returns the original committed terminal batch (a server-common {@code CommittedTaskBatch}) that produced
+     * this final state, or {@code null} when the store has no committed batch for it.
+     */
+    public Object getCommittedBatch() {
+        return committedBatch;
+    }
+
     @Override
     public String toString() {
-        return "TaskFinalizedEvent{taskId='" + taskId + "', task=" + task + "}";
+        return "TaskFinalizedEvent{taskId='" + taskId + "', task=" + task
+                + ", committedBatch=" + (committedBatch != null) + "}";
     }
 }

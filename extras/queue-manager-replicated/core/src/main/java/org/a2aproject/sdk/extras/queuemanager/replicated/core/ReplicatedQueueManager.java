@@ -1,5 +1,7 @@
 package org.a2aproject.sdk.extras.queuemanager.replicated.core;
 
+import java.util.UUID;
+
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -7,7 +9,10 @@ import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 
+import org.a2aproject.sdk.extras.common.WriterEpochProperty;
 import org.a2aproject.sdk.extras.common.events.TaskFinalizedEvent;
+import org.a2aproject.sdk.server.config.A2AConfigProvider;
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.server.events.DefaultTaskStreamLifecycleHook;
 import org.a2aproject.sdk.server.events.EventEnqueueHook;
 import org.a2aproject.sdk.server.events.EventQueue;
@@ -17,7 +22,9 @@ import org.a2aproject.sdk.server.events.InMemoryQueueManager;
 import org.a2aproject.sdk.server.events.MainEventBus;
 import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.events.TaskStreamLifecycleHook;
+import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +41,17 @@ public class ReplicatedQueueManager implements QueueManager {
     private ReplicationStrategy replicationStrategy;
     private TaskStateProvider taskStateProvider;
     private TaskStreamLifecycleHook streamLifecycleHook;
+
+    /**
+     * Migrated writer epoch of this node, or null in the legacy-only profile. When set, local committed batches
+     * are replicated as epoch-stamped committed envelopes and only envelopes of the same epoch are accepted.
+     * Fencing old brokers/producers is a deployment precondition; nothing here enforces it.
+     */
+    private @Nullable Long writerEpoch;
+
+    private String originId = UUID.randomUUID().toString();
+
+    private final CommittedBatchSequencer sequencer = new CommittedBatchSequencer();
 
     /**
      * No-args constructor for CDI proxy creation.
@@ -55,18 +73,46 @@ public class ReplicatedQueueManager implements QueueManager {
         this(replicationStrategy, taskStateProvider, mainEventBus, new DefaultTaskStreamLifecycleHook());
     }
 
-    @Inject
     public ReplicatedQueueManager(ReplicationStrategy replicationStrategy,
                                     TaskStateProvider taskStateProvider,
                                     MainEventBus mainEventBus,
                                     TaskStreamLifecycleHook streamLifecycleHook) {
+        this(replicationStrategy, taskStateProvider, mainEventBus, streamLifecycleHook, (Long) null);
+    }
+
+    /**
+     * Creates a manager that replicates committed batches under {@code writerEpoch} (legacy-only when null).
+     *
+     * @param writerEpoch the node's migrated writer epoch, or null for the legacy-only profile
+     */
+    public ReplicatedQueueManager(ReplicationStrategy replicationStrategy,
+                                    TaskStateProvider taskStateProvider,
+                                    MainEventBus mainEventBus,
+                                    TaskStreamLifecycleHook streamLifecycleHook,
+                                    @Nullable Long writerEpoch) {
         this.replicationStrategy = replicationStrategy;
         this.taskStateProvider = taskStateProvider;
         this.streamLifecycleHook = streamLifecycleHook;
+        this.writerEpoch = writerEpoch;
         this.delegate = new InMemoryQueueManager(
                 new ReplicatingEventQueueFactory(), taskStateProvider, mainEventBus, streamLifecycleHook);
     }
 
+    @Inject
+    public ReplicatedQueueManager(ReplicationStrategy replicationStrategy,
+                                    TaskStateProvider taskStateProvider,
+                                    MainEventBus mainEventBus,
+                                    TaskStreamLifecycleHook streamLifecycleHook,
+                                    A2AConfigProvider configProvider) {
+        this(replicationStrategy, taskStateProvider, mainEventBus, streamLifecycleHook,
+                configProvider.getOptionalValue(WriterEpochProperty.NAME).map(Long::valueOf).orElse(null));
+        if (writerEpoch != null && taskStateProvider instanceof InMemoryTaskStore) {
+            // Replicating committed batches needs a shared store that holds them; local memory cannot.
+            throw new IllegalStateException("A configured " + WriterEpochProperty.NAME
+                    + " requires a shared task store; replicated local in-memory task storage cannot provide "
+                    + "committed cluster replication");
+        }
+    }
 
     @Override
     public void add(String taskId, EventQueue queue) {
@@ -102,11 +148,88 @@ public class ReplicatedQueueManager implements QueueManager {
     }
 
     public void onReplicatedEvent(@Observes ReplicatedEventQueueItem replicatedEvent) {
+        if (!acceptedByEpoch(replicatedEvent)) {
+            return;
+        }
+        if (replicatedEvent.isCommittedBatch()) {
+            onCommittedEnvelope(replicatedEvent);
+            return;
+        }
+        if (writerEpoch != null && replicatedEvent.isClosedEvent()
+                && replicatedEvent.getClosedAfterGeneration() != null) {
+            // Poison pill ordered behind the terminal batch it follows.
+            long after = replicatedEvent.getClosedAfterGeneration();
+            sequencer.runAfterGeneration(replicatedEvent.getTaskId(), after, () -> enqueueReplicated(replicatedEvent));
+            return;
+        }
+        enqueueReplicated(replicatedEvent);
+    }
+
+    /**
+     * Validates provenance. In the legacy-only profile every record is accepted as before. Under a writer epoch,
+     * only records stamped with the same epoch by another manager are delivered: a delayed unversioned record
+     * (an old binary or pre-migration producer) and a record from another epoch are rejected. This is a receiver
+     * check on a self-declared stamp; it does not authenticate the sender or fence an old broker.
+     */
+    private boolean acceptedByEpoch(ReplicatedEventQueueItem item) {
+        Long epoch = writerEpoch;
+        if (epoch == null) {
+            if (item.isCommittedBatch()) {
+                LOGGER.warn("Rejecting committed replication envelope for task {}: this node has no writer epoch",
+                        item.getTaskId());
+                return false;
+            }
+            return true;
+        }
+        if (originId.equals(item.getOriginId())) {
+            // Own broadcast echoed back by the broker; the local observers already saw it.
+            LOGGER.debug("Dropping own replicated record for task {}", item.getTaskId());
+            return false;
+        }
+        Long itemEpoch = item.getWriterEpoch();
+        if (itemEpoch == null || !itemEpoch.equals(epoch)) {
+            LOGGER.warn("Rejecting replicated record for task {}: writer epoch {} does not match this node's {}",
+                    item.getTaskId(), itemEpoch, epoch);
+            return false;
+        }
+        if (!item.isCommittedBatch() && !item.isClosedEvent()) {
+            // A bare event would be re-applied to the shared store by the legacy receive path (a second mutation).
+            LOGGER.warn("Rejecting non-committed replicated event for task {} under writer epoch {}",
+                    item.getTaskId(), epoch);
+            return false;
+        }
+        return true;
+    }
+
+    private void onCommittedEnvelope(ReplicatedEventQueueItem envelope) {
+        CommittedTaskBatch batch;
+        try {
+            batch = envelope.committedBatch();
+        } catch (RuntimeException invalid) {
+            LOGGER.warn("Rejecting invalid committed replication envelope for task {}", envelope.getTaskId(), invalid);
+            return;
+        }
+        if (batch == null) {
+            return;
+        }
+        CommittedBatchSequencer.Outcome outcome = sequencer.offer(batch, () -> enqueueReplicated(envelope));
+        switch (outcome) {
+            case DELIVERED, BUFFERED -> LOGGER.debug("Committed batch {} for task {}: {}", batch.identity(),
+                    batch.taskId(), outcome);
+            case DUPLICATE, STALE -> LOGGER.debug("Ignoring {} committed batch {} for task {}", outcome,
+                    batch.identity(), batch.taskId());
+            case CONFLICT, OVERFLOW -> LOGGER.warn("Rejected committed batch {} for task {}: {}",
+                    batch.identity(), batch.taskId(), outcome);
+        }
+    }
+
+    private void enqueueReplicated(ReplicatedEventQueueItem replicatedEvent) {
         // Check if task is still active before processing replicated event
         // Always allow QueueClosedEvent and Task events (they carry final state)
         // Skip other event types for inactive tasks to prevent queue creation for expired tasks
         if (!replicatedEvent.isClosedEvent()
                 && !replicatedEvent.isTaskEvent()
+                && !(replicatedEvent.isCommittedBatch() && replicatedEvent.isCanonicalFinal())
                 && !taskStateProvider.isTaskActive(replicatedEvent.getTaskId())) {
             // Task is no longer active - skip processing this replicated event
             // This prevents creating queues for tasks that have been finalized beyond the grace period
@@ -173,11 +296,32 @@ public class ReplicatedQueueManager implements QueueManager {
     public void onTaskFinalized(@Observes(during = TransactionPhase.AFTER_SUCCESS) TaskFinalizedEvent event) {
         String taskId = event.getTaskId();
         org.a2aproject.sdk.spec.Task finalTask = (org.a2aproject.sdk.spec.Task) event.getTask();  // Cast from Object
+        Long epoch = writerEpoch;
+        CommittedTaskBatch finalBatch = event.getCommittedBatch() instanceof CommittedTaskBatch committed
+                ? committed : null;
+
+        if (epoch != null && finalBatch != null) {
+            // The terminal batch was committed through the authority and already carries its canonical stamps.
+            // Forward it unchanged (never a synthesized status generation), then the ordered poison pill.
+            LOGGER.debug("Task {} finalized - forwarding committed terminal batch then poison pill", taskId);
+            sendCommitted(finalBatch);
+            replicationStrategy.send(ReplicatedEventQueueItem.stampedClosed(taskId, epoch, originId,
+                    finalBatch.identity().lastGeneration()));
+            return;
+        }
+
+        if (epoch != null) {
+            // No committed batch (a legacy save path) under an epoch: a status event would have to be synthesized
+            // with a made-up generation, which receivers must not accept. Only the closing pill is sent.
+            LOGGER.warn("Task {} finalized without a committed batch under writer epoch {}; no terminal event is "
+                    + "replicated, only the poison pill", taskId, epoch);
+            replicationStrategy.send(ReplicatedEventQueueItem.stampedClosed(taskId, epoch, originId, null));
+            return;
+        }
 
         LOGGER.debug("Task {} finalized - sending TaskStatusUpdateEvent then poison pill (QueueClosedEvent) after transaction commit", taskId);
 
-        // Convert final Task to TaskStatusUpdateEvent to match local event distribution
-        // This ensures remote instances receive the same event type as local instances
+        // Legacy path: convert final Task to TaskStatusUpdateEvent to match local event distribution.
         org.a2aproject.sdk.spec.TaskStatusUpdateEvent finalStatusEvent = org.a2aproject.sdk.spec.TaskStatusUpdateEvent.builder()
                 .taskId(taskId)
                 .contextId(finalTask.contextId())
@@ -191,6 +335,18 @@ public class ReplicatedQueueManager implements QueueManager {
         // The transaction has committed, so the final state is guaranteed to be in the database
         org.a2aproject.sdk.server.events.QueueClosedEvent closedEvent = new org.a2aproject.sdk.server.events.QueueClosedEvent(taskId);
         replicationStrategy.send(taskId, closedEvent);
+    }
+
+    /**
+     * Replicates one locally committed batch. The same call serves the event-bus path (non-terminal batches) and
+     * the post-commit finalization path (terminal batches); both carry the same {@link CommittedTaskBatch.Identity}.
+     */
+    private void sendCommitted(CommittedTaskBatch batch) {
+        Long epoch = writerEpoch;
+        if (epoch == null) {
+            return;
+        }
+        replicationStrategy.send(ReplicatedEventQueueItem.committed(batch, epoch, originId));
     }
 
     @Override
@@ -228,7 +384,21 @@ public class ReplicatedQueueManager implements QueueManager {
         }
 
         @Override
+        public boolean handlesCommittedBatches() {
+            return writerEpoch != null;
+        }
+
+        @Override
+        public void onCommittedBatch(CommittedTaskBatch batch) {
+            sendCommitted(batch);
+        }
+
+        @Override
         public void onEnqueue(EventQueueItem item) {
+            if (writerEpoch != null) {
+                // Under a writer epoch only committed, epoch-stamped batches are replicated (onCommittedBatch).
+                return;
+            }
             if (!item.isReplicated()) {
                 // Only replicate if this isn't already a replicated event
                 // This prevents replication loops

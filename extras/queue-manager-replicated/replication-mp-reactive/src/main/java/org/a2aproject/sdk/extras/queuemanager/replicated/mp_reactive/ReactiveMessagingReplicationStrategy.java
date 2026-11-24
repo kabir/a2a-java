@@ -40,6 +40,17 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
         }
     }
 
+    @Override
+    public void send(ReplicatedEventQueueItem item) {
+        LOGGER.debug("Sending replicated envelope for task: {}", item.getTaskId());
+        try {
+            emitter.send(JsonUtil.toJson(item));
+        } catch (Exception e) {
+            LOGGER.error("Failed to send replicated envelope for task: {}", item.getTaskId(), e);
+            throw new RuntimeException("Failed to send replicated event", e);
+        }
+    }
+
     @Incoming("replicated-events-in")
     public void onReplicatedEvent(String jsonMessage) {
         LOGGER.debug("Received replicated event JSON: {}", jsonMessage);

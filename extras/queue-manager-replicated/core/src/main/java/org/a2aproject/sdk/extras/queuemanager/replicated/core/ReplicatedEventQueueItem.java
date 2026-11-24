@@ -1,9 +1,16 @@
 package org.a2aproject.sdk.extras.queuemanager.replicated.core;
 
+import java.util.List;
+
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.server.events.EventQueueItem;
+import org.a2aproject.sdk.server.tasks.TaskRevision;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.StreamingEventKind;
+import org.a2aproject.sdk.spec.Task;
+import org.jspecify.annotations.Nullable;
 
 public class ReplicatedEventQueueItem implements EventQueueItem {
     private String taskId;
@@ -13,6 +20,24 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
     private A2AError error;
 
     private boolean closedEvent;
+
+    /** Writer epoch of the sending node, or null for an unversioned (legacy) record. */
+    private @Nullable Long writerEpoch;
+
+    /** Random identity of the sending manager, so a node can drop its own broadcast. */
+    private @Nullable String originId;
+
+    /** Committed batch payload; all three are set together, or none (not a committed envelope). */
+    private @Nullable List<StreamingEventKind> batchEvents;
+
+    private @Nullable Task batchTask;
+
+    private @Nullable Long batchRevision;
+
+    /** For a stamped poison pill: generation of the terminal batch it must follow, or null for no ordering. */
+    private @Nullable Long closedAfterGeneration;
+
+    private transient @Nullable CommittedTaskBatch cachedBatch;
 
     // Default constructor for JSON deserialization
     public ReplicatedEventQueueItem() {
@@ -52,6 +77,102 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
         }
     }
 
+
+    /**
+     * Creates the internal committed envelope for one batch. It carries the original ordered events and the
+     * final snapshot with its store revision; it is not a proposal and a receiver never persists it.
+     *
+     * @param batch the committed batch
+     * @param writerEpoch the sender's migrated writer epoch
+     * @param originId identity of the sending manager
+     * @return the envelope
+     */
+    public static ReplicatedEventQueueItem committed(CommittedTaskBatch batch, long writerEpoch, String originId) {
+        ReplicatedEventQueueItem item = new ReplicatedEventQueueItem();
+        item.taskId = batch.taskId();
+        item.writerEpoch = writerEpoch;
+        item.originId = originId;
+        item.batchEvents = batch.events();
+        item.batchTask = batch.snapshot().task();
+        item.batchRevision = batch.snapshot().revision().value();
+        item.cachedBatch = batch;
+        return item;
+    }
+
+    /**
+     * Creates a stamped poison pill that receivers deliver only after the terminal batch ending at
+     * {@code afterGeneration} (or immediately when it is null).
+     */
+    public static ReplicatedEventQueueItem stampedClosed(String taskId, long writerEpoch, String originId,
+            @Nullable Long afterGeneration) {
+        ReplicatedEventQueueItem item = new ReplicatedEventQueueItem();
+        item.taskId = taskId;
+        item.closedEvent = true;
+        item.writerEpoch = writerEpoch;
+        item.originId = originId;
+        item.closedAfterGeneration = afterGeneration;
+        return item;
+    }
+
+    public @Nullable Long getClosedAfterGeneration() {
+        return closedAfterGeneration;
+    }
+
+    public @Nullable Long getWriterEpoch() {
+        return writerEpoch;
+    }
+
+    public @Nullable String getOriginId() {
+        return originId;
+    }
+
+    /** True when this record carries a committed batch rather than a single legacy event. */
+    public boolean isCommittedBatch() {
+        return batchEvents != null || batchTask != null || batchRevision != null;
+    }
+
+    /**
+     * Rebuilds and validates the committed batch.
+     *
+     * @throws IllegalArgumentException if the envelope is incomplete or not a canonical consecutive range
+     */
+    @Override
+    public @Nullable CommittedTaskBatch committedBatch() {
+        if (!isCommittedBatch()) {
+            return null;
+        }
+        CommittedTaskBatch cached = cachedBatch;
+        if (cached != null) {
+            return cached;
+        }
+        if (batchEvents == null || batchTask == null || batchRevision == null || taskId == null
+                || event != null || error != null || closedEvent) {
+            throw new IllegalArgumentException("Incomplete committed replication envelope");
+        }
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(batchTask, new TaskRevision(batchRevision)), batchEvents);
+        if (!taskId.equals(batch.taskId())) {
+            throw new IllegalArgumentException("Envelope task ID does not match its batch");
+        }
+        List<Long> positions = batch.generationPositions();
+        for (int i = 0; i < positions.size(); i++) {
+            long position = positions.get(i);
+            if (position < 1 || (i > 0 && position != positions.get(i - 1) + 1)) {
+                throw new IllegalArgumentException("Committed batch generations are not a consecutive range");
+            }
+        }
+        if (positions.get(positions.size() - 1) != batch.snapshot().task().generation()) {
+            throw new IllegalArgumentException("Committed batch does not end at its snapshot generation");
+        }
+        cachedBatch = batch;
+        return batch;
+    }
+
+    @Override
+    public boolean isCanonicalFinal() {
+        CommittedTaskBatch batch = committedBatch();
+        return batch != null && batch.isFinal();
+    }
 
     public String getTaskId() {
         return taskId;
@@ -99,6 +220,10 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
         }
         if (event != null) {
             return event;
+        }
+        List<StreamingEventKind> events = batchEvents;
+        if (events != null && !events.isEmpty()) {
+            return events.get(events.size() - 1);
         }
         return error;
     }
@@ -166,6 +291,8 @@ public class ReplicatedEventQueueItem implements EventQueueItem {
                 ", event=" + event +
                 ", error=" + error +
                 ", closedEvent=" + closedEvent +
+                ", writerEpoch=" + writerEpoch +
+                ", committedBatch=" + isCommittedBatch() +
                 '}';
     }
 }

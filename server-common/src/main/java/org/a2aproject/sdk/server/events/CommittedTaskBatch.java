@@ -33,6 +33,25 @@ public record CommittedTaskBatch(TaskSnapshot snapshot, List<StreamingEventKind>
         }
     }
 
+    /**
+     * Stable identity of one committed batch. Webhook dispatch and replication of the same batch use it, so a
+     * batch seen on the event bus and again on the finalization path is recognizably the same unit.
+     *
+     * @param taskId the task ID
+     * @param firstGeneration generation of the first event
+     * @param lastGeneration generation of the last event
+     * @param revision store revision assigned to the batch's final snapshot
+     */
+    public record Identity(String taskId, long firstGeneration, long lastGeneration, long revision) {
+    }
+
+    /** Returns this batch's stable identity. */
+    public Identity identity() {
+        List<Long> positions = generationPositions();
+        return new Identity(taskId(), positions.get(0), positions.get(positions.size() - 1),
+                snapshot.revision().value());
+    }
+
     /** Returns the task ID shared by the batch snapshot and its task events. */
     public String taskId() {
         return snapshot.task().id();

@@ -1,5 +1,23 @@
 # Phase 3 Bob-coordinated progress record
 
+## P3-T10 RESUMED 2026-11-24 16:43 UTC (developer: "We should complete T10"; treated as a fresh two-hour backstop)
+
+Start 16:43 UTC (first date -u 16:43:43); deadline 18:43 UTC. Same candidate v2 (hash list sha256 `6888f349...201`), HEAD `bcc3bdef2`. Plan: narrow parallel read-only fresh-context reviewers, each writing to its own file `reviews/P3-T10-review-<X>.md`; merge dispositions into the ledger; commit only after acceptance.
+
+## CHECKPOINT 2026-11-24 17:46 UTC — P3-T10 COMMITTED; read this first
+
+- **P3-T10 finished** in its resumed window (16:43–18:43 UTC); commit follows base `bcc3bdef2` (see `git log -1`). Reviews (fresh Bob contexts, reading only, not Sol):
+  Review 1 Incomplete evidence; A and B Changes required (A2-1 pill/terminal leak, A3-1/A3-2 sequencer wedge, A1 test gap, B1-1 finality predicates: all fixed in v3);
+  C correction review Accepted within scope. Record `reviews/P3-T10-review.md` (+ `-A`, `-B`, `-C`).
+- Evidence: server-common 834/834 (`/private/tmp/t10-v3-server-common-full.log`), JPA 95/95 + core 48 + reactive 6 (`t10-v3-extras-full.log`), core 50/50 after
+  test-only additions (`t10-v3b-core.log`), mutation probe `t10-mutation-webhook3.log`. v3 hash-list sha256 `03b42ad2e25b735257a361af63b5a98cd2331018f789759e1a90d5cb53d0a9d3`. Kafka single-instance
+  `testA2AMessageReplicatedToKafka:175` fails identically on base and candidate (pre-existing).
+- Retained notes: `UNSPECIFIED`-final edge, LRU eviction bound, third-party strategies without `send(ReplicatedEventQueueItem)`, no broker fencing (self-declared stamp),
+  no real Kafka multi-instance/PostgreSQL/two-node evidence (T13), `mutateInTransaction` still has no production caller, receiver does not retry a failed local delivery.
+- Completed in this assignment: T06 `e229ce160`, T15 `399b6b047`, T07 `3826b0333`, T08 `300a005bd`, T09 `bcc3bdef2`, T10 (this commit). T16 not started.
+- **Next ready by dependency:** T11 (T03, T06, T08–T10), T14, independent T16; T13 also needs T12 and real PostgreSQL/Kafka/two-node infrastructure. Each needs a fresh
+  developer-granted two-hour backstop; none is active now.
+
 ## Workflow authorization (recorded once; do not rewrite)
 
 Explicit developer assignment, received 2026-11-23, for P3-T06 through P3-T20.
@@ -15,6 +33,12 @@ Issue: #1303 ("This fixes #1303" in commit messages). `test.log` absent at start
 must stay untouched. Logs go under `/private/tmp`. Phases 4–6 are out of scope.
 Independent review means a fresh Bob context labelled as Bob review; if unavailable,
 self-review is labelled as such and does not satisfy a mandatory independent gate.
+ think this## P3-T10 STARTED 2026-11-24 14:46 UTC (developer assignment; base `bcc3bdef2` = T09 commit, verified HEAD, tree clean)
+
+Start 14:43 UTC (first `date -u` check 14:43:47; corrected from an earlier 14:46 guess); two-hour backstop deadline 16:43 UTC. No competing Maven processes; `test.log` absent. Failed approaches: none yet.
+Scope per plan P3-T10; T11 webhook dispatch, Phase 4 replay, exactly-once delivery out of scope.
+
+
 
 ## CHECKPOINT 2026-11-24 14:42 UTC — P3-T09 COMMITTED; read this first
 

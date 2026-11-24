@@ -36,7 +36,7 @@ public class JpaTaskMigration {
     public static final String BASELINE_MARKER = "a2a-1.1-baseline";
 
     /** Writer epoch of this node; must equal the stored epoch for writes once storage is activated. */
-    public static final String NODE_EPOCH_PROPERTY = "a2a.task-store.writer-epoch";
+    public static final String NODE_EPOCH_PROPERTY = org.a2aproject.sdk.extras.common.WriterEpochProperty.NAME;
 
     private static final int BULK_BATCH = 100;
 

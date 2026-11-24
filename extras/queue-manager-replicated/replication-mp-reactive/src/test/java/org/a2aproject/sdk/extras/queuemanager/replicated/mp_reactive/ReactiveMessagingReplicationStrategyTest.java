@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import jakarta.enterprise.event.Event;
 
 import org.a2aproject.sdk.extras.queuemanager.replicated.core.ReplicatedEventQueueItem;
+import org.a2aproject.sdk.extras.queuemanager.replicated.core.ReplicationStrategy;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.TaskState;
@@ -108,4 +109,33 @@ class ReactiveMessagingReplicationStrategyTest {
     }
 
 
+
+    @Test
+    public void testSendCommittedEnvelopeEmitsOneRecordThatRoundTripsWithEpochAndBatch() throws Exception {
+        org.a2aproject.sdk.spec.Task task = org.a2aproject.sdk.spec.Task.builder().id("batch-task").contextId("ctx")
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(2).build();
+        org.a2aproject.sdk.server.events.CommittedTaskBatch batch = new org.a2aproject.sdk.server.events.CommittedTaskBatch(
+                new org.a2aproject.sdk.server.tasks.TaskSnapshot(task, new org.a2aproject.sdk.server.tasks.TaskRevision(5)),
+                java.util.List.of(TaskStatusUpdateEvent.builder().taskId("batch-task").contextId("ctx")
+                        .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(2).build()));
+
+        strategy.send(ReplicatedEventQueueItem.committed(batch, 9L, "node-a"));
+
+        org.mockito.ArgumentCaptor<String> sent = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emitter).send(sent.capture());
+        ReplicatedEventQueueItem received = JsonUtil.fromJson(sent.getValue(), ReplicatedEventQueueItem.class);
+        assertEquals(9L, received.getWriterEpoch());
+        assertEquals(batch.identity(), received.committedBatch().identity());
+
+        // The receiving path fires the same CDI event; an envelope reaches observers unchanged.
+        strategy.onReplicatedEvent(sent.getValue());
+        verify(cdiEvent).fire(any(ReplicatedEventQueueItem.class));
+    }
+
+    @Test
+    public void testLegacyStrategyWithoutEnvelopeSupportRejectsEnvelopesExplicitly() {
+        ReplicationStrategy legacy = (taskId, event) -> { };
+        assertThrows(UnsupportedOperationException.class, () -> legacy.send(
+                ReplicatedEventQueueItem.stampedClosed("t", 1L, "o", null)));
+    }
 }

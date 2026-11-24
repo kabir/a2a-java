@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 
 import org.a2aproject.sdk.extras.common.events.TaskFinalizedEvent;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.server.tasks.CommittedMutation;
 import org.a2aproject.sdk.server.tasks.MutationPlan;
 import org.a2aproject.sdk.server.tasks.TaskCommitSlot;
@@ -139,7 +140,10 @@ public class JpaTaskMutationTransactions {
             persist(taskId, row, plan.task(), revision, epoch);
             if (plan.task().status().state().isFinal()) {
                 // Delivered to AFTER_SUCCESS observers only once this transaction has committed.
-                taskFinalizedEvent.fire(new TaskFinalizedEvent(taskId, plan.task()));
+                // The original stamped terminal batch travels with it so replication forwards it unchanged.
+                Object terminalBatch = plan.events().isEmpty()
+                        ? null : new CommittedTaskBatch(next, plan.events());
+                taskFinalizedEvent.fire(new TaskFinalizedEvent(taskId, plan.task(), terminalBatch));
             }
             return committed;
         } catch (TaskMutationNotCommittedException failure) {
