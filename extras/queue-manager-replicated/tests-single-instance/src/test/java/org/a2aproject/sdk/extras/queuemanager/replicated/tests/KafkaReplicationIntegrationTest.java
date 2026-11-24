@@ -37,6 +37,7 @@ import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskIdParams;
+import org.a2aproject.sdk.spec.TaskMessageUpdateEvent;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
@@ -129,9 +130,10 @@ public class KafkaReplicationIntegrationTest {
         testConsumer.clear();
 
         // Send A2A message that should trigger events and replication (no client-provided taskId)
+        String openingText = "create";
         Message message = Message.builder()
                 .role(Message.Role.ROLE_USER)
-                .parts(List.of(new TextPart("create")))
+                .parts(List.of(new TextPart(openingText)))
                 .messageId("test-msg-" + System.currentTimeMillis())
                 .build();
 
@@ -165,22 +167,18 @@ public class KafkaReplicationIntegrationTest {
         ReplicatedEventQueueItem replicatedEvent = testConsumer.waitForEvent(taskId, 30);
         assertNotNull(replicatedEvent, "Event should be replicated to Kafka within 30 seconds");
 
-        // Verify the replicated event content
+        // Task creation replicates the accepted opening message at generation 1.
         assertEquals(taskId, replicatedEvent.getTaskId());
-        org.a2aproject.sdk.spec.Event receivedEvent = replicatedEvent.getEvent();
-        assertNotNull(receivedEvent);
-
-        // The event should now maintain its proper type through Kafka serialization
-        // This verifies that our polymorphic serialization is working correctly
-        assertInstanceOf(TaskStatusUpdateEvent.class, receivedEvent, "Event should maintain TaskStatusUpdateEvent type after Kafka round-trip");
-        TaskStatusUpdateEvent statusUpdateEvent = (TaskStatusUpdateEvent) receivedEvent;
-
-        // Verify the event data is consistent with the task returned from the client
-        assertEquals(taskId, statusUpdateEvent.taskId(), "Event task ID should match original task ID");
-        assertEquals(contextId, statusUpdateEvent.contextId(), "Event context ID should match original context ID");
-        assertEquals(TaskState.TASK_STATE_SUBMITTED, statusUpdateEvent.status().state(), "Event should show SUBMITTED state");
-        assertFalse(statusUpdateEvent.isFinal(), "Event should show final:false");
-        assertEquals(TaskStatusUpdateEvent.STREAMING_EVENT_ID, statusUpdateEvent.kind(), "Event should indicate status-update type");
+        TaskMessageUpdateEvent openingMessage = assertInstanceOf(TaskMessageUpdateEvent.class, replicatedEvent.getEvent(),
+                "The opening message should retain its event type after the Kafka round trip");
+        assertEquals(taskId, openingMessage.taskId());
+        assertEquals(contextId, openingMessage.contextId());
+        assertEquals(message.messageId(), openingMessage.message().messageId());
+        assertEquals(message.role(), openingMessage.message().role());
+        assertEquals(1, openingMessage.message().parts().size());
+        TextPart replicatedPart = assertInstanceOf(TextPart.class, openingMessage.message().parts().get(0));
+        assertEquals(openingText, replicatedPart.text());
+        assertEquals(1L, openingMessage.generation());
     }
 
     @Test
