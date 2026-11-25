@@ -662,7 +662,7 @@ public final class ExecutorSubmissionService {
                 AtomicReference<Optional<ProposalResult.Rejected>> rejection =
                         new AtomicReference<>(Optional.empty());
                 try {
-                    CommittedMutation mutation = new TaskMutationAuthority(atomicStore).mutate(
+                    CommittedMutation mutation = new TaskMutationAuthority(atomicStore).mutateTaskProposal(
                             proposal.proposedTask().id(), current -> {
                                 observed.set(current);
                                 Task proposedTask = proposal.proposedTask();

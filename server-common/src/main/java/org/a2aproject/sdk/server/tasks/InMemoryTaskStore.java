@@ -127,16 +127,20 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
     private final ConcurrentMap<String, StoredTask> tasks = new ConcurrentHashMap<>();
     private final AtomicLong revisionSequence = new AtomicLong();
     private final @Nullable TaskAuthorizationProvider authorizationProvider;
+    private final InMemoryWebhookDispatchGate webhookDispatchGate;
     private final CommitFaultInjector commitFaultInjector;
 
     public InMemoryTaskStore() {
         this.authorizationProvider = null;
+        this.webhookDispatchGate = new InMemoryWebhookDispatchGate();
         this.commitFaultInjector = NO_COMMIT_FAULT;
     }
 
     @Inject
-    public InMemoryTaskStore(@Any Instance<TaskAuthorizationProvider> authorizationProviderInstance) {
+    public InMemoryTaskStore(@Any Instance<TaskAuthorizationProvider> authorizationProviderInstance,
+            InMemoryWebhookDispatchGate webhookDispatchGate) {
         this.authorizationProvider = CdiUtils.getIfResolvable(authorizationProviderInstance);
+        this.webhookDispatchGate = webhookDispatchGate;
         this.commitFaultInjector = NO_COMMIT_FAULT;
     }
 
@@ -153,13 +157,19 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
      */
     public InMemoryTaskStore(@Nullable TaskAuthorizationProvider authorizationProvider) {
         this.authorizationProvider = authorizationProvider;
+        this.webhookDispatchGate = new InMemoryWebhookDispatchGate();
         this.commitFaultInjector = NO_COMMIT_FAULT;
     }
 
     InMemoryTaskStore(@Nullable TaskAuthorizationProvider authorizationProvider,
             CommitFaultInjector commitFaultInjector) {
         this.authorizationProvider = authorizationProvider;
+        this.webhookDispatchGate = new InMemoryWebhookDispatchGate();
         this.commitFaultInjector = Assert.checkNotNullParam("commitFaultInjector", commitFaultInjector);
+    }
+
+    InMemoryWebhookDispatchGate webhookDispatchGate() {
+        return webhookDispatchGate;
     }
 
     @Override
@@ -181,12 +191,15 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
     @Override
     public @Nullable TaskSnapshot readSnapshot(String taskId) {
-        StoredTask stored = tasks.get(taskId);
-        if (stored != null && !stored.baselined() && stored.task().generation() == 0) {
-            // Only a legacy generation-0 task needs a write (new generation and revision); every other
-            // snapshot is returned without waiting for a planner that holds the task's entry.
-            stored = tasks.computeIfPresent(taskId, (id, current) -> baseline(current));
-        }
+        // Baseline accepted legacy state and initialize its lane under the same per-task map compute. A
+        // concurrent mutation cannot observe the baseline while the task still lacks its lane cursor.
+        StoredTask stored = tasks.computeIfPresent(taskId, (id, current) -> {
+            StoredTask accepted = current.baselined() ? current : baseline(current);
+            if (accepted.task().generation() >= 1) {
+                webhookDispatchGate.initializeTaskLane(id, 0, accepted.task().generation() + 1);
+            }
+            return accepted;
+        });
         return stored == null ? null : stored.snapshot();
     }
 
@@ -229,8 +242,11 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
                         throw new TaskMutationNotCommittedException(taskId,
                                 "An absent task cannot accept an unchanged mutation");
                     }
+                    if (current.task().generation() >= 1) {
+                        webhookDispatchGate.initializeTaskLane(id, 0, current.task().generation() + 1);
+                    }
                     result.set(new MutationResult(
-                            new CommittedMutation(current.snapshot(), List.of(), false), null));
+                            new CommittedMutation(current.snapshot(), List.of(), false, 0L), null));
                     return current;
                 }
 
@@ -241,8 +257,10 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
                 TaskRevision revision = nextRevision();
                 TaskSnapshot committedSnapshot = new TaskSnapshot(plan.task(), revision);
-                CommittedMutation committed = new CommittedMutation(committedSnapshot, plan.events(), true);
+                CommittedMutation committed = new CommittedMutation(committedSnapshot, plan.events(), true, 0L);
                 if (plan.events().isEmpty()) {
+                    webhookDispatchGate.initializeTaskLane(id, 0,
+                            Math.max(1, plan.task().generation() + 1));
                     result.set(new MutationResult(committed, null));
                     return new StoredTask(plan.task(), revision);
                 }
@@ -262,6 +280,11 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
                 result.set(new MutationResult(committed, reservation));
                 commitFaultInjector.at(CommitFaultPoint.BEFORE_REPLACEMENT, taskId, committedSnapshot);
+                if (current == null) {
+                    webhookDispatchGate.initializeTaskLane(id, 0, 1);
+                } else if (current.task().generation() >= 1) {
+                    webhookDispatchGate.initializeTaskLane(id, 0, current.task().generation() + 1);
+                }
                 return new StoredTask(plan.task(), revision);
             });
             MutationResult committed = result.get();

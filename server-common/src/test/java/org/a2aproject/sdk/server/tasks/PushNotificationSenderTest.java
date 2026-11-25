@@ -5,7 +5,9 @@ import static org.a2aproject.sdk.client.http.A2AHttpClient.CONTENT_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,10 +23,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -88,6 +92,230 @@ public class PushNotificationSenderTest {
         for (String body : testHttpClient.rawBodies) {
             assertWrapperMatchesFixture(body, "task", expected);
         }
+    }
+
+    @Test
+    void orderedDispatchPreservesOrdinaryProjectionAndTerminalProposalSummary() throws Exception {
+        String taskId = "ordered-provenance-task";
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v10", "v10", null), "1.0");
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/v11", "v11", null), "1.1");
+        TaskStatus working = new TaskStatus(TaskState.TASK_STATE_WORKING);
+        TaskStatus completed = new TaskStatus(TaskState.TASK_STATE_COMPLETED);
+        Task finalTask = Task.builder().id(taskId).contextId("ctx456").status(completed).generation(2).build();
+        TaskStatusUpdateEvent earlier = new TaskStatusUpdateEvent(taskId, working, "ctx456", null, 1);
+        TaskStatusUpdateEvent terminal = new TaskStatusUpdateEvent(taskId, completed, "ctx456", null, 2);
+        TaskSnapshot snapshot = new TaskSnapshot(finalTask, new TaskRevision(2));
+        CommittedTaskBatch ordinary = new CommittedTaskBatch(snapshot, List.of(earlier, terminal));
+        CommittedTaskBatch proposal = new CommittedTaskBatch(snapshot, List.of(earlier, terminal));
+        testHttpClient.latch = new CountDownLatch(7);
+
+        assertTrue(sender.sendOrderedBatch(ordinary, Long.MAX_VALUE, System::nanoTime)
+                .toCompletableFuture().get(5, TimeUnit.SECONDS));
+        assertTrue(sender.sendOrderedBatch(proposal, true, Long.MAX_VALUE, System::nanoTime,
+                java.util.function.UnaryOperator.identity())
+                .toCompletableFuture().get(5, TimeUnit.SECONDS));
+        assertTrue(testHttpClient.latch.await(5, TimeUnit.SECONDS));
+
+        List<StreamingEventKind> legacy = testHttpClient.notifications.stream()
+                .filter(item -> item.url().endsWith("/v10")).map(CapturedNotification::event).toList();
+        List<StreamingEventKind> current = testHttpClient.notifications.stream()
+                .filter(item -> item.url().endsWith("/v11")).map(CapturedNotification::event).toList();
+        assertEquals(List.of(TaskStatusUpdateEvent.class, TaskStatusUpdateEvent.class, Task.class),
+                legacy.stream().map(Object::getClass).toList());
+        assertEquals(List.of(earlier, terminal, earlier, terminal), current,
+                "1.1 keeps every event for both ordinary batches and proposals");
+    }
+
+    @Test
+    void orderedDispatchUsesConfiguredExecutorAndExpiresQueuedWorkBeforeLateExecution() throws Exception {
+        String taskId = "ordered-dispatch-executor-expiry";
+        Task task = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(Task.builder(task).generation(1).build(), new TaskRevision(1)), List.of(event));
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/ordered-expiry", "expiry-config", null));
+
+        AtomicReference<Runnable> queuedDispatch = new AtomicReference<>();
+        CountDownLatch executorInvoked = new CountDownLatch(1);
+        setDispatchExecutorForTest(sender, command -> {
+            queuedDispatch.set(command);
+            executorInvoked.countDown();
+        });
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(300);
+
+        CompletableFuture<Boolean> result = sender.sendOrderedBatch(batch, false, deadline, System::nanoTime,
+                java.util.function.UnaryOperator.identity()).toCompletableFuture();
+
+        assertTrue(executorInvoked.await(5, TimeUnit.SECONDS),
+                "ordered work must pass through the configured dispatch executor");
+        assertFalse(result.get(5, TimeUnit.SECONDS), "queued work must expire before its deadline");
+        queuedDispatch.get().run();
+        assertTrue(testHttpClient.rawBodies.isEmpty(), "a late executor callback must not send expired payload");
+    }
+
+    @Test
+    void orderedDispatchInvalidatesExecutorWorkEnqueuedBeforeRejection() throws Exception {
+        String taskId = "ordered-dispatch-enqueue-then-reject";
+        Task task = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(Task.builder(task).generation(1).build(), new TaskRevision(1)), List.of(event));
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/enqueue-reject", "reject-config", null));
+
+        AtomicReference<Runnable> queuedDispatch = new AtomicReference<>();
+        CountDownLatch executorInvoked = new CountDownLatch(1);
+        setDispatchExecutorForTest(sender, command -> {
+            queuedDispatch.set(command);
+            executorInvoked.countDown();
+            throw new RejectedExecutionException("injected enqueue-then-reject adapter");
+        });
+
+        CompletableFuture<Boolean> result = sender.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime)
+                .toCompletableFuture();
+
+        assertTrue(executorInvoked.await(5, TimeUnit.SECONDS));
+        assertFalse(result.get(5, TimeUnit.SECONDS));
+        queuedDispatch.get().run();
+        assertTrue(testHttpClient.rawBodies.isEmpty(), "rejected late work must not start HTTP");
+    }
+
+    @Test
+    void standardAbortPolicyRejectionsReleaseShellCapacityForLaterHealthyDispatch() throws Exception {
+        String taskId = "ordered-dispatch-abort-policy-recovery";
+        Task task = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(Task.builder(task).generation(1).build(), new TaskRevision(1)), List.of(event));
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/abort-recovery", "abort-config", null));
+        CountDownLatch executorOccupied = new CountDownLatch(1);
+        CountDownLatch releaseExecutor = new CountDownLatch(1);
+        java.util.concurrent.ThreadPoolExecutor configuredExecutor = new java.util.concurrent.ThreadPoolExecutor(
+                1, 1, 0, TimeUnit.MILLISECONDS, new java.util.concurrent.SynchronousQueue<>());
+        configuredExecutor.execute(() -> {
+            executorOccupied.countDown();
+            try {
+                releaseExecutor.await();
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        assertTrue(executorOccupied.await(5, TimeUnit.SECONDS));
+        setDispatchExecutorForTest(sender, configuredExecutor);
+        try {
+            for (int index = 0; index < 1030; index++) {
+                assertFalse(sender.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime)
+                        .toCompletableFuture().get(5, TimeUnit.SECONDS));
+            }
+            releaseExecutor.countDown();
+            assertTrue(sender.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime)
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS));
+            assertEquals(1, testHttpClient.rawBodies.size());
+        } finally {
+            releaseExecutor.countDown();
+            configuredExecutor.shutdownNow();
+            sender.closeOrderedDispatchWorkers();
+        }
+    }
+
+    @Test
+    void shutdownRevokesSubmittedNeverStartedWorkBeforeStoppingDeadlineScheduler() throws Exception {
+        String taskId = "ordered-dispatch-shutdown-revocation";
+        Task task = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(Task.builder(task).generation(1).build(), new TaskRevision(1)), List.of(event));
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/shutdown-revoke", "shutdown-config", null));
+        AtomicReference<Runnable> queued = new AtomicReference<>();
+        CountDownLatch submitted = new CountDownLatch(1);
+        setDispatchExecutorForTest(sender, command -> {
+            queued.set(command);
+            submitted.countDown();
+        });
+
+        CompletableFuture<Boolean> result = sender.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime)
+                .toCompletableFuture();
+        assertTrue(submitted.await(5, TimeUnit.SECONDS));
+        sender.closeOrderedDispatchWorkers();
+
+        assertFalse(result.get(5, TimeUnit.SECONDS));
+        queued.get().run();
+        assertTrue(testHttpClient.rawBodies.isEmpty(), "shutdown-revoked work cannot start a late HTTP request");
+    }
+
+    @Test
+    void orderedDispatchWaitsForExecutorWorkThatStartedBeforeItThrew() throws Exception {
+        String taskId = "ordered-dispatch-run-then-reject";
+        Task task = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(Task.builder(task).generation(1).build(), new TaskRevision(1)), List.of(event));
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/run-reject", "run-config", null));
+
+        CountDownLatch executorInvoked = new CountDownLatch(1);
+        setDispatchExecutorForTest(sender, command -> {
+            executorInvoked.countDown();
+            command.run();
+            throw new RejectedExecutionException("injected run-then-reject adapter");
+        });
+
+        CompletableFuture<Boolean> result = sender.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime)
+                .toCompletableFuture();
+
+        assertTrue(executorInvoked.await(5, TimeUnit.SECONDS));
+        assertTrue(result.get(5, TimeUnit.SECONDS), "started work must settle before an adapter failure is reported");
+        assertEquals(1, testHttpClient.rawBodies.size());
+    }
+
+    @Test
+    void orderedDispatchKeepsRunningClaimWhenExecutorThrowsAfterStartingWorker() throws Exception {
+        String taskId = "ordered-dispatch-running-then-reject";
+        Task task = createSampleTask(taskId, TaskState.TASK_STATE_WORKING);
+        TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(Task.builder(task).generation(1).build(), new TaskRevision(1)), List.of(event));
+        configStore.setInfo(createSamplePushConfig(taskId, "http://notify.me/running-reject", "running-config", null));
+        testHttpClient.bodyEntered = new CountDownLatch(1);
+        testHttpClient.releaseBody = new CountDownLatch(1);
+        CountDownLatch executorThrowing = new CountDownLatch(1);
+        setDispatchExecutorForTest(sender, command -> {
+            Thread worker = new Thread(command);
+            worker.start();
+            try {
+                if (!testHttpClient.bodyEntered.await(5, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("worker did not begin HTTP setup");
+                }
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(interrupted);
+            } finally {
+                executorThrowing.countDown();
+            }
+            throw new RejectedExecutionException("injected start-then-reject adapter");
+        });
+
+        CompletableFuture<Boolean> result = sender.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime)
+                .toCompletableFuture();
+        try {
+            assertTrue(testHttpClient.bodyEntered.await(5, TimeUnit.SECONDS));
+            assertTrue(executorThrowing.await(5, TimeUnit.SECONDS));
+            assertThrows(TimeoutException.class, () -> result.get(100, TimeUnit.MILLISECONDS),
+                    "an already running attempt must retain its lane until it settles");
+        } finally {
+            testHttpClient.releaseBody.countDown();
+        }
+
+        assertTrue(result.get(5, TimeUnit.SECONDS));
+        assertEquals(1, testHttpClient.rawBodies.size());
+    }
+
+    private static void setDispatchExecutorForTest(BasePushNotificationSender sender, Executor executor)
+            throws ReflectiveOperationException {
+        var field = BasePushNotificationSender.class.getDeclaredField("dispatchExecutor");
+        field.setAccessible(true);
+        field.set(sender, executor);
+        var orderedField = BasePushNotificationSender.class.getDeclaredField("orderedDispatchExecutor");
+        orderedField.setAccessible(true);
+        orderedField.set(sender, executor);
     }
 
     @Test
@@ -978,7 +1206,10 @@ public class PushNotificationSenderTest {
         final List<String> rawBodies = Collections.synchronizedList(new ArrayList<>());
         final List<CapturedNotification> notifications = Collections.synchronizedList(new ArrayList<>());
         volatile CountDownLatch latch;
+        volatile CountDownLatch bodyEntered;
+        volatile CountDownLatch releaseBody;
         volatile boolean shouldThrowException = false;
+        volatile boolean shouldThrowInterruptedException = false;
         volatile int responseStatusCode = 200;
 
         @Override
@@ -1003,12 +1234,31 @@ public class PushNotificationSenderTest {
 
             @Override
             public PostBuilder body(String body) {
+                if (bodyEntered != null) {
+                    bodyEntered.countDown();
+                }
+                if (releaseBody != null) {
+                    try {
+                        if (!releaseBody.await(5, TimeUnit.SECONDS)) {
+                            throw new IllegalStateException("Timed out waiting to release test request body setup");
+                        }
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Interrupted while preparing test request body", interrupted);
+                    }
+                }
                 this.body = body;
                 return this;
             }
 
             @Override
             public A2AHttpResponse post() throws IOException, InterruptedException {
+                if (shouldThrowInterruptedException) {
+                    if (latch != null) {
+                        latch.countDown();
+                    }
+                    throw new InterruptedException("Simulated uncertain transport interruption");
+                }
                 if (shouldThrowException) {
                     throw new IOException("Simulated network error");
                 }
@@ -1661,6 +1911,59 @@ public class PushNotificationSenderTest {
 
             assertTrue(httpClient.latch.await(5, TimeUnit.SECONDS),
                     "Notification must still be dispatched via the common pool fallback");
+        }
+
+        @Test
+        void queuedOrderedWorkDoesNotStartHttpAfterItsDeadline() throws Exception {
+            BasePushNotificationSender s = new BasePushNotificationSender(configStore, testHttpClient,
+                    PushNotificationUrlValidator.ALLOW_ALL);
+            String taskId = "exec-resolution-expired-ordered";
+            TestHttpClient httpClient = prepareDispatch(s, taskId);
+            httpClient.bodyEntered = new CountDownLatch(1);
+            httpClient.releaseBody = new CountDownLatch(1);
+            Task task = Task.builder().id(taskId).contextId("ctx456")
+                    .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(1).build();
+            TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+            CommittedTaskBatch batch = new CommittedTaskBatch(
+                    new TaskSnapshot(task, new TaskRevision(1)), List.of(event));
+            AtomicLong ticker = new AtomicLong(1);
+            long deadline = TimeUnit.DAYS.toNanos(1);
+
+            var result = s.sendOrderedBatch(batch, deadline, ticker::get);
+            assertTrue(httpClient.bodyEntered.await(5, TimeUnit.SECONDS), "ordered sender should enter body setup");
+            ticker.set(deadline + 1);
+            httpClient.releaseBody.countDown();
+
+            assertFalse(result.toCompletableFuture().get(5, TimeUnit.SECONDS));
+            assertTrue(httpClient.rawBodies.isEmpty(), "expired queued work cannot start a late HTTP request");
+            s.closeOrderedDispatchWorkers();
+        }
+
+        @Test
+        void uncertainInterruptedWorkKeepsItsBoundedExecutorPermit() throws Exception {
+            BasePushNotificationSender s = createWithExecutors(
+                    mockInstance(false, null), mockInstance(false, null));
+            String taskId = "exec-resolution-uncertain-ordered";
+            TestHttpClient httpClient = prepareDispatch(s, taskId);
+            httpClient.shouldThrowInterruptedException = true;
+            httpClient.latch = new CountDownLatch(1);
+            Task task = Task.builder().id(taskId).contextId("ctx456")
+                    .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(1).build();
+            TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId, task.status(), task.contextId(), null, 1);
+            CommittedTaskBatch batch = new CommittedTaskBatch(
+                    new TaskSnapshot(task, new TaskRevision(1)), List.of(event));
+
+            var uncertain = s.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime);
+            assertTrue(httpClient.latch.await(5, TimeUnit.SECONDS));
+            assertThrows(TimeoutException.class,
+                    () -> uncertain.toCompletableFuture().get(100, TimeUnit.MILLISECONDS));
+
+            for (int index = 0; index < 1023; index++) {
+                s.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime);
+            }
+            assertThrows(java.util.concurrent.RejectedExecutionException.class,
+                    () -> s.sendOrderedBatch(batch, Long.MAX_VALUE, System::nanoTime));
+            s.closeOrderedDispatchWorkers();
         }
     }
 }

@@ -58,6 +58,8 @@ Create or update your `persistence.xml`:
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWriterEpoch</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWebhookDispatchLane</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWebhookDispatchLoss</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
@@ -94,6 +96,26 @@ CREATE TABLE a2a_writer_epoch (
     epoch_id INTEGER PRIMARY KEY,
     epoch BIGINT NOT NULL
 );
+
+CREATE TABLE a2a_webhook_dispatch_lanes (
+    task_id VARCHAR(255) PRIMARY KEY,
+    writer_epoch BIGINT NOT NULL,
+    next_generation BIGINT NOT NULL,
+    holder_token VARCHAR(36),
+    claimed_first_generation BIGINT,
+    claimed_last_generation BIGINT
+);
+
+CREATE TABLE a2a_webhook_dispatch_losses (
+    loss_id VARCHAR(36) PRIMARY KEY,
+    task_id VARCHAR(255) NOT NULL,
+    first_generation BIGINT NOT NULL,
+    last_generation BIGINT NOT NULL,
+    recorded_at TIMESTAMP NOT NULL,
+    reason VARCHAR(512) NOT NULL
+);
+CREATE INDEX a2a_webhook_dispatch_loss_task
+    ON a2a_webhook_dispatch_losses (task_id, first_generation);
 ```
 
 `store_revision` is the storage revision of the row and is independent of the protocol generation inside `task_data`.
@@ -102,8 +124,9 @@ task ID never reuses a revision. `store_revision`, `writer_epoch` and `migration
 legacy `save` path receives its revision the first time it is read as a snapshot or mutated. `writer_epoch` and
 `migration_marker` are written by the new store once a storage writer epoch is activated (see "Upgrading shared task
 storage"); they are a cooperative check among new binaries only and are **not** a fence against older binaries. Register
-`JpaTaskRevisionCounter` and `JpaWriterEpoch` in the same `a2a-java` unit; `JpaTaskRevisionAllocator` creates the single
-counter row on first use.
+`JpaTaskRevisionCounter`, `JpaWriterEpoch`, `JpaWebhookDispatchLane` and `JpaWebhookDispatchLoss` in the same `a2a-java`
+unit; `JpaTaskRevisionAllocator` creates the single counter row on first use. The lane row is coordination metadata only;
+pending webhook payloads are volatile and are never stored in these tables.
 
 `JpaDatabaseTaskStore` implements `AtomicTaskStore`: each mutation locks the task row, plans, persists and commits in one
 transaction and is reported committed only after that transaction completes. A caller sharing the `a2a-java` unit with
@@ -125,21 +148,23 @@ at startup.
    storage ownership.
 2. **Use distinct identities.** The new fleet connects with a database identity (and a broker identity, see
    [Replicated Queue Manager](replicated-queue-manager.md)) that the old binaries never used.
-3. **Upgrade the schema** with the DDL above (new columns, `a2a_task_revision_counter`, `a2a_writer_epoch`) and
+3. **Upgrade the schema** with the DDL above (new columns, `a2a_task_revision_counter`, `a2a_writer_epoch`,
+   `a2a_webhook_dispatch_lanes` and `a2a_webhook_dispatch_losses`) and
    **transfer ownership of every task table to the new identity** (or to a dedicated owner role that is neither the old nor
    the new application identity). The old identity must not own the tables, must not be a superuser and must not be a
    member of the owner role: an owner holds all privileges implicitly and can `GRANT` them back to itself after the
    `REVOKE`, which defeats the fence (`JpaWriterFencePostgresTest.revokeDoesNotFenceAnOwnerWhoCanGrantItselfBack` demonstrates this).
    Granting the new identity write privileges while the old identity stays owner is **not** a supported fence. Keep read
    access for the old identity only if you need it (`GRANT SELECT ... TO a2a_old`).
-   `a2a_writer_epoch` and `a2a_task_revision_counter` must exist even in legacy mode: the new store reads the (empty)
+   `a2a_writer_epoch`, `a2a_task_revision_counter` and webhook dispatch tables must exist even in legacy mode: the new store reads the (empty)
    epoch table on every operation and refuses to run without it.
 4. **Fence the old identity at the database**, then terminate its sessions. PostgreSQL example (the commands exercised by
    `JpaWriterFencePostgresTest`):
 
    ```sql
    REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON a2a_tasks, a2a_task_owners FROM a2a_old;
-   REVOKE ALL ON a2a_task_revision_counter, a2a_writer_epoch FROM a2a_old;
+   REVOKE ALL ON a2a_task_revision_counter, a2a_writer_epoch, a2a_webhook_dispatch_lanes,
+     a2a_webhook_dispatch_losses FROM a2a_old;
    SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename = 'a2a_old';
    ```
 
@@ -160,7 +185,37 @@ Each legacy task is baselined exactly once, under its row lock: generation `0` b
 (including absent artifact roles, which keep their legacy agent meaning) and delivery metadata are kept unchanged, and no
 earlier timeline or chunk order is invented. The row's `migration_marker` and `writer_epoch` are stored outside the Task
 JSON. Restart keeps the persisted baseline. A marked row whose stored Task has no canonical generation is reported as
-corrupt (`TaskSerializationException`) and is never re-initialized to generation 1.
+corrupt (`TaskSerializationException`) and is never re-initialized to generation 1. The same fenced migration creates a
+missing webhook lane at the accepted Task generation plus one, including T09-marked rows with no lane, and preserves any
+already existing cursor or active claim.
+
+### Webhook dispatch lane and availability
+
+The server records an ordered webhook cursor separately from the task mutation row. New canonical tasks start at generation
+1 in their creation transaction. Before serving a migrated task, `migrateAll()` initializes its cursor from the accepted
+baseline; it never chooses a starting point from the first arriving replicated batch. A sender must claim the exact next
+range, writer epoch and owner token before HTTP begins. The database transaction is short and ends before network I/O.
+Bus publication and JPA terminal finalization share the same batch identity; remote subscriber copies never dispatch.
+
+Pending webhook payloads stay in bounded process memory (256 events or 4 MiB per task). The sender has a 30-second deadline
+for starting the batch's outbound requests, and an unclaimed missing range can be retired after 10 seconds. Filtered events
+and tasks with no matching config still consume their canonical positions. Capacity or deadline drops record a loss range;
+there is no durable payload outbox, replay or automatic retry. Attempt order is an SDK-side start order only; webhook
+delivery is not exactly once and does not guarantee remote receipt order.
+
+In-memory storage retains at most 256 historical loss records per task. Loss ranges that still cover or follow the lane
+cursor are actionable coordination metadata: neither the in-memory gate nor the JPA gate evicts or caps them, and lane
+snapshots return all actionable ranges plus the latest 256 historical records. Dispatcher cursor polling reads only the
+lane position; it does not load the loss journal. Sparse actionable ranges can accumulate while an earlier claim holds
+the cursor, so this metadata can grow even though webhook payloads, callback bridges and historical diagnostics remain
+bounded. Drop diagnostics are rate-limited so a saturated task cannot flood logs or enqueue an unbounded stream of
+failure callbacks.
+
+If a process disappears after claiming a range, its lane can block later webhooks for that task indefinitely. Recovery must
+first prove that queued and running outbound work cannot resume—for example, stop the old process and verify its HTTP workers
+have exited. Revoking database or broker credentials alone does not quiesce an HTTP worker. Only then use the explicit
+conditional recovery operation to retire the uncertain claim under the active epoch. Task mutation and subscriber delivery
+continue while the webhook lane is blocked. For the complete claim and recovery boundaries, see [Replicated Queue Manager](replicated-queue-manager.md#shared-ordered-webhook-dispatch).
 
 **Rollback.** There is no in-place downgrade. Rolling back to an old binary requires an outage and restoring a consistent
 pre-upgrade snapshot of the task and push-configuration tables together with a compatible broker boundary; every change
@@ -299,6 +354,8 @@ When using both JPA stores, combine their entity classes in a single `persistenc
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWriterEpoch</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWebhookDispatchLane</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWebhookDispatchLoss</class>
         <class>org.a2aproject.sdk.extras.pushnotificationconfigstore.database.jpa.JpaPushNotificationConfig</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

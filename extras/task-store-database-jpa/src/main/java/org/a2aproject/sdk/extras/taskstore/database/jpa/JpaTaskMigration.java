@@ -58,6 +58,9 @@ public class JpaTaskMigration {
     JpaTaskMutationTransactions mutationTransactions;
 
     @Inject
+    JpaWebhookDispatchGateTransactions webhookDispatchLanes;
+
+    @Inject
     JpaTaskMigration self;
 
     /** Epoch of this node from configuration, or {@code null} when none is configured (no default exists). */
@@ -154,8 +157,10 @@ public class JpaTaskMigration {
         if (storedEpoch() == null) {
             throw new IllegalStateException("Activate a writer epoch before migrating tasks");
         }
-        return em.createQuery("SELECT t.id FROM JpaTask t WHERE t.migrationMarker IS NULL AND t.id > :after "
-                + "ORDER BY t.id", String.class).setParameter("after", after).setMaxResults(BULK_BATCH).getResultList();
+        return em.createQuery("SELECT t.id FROM JpaTask t WHERE (t.migrationMarker IS NULL OR NOT EXISTS "
+                + "(SELECT lane.taskId FROM JpaWebhookDispatchLane lane WHERE lane.taskId = t.id)) "
+                + "AND t.id > :after ORDER BY t.id", String.class)
+                .setParameter("after", after).setMaxResults(BULK_BATCH).getResultList();
     }
 
     /**
@@ -166,6 +171,8 @@ public class JpaTaskMigration {
         Task task = parse(row);
         if (row.getMigrationMarker() != null) {
             requireCanonicalGeneration(row, task);
+            webhookDispatchLanes.initializeOrRebaseUnclaimedLaneInCurrentTransaction(
+                    row.getId(), epoch, task.generation() + 1);
             return;
         }
         boolean changed = task.generation() == 0;
@@ -178,6 +185,8 @@ public class JpaTaskMigration {
         }
         row.setMigrationMarker(BASELINE_MARKER);
         row.setWriterEpoch(epoch);
+        webhookDispatchLanes.initializeOrRebaseUnclaimedLaneInCurrentTransaction(
+                row.getId(), epoch, changed ? 2 : task.generation() + 1);
         Long revision = row.getRevision();
         if (revision == null) {
             row.setRevision(revisions.newRevision());

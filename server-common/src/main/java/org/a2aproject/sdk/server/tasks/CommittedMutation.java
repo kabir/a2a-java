@@ -2,6 +2,7 @@ package org.a2aproject.sdk.server.tasks;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.util.Assert;
 
@@ -11,7 +12,12 @@ import org.a2aproject.sdk.util.Assert;
  * <p>Events in a multi-generation batch retain their individual generations. The snapshot is the
  * one final state for the whole batch; it is not an intermediate view for each event.</p>
  */
-public record CommittedMutation(TaskSnapshot snapshot, List<StreamingEventKind> events, boolean changed) {
+public record CommittedMutation(TaskSnapshot snapshot, List<StreamingEventKind> events, boolean changed,
+        @Nullable Long writerEpoch) {
+
+    public CommittedMutation(TaskSnapshot snapshot, List<StreamingEventKind> events, boolean changed) {
+        this(snapshot, events, changed, null);
+    }
 
     public CommittedMutation {
         Assert.checkNotNullParam("snapshot", snapshot);

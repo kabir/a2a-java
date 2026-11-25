@@ -13,4 +13,9 @@ import org.jspecify.annotations.Nullable;
 public interface TaskMutation {
 
     MutationPlan plan(@Nullable TaskSnapshot current);
+
+    /** True only when this mutation is an immutable executor Task proposal. */
+    default boolean isTaskProposal() {
+        return false;
+    }
 }

@@ -66,6 +66,8 @@ Create or update your `persistence.xml`:
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskOwner</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaTaskRevisionCounter</class>
         <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWriterEpoch</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWebhookDispatchLane</class>
+        <class>org.a2aproject.sdk.extras.taskstore.database.jpa.JpaWebhookDispatchLoss</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
         
         <properties>
@@ -79,7 +81,7 @@ Create or update your `persistence.xml`:
 
 ### 3. Schema and production migrations
 
-The application controls schema creation. Register `JpaTask`, `JpaTaskOwner`, `JpaTaskRevisionCounter` and `JpaWriterEpoch` in the same `a2a-java` JTA persistence unit, including when unlisted classes are excluded. The Quarkus package setting above discovers both. Development schema generation creates the ownership entity even without selecting an authorization provider. Production upgrades require an application-managed migration before using the updated store, whose deletion path also cleans up ownership.
+The application controls schema creation. Register `JpaTask`, `JpaTaskOwner`, `JpaTaskRevisionCounter`, `JpaWriterEpoch`, `JpaWebhookDispatchLane` and `JpaWebhookDispatchLoss` in the same `a2a-java` JTA persistence unit, including when unlisted classes are excluded. The Quarkus package setting above discovers them. Development schema generation creates the ownership entity even without selecting an authorization provider. Production upgrades require an application-managed migration before using the updated store, whose deletion path also cleans up ownership.
 
 The task schema includes all of these columns. Use the database dialect's timestamp representation for Java `Instant`:
 
@@ -105,7 +107,32 @@ CREATE TABLE a2a_writer_epoch (
     epoch_id INTEGER PRIMARY KEY,
     epoch BIGINT NOT NULL
 );
+
+CREATE TABLE a2a_webhook_dispatch_lanes (
+    task_id VARCHAR(255) PRIMARY KEY,
+    writer_epoch BIGINT NOT NULL,
+    next_generation BIGINT NOT NULL,
+    holder_token VARCHAR(36),
+    claimed_first_generation BIGINT,
+    claimed_last_generation BIGINT
+);
+
+CREATE TABLE a2a_webhook_dispatch_losses (
+    loss_id VARCHAR(36) PRIMARY KEY,
+    task_id VARCHAR(255) NOT NULL,
+    first_generation BIGINT NOT NULL,
+    last_generation BIGINT NOT NULL,
+    recorded_at TIMESTAMP NOT NULL,
+    reason VARCHAR(512) NOT NULL
+);
+CREATE INDEX a2a_webhook_dispatch_loss_task
+    ON a2a_webhook_dispatch_losses (task_id, first_generation);
 ```
+
+The same DDL is available in `META-INF/a2a-webhook-dispatch-schema.sql` for an application-managed migration.
+The lane table stores only an ordered cursor, epoch and active claim; the loss table stores retired generation ranges,
+not notification payloads. Create the lane row in the task creation transaction and initialize migrated rows through
+`JpaTaskMigration.migrateAll()` before serving traffic.
 
 `store_revision` is the storage revision of the row and is independent of the protocol generation inside `task_data`.
 Each task takes a never-used revision block from `a2a_task_revision_counter` when it is created, so deleting and recreating a
@@ -162,14 +189,15 @@ at startup.
    storage ownership.
 2. **Use distinct identities.** The new fleet connects with a database identity (and a broker identity, see
    [Replicated Queue Manager](replicated-queue-manager.md)) that the old binaries never used.
-3. **Upgrade the schema** with the DDL above (new columns, `a2a_task_revision_counter`, `a2a_writer_epoch`) and
+3. **Upgrade the schema** with the DDL above (new columns, `a2a_task_revision_counter`, `a2a_writer_epoch`,
+   `a2a_webhook_dispatch_lanes` and `a2a_webhook_dispatch_losses`) and
    **transfer ownership of every task table to the new identity** (or to a dedicated owner role that is neither the old nor
    the new application identity). The old identity must not own the tables, must not be a superuser and must not be a
    member of the owner role: an owner holds all privileges implicitly and can `GRANT` them back to itself after the
    `REVOKE`, which defeats the fence (`JpaWriterFencePostgresTest.revokeDoesNotFenceAnOwnerWhoCanGrantItselfBack` demonstrates this).
    Granting the new identity write privileges while the old identity stays owner is **not** a supported fence. Keep read
    access for the old identity only if you need it (`GRANT SELECT ... TO a2a_old`).
-   `a2a_writer_epoch` and `a2a_task_revision_counter` must exist even in legacy mode: the new store reads the (empty)
+   `a2a_writer_epoch`, `a2a_task_revision_counter` and webhook dispatch tables must exist even in legacy mode: the new store reads the (empty)
    epoch table on every operation and refuses to run without it.
 4. **Fence the old identity at the database**, then terminate its sessions. PostgreSQL example (the commands exercised by
    `JpaWriterFencePostgresTest`):

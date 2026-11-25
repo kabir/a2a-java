@@ -20,6 +20,7 @@ import org.a2aproject.sdk.server.events.EventQueueFactory;
 import org.a2aproject.sdk.server.events.EventQueueItem;
 import org.a2aproject.sdk.server.events.InMemoryQueueManager;
 import org.a2aproject.sdk.server.events.MainEventBus;
+import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.events.TaskStreamLifecycleHook;
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
@@ -42,6 +43,9 @@ public class ReplicatedQueueManager implements QueueManager {
     private TaskStateProvider taskStateProvider;
     private TaskStreamLifecycleHook streamLifecycleHook;
 
+    @Inject
+    private @Nullable MainEventBusProcessor mainEventBusProcessor;
+
     /**
      * Migrated writer epoch of this node, or null in the legacy-only profile. When set, local committed batches
      * are replicated as epoch-stamped committed envelopes and only envelopes of the same epoch are accepted.
@@ -52,6 +56,10 @@ public class ReplicatedQueueManager implements QueueManager {
     private String originId = UUID.randomUUID().toString();
 
     private final CommittedBatchSequencer sequencer = new CommittedBatchSequencer();
+
+    void setMainEventBusProcessor(MainEventBusProcessor processor) {
+        this.mainEventBusProcessor = processor;
+    }
 
     /**
      * No-args constructor for CDI proxy creation.
@@ -65,6 +73,7 @@ public class ReplicatedQueueManager implements QueueManager {
         this.replicationStrategy = null;
         this.taskStateProvider = null;
         this.streamLifecycleHook = null;
+        this.mainEventBusProcessor = null;
     }
 
     public ReplicatedQueueManager(ReplicationStrategy replicationStrategy,
@@ -300,13 +309,38 @@ public class ReplicatedQueueManager implements QueueManager {
         CommittedTaskBatch finalBatch = event.getCommittedBatch() instanceof CommittedTaskBatch committed
                 ? committed : null;
 
+        MainEventBusProcessor busProcessor = mainEventBusProcessor;
+        if (finalBatch != null && busProcessor != null) {
+            try {
+                CommittedTaskBatch.Identity identity = finalBatch.identity();
+                busProcessor.admitFinalizedCommittedBatch(finalBatch, event.isTaskProposal(), event.getWriterEpoch())
+                        .whenComplete((sent, failure) -> {
+                            if (failure != null || !Boolean.TRUE.equals(sent)) {
+                                LOGGER.warn("Finalized webhook admission failed for task {} generations {}..{}",
+                                        identity.taskId(), identity.firstGeneration(), identity.lastGeneration(), failure);
+                            }
+                        });
+            } catch (RuntimeException | Error dispatchFailure) {
+                LOGGER.warn("Finalized webhook admission failed for task {}", taskId, dispatchFailure);
+            }
+        }
+
         if (epoch != null && finalBatch != null) {
             // The terminal batch was committed through the authority and already carries its canonical stamps.
             // Forward it unchanged (never a synthesized status generation), then the ordered poison pill.
             LOGGER.debug("Task {} finalized - forwarding committed terminal batch then poison pill", taskId);
-            sendCommitted(finalBatch);
-            replicationStrategy.send(ReplicatedEventQueueItem.stampedClosed(taskId, epoch, originId,
-                    finalBatch.identity().lastGeneration()));
+            try {
+                sendCommitted(finalBatch);
+            } catch (RuntimeException | Error replicationFailure) {
+                LOGGER.error("Could not replicate committed terminal batch for task {}", taskId, replicationFailure);
+            } finally {
+                try {
+                    replicationStrategy.send(ReplicatedEventQueueItem.stampedClosed(taskId, epoch, originId,
+                            finalBatch.identity().lastGeneration()));
+                } catch (RuntimeException | Error closeFailure) {
+                    LOGGER.error("Could not replicate terminal close marker for task {}", taskId, closeFailure);
+                }
+            }
             return;
         }
 
@@ -315,7 +349,11 @@ public class ReplicatedQueueManager implements QueueManager {
             // with a made-up generation, which receivers must not accept. Only the closing pill is sent.
             LOGGER.warn("Task {} finalized without a committed batch under writer epoch {}; no terminal event is "
                     + "replicated, only the poison pill", taskId, epoch);
-            replicationStrategy.send(ReplicatedEventQueueItem.stampedClosed(taskId, epoch, originId, null));
+            try {
+                replicationStrategy.send(ReplicatedEventQueueItem.stampedClosed(taskId, epoch, originId, null));
+            } catch (RuntimeException | Error closeFailure) {
+                LOGGER.error("Could not replicate terminal close marker for task {}", taskId, closeFailure);
+            }
             return;
         }
 
@@ -329,12 +367,20 @@ public class ReplicatedQueueManager implements QueueManager {
                 .build();
 
         // Send TaskStatusUpdateEvent FIRST to ensure it arrives before poison pill
-        replicationStrategy.send(taskId, finalStatusEvent);
-
-        // Then send poison pill
-        // The transaction has committed, so the final state is guaranteed to be in the database
-        org.a2aproject.sdk.server.events.QueueClosedEvent closedEvent = new org.a2aproject.sdk.server.events.QueueClosedEvent(taskId);
-        replicationStrategy.send(taskId, closedEvent);
+        try {
+            replicationStrategy.send(taskId, finalStatusEvent);
+        } catch (RuntimeException | Error replicationFailure) {
+            LOGGER.error("Could not replicate final status for task {}", taskId, replicationFailure);
+        } finally {
+            // Keep the terminal close marker independent from final-status replication failure.
+            org.a2aproject.sdk.server.events.QueueClosedEvent closedEvent =
+                    new org.a2aproject.sdk.server.events.QueueClosedEvent(taskId);
+            try {
+                replicationStrategy.send(taskId, closedEvent);
+            } catch (RuntimeException | Error closeFailure) {
+                LOGGER.error("Could not replicate terminal close marker for task {}", taskId, closeFailure);
+            }
+        }
     }
 
     /**

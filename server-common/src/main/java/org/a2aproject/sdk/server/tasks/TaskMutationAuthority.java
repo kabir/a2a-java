@@ -49,12 +49,37 @@ public final class TaskMutationAuthority {
         }
     }
 
-    private static TaskMutation plannerErrors(TaskMutation mutation) {
-        return current -> {
-            try {
+    /** Mutates with trusted local executor-proposal provenance retained by stores and terminal observers. */
+    public CommittedMutation mutateTaskProposal(String taskId, TaskMutation mutation,
+            TaskCommitSlotCallback slotCallback) {
+        TaskMutation proposal = new TaskMutation() {
+            @Override
+            public MutationPlan plan(@Nullable TaskSnapshot current) {
                 return mutation.plan(current);
-            } catch (TaskGenerationMismatchError | InvalidParamsError | TaskNotFoundError failure) {
-                throw new PlannerRejection(failure);
+            }
+
+            @Override
+            public boolean isTaskProposal() {
+                return true;
+            }
+        };
+        return mutate(taskId, proposal, slotCallback);
+    }
+
+    private static TaskMutation plannerErrors(TaskMutation mutation) {
+        return new TaskMutation() {
+            @Override
+            public org.a2aproject.sdk.server.tasks.MutationPlan plan(@Nullable TaskSnapshot current) {
+                try {
+                    return mutation.plan(current);
+                } catch (TaskGenerationMismatchError | InvalidParamsError | TaskNotFoundError failure) {
+                    throw new PlannerRejection(failure);
+                }
+            }
+
+            @Override
+            public boolean isTaskProposal() {
+                return mutation.isTaskProposal();
             }
         };
     }

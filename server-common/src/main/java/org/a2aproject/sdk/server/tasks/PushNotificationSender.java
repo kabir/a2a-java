@@ -1,5 +1,10 @@
 package org.a2aproject.sdk.server.tasks;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.LongSupplier;
+import java.util.function.UnaryOperator;
+
 import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -90,13 +95,51 @@ import org.jspecify.annotations.Nullable;
  * @see BasePushNotificationSender
  * @see org.a2aproject.sdk.spec.TaskPushNotificationConfig
  */
-public interface PushNotificationSender {
+public interface PushNotificationSender extends OrderedWebhookSender {
 
     /**
      * A no-op sender that always reports success. Useful in tests and
      * configurations where push notifications are not needed.
      */
     PushNotificationSender NOOP = (event, taskSnapshot) -> true;
+
+    /** Compatibility implementations opt out of the additive ordered adapter by default. */
+    @Override
+    default boolean supportsOrderedDispatch() {
+        return false;
+    }
+
+    @Override
+    default CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, long deadlineNanos,
+            LongSupplier nanoTime) {
+        return CompletableFuture.failedFuture(new UnsupportedOperationException(
+                "This PushNotificationSender does not implement ordered dispatch"));
+    }
+
+    @Override
+    default CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, long deadlineNanos,
+            LongSupplier nanoTime, UnaryOperator<Runnable> taskContext) {
+        return sendOrderedBatch(batch, deadlineNanos, nanoTime);
+    }
+
+    @Override
+    default CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, boolean taskProposal,
+            long deadlineNanos, LongSupplier nanoTime, UnaryOperator<Runnable> taskContext) {
+        return sendOrderedBatch(batch, deadlineNanos, nanoTime, taskContext);
+    }
+
+    @Override
+    default CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot, long deadlineNanos,
+            LongSupplier nanoTime) {
+        return CompletableFuture.failedFuture(new UnsupportedOperationException(
+                "This PushNotificationSender does not implement ordered dispatch"));
+    }
+
+    @Override
+    default CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot, long deadlineNanos,
+            LongSupplier nanoTime, UnaryOperator<Runnable> taskContext) {
+        return sendOrderedLegacyTaskSnapshot(snapshot, deadlineNanos, nanoTime);
+    }
 
     /**
      * Sends a push notification containing a streaming event.

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
@@ -43,6 +44,7 @@ class InMemoryTaskStoreBaselineTest {
         assertNull(first.task().artifacts().get(0).role(), "absent role is not invented");
         assertEquals(first, store.readSnapshot("t1"));
         assertEquals(first, store.readSnapshot("t1"));
+        assertEquals(2, store.webhookDispatchGate().readLane("t1").orElseThrow().nextGeneration());
     }
 
     @Test
@@ -57,6 +59,7 @@ class InMemoryTaskStoreBaselineTest {
             return new MutationPlan(next, List.<StreamingEventKind>of(event), true);
         });
         assertEquals(2, committed.snapshot().task().generation());
+        assertEquals(2, store.webhookDispatchGate().readLane("t2").orElseThrow().nextGeneration());
     }
 
     @Test
@@ -66,6 +69,7 @@ class InMemoryTaskStoreBaselineTest {
         TaskSnapshot snapshot = store.readSnapshot("t3");
         assertEquals(7, snapshot.task().generation());
         assertEquals(snapshot, store.readSnapshot("t3"));
+        assertEquals(8, store.webhookDispatchGate().readLane("t3").orElseThrow().nextGeneration());
     }
 
     @Test
@@ -77,5 +81,21 @@ class InMemoryTaskStoreBaselineTest {
                 List.<StreamingEventKind>of(new TaskStatusUpdateEvent("t4",
                         new TaskStatus(TaskState.TASK_STATE_WORKING), "ctx", null, 1)), true));
         assertEquals(created.snapshot(), store.readSnapshot("t4"));
+        assertEquals(1, store.webhookDispatchGate().readLane("t4").orElseThrow().nextGeneration());
+    }
+
+    @Test
+    void rejectedBaselinePlannerDoesNotPublishWebhookLane() {
+        InMemoryTaskStore store = new InMemoryTaskStore();
+        store.save(legacy("t5"), false);
+
+        assertThrows(TaskMutationNotCommittedException.class,
+                () -> store.mutate("t5", current -> {
+                    assertEquals(1, current.task().generation());
+                    throw new IllegalArgumentException("reject baseline plan");
+                }));
+
+        assertNull(store.webhookDispatchGate().readLane("t5").orElse(null),
+                "a rejected generation-zero plan must not publish migration metadata");
     }
 }

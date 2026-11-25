@@ -1,16 +1,25 @@
 package org.a2aproject.sdk.server.events;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongSupplier;
 
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
+import org.a2aproject.sdk.server.tasks.InMemoryWebhookDispatchGate;
+import org.a2aproject.sdk.server.tasks.OrderedWebhookDispatcher;
+import org.a2aproject.sdk.server.tasks.OrderedWebhookSender;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskMutation;
+import org.a2aproject.sdk.server.tasks.MutationPlan;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
@@ -88,6 +97,229 @@ public class MainEventBusProcessorPushNotificationOrderTest {
         for (int i = 0; i < eventCount; i++) {
             assertEquals(i, deliveryOrder.get(i),
                     "Push notification " + i + " should be delivered in produced order, got " + deliveryOrder);
+        }
+    }
+
+    @Test
+    public void committedOriginWithoutLocalQueueStillEntersOrderedWebhookLane() throws Exception {
+        String taskId = "origin-without-queue";
+        Task initial = Task.builder().id(taskId).contextId(CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(1).build();
+        taskStore.save(initial, false);
+        InMemoryWebhookDispatchGate gate = new InMemoryWebhookDispatchGate();
+        gate.initializeTaskLane(taskId, 0, 2);
+        CountDownLatch dispatched = new CountDownLatch(1);
+        AtomicInteger firstGeneration = new AtomicInteger();
+        PushNotificationSender sender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(org.a2aproject.sdk.spec.StreamingEventKind event, Task snapshot) {
+                return true;
+            }
+        };
+        OrderedWebhookSender orderedSender = new OrderedWebhookSender() {
+            @Override
+            public boolean supportsOrderedDispatch() {
+                return true;
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch,
+                    long deadlineNanos, LongSupplier nanoTime) {
+                firstGeneration.set((int) batch.identity().firstGeneration());
+                dispatched.countDown();
+                return CompletableFuture.completedFuture(true);
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot,
+                    long deadlineNanos, LongSupplier nanoTime) {
+                return CompletableFuture.completedFuture(true);
+            }
+        };
+        PushNotificationSender combinedSender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(org.a2aproject.sdk.spec.StreamingEventKind event, Task snapshot) {
+                return sender.sendNotification(event, snapshot);
+            }
+        };
+        // Use an adapter object with both compatibility and ordered surfaces.
+        PushNotificationSender pushSender = new CombinedOrderedPushSender(combinedSender, orderedSender);
+        OrderedWebhookDispatcher dispatcher = new OrderedWebhookDispatcher(gate, pushSender);
+        try {
+            mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, pushSender,
+                    queueManager, dispatcher);
+            TaskMutation mutation = current -> {
+                Task next = Task.builder(current.task()).generation(2).build();
+                TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId,
+                        new TaskStatus(TaskState.TASK_STATE_WORKING), CONTEXT_ID, null, 2);
+                return new MutationPlan(next, List.of(event), true);
+            };
+
+            mainEventBusProcessor.commitAndPublish(taskId, mutation);
+
+            assertTrue(dispatched.await(5, TimeUnit.SECONDS));
+            assertEquals(2, firstGeneration.get());
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (gate.readLane(taskId).orElseThrow().nextGeneration() != 3 && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertEquals(3, gate.readLane(taskId).orElseThrow().nextGeneration());
+        } finally {
+            dispatcher.close();
+        }
+    }
+
+    @Test
+    public void legacySenderRemainsUsableWhenTheLocalDispatcherHasNoOrderedAdapter() throws Exception {
+        String taskId = "legacy-origin-without-queue";
+        Task initial = Task.builder().id(taskId).contextId(CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(1).build();
+        taskStore.save(initial, false);
+        taskStore.readSnapshot(taskId);
+        InMemoryWebhookDispatchGate gate = new InMemoryWebhookDispatchGate();
+        gate.initializeTaskLane(taskId, 0, 2);
+        CountDownLatch dispatched = new CountDownLatch(1);
+        AtomicInteger sentGeneration = new AtomicInteger();
+        PushNotificationSender legacySender = (event, snapshot) -> {
+            if (event instanceof TaskStatusUpdateEvent status) {
+                sentGeneration.set((int) status.generation());
+            }
+            dispatched.countDown();
+            return true;
+        };
+        OrderedWebhookDispatcher dispatcher = new OrderedWebhookDispatcher(gate, legacySender);
+        try {
+            mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, legacySender,
+                    queueManager, dispatcher);
+            TaskMutation mutation = current -> {
+                Task next = Task.builder(current.task()).generation(2).build();
+                TaskStatusUpdateEvent event = new TaskStatusUpdateEvent(taskId,
+                        new TaskStatus(TaskState.TASK_STATE_WORKING), CONTEXT_ID, null, 2);
+                return new MutationPlan(next, List.of(event), true);
+            };
+
+            mainEventBusProcessor.commitAndPublish(taskId, mutation);
+
+            assertTrue(dispatched.await(5, TimeUnit.SECONDS));
+            assertEquals(2, sentGeneration.get());
+        } finally {
+            dispatcher.close();
+        }
+    }
+
+    @Test
+    public void capabilityInspectionFailureDoesNotFallBackToLegacyHttpSender() throws Exception {
+        String taskId = "capability-inspection-failure";
+        taskStore.save(Task.builder().id(taskId).contextId(CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(1).build(), false);
+        AtomicInteger legacyAttempts = new AtomicInteger();
+        CountDownLatch postCommitFailure = new CountDownLatch(1);
+        PushNotificationSender legacySender = (event, snapshot) -> {
+            legacyAttempts.incrementAndGet();
+            return true;
+        };
+        OrderedWebhookDispatcher dispatcher = new OrderedWebhookDispatcher(
+                new InMemoryWebhookDispatchGate(), legacySender) {
+            @Override
+            public boolean supportsOrderedDispatch() {
+                throw new IllegalStateException("lazy sender initialization failed");
+            }
+        };
+        try {
+            mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, legacySender,
+                    queueManager, dispatcher);
+            mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
+                @Override
+                public void onEventProcessed(String id, org.a2aproject.sdk.spec.Event event) {
+                }
+
+                @Override
+                public void onTaskFinalized(String id) {
+                }
+
+                @Override
+                public void onPostCommitFailure(String id, CommittedTaskBatch batch, Throwable failure) {
+                    postCommitFailure.countDown();
+                }
+            });
+            mainEventBusProcessor.commitAndPublish(taskId, current -> {
+                TaskStatus terminal = new TaskStatus(TaskState.TASK_STATE_COMPLETED);
+                Task next = Task.builder(current.task()).status(terminal).generation(2).build();
+                return new MutationPlan(next,
+                        List.of(new TaskStatusUpdateEvent(taskId, terminal, CONTEXT_ID, null, 2)), true);
+            });
+
+            assertTrue(postCommitFailure.await(5, TimeUnit.SECONDS));
+            assertFalse(legacyAttempts.get() > 0, "capability failure must not run the legacy HTTP sender");
+        } finally {
+            dispatcher.close();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void terminalBatchRejectedAtAdmissionCapacityCannotReenterAfterCapacityFrees() throws Exception {
+        String taskId = "capacity-rejected-terminal";
+        taskStore.save(Task.builder().id(taskId).contextId(CONTEXT_ID)
+                .status(new TaskStatus(TaskState.TASK_STATE_WORKING)).generation(1).build(), false);
+        AtomicInteger senderAttempts = new AtomicInteger();
+        PushNotificationSender sender = (event, snapshot) -> {
+            senderAttempts.incrementAndGet();
+            return true;
+        };
+        mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, sender, queueManager);
+        java.lang.reflect.Field activeField = MainEventBusProcessor.class.getDeclaredField("activePushAdmissions");
+        activeField.setAccessible(true);
+        Map<CommittedTaskBatch.Identity, CompletableFuture<Boolean>> active =
+                (Map<CommittedTaskBatch.Identity, CompletableFuture<Boolean>>) activeField.get(mainEventBusProcessor);
+        for (int index = 0; index < 2048; index++) {
+            active.put(new CommittedTaskBatch.Identity("filler-" + index, 1, 1, 1), new CompletableFuture<>());
+        }
+
+        org.a2aproject.sdk.server.tasks.CommittedMutation committed = mainEventBusProcessor.commitAndPublish(taskId,
+                current -> {
+                    TaskStatus terminal = new TaskStatus(TaskState.TASK_STATE_COMPLETED);
+                    Task next = Task.builder(current.task()).status(terminal).generation(2).build();
+                    return new MutationPlan(next,
+                            List.of(new TaskStatusUpdateEvent(taskId, terminal, CONTEXT_ID, null, 2)), true);
+                });
+        CommittedTaskBatch batch = new CommittedTaskBatch(committed.snapshot(), committed.events());
+        active.clear();
+
+        assertFalse(mainEventBusProcessor.admitFinalizedCommittedBatch(batch, false, committed.writerEpoch())
+                .toCompletableFuture().get(5, TimeUnit.SECONDS));
+        assertEquals(0, senderAttempts.get(), "a terminal identity rejected at capacity stays closed");
+    }
+
+    private static final class CombinedOrderedPushSender implements PushNotificationSender, OrderedWebhookSender {
+        private final PushNotificationSender compatibility;
+        private final OrderedWebhookSender ordered;
+
+        CombinedOrderedPushSender(PushNotificationSender compatibility, OrderedWebhookSender ordered) {
+            this.compatibility = compatibility;
+            this.ordered = ordered;
+        }
+
+        @Override
+        public boolean sendNotification(org.a2aproject.sdk.spec.StreamingEventKind event, Task snapshot) {
+            return compatibility.sendNotification(event, snapshot);
+        }
+
+        @Override
+        public boolean supportsOrderedDispatch() {
+            return ordered.supportsOrderedDispatch();
+        }
+
+        @Override
+        public java.util.concurrent.CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch,
+                long deadlineNanos, LongSupplier nanoTime) {
+            return ordered.sendOrderedBatch(batch, deadlineNanos, nanoTime);
+        }
+
+        @Override
+        public java.util.concurrent.CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot,
+                long deadlineNanos, LongSupplier nanoTime) {
+            return ordered.sendOrderedLegacyTaskSnapshot(snapshot, deadlineNanos, nanoTime);
         }
     }
 

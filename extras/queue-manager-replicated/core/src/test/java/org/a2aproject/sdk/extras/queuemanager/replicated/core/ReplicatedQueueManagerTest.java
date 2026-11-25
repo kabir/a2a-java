@@ -11,10 +11,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 
 import org.a2aproject.sdk.extras.common.events.TaskFinalizedEvent;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
@@ -22,11 +26,16 @@ import org.a2aproject.sdk.server.events.EventQueue;
 import org.a2aproject.sdk.server.events.EventQueueClosedException;
 import org.a2aproject.sdk.server.events.EventQueueItem;
 import org.a2aproject.sdk.server.events.EventQueueUtil;
+import org.a2aproject.sdk.server.events.CommittedTaskBatch;
 import org.a2aproject.sdk.server.events.MainEventBus;
 import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.server.events.QueueClosedEvent;
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
+import org.a2aproject.sdk.server.tasks.InMemoryWebhookDispatchGate;
+import org.a2aproject.sdk.server.tasks.OrderedWebhookDispatcher;
+import org.a2aproject.sdk.server.tasks.OrderedWebhookSender;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskRevision;
 import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Event;
 import org.a2aproject.sdk.spec.StreamingEventKind;
@@ -34,6 +43,7 @@ import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -564,6 +574,127 @@ class ReplicatedQueueManagerTest {
         Event lastEvent = strategy.getLastEvent();
         assertTrue(lastEvent instanceof QueueClosedEvent, "Last replicated event should be QueueClosedEvent (poison pill)");
         assertEquals(taskId, ((QueueClosedEvent) lastEvent).getTaskId());
+    }
+
+    @Test
+    void terminalFinalizationUsesTheSameOrderedWebhookLaneAndBatchIdentity() throws Exception {
+        String taskId = "ordered-finalization-test";
+        TaskStatus terminalStatus = new TaskStatus(TaskState.TASK_STATE_COMPLETED);
+        Task finalTask = Task.builder().id(taskId).contextId("test-context")
+                .status(terminalStatus).generation(2).build();
+        TaskStatusUpdateEvent terminalEvent = new TaskStatusUpdateEvent(taskId, terminalStatus,
+                finalTask.contextId(), null, 2);
+        CommittedTaskBatch batch = new CommittedTaskBatch(
+                new TaskSnapshot(finalTask, new TaskRevision(2)), java.util.List.of(terminalEvent));
+        InMemoryWebhookDispatchGate gate = new InMemoryWebhookDispatchGate();
+        assertTrue(gate.initializeTaskLane(taskId, 0, 2));
+
+        class RecordingOrderedSender implements PushNotificationSender, OrderedWebhookSender {
+            final AtomicInteger attempts = new AtomicInteger();
+            final AtomicReference<CommittedTaskBatch> received = new AtomicReference<>();
+            final CountDownLatch sent = new CountDownLatch(1);
+
+            @Override
+            public boolean sendNotification(StreamingEventKind event, @Nullable Task snapshot) {
+                return true;
+            }
+
+            @Override
+            public boolean supportsOrderedDispatch() {
+                return true;
+            }
+
+            @Override
+            public CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch committedBatch,
+                    long deadlineNanos, LongSupplier nanoTime) {
+                attempts.incrementAndGet();
+                received.set(committedBatch);
+                sent.countDown();
+                return CompletableFuture.completedFuture(true);
+            }
+
+            @Override
+            public CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch committedBatch, boolean taskProposal,
+                    long deadlineNanos, LongSupplier nanoTime, java.util.function.UnaryOperator<Runnable> taskContext) {
+                return sendOrderedBatch(committedBatch, deadlineNanos, nanoTime);
+            }
+
+            @Override
+            public CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot,
+                    long deadlineNanos, LongSupplier nanoTime) {
+                return CompletableFuture.completedFuture(true);
+            }
+        }
+
+        RecordingOrderedSender sender = new RecordingOrderedSender();
+        OrderedWebhookDispatcher dispatcher = new OrderedWebhookDispatcher(gate, sender);
+        try {
+            AtomicInteger replicationCalls = new AtomicInteger();
+            ReplicationStrategy recordingReplication = new ReplicationStrategy() {
+                @Override
+                public void send(String id, Event replicated) {
+                    replicationCalls.incrementAndGet();
+                }
+            };
+            queueManager = new ReplicatedQueueManager(recordingReplication,
+                    new MockTaskStateProvider(true), mainEventBus);
+            mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore, sender,
+                    queueManager, dispatcher);
+            AtomicInteger callbackCalls = new AtomicInteger();
+            AtomicReference<java.util.function.Consumer<Throwable>> rejectAdmission = new AtomicReference<>();
+            mainEventBusProcessor.setCallback(new org.a2aproject.sdk.server.events.MainEventBusProcessorCallback() {
+                @Override
+                public void admitPushNotifications(CommittedTaskBatch admittedBatch, Runnable invoke,
+                        java.util.function.Consumer<Throwable> reportFailure) {
+                    callbackCalls.incrementAndGet();
+                    rejectAdmission.set(reportFailure);
+                }
+
+                @Override
+                public void onEventProcessed(String id, Event processed) {}
+
+                @Override
+                public void onTaskFinalized(String id) {}
+            });
+            queueManager.setMainEventBusProcessor(mainEventBusProcessor);
+
+            queueManager.onTaskFinalized(new TaskFinalizedEvent(taskId, finalTask, batch, true, 0L));
+            assertFalse(sender.sent.await(100, TimeUnit.MILLISECONDS),
+                    "finalization-first admission must wait for the shared callback decision");
+            assertEquals(2, replicationCalls.get(),
+                    "terminal status and close marker replication must not wait for webhook admission");
+            CompletionStage<Boolean> duplicateDecision =
+                    mainEventBusProcessor.admitFinalizedCommittedBatch(batch, true, 0L);
+            queueManager.createOrTap(taskId);
+            EventQueue mainQueue = queueManager.get(taskId);
+            assertNotNull(mainQueue);
+            deliverCommittedBatch(mainEventBusProcessor, mainQueue, batch);
+            assertEquals(1, callbackCalls.get(), "the bus duplicate must reuse the finalization decision");
+            assertFalse(sender.sent.await(100, TimeUnit.MILLISECONDS));
+
+            rejectAdmission.get().accept(new IllegalStateException("injected callback rejection"));
+            assertFalse(duplicateDecision.toCompletableFuture().get(5, TimeUnit.SECONDS));
+            assertEquals(0, sender.attempts.get());
+            org.a2aproject.sdk.server.tasks.WebhookDispatchLaneState rejectedLane =
+                    gate.readLane(taskId).orElseThrow();
+            assertEquals(3, rejectedLane.nextGeneration(),
+                    "rejected callback decision must retire its admitted range as a recorded loss");
+            assertEquals(1, rejectedLane.losses().size());
+            assertEquals(2, rejectedLane.losses().get(0).firstGeneration());
+            assertEquals(2, rejectedLane.losses().get(0).lastGeneration());
+        } finally {
+            dispatcher.close();
+        }
+    }
+
+    private static void deliverCommittedBatch(org.a2aproject.sdk.server.events.MainEventBusProcessor processor,
+            EventQueue mainQueue, CommittedTaskBatch batch) throws Exception {
+        java.lang.reflect.Method method = java.util.Arrays.stream(processor.getClass().getDeclaredMethods())
+                .filter(candidate -> candidate.getName().equals("deliverCommittedBatch")
+                        && candidate.getParameterCount() == 3)
+                .findFirst().orElseThrow();
+        method.setAccessible(true);
+        method.invoke(processor, mainQueue, batch, false);
     }
 
     @Test

@@ -4,6 +4,7 @@ import static org.a2aproject.sdk.client.http.A2AHttpClient.APPLICATION_JSON;
 import static org.a2aproject.sdk.client.http.A2AHttpClient.CONTENT_TYPE;
 import static org.a2aproject.sdk.common.A2AHeaders.X_A2A_NOTIFICATION_TOKEN;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -14,11 +15,27 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import org.a2aproject.sdk.client.http.A2AHttpClient;
 import org.a2aproject.sdk.client.http.A2AHttpClientConfiguration;
@@ -44,7 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
-public class BasePushNotificationSender implements PushNotificationSender {
+public class BasePushNotificationSender implements PushNotificationSender, OrderedWebhookSender {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BasePushNotificationSender.class);
     public static final int DEFAULT_PAGE_SIZE = 100;
@@ -77,6 +94,14 @@ public class BasePushNotificationSender implements PushNotificationSender {
     private Map<String, PushNotificationPayloadFormatter> formattersByVersion;
     private PushNotificationUrlValidator urlValidator;
     private Executor dispatchExecutor = ForkJoinPool.commonPool();
+    private Executor orderedDispatchExecutor;
+    private final Semaphore orderedDispatchPermits = new Semaphore(1024);
+    private final Semaphore orderedDispatchShellPermits = new Semaphore(1024);
+    private final Set<OrderedDispatchAttempt> orderedDispatchAttempts = ConcurrentHashMap.newKeySet();
+    private final AtomicBoolean orderedDispatchClosed = new AtomicBoolean();
+    private final ThreadPoolExecutor orderedDispatchWorkers = newOrderedWorkerPool();
+    private final ThreadPoolExecutor orderedDispatchIngressWorkers = newOrderedIngressPool();
+    private final ScheduledThreadPoolExecutor orderedDispatchDeadlines = newOrderedDeadlineScheduler();
 
 
     /**
@@ -93,6 +118,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
         this.configStore = null;
         this.formattersByVersion = Map.of();
         this.urlValidator = new DefaultPushNotificationUrlValidator();
+        this.orderedDispatchExecutor = orderedDispatchWorkers;
     }
 
     public BasePushNotificationSender(PushNotificationConfigStore configStore,
@@ -101,6 +127,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
         this.configStore = configStore;
         this.formattersByVersion = Map.of();
         this.urlValidator = urlValidator;
+        this.orderedDispatchExecutor = orderedDispatchWorkers;
     }
 
     /**
@@ -148,6 +175,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
         this.formattersByVersion = toFormatterMap(formatters);
         this.urlValidator = urlValidator;
         this.dispatchExecutor = resolveExecutor(instrumentedExecutor, dispatchExecutor);
+        this.orderedDispatchExecutor = resolveOrderedExecutor(dispatchExecutor);
     }
 
     public BasePushNotificationSender(PushNotificationConfigStore configStore, A2AHttpClient httpClient,
@@ -156,6 +184,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
         this.httpClient = httpClient;
         this.formattersByVersion = Map.of();
         this.urlValidator = urlValidator;
+        this.orderedDispatchExecutor = orderedDispatchWorkers;
     }
 
     public BasePushNotificationSender(PushNotificationConfigStore configStore, A2AHttpClient httpClient,
@@ -165,6 +194,7 @@ public class BasePushNotificationSender implements PushNotificationSender {
         this.httpClient = httpClient;
         this.formattersByVersion = toFormatterMap(formatters);
         this.urlValidator = urlValidator;
+        this.orderedDispatchExecutor = orderedDispatchWorkers;
     }
 
     private static A2AHttpClient resolveHttpClient(Instance<A2AHttpClient> propagating,
@@ -187,6 +217,10 @@ public class BasePushNotificationSender implements PushNotificationSender {
             return named.get();
         }
         return ForkJoinPool.commonPool();
+    }
+
+    private Executor resolveOrderedExecutor(Instance<Executor> named) {
+        return named.isResolvable() ? named.get() : orderedDispatchWorkers;
     }
 
     private static Map<String, PushNotificationPayloadFormatter> toFormatterMap(
@@ -266,6 +300,100 @@ public class BasePushNotificationSender implements PushNotificationSender {
             delivered &= eventDelivered;
         }
         return delivered;
+    }
+
+    @Override
+    public boolean supportsOrderedDispatch() {
+        return true;
+    }
+
+    /**
+     * Ordered adapter: performs one HTTP attempt at a time and completes only when the active attempt worker exits.
+     * A deadline prevents later requests from starting. An interrupted blocking HTTP call is conservatively left
+     * unresolved because the underlying client may still be working after its observer was interrupted.
+     */
+    @Override
+    public CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, long deadlineNanos,
+            LongSupplier nanoTime) {
+        return sendOrderedBatch(batch, deadlineNanos, nanoTime, UnaryOperator.identity());
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, long deadlineNanos,
+            LongSupplier nanoTime, UnaryOperator<Runnable> taskContext) {
+        return sendOrderedBatch(batch, false, deadlineNanos, nanoTime, taskContext);
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, boolean taskProposal,
+            long deadlineNanos, LongSupplier nanoTime, UnaryOperator<Runnable> taskContext) {
+        AtomicBoolean uncertainAttempt = new AtomicBoolean();
+        return dispatchOrderedWork(() -> {
+            String taskId = batch.taskId();
+            Task taskSnapshot = batch.snapshot().task();
+            List<TaskPushNotificationConfig> configs = getPushConfigs(taskId);
+            if (configs.isEmpty()) {
+                return true;
+            }
+            Map<String, String> versionsByConfigId = configStore.getProtocolVersions(taskId);
+            boolean delivered = true;
+            for (int eventIndex = 0; eventIndex < batch.events().size(); eventIndex++) {
+                StreamingEventKind event = batch.events().get(eventIndex);
+                for (TaskPushNotificationConfig config : configs) {
+                    if (nanoTime.getAsLong() >= deadlineNanos) {
+                        return false;
+                    }
+                    String version = versionsByConfigId.getOrDefault(config.id(), "1.0");
+                    StreamingEventKind projected = "1.1".equals(version)
+                            ? event : taskProposal ? eventIndex == 0 ? taskSnapshot : null : event;
+                    if (projected != null) {
+                        boolean sent = dispatchNotification(projected, taskSnapshot, config, versionsByConfigId,
+                                deadlineNanos, nanoTime, uncertainAttempt);
+                        if (uncertainAttempt.get()) {
+                            return false;
+                        }
+                        delivered &= sent;
+                    }
+                }
+            }
+            return delivered;
+        }, deadlineNanos, nanoTime, uncertainAttempt, taskContext);
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot, long deadlineNanos,
+            LongSupplier nanoTime) {
+        return sendOrderedLegacyTaskSnapshot(snapshot, deadlineNanos, nanoTime, UnaryOperator.identity());
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot, long deadlineNanos,
+            LongSupplier nanoTime, UnaryOperator<Runnable> taskContext) {
+        AtomicBoolean uncertainAttempt = new AtomicBoolean();
+        return dispatchOrderedWork(() -> {
+            List<TaskPushNotificationConfig> configs = getPushConfigs(snapshot.id());
+            if (configs.isEmpty()) {
+                return true;
+            }
+            Map<String, String> versionsByConfigId = configStore.getProtocolVersions(snapshot.id());
+            boolean delivered = true;
+            for (TaskPushNotificationConfig config : configs) {
+                if (nanoTime.getAsLong() >= deadlineNanos) {
+                    return false;
+                }
+                String version = versionsByConfigId.getOrDefault(config.id(), "1.0");
+                if ("1.1".equals(version)) {
+                    continue;
+                }
+                boolean sent = dispatchNotification(snapshot, snapshot, config, versionsByConfigId,
+                        deadlineNanos, nanoTime, uncertainAttempt);
+                if (uncertainAttempt.get()) {
+                    return false;
+                }
+                delivered &= sent;
+            }
+            return delivered;
+        }, deadlineNanos, nanoTime, uncertainAttempt, taskContext);
     }
 
     /** Delivers an active-task no-op snapshot only to configs using an older protocol version. */
@@ -366,10 +494,282 @@ public class BasePushNotificationSender implements PushNotificationSender {
                 () -> dispatchNotification(event, taskSnapshot, pushInfo, versionsByConfigId), dispatchExecutor);
     }
 
+    /** Keeps scheduler threads away from user-configured executors and bounds retained ordered payloads. */
+    private CompletionStage<Boolean> dispatchOrderedWork(Supplier<Boolean> work, long deadlineNanos,
+            LongSupplier nanoTime, AtomicBoolean uncertainAttempt, UnaryOperator<Runnable> taskContext) {
+        if (orderedDispatchClosed.get()) {
+            return CompletableFuture.failedFuture(new RejectedExecutionException("Ordered webhook sender is closed"));
+        }
+        if (!orderedDispatchPermits.tryAcquire()) {
+            throw new RejectedExecutionException("Ordered webhook dispatch capacity is full");
+        }
+
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        OrderedDispatchAttempt attempt = new OrderedDispatchAttempt(result, uncertainAttempt);
+        try {
+            attempt.setPayload(taskContext.apply(() -> {
+                try {
+                    result.complete(work.get());
+                } catch (Throwable failure) {
+                    result.completeExceptionally(failure);
+                }
+            }));
+        } catch (RuntimeException | Error contextFailure) {
+            attempt.rejectPending(contextFailure);
+            return CompletableFuture.failedFuture(contextFailure);
+        }
+
+        orderedDispatchAttempts.add(attempt);
+        if (orderedDispatchClosed.get()) {
+            attempt.revokeNeverStarted();
+            return result;
+        }
+
+        try {
+            long delayNanos = Math.max(0, deadlineNanos - nanoTime.getAsLong());
+            attempt.setDeadline(orderedDispatchDeadlines.schedule(attempt::expire, delayNanos,
+                    TimeUnit.NANOSECONDS));
+            orderedDispatchIngressWorkers.execute(attempt::handoff);
+        } catch (RuntimeException | Error rejected) {
+            attempt.rejectPending(rejected);
+        }
+        return result.thenCompose(sent -> uncertainAttempt.get()
+                ? new CompletableFuture<>() : CompletableFuture.completedFuture(sent));
+    }
+
+    private final class OrderedDispatchAttempt implements Runnable {
+        private enum State {
+            QUEUED,
+            SUBMITTED,
+            RUNNING,
+            EXPIRED,
+            DONE,
+            UNCERTAIN
+        }
+
+        private final CompletableFuture<Boolean> result;
+        private final AtomicBoolean uncertainAttempt;
+        private final AtomicReference<State> state = new AtomicReference<>(State.QUEUED);
+        private final AtomicReference<@Nullable Runnable> payload = new AtomicReference<>();
+        private final AtomicBoolean httpPermitReleased = new AtomicBoolean();
+        private final AtomicBoolean shellPermitHeld = new AtomicBoolean();
+        private volatile @Nullable ScheduledFuture<?> deadlineTask;
+
+        private OrderedDispatchAttempt(CompletableFuture<Boolean> result, AtomicBoolean uncertainAttempt) {
+            this.result = result;
+            this.uncertainAttempt = uncertainAttempt;
+        }
+
+        private void setPayload(Runnable work) {
+            payload.set(work);
+        }
+
+        private void setDeadline(ScheduledFuture<?> scheduledTask) {
+            deadlineTask = scheduledTask;
+            State current = state.get();
+            if (current == State.RUNNING || current == State.EXPIRED || current == State.DONE
+                    || current == State.UNCERTAIN) {
+                scheduledTask.cancel(false);
+            }
+        }
+
+        private void handoff() {
+            if (state.get() != State.QUEUED) {
+                return;
+            }
+            if (!orderedDispatchShellPermits.tryAcquire()) {
+                rejectPending(new RejectedExecutionException("Ordered webhook handoff capacity is full"));
+                return;
+            }
+            shellPermitHeld.set(true);
+            synchronized (this) {
+                if (!state.compareAndSet(State.QUEUED, State.SUBMITTED)) {
+                    releaseShellPermit();
+                    return;
+                }
+            }
+            try {
+                // This runs only on a private ingress worker. Even a caller-runs executor cannot put HTTP
+                // work on the ordered dispatcher's scheduler thread.
+                orderedDispatchExecutor.execute(this);
+            } catch (RuntimeException | Error failure) {
+                rejectPending(failure);
+            }
+        }
+
+        private synchronized void expire() {
+            State current = state.get();
+            if (current != State.QUEUED && current != State.SUBMITTED) {
+                return;
+            }
+            if (!state.compareAndSet(current, State.EXPIRED)) {
+                return;
+            }
+            payload.set(null);
+            releaseHttpPermit();
+            if (current == State.QUEUED) {
+                releaseShellPermit();
+            }
+            result.complete(false);
+            orderedDispatchAttempts.remove(this);
+        }
+
+        private synchronized void rejectPending(Throwable failure) {
+            State current = state.get();
+            if (current != State.QUEUED && current != State.SUBMITTED) {
+                // An executor may enqueue or run the command and then throw. If it already started, retain
+                // ownership until the actual worker exits; if it remains queued, invalidate it atomically.
+                return;
+            }
+            if (!state.compareAndSet(current, State.EXPIRED)) {
+                return;
+            }
+            payload.set(null);
+            releaseHttpPermit();
+            if (current == State.QUEUED) {
+                releaseShellPermit();
+            } else if (failure instanceof RejectedExecutionException && isProvenAbortPolicyExecutor()) {
+                releaseShellPermit();
+            }
+            cancelDeadline();
+            LOGGER.debug("Ordered webhook executor rejected a pending attempt", failure);
+            result.complete(false);
+            orderedDispatchAttempts.remove(this);
+        }
+
+        @Override
+        public void run() {
+            if (!state.compareAndSet(State.SUBMITTED, State.RUNNING)) {
+                if (state.get() == State.EXPIRED) {
+                    releaseShellPermit();
+                }
+                return;
+            }
+            releaseShellPermit();
+            Runnable task = payload.getAndSet(null);
+            try {
+                if (task == null) {
+                    result.complete(false);
+                } else {
+                    task.run();
+                }
+            } catch (RuntimeException | Error failure) {
+                result.completeExceptionally(failure);
+            } finally {
+                if (uncertainAttempt.get()) {
+                    state.set(State.UNCERTAIN);
+                } else {
+                    state.set(State.DONE);
+                    releaseHttpPermit();
+                }
+                cancelDeadline();
+                orderedDispatchAttempts.remove(this);
+            }
+        }
+
+        private synchronized void revokeNeverStarted() {
+            State current = state.get();
+            if (current != State.QUEUED && current != State.SUBMITTED) {
+                return;
+            }
+            if (!state.compareAndSet(current, State.EXPIRED)) {
+                return;
+            }
+            payload.set(null);
+            releaseHttpPermit();
+            if (current == State.QUEUED) {
+                releaseShellPermit();
+            }
+            cancelDeadline();
+            result.complete(false);
+            orderedDispatchAttempts.remove(this);
+        }
+
+        private void releaseHttpPermit() {
+            if (httpPermitReleased.compareAndSet(false, true)) {
+                orderedDispatchPermits.release();
+            }
+        }
+
+        private void releaseShellPermit() {
+            if (shellPermitHeld.compareAndSet(true, false)) {
+                orderedDispatchShellPermits.release();
+            }
+        }
+
+        private void cancelDeadline() {
+            ScheduledFuture<?> scheduledTask = deadlineTask;
+            if (scheduledTask != null) {
+                scheduledTask.cancel(false);
+            }
+        }
+    }
+
+    private boolean isProvenAbortPolicyExecutor() {
+        Executor executor = orderedDispatchExecutor;
+        return executor != null && executor.getClass() == ThreadPoolExecutor.class
+                && ((ThreadPoolExecutor) executor).getRejectedExecutionHandler().getClass()
+                        == ThreadPoolExecutor.AbortPolicy.class;
+    }
+
+    private static ThreadPoolExecutor newOrderedWorkerPool() {
+        ThreadFactory factory = task -> {
+            Thread thread = new Thread(task, "a2a-ordered-webhook-http");
+            thread.setDaemon(true);
+            return thread;
+        };
+        return new ThreadPoolExecutor(2, 2, 0, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(1022), factory, new ThreadPoolExecutor.AbortPolicy());
+    }
+
+    private static ThreadPoolExecutor newOrderedIngressPool() {
+        ThreadFactory factory = task -> {
+            Thread thread = new Thread(task, "a2a-ordered-webhook-ingress");
+            thread.setDaemon(true);
+            return thread;
+        };
+        return new ThreadPoolExecutor(2, 2, 0, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(1022), factory, new ThreadPoolExecutor.AbortPolicy());
+    }
+
+    private static ScheduledThreadPoolExecutor newOrderedDeadlineScheduler() {
+        ThreadFactory factory = task -> {
+            Thread thread = new Thread(task, "a2a-ordered-webhook-deadline");
+            thread.setDaemon(true);
+            return thread;
+        };
+        ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1, factory);
+        scheduler.setRemoveOnCancelPolicy(true);
+        return scheduler;
+    }
+
+    @PreDestroy
+    public void closeOrderedDispatchWorkers() {
+        if (!orderedDispatchClosed.compareAndSet(false, true)) {
+            return;
+        }
+        for (OrderedDispatchAttempt attempt : orderedDispatchAttempts) {
+            attempt.revokeNeverStarted();
+        }
+        orderedDispatchIngressWorkers.shutdown();
+        orderedDispatchWorkers.shutdown();
+        orderedDispatchDeadlines.shutdownNow();
+    }
+
     private boolean dispatchNotification(StreamingEventKind event,
                                           @Nullable Task taskSnapshot,
                                           TaskPushNotificationConfig pushInfo,
                                           Map<String, String> versionsByConfigId) {
+        return dispatchNotification(event, taskSnapshot, pushInfo, versionsByConfigId,
+                Long.MAX_VALUE, System::nanoTime, null);
+    }
+
+    private boolean dispatchNotification(StreamingEventKind event,
+                                          @Nullable Task taskSnapshot,
+                                          TaskPushNotificationConfig pushInfo,
+                                          Map<String, String> versionsByConfigId,
+                                          long deadlineNanos, LongSupplier nanoTime,
+                                          @Nullable AtomicBoolean uncertainAttempt) {
         String version = versionsByConfigId.get(pushInfo.id());
         if (version == null) {
             version = "1.0";
@@ -458,17 +858,32 @@ public class BasePushNotificationSender implements PushNotificationSender {
         }
 
         try {
-            A2AHttpResponse response = postBuilder
+            postBuilder
                     .url(url)
                     .addHeader(CONTENT_TYPE, APPLICATION_JSON)
-                    .body(body)
-                    .post();
+                    .body(body);
+            // Custom builders may block during setup, so recheck immediately before POST.
+            if (nanoTime.getAsLong() >= deadlineNanos) {
+                return false;
+            }
+            A2AHttpResponse response = postBuilder.post();
             if (!response.success()) {
                 LOGGER.warn("Push notification [config={}] to {} failed with HTTP status {}",
                         pushInfo.id(), url, response.status());
                 return false;
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            if (uncertainAttempt != null) {
+                uncertainAttempt.set(true);
+                Thread.currentThread().interrupt();
+                LOGGER.warn("Ordered push notification [config={}] to {} was interrupted; retaining lane ownership",
+                        pushInfo.id(), url, e);
+                return false;
+            }
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Push notification [config={}] to {} failed: {}", pushInfo.id(), url, e.getMessage(), e);
+            return false;
+        } catch (IOException e) {
             LOGGER.warn("Push notification [config={}] to {} failed: {}", pushInfo.id(), url, e.getMessage(), e);
             return false;
         }

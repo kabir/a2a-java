@@ -1,10 +1,15 @@
 package org.a2aproject.sdk.server.events;
 
+import java.lang.ref.WeakReference;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.annotation.Nullable;
@@ -16,6 +21,7 @@ import jakarta.inject.Inject;
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.CommittedMutation;
 import org.a2aproject.sdk.server.tasks.ExecutorSubmissionService;
+import org.a2aproject.sdk.server.tasks.OrderedWebhookDispatcher;
 import org.a2aproject.sdk.server.tasks.OpeningTaskInput;
 import org.a2aproject.sdk.server.tasks.TaskEnrollmentCoordinator;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
@@ -75,14 +81,17 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 public class MainEventBusProcessor implements Runnable {
+
+    private static final long ORDERED_WEBHOOK_REPORT_INTERVAL_NANOS = java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
     private static final Logger LOGGER = LoggerFactory.getLogger(MainEventBusProcessor.class);
 
     private record UpdateResult(boolean isFinal, @Nullable Task taskSnapshot,
             @Nullable TaskSnapshot committedSnapshot,
             boolean compatibilityBootstrap,
-            @Nullable CommittedTaskBatch committedBatch, @Nullable TaskCommitSlot slot) {}
+            @Nullable CommittedTaskBatch committedBatch, @Nullable TaskCommitSlot slot,
+            @Nullable Long writerEpoch) {}
 
-    private record PushAdmission(Runnable invokeSender, Runnable dropSender) {}
+    private record PushAdmission(Runnable invokeSender, Runnable dropSender, CompletionStage<Boolean> result) {}
 
     /**
      * Callback for testing synchronization with async event processing.
@@ -108,6 +117,15 @@ public class MainEventBusProcessor implements Runnable {
      * it added) so the map does not grow forever.
      */
     private final ConcurrentHashMap<String, CompletableFuture<Void>> pushNotificationChains = new ConcurrentHashMap<>();
+    private static final int MAX_ACTIVE_PUSH_ADMISSIONS = 2048;
+    private static final int MAX_COMPLETED_PUSH_ADMISSIONS = 2048;
+    private final Object pushAdmissionLock = new Object();
+    private final LinkedHashMap<CommittedTaskBatch.Identity, CompletableFuture<Boolean>> activePushAdmissions =
+            new LinkedHashMap<>();
+    private final LinkedHashMap<CommittedTaskBatch.Identity, Boolean> completedPushAdmissions =
+            new LinkedHashMap<>(256, 0.75f, true);
+    private final AtomicLong lastOrderedWebhookReportNanos = new AtomicLong(Long.MIN_VALUE);
+    private final AtomicBoolean orderedWebhookReportInFlight = new AtomicBoolean();
 
     private final OrderedTaskPublisher orderedTaskPublisher = new OrderedTaskPublisher();
     /**
@@ -130,6 +148,8 @@ public class MainEventBusProcessor implements Runnable {
 
     private PushNotificationSender pushSender;
 
+    private @Nullable OrderedWebhookDispatcher orderedWebhookDispatcher;
+
     private QueueManager queueManager;
 
     private volatile boolean running = true;
@@ -144,12 +164,22 @@ public class MainEventBusProcessor implements Runnable {
     protected MainEventBusProcessor() {
     }
 
-    @Inject
     public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore, PushNotificationSender pushSender, QueueManager queueManager) {
         this.eventBus = eventBus;
         this.taskStore = taskStore;
         this.pushSender = pushSender;
         this.queueManager = queueManager;
+        this.orderedWebhookDispatcher = null;
+    }
+
+    @Inject
+    public MainEventBusProcessor(MainEventBus eventBus, TaskStore taskStore, PushNotificationSender pushSender,
+            QueueManager queueManager, OrderedWebhookDispatcher orderedWebhookDispatcher) {
+        this.eventBus = eventBus;
+        this.taskStore = taskStore;
+        this.pushSender = pushSender;
+        this.queueManager = queueManager;
+        this.orderedWebhookDispatcher = orderedWebhookDispatcher;
     }
 
     /**
@@ -349,10 +379,11 @@ public class MainEventBusProcessor implements Runnable {
 
                 if (updateResult.committedBatch() != null && updateResult.slot() != null) {
                     CommittedTaskBatch batch = updateResult.committedBatch();
+                    @Nullable Long batchWriterEpoch = updateResult.writerEpoch();
                     orderedTaskPublisher.publish(updateResult.slot(), batch,
                             committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, isReplicated,
                                     event instanceof A2AError error && !isReplicated ? error : null,
-                                    !isReplicated ? context.origin() : null, false))
+                                    !isReplicated ? context.origin() : null, false, batchWriterEpoch))
                             .toCompletableFuture().join();
                 } else {
                     if (!isReplicated && taskStore instanceof AtomicTaskStore && event instanceof A2AError) {
@@ -500,7 +531,8 @@ public class MainEventBusProcessor implements Runnable {
                 }
                 CommittedTaskBatch batch = new CommittedTaskBatch(mutation.snapshot(), mutation.events());
                 orderedTaskPublisher.publish(slot, batch,
-                        committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, false, null, null, true))
+                        committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, false, null, null, true,
+                                mutation.writerEpoch()))
                         .toCompletableFuture().join();
                 published.set(true);
                 return;
@@ -514,7 +546,7 @@ public class MainEventBusProcessor implements Runnable {
             if (origin != null && proposalItem.hasLegacyTaskSummaryRequest()) {
                 origin.enqueueLocalOnly(new LocalEventQueueItem(task, mutation.snapshot(), false, task, false, true));
             }
-            sendLegacyTaskSnapshotInOrder(task);
+            sendLegacyTaskSnapshotInOrder(task, mutation.writerEpoch());
         } catch (RuntimeException | Error failure) {
             LOGGER.error("Executor Task proposal processing or ordered delivery failed", failure);
         } finally {
@@ -605,7 +637,8 @@ public class MainEventBusProcessor implements Runnable {
                     return new UpdateResult(result.isFinal(),
                             mutation == null ? null : mutation.snapshot().task(),
                             mutation == null ? null : mutation.snapshot(),
-                            mutation != null && mutation.changed() && mutation.events().isEmpty(), batch, slot);
+                            mutation != null && mutation.changed() && mutation.events().isEmpty(), batch, slot,
+                            mutation == null ? null : mutation.writerEpoch());
                 } catch (RuntimeException | Error failure) {
                     TaskCommitSlot slot = reservedSlot.get();
                     if (slot != null) {
@@ -625,7 +658,7 @@ public class MainEventBusProcessor implements Runnable {
             boolean isFinal = taskManager.process(event, isReplicated, taskSnapshot);
             LOGGER.debug("TaskStore updated via TaskManager.process() for task {}: {} (final: {}, replicated: {})",
                         taskId, event.getClass().getSimpleName(), isFinal, isReplicated);
-            return new UpdateResult(isFinal, taskSnapshot.get(), null, false, null, null);
+            return new UpdateResult(isFinal, taskSnapshot.get(), null, false, null, null, null);
 
         } catch (TaskSerializationException e) {
             // Data corruption or schema mismatch - ALWAYS permanent
@@ -687,12 +720,17 @@ public class MainEventBusProcessor implements Runnable {
                         reservedSlot.set(slot);
                     });
             TaskCommitSlot slot = reservedSlot.get();
-            if (slot != null && committed.changed() && !committed.events().isEmpty() && mainQueue != null) {
+            if (slot != null && committed.changed() && !committed.events().isEmpty()) {
                 CommittedTaskBatch batch = new CommittedTaskBatch(committed.snapshot(), committed.events());
-                orderedTaskPublisher.publish(slot, batch,
-                        committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, false, null, null, false))
-                        .toCompletableFuture().join();
-                published = true;
+                if (mainQueue != null) {
+                    orderedTaskPublisher.publish(slot, batch,
+                            committedBatch -> deliverCommittedBatch(mainQueue, committedBatch, false, null, null, false,
+                                    committed.writerEpoch()))
+                            .toCompletableFuture().join();
+                    published = true;
+                } else {
+                    admitCommittedPushBatch(batch, false, committed.writerEpoch());
+                }
             }
             return committed;
         } finally {
@@ -759,36 +797,23 @@ public class MainEventBusProcessor implements Runnable {
 
     void deliverCommittedBatch(EventQueue.MainQueue mainQueue, CommittedTaskBatch batch,
             boolean isReplicated) {
-        deliverCommittedBatch(mainQueue, batch, isReplicated, null, null, false);
+        deliverCommittedBatch(mainQueue, batch, isReplicated, null, null, false, null);
+    }
+
+    /** Shares terminal finalization and event-bus admission through one identity-keyed decision. */
+    public CompletionStage<Boolean> admitFinalizedCommittedBatch(CommittedTaskBatch batch, boolean taskProposal,
+            @Nullable Long writerEpoch) {
+        return admitCommittedPushBatch(batch, taskProposal, writerEpoch);
     }
 
     private void deliverCommittedBatch(EventQueue.MainQueue mainQueue, CommittedTaskBatch batch,
             boolean isReplicated, @Nullable A2AError originError,
-            @Nullable EventQueue.ChildQueue origin, boolean legacyTaskSummary) {
+            @Nullable EventQueue.ChildQueue origin, boolean legacyTaskSummary, @Nullable Long writerEpoch) {
         String taskId = batch.taskId();
         int childCount = mainQueue.getChildCount();
-        PushAdmission pushAdmission = isReplicated
-                ? new PushAdmission(() -> { }, () -> { })
-                : reserveCommittedPushBatch(batch, legacyTaskSummary);
-        AtomicBoolean admissionSettled = new AtomicBoolean();
-        Runnable admittedSender = () -> {
-            if (admissionSettled.compareAndSet(false, true)) {
-                pushAdmission.invokeSender().run();
-            }
-        };
-        java.util.function.Consumer<Throwable> failedAdmission = failure -> {
-            reportPostCommitFailure(taskId, batch, failure);
-            if (admissionSettled.compareAndSet(false, true)) {
-                pushAdmission.dropSender().run();
-            }
-        };
         if (!isReplicated) {
-            // Remote copies never enter webhook admission; only the originating writer dispatches.
-            try {
-                callback.admitPushNotifications(batch, admittedSender, failedAdmission);
-            } catch (RuntimeException | Error failure) {
-                failedAdmission.accept(failure);
-            }
+            // This is also the finalization observer's admission seam. Remote copies never dispatch.
+            admitCommittedPushBatch(batch, legacyTaskSummary, writerEpoch);
         }
 
         // The input error is request-scoped. Route it after the batch admission seam and before
@@ -871,9 +896,48 @@ public class MainEventBusProcessor implements Runnable {
     }
 
     /** Reserves a per-task push position before external webhook admission can defer the sender. */
-    private PushAdmission reserveCommittedPushBatch(CommittedTaskBatch batch, boolean legacyTaskSummary) {
+    private PushAdmission reserveCommittedPushBatch(CommittedTaskBatch batch, boolean legacyTaskSummary,
+            @Nullable Long writerEpoch) {
         String taskId = batch.taskId();
+        OrderedWebhookDispatcher dispatcher = orderedWebhookDispatcher;
+        if (dispatcher != null && orderedWebhookDispatchAvailable()) {
+            CompletableFuture<Boolean> admission = new CompletableFuture<>();
+            CommittedTaskBatch.Identity identity = batch.identity();
+            WeakReference<CommittedTaskBatch> batchForReport = new WeakReference<>(batch);
+            CompletionStage<Boolean> dispatchResult;
+            try {
+                dispatchResult = dispatcher.dispatch(batch, legacyTaskSummary, writerEpoch, admission);
+                dispatchResult.whenComplete((sent, failure) -> {
+                    CommittedTaskBatch reportBatch = batchForReport.get();
+                    if (failure != null) {
+                        if (reportBatch != null) {
+                            reportPostCommitFailure(taskId, reportBatch, failure);
+                        } else {
+                            LOGGER.warn("Ordered webhook gate failed for task {} at generations {}..{}", taskId,
+                                    identity.firstGeneration(), identity.lastGeneration(), failure);
+                        }
+                    } else if (Boolean.TRUE.equals(admission.getNow(false)) && !Boolean.TRUE.equals(sent)) {
+                        if (reportBatch != null) {
+                            reportOrderedWebhookFailure(taskId, reportBatch,
+                                    new IllegalStateException("Ordered webhook dispatch did not complete successfully"));
+                        } else {
+                            LOGGER.warn("Ordered webhook dispatch failed for task {} at generations {}..{}", taskId,
+                                    identity.firstGeneration(), identity.lastGeneration());
+                        }
+                    }
+                });
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+                admission.complete(false);
+                CompletableFuture<Boolean> rejected = new CompletableFuture<>();
+                rejected.completeExceptionally(failure);
+                dispatchResult = rejected;
+            }
+            return new PushAdmission(() -> admission.complete(true), () -> admission.complete(false), dispatchResult);
+        }
         CompletableFuture<Boolean> admission = new CompletableFuture<>();
+        CompletableFuture.delayedExecutor(10, java.util.concurrent.TimeUnit.SECONDS)
+                .execute(() -> admission.complete(false));
         Executor executor = pushNotificationExecutor != null ? pushNotificationExecutor : ForkJoinPool.commonPool();
         CompletableFuture<Void> tail = pushNotificationChains.compute(taskId, (id, previous) -> {
             CompletableFuture<Void> predecessor = previous == null
@@ -902,7 +966,116 @@ public class MainEventBusProcessor implements Runnable {
                 admission.complete(false);
             }
         };
-        return new PushAdmission(invoke, drop);
+        return new PushAdmission(invoke, drop, tail.handle((ignored, failure) -> failure == null));
+    }
+
+    private CompletionStage<Boolean> admitCommittedPushBatch(CommittedTaskBatch batch, boolean taskProposal,
+            @Nullable Long writerEpoch) {
+        CommittedTaskBatch.Identity identity = batch.identity();
+        CompletableFuture<Boolean> decision;
+        boolean owner = false;
+        boolean full = false;
+        synchronized (pushAdmissionLock) {
+            Boolean completed = completedPushAdmissions.get(identity);
+            if (completed != null) {
+                return CompletableFuture.completedFuture(completed);
+            }
+            decision = activePushAdmissions.get(identity);
+            if (decision == null) {
+                if (activePushAdmissions.size() >= MAX_ACTIVE_PUSH_ADMISSIONS) {
+                    full = true;
+                    decision = CompletableFuture.completedFuture(false);
+                    completedPushAdmissions.put(identity, false);
+                    while (completedPushAdmissions.size() > MAX_COMPLETED_PUSH_ADMISSIONS) {
+                        Iterator<CommittedTaskBatch.Identity> iterator = completedPushAdmissions.keySet().iterator();
+                        iterator.next();
+                        iterator.remove();
+                    }
+                } else {
+                    decision = new CompletableFuture<>();
+                    activePushAdmissions.put(identity, decision);
+                    owner = true;
+                }
+            }
+        }
+        if (full) {
+            LOGGER.warn("Webhook admission capacity is full; recording dropped committed task {} generations {}..{}",
+                    identity.taskId(), identity.firstGeneration(), identity.lastGeneration());
+            OrderedWebhookDispatcher dispatcher = orderedWebhookDispatcher;
+            if (dispatcher != null) {
+                try {
+                    dispatcher.recordAdmissionLoss(batch, writerEpoch, "webhook admission decision capacity exhausted");
+                } catch (RuntimeException | Error failure) {
+                    LOGGER.warn("Could not record webhook admission loss for task {}", batch.taskId(), failure);
+                }
+            }
+            return decision;
+        }
+        if (!owner) {
+            return decision;
+        }
+
+        PushAdmission admission;
+        try {
+            admission = reserveCommittedPushBatch(batch, taskProposal, writerEpoch);
+        } catch (RuntimeException | Error failure) {
+            reportPostCommitFailure(batch.taskId(), batch, failure);
+            completePushAdmission(identity, decision, false, null);
+            return decision;
+        }
+
+        WeakReference<CommittedTaskBatch> reportBatch = new WeakReference<>(batch);
+        java.util.function.Consumer<Throwable> failedAdmission = failure -> {
+            CommittedTaskBatch retained = reportBatch.get();
+            if (retained == null) {
+                LOGGER.warn("Webhook admission failed for task {} generations {}..{}", identity.taskId(),
+                        identity.firstGeneration(), identity.lastGeneration(), failure);
+            } else {
+                reportPostCommitFailure(identity.taskId(), retained, failure);
+            }
+            admission.dropSender().run();
+        };
+        try {
+            callback.admitPushNotifications(batch, admission.invokeSender(), failedAdmission);
+        } catch (RuntimeException | Error failure) {
+            failedAdmission.accept(failure);
+        }
+        CompletableFuture<Boolean> admissionDecision = decision;
+        admission.result().whenComplete((sent, failure) ->
+                completePushAdmission(identity, admissionDecision, sent, failure));
+        return admissionDecision;
+    }
+
+    private void completePushAdmission(CommittedTaskBatch.Identity identity, CompletableFuture<Boolean> decision,
+            @Nullable Boolean sent, @Nullable Throwable failure) {
+        boolean result = failure == null && Boolean.TRUE.equals(sent);
+        synchronized (pushAdmissionLock) {
+            activePushAdmissions.remove(identity, decision);
+            completedPushAdmissions.put(identity, result);
+            while (completedPushAdmissions.size() > MAX_COMPLETED_PUSH_ADMISSIONS) {
+                Iterator<CommittedTaskBatch.Identity> iterator = completedPushAdmissions.keySet().iterator();
+                iterator.next();
+                iterator.remove();
+            }
+        }
+        if (failure == null) {
+            decision.complete(result);
+        } else {
+            decision.completeExceptionally(failure);
+        }
+    }
+
+    private boolean orderedWebhookDispatchAvailable() {
+        OrderedWebhookDispatcher dispatcher = orderedWebhookDispatcher;
+        if (dispatcher == null) {
+            return false;
+        }
+        try {
+            return dispatcher.supportsOrderedDispatch();
+        } catch (RuntimeException | Error failure) {
+            LOGGER.error("Could not inspect the ordered webhook sender capability", failure);
+            throw new IllegalStateException("Could not inspect the ordered webhook sender capability", failure);
+        }
     }
 
     private void invokeCommittedPushBatch(CommittedTaskBatch batch, boolean legacyTaskSummary) {
@@ -913,7 +1086,7 @@ public class MainEventBusProcessor implements Runnable {
                     reportPostCommitFailure(taskId, batch,
                             new IllegalStateException("Push notification delivery failed"));
                 }
-            } catch (Exception failure) {
+            } catch (RuntimeException | Error failure) {
                 reportPostCommitFailure(taskId, batch, failure);
             }
             return;
@@ -925,15 +1098,37 @@ public class MainEventBusProcessor implements Runnable {
                     reportPostCommitFailure(taskId, batch,
                             new IllegalStateException("Push notification delivery failed"));
                 }
-            } catch (Exception failure) {
+            } catch (RuntimeException | Error failure) {
                 reportPostCommitFailure(taskId, batch, failure);
             }
         }
     }
 
     /** Appends a verified no-op summary after prior committed webhook admissions for this task. */
-    private void sendLegacyTaskSnapshotInOrder(Task task) {
+    private void sendLegacyTaskSnapshotInOrder(Task task, @Nullable Long writerEpoch) {
         String taskId = task.id();
+        OrderedWebhookDispatcher dispatcher = orderedWebhookDispatcher;
+        boolean orderedAvailable = false;
+        if (dispatcher != null) {
+            try {
+                orderedAvailable = orderedWebhookDispatchAvailable();
+            } catch (RuntimeException | Error failure) {
+                LOGGER.error("Could not inspect ordered webhook sender capability for task {}", taskId, failure);
+                return;
+            }
+        }
+        if (dispatcher != null && orderedAvailable) {
+            try {
+                dispatcher.dispatchLegacySummary(task, writerEpoch).whenComplete((sent, failure) -> {
+                    if (failure != null || !Boolean.TRUE.equals(sent)) {
+                        LOGGER.warn("Legacy no-op snapshot webhook delivery failed for task {}", taskId, failure);
+                    }
+                });
+            } catch (RuntimeException | Error failure) {
+                LOGGER.warn("Legacy no-op snapshot webhook delivery failed for task {}", taskId, failure);
+            }
+            return;
+        }
         Executor executor = pushNotificationExecutor != null ? pushNotificationExecutor : ForkJoinPool.commonPool();
         CompletableFuture<Void> tail = pushNotificationChains.compute(taskId, (id, previous) -> {
             CompletableFuture<Void> predecessor = previous == null
@@ -951,6 +1146,38 @@ public class MainEventBusProcessor implements Runnable {
                 LOGGER.warn("Legacy no-op snapshot webhook delivery failed for task {}", taskId, failure);
             }
         });
+    }
+
+    /** Rate-limits post-commit reporting for best-effort ordered losses and bounds outstanding callbacks to one. */
+    private void reportOrderedWebhookFailure(String taskId, CommittedTaskBatch batch, Throwable failure) {
+        long now = System.nanoTime();
+        while (true) {
+            long previous = lastOrderedWebhookReportNanos.get();
+            if (previous != Long.MIN_VALUE && now - previous < ORDERED_WEBHOOK_REPORT_INTERVAL_NANOS) {
+                return;
+            }
+            if (lastOrderedWebhookReportNanos.compareAndSet(previous, now)) {
+                break;
+            }
+        }
+        if (!orderedWebhookReportInFlight.compareAndSet(false, true)) {
+            return;
+        }
+        MainEventBusProcessorCallback failureReporter = callback;
+        try {
+            ForkJoinPool.commonPool().execute(() -> {
+                try {
+                    failureReporter.onPostCommitFailure(taskId, batch, failure);
+                } catch (RuntimeException | Error reportFailure) {
+                    LOGGER.error("Could not report ordered webhook failure for task {}", taskId, reportFailure);
+                } finally {
+                    orderedWebhookReportInFlight.set(false);
+                }
+            });
+        } catch (RuntimeException | Error reportFailure) {
+            orderedWebhookReportInFlight.set(false);
+            LOGGER.error("Could not schedule ordered webhook failure report for task {}", taskId, reportFailure);
+        }
     }
 
     private void reportPostCommitFailure(String taskId, CommittedTaskBatch batch, Throwable failure) {

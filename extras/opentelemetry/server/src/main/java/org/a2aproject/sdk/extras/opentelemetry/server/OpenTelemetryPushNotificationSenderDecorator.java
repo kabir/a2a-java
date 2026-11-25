@@ -9,12 +9,16 @@ import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.GENA
 import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.PUSH_NOTIFICATION_DELIVERY_FAILED;
 import static org.a2aproject.sdk.extras.opentelemetry.A2AObservabilityNames.PUSH_NOTIFICATION_EVENT_KIND;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BooleanSupplier;
+import java.util.function.LongSupplier;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import jakarta.annotation.Priority;
 import jakarta.decorator.Decorator;
@@ -46,7 +50,8 @@ import org.jspecify.annotations.Nullable;
  */
 @Decorator
 @Priority(100)
-public abstract class OpenTelemetryPushNotificationSenderDecorator implements PushNotificationSender {
+public abstract class OpenTelemetryPushNotificationSenderDecorator
+        implements PushNotificationSender {
 
     static final String SEND_PUSH_NOTIFICATION = "SendPushNotification";
 
@@ -104,6 +109,103 @@ public abstract class OpenTelemetryPushNotificationSenderDecorator implements Pu
     @Override
     public boolean sendLegacyTaskSnapshot(Task taskSnapshot) {
         return traceDelivery(taskSnapshot, taskSnapshot, () -> delegate.sendLegacyTaskSnapshot(taskSnapshot));
+    }
+
+    @Override
+    public boolean supportsOrderedDispatch() {
+        return delegate.supportsOrderedDispatch();
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, long deadlineNanos,
+            LongSupplier nanoTime) {
+        return sendOrderedBatch(batch, false, deadlineNanos, nanoTime,
+                java.util.function.UnaryOperator.identity());
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedBatch(CommittedTaskBatch batch, boolean taskProposal,
+            long deadlineNanos, LongSupplier nanoTime,
+            java.util.function.UnaryOperator<Runnable> taskContext) {
+        if (!delegate.supportsOrderedDispatch()) {
+            return CompletableFuture.failedFuture(new IllegalStateException(
+                    "The wrapped push sender does not support quiescent ordered dispatch"));
+        }
+        return traceOrdered(batch.events().get(0), batch.snapshot().task(), () -> {
+            Context context = Context.current();
+            return delegate.sendOrderedBatch(batch, taskProposal, deadlineNanos, nanoTime,
+                    runnable -> taskContext.apply(context.wrap(runnable)));
+        });
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot, long deadlineNanos,
+            LongSupplier nanoTime) {
+        return sendOrderedLegacyTaskSnapshot(snapshot, deadlineNanos, nanoTime,
+                java.util.function.UnaryOperator.identity());
+    }
+
+    @Override
+    public CompletionStage<Boolean> sendOrderedLegacyTaskSnapshot(Task snapshot, long deadlineNanos,
+            LongSupplier nanoTime, java.util.function.UnaryOperator<Runnable> taskContext) {
+        if (!delegate.supportsOrderedDispatch()) {
+            return CompletableFuture.failedFuture(new IllegalStateException(
+                    "The wrapped push sender does not support quiescent ordered dispatch"));
+        }
+        return traceOrdered(snapshot, snapshot, () -> {
+            Context context = Context.current();
+            return delegate.sendOrderedLegacyTaskSnapshot(snapshot, deadlineNanos, nanoTime,
+                    runnable -> taskContext.apply(context.wrap(runnable)));
+        });
+    }
+
+    private CompletionStage<Boolean> traceOrdered(StreamingEventKind event, @Nullable Task taskSnapshot,
+            java.util.function.Supplier<CompletionStage<Boolean>> delivery) {
+        Span span = newSpan(event, taskSnapshot);
+        CompletionStage<Boolean> result;
+        try (Scope scope = span.makeCurrent()) {
+            result = delivery.get();
+        } catch (RuntimeException | Error failure) {
+            markFailure(span, failure);
+            span.end();
+            throw failure;
+        }
+        return result.whenComplete((sent, failure) -> {
+            try (Scope scope = span.makeCurrent()) {
+                if (failure != null || !Boolean.TRUE.equals(sent)) {
+                    span.setAttribute(ERROR_TYPE, PUSH_NOTIFICATION_DELIVERY_FAILED);
+                    span.setStatus(StatusCode.ERROR, "Ordered webhook dispatch failed or was uncertain");
+                } else {
+                    span.setStatus(StatusCode.OK);
+                }
+            } finally {
+                span.end();
+            }
+        });
+    }
+
+    private Span newSpan(StreamingEventKind event, @Nullable Task taskSnapshot) {
+        var spanBuilder = tracer.spanBuilder(SEND_PUSH_NOTIFICATION)
+                .setSpanKind(SpanKind.CLIENT)
+                .setAttribute(GENAI_OPERATION_NAME, SEND_PUSH_NOTIFICATION)
+                .setAttribute(PUSH_NOTIFICATION_EVENT_KIND, event.getClass().getSimpleName());
+        EventIds ids = extractIds(event, taskSnapshot);
+        if (ids.taskId != null) {
+            spanBuilder.setAttribute(GENAI_TASK_ID, ids.taskId);
+        }
+        if (ids.contextId != null) {
+            spanBuilder.setAttribute(GENAI_CONTEXT_ID, ids.contextId);
+        }
+        if (extractResponse) {
+            spanBuilder.setAttribute(GENAI_RESPONSE, event.toString());
+        }
+        return spanBuilder.startSpan();
+    }
+
+    private static void markFailure(Span span, Throwable failure) {
+        String description = failure.getMessage() != null ? failure.getMessage() : failure.getClass().getName();
+        span.setAttribute(ERROR_TYPE, description);
+        span.setStatus(StatusCode.ERROR, description);
     }
 
     private boolean traceDelivery(StreamingEventKind event, @Nullable Task taskSnapshot,

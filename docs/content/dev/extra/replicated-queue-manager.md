@@ -183,6 +183,33 @@ evicted). A terminal batch is replicated only by a store that publishes the term
 JPA store does); a custom store that does not will not replicate terminal batches. There is no exactly-once delivery, replay or
 cursor recovery.
 
+## Shared ordered webhook dispatch
+
+When the JPA task store and replicated queue manager use a shared writer epoch, originating webhook attempts pass through
+`a2a_webhook_dispatch_lanes`. Task creation initializes its cursor at generation 1 in the task transaction. `migrateAll()`
+creates missing lanes from each accepted task generation plus one, including tasks already marked by the earlier task-store
+migration. A batch must claim its exact next contiguous range and epoch before any HTTP request starts. Terminal finalization
+and ordinary bus admission carry the same committed batch identity through that gate; remote copies only fan out to local
+subscribers. A verified older-version delivery-only Task summary may hold a zero-width claim at the boundary after its
+snapshot generation; it never moves the canonical cursor. Per-configuration 0.3, 1.0 and 1.1 projection remains in the sender.
+
+The guarantee is ordered SDK attempt start per task, not exactly-once delivery, server receipt order or durable webhook
+delivery. Payloads live in bounded process memory (up to 256 pending events or 4 MiB per task) and may be dropped with a
+recorded loss range. The sender allows 30 seconds for one ordered batch's outbound starts; a missing unclaimed generation
+may be retired after 10 seconds. A sender stage remains attached to its lane until its actual worker exits. If an outbound
+call is interrupted and its transport cannot prove quiescence, the claim remains held and later generations wait. Pending
+payloads and attempt results are lost on process failure; there is no payload outbox or automatic retry.
+
+Loss ranges still relevant to the lane cursor are coordination metadata and are retained without a count cap; sparse
+ranges can accumulate while an earlier claim is held. Only historical diagnostics are capped at 256 rows per task. This
+keeps known losses authoritative without expanding the volatile payload queue.
+
+An abandoned claim can block that task's webhooks indefinitely. Recovery is an explicit operator action: stop or fence the
+old process and verify that all queued and running outbound work is quiescent before conditionally retiring the exact
+claimed range and moving the lane to the active writer epoch. Database or broker credential revocation alone does not prove
+an old HTTP worker has stopped. Task mutations and subscriber delivery continue independently while webhook dispatch is
+blocked. See [Storage & Persistence](storage.md#webhook-dispatch-lane-and-availability) before enabling the shared profile.
+
 ## Production Considerations
 
 ### Kafka Partitioning Strategy

@@ -24,6 +24,7 @@ import org.a2aproject.sdk.extras.common.events.TaskFinalizedEvent;
 import org.a2aproject.sdk.server.tasks.MutationPlan;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.TaskEnrollmentCoordinator;
+import org.a2aproject.sdk.server.tasks.TaskMutationAuthority;
 import org.a2aproject.sdk.server.tasks.TaskMutationNotCommittedException;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
@@ -40,6 +41,8 @@ class JpaMaterializationEnrollmentTest {
         final ConcurrentMap<String, Boolean> configVisibleAtFinalization = new ConcurrentHashMap<>();
         final ConcurrentMap<String, Boolean> taskVisibleAtFinalization = new ConcurrentHashMap<>();
         final ConcurrentMap<String, Object> committedBatches = new ConcurrentHashMap<>();
+        final ConcurrentMap<String, Boolean> taskProposalProvenance = new ConcurrentHashMap<>();
+        final ConcurrentMap<String, Long> writerEpochs = new ConcurrentHashMap<>();
         final ConcurrentMap<String, java.util.concurrent.atomic.AtomicInteger> notifications = new ConcurrentHashMap<>();
         @Inject
         PushNotificationConfigStore configs;
@@ -63,15 +66,27 @@ class JpaMaterializationEnrollmentTest {
             return taskVisibleAtFinalization.get(taskId);
         }
 
+        Boolean taskProposal(String taskId) {
+            return taskProposalProvenance.get(taskId);
+        }
+
+        Long writerEpoch(String taskId) {
+            return writerEpochs.get(taskId);
+        }
+
         void on(@Observes(during = TransactionPhase.AFTER_SUCCESS) TaskFinalizedEvent event) {
             String taskId = event.getTaskId();
-            notifications.computeIfAbsent(taskId, k -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
+            taskProposalProvenance.put(taskId, event.isTaskProposal());
+            if (event.getWriterEpoch() != null) {
+                writerEpochs.put(taskId, event.getWriterEpoch());
+            }
             configVisibleAtFinalization.put(taskId, !configs.getInfo(
                     new ListTaskPushNotificationConfigsParams(taskId, 10, "", "")).configs().isEmpty());
             taskVisibleAtFinalization.put(taskId, tasks.get(taskId) != null);
             if (event.getCommittedBatch() != null) {
                 committedBatches.put(taskId, event.getCommittedBatch());
             }
+            notifications.computeIfAbsent(taskId, k -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
         }
     }
 
@@ -104,6 +119,25 @@ class JpaMaterializationEnrollmentTest {
         });
         assertNotNull(store.readSnapshot(id));
         assertEquals(1, configsOf(id).size());
+    }
+
+    @Test
+    void terminalProposalProvenanceStaysInTheLocalFinalizationEnvelope() {
+        String ordinaryId = JpaAtomicTaskMutationTest.id();
+        TaskMutationAuthority authority = new TaskMutationAuthority(store);
+        authority.mutate(ordinaryId, current -> create(ordinaryId, TaskState.TASK_STATE_COMPLETED));
+        assertEquals(1, observer.notifications(ordinaryId));
+        assertEquals(Boolean.FALSE, observer.taskProposal(ordinaryId));
+
+        String proposalId = JpaAtomicTaskMutationTest.id();
+        authority.mutateTaskProposal(proposalId,
+                current -> create(proposalId, TaskState.TASK_STATE_COMPLETED),
+                org.a2aproject.sdk.server.tasks.TaskCommitSlotCallback.NONE);
+        assertEquals(Boolean.TRUE, observer.taskProposal(proposalId));
+        assertNotNull(observer.committedBatch(proposalId));
+        assertNotNull(observer.writerEpoch(proposalId));
+        assertEquals(2, org.a2aproject.sdk.server.events.CommittedTaskBatch.class.getRecordComponents().length,
+                "proposal and epoch metadata must stay outside the replicated committed batch");
     }
 
     @Test

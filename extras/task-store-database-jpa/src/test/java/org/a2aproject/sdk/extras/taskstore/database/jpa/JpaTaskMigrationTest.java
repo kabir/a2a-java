@@ -59,6 +59,8 @@ class JpaTaskMigrationTest {
     @BeforeEach
     void clean() {
         QuarkusTransaction.requiringNew().run(() -> {
+            em.createQuery("DELETE FROM JpaWebhookDispatchLoss").executeUpdate();
+            em.createQuery("DELETE FROM JpaWebhookDispatchLane").executeUpdate();
             em.createQuery("DELETE FROM JpaTask").executeUpdate();
             em.createQuery("DELETE FROM JpaWriterEpoch").executeUpdate();
         });
@@ -230,6 +232,25 @@ class JpaTaskMigrationTest {
         assertEquals(1, store.readSnapshot(b).task().generation());
         assertEquals(0, migration.migrateAll());
         assertEquals(revisionA, row(a).getRevision().longValue());
+    }
+
+    @Test
+    void migrationInitializesMarkedT09RowsWithoutResettingTheirAcceptedGeneration() {
+        String id = id();
+        store.save(JpaAtomicTaskMutationTest.task(id, 5, TaskState.TASK_STATE_WORKING), false);
+        QuarkusTransaction.requiringNew().run(() -> em.createQuery(
+                "UPDATE JpaTask t SET t.migrationMarker = :marker, t.writerEpoch = :epoch WHERE t.id = :id")
+                .setParameter("marker", JpaTaskMigration.BASELINE_MARKER)
+                .setParameter("epoch", 2L)
+                .setParameter("id", id)
+                .executeUpdate());
+        migration.activate(2);
+
+        assertEquals(1, migration.migrateAll(), "marked tasks without T11 lane metadata still need migration");
+        assertEquals(6, QuarkusTransaction.requiringNew().call(() -> em.createQuery(
+                "SELECT lane.nextGeneration FROM JpaWebhookDispatchLane lane WHERE lane.taskId = :id", Long.class)
+                .setParameter("id", id).getSingleResult()));
+        assertEquals(0, migration.migrateAll());
     }
 
     @Test

@@ -59,13 +59,23 @@ class JpaWriterFencePostgresTest {
                     + "ADD COLUMN migration_marker VARCHAR(255)",
             "CREATE TABLE a2a_task_revision_counter (counter_id INTEGER PRIMARY KEY, next_block BIGINT NOT NULL)",
             "CREATE TABLE a2a_writer_epoch (epoch_id INTEGER PRIMARY KEY, epoch BIGINT NOT NULL)",
+            "CREATE TABLE a2a_webhook_dispatch_lanes (task_id VARCHAR(255) PRIMARY KEY, writer_epoch BIGINT NOT NULL, "
+                    + "next_generation BIGINT NOT NULL, holder_token VARCHAR(36), claimed_first_generation BIGINT, "
+                    + "claimed_last_generation BIGINT)",
+            "CREATE TABLE a2a_webhook_dispatch_losses (loss_id VARCHAR(36) PRIMARY KEY, task_id VARCHAR(255) NOT NULL, "
+                    + "first_generation BIGINT NOT NULL, last_generation BIGINT NOT NULL, recorded_at TIMESTAMP NOT NULL, "
+                    + "reason VARCHAR(512) NOT NULL)",
+            "CREATE INDEX a2a_webhook_dispatch_loss_task ON a2a_webhook_dispatch_losses (task_id, first_generation)",
             "ALTER TABLE a2a_task_revision_counter OWNER TO " + NEW,
-            "ALTER TABLE a2a_writer_epoch OWNER TO " + NEW);
+            "ALTER TABLE a2a_writer_epoch OWNER TO " + NEW,
+            "ALTER TABLE a2a_webhook_dispatch_lanes OWNER TO " + NEW,
+            "ALTER TABLE a2a_webhook_dispatch_losses OWNER TO " + NEW);
 
     /** Operator step 3: the fence. Existing old sessions are terminated so none can keep a stale privilege view. */
     static final List<String> FENCE = List.of(
             "REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON a2a_tasks, a2a_task_owners FROM " + OLD,
-            "REVOKE ALL ON a2a_task_revision_counter, a2a_writer_epoch FROM " + OLD,
+            "REVOKE ALL ON a2a_task_revision_counter, a2a_writer_epoch, a2a_webhook_dispatch_lanes, "
+                    + "a2a_webhook_dispatch_losses FROM " + OLD,
             "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename = '" + OLD + "'");
 
     @ConfigProperty(name = "t09.jdbc.url")
@@ -289,8 +299,18 @@ class JpaWriterFencePostgresTest {
                     + "(counter_id INTEGER PRIMARY KEY, next_block BIGINT NOT NULL)");
             statement.execute("CREATE TABLE IF NOT EXISTS a2a_writer_epoch "
                     + "(epoch_id INTEGER PRIMARY KEY, epoch BIGINT NOT NULL)");
+            statement.execute("CREATE TABLE IF NOT EXISTS a2a_webhook_dispatch_lanes "
+                    + "(task_id VARCHAR(255) PRIMARY KEY, writer_epoch BIGINT NOT NULL, next_generation BIGINT NOT NULL, "
+                    + "holder_token VARCHAR(36), claimed_first_generation BIGINT, claimed_last_generation BIGINT)");
+            statement.execute("CREATE TABLE IF NOT EXISTS a2a_webhook_dispatch_losses "
+                    + "(loss_id VARCHAR(36) PRIMARY KEY, task_id VARCHAR(255) NOT NULL, first_generation BIGINT NOT NULL, "
+                    + "last_generation BIGINT NOT NULL, recorded_at TIMESTAMP NOT NULL, reason VARCHAR(512) NOT NULL)");
+            statement.execute("CREATE INDEX IF NOT EXISTS a2a_webhook_dispatch_loss_task "
+                    + "ON a2a_webhook_dispatch_losses (task_id, first_generation)");
             statement.execute("ALTER TABLE a2a_task_revision_counter OWNER TO " + NEW);
             statement.execute("ALTER TABLE a2a_writer_epoch OWNER TO " + NEW);
+            statement.execute("ALTER TABLE a2a_webhook_dispatch_lanes OWNER TO " + NEW);
+            statement.execute("ALTER TABLE a2a_webhook_dispatch_losses OWNER TO " + NEW);
         }
     }
 }

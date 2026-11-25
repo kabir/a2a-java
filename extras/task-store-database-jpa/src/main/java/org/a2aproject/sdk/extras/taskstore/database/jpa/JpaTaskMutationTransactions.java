@@ -55,6 +55,9 @@ public class JpaTaskMutationTransactions {
     @Inject
     JpaTaskMigration migration;
 
+    @Inject
+    JpaWebhookDispatchGateTransactions webhookDispatchLanes;
+
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public @Nullable TaskSnapshot read(String taskId) {
         JpaTask row = em.find(JpaTask.class, taskId);
@@ -62,8 +65,12 @@ public class JpaTaskMutationTransactions {
             return null;
         }
         Long epoch = migration.storedEpoch();
-        if (epoch != null && row.getMigrationMarker() == null) {
-            // Active epoch: a legacy row is baselined once, under its lock, by a current-epoch writer only.
+        JpaWebhookDispatchLane lane = em.find(JpaWebhookDispatchLane.class, taskId);
+        boolean laneNeedsEpoch = epoch != null && (lane == null
+                || (lane.getHolderToken() == null && lane.getWriterEpoch() != epoch));
+        if (epoch != null && (row.getMigrationMarker() == null || laneNeedsEpoch)) {
+            // Active epoch: baseline legacy rows and initialize/rebase missing unclaimed lane metadata under
+            // the task row lock. A claimed lane is never reinitialized by this path.
             migration.checkWritable();
             em.refresh(row, LockModeType.PESSIMISTIC_WRITE);
             migration.baseline(row, epoch, revisions);
@@ -112,6 +119,12 @@ public class JpaTaskMutationTransactions {
                 migration.baseline(row, epoch, revisions);
             }
             TaskSnapshot current = row == null ? null : snapshotAssigningRevision(row);
+            if (current != null) {
+                // If an older single-node deployment has no lane yet, initialize from the locked,
+                // accepted snapshot's next position, never from the incoming proposal's generation.
+                webhookDispatchLanes.initializeOrRebaseUnclaimedLaneInCurrentTransaction(taskId,
+                        epoch == null ? 0 : epoch, Math.max(1, current.task().generation() + 1));
+            }
             MutationPlan plan;
             try {
                 plan = java.util.Objects.requireNonNull(mutation.plan(current), "plan");
@@ -123,7 +136,7 @@ public class JpaTaskMutationTransactions {
                     throw new TaskMutationNotCommittedException(taskId,
                             "An absent task cannot accept an unchanged mutation");
                 }
-                return new CommittedMutation(current, List.of(), false);
+                return new CommittedMutation(current, List.of(), false, epoch == null ? 0L : epoch);
             }
             if (!taskId.equals(plan.task().id())) {
                 throw new TaskMutationNotCommittedException(taskId,
@@ -132,9 +145,15 @@ public class JpaTaskMutationTransactions {
 
             long revision = row == null ? createRevision : revisions.successor(row.getRevision());
             TaskSnapshot next = new TaskSnapshot(plan.task(), new TaskRevision(revision));
-            CommittedMutation committed = new CommittedMutation(next, plan.events(), true);
+            CommittedMutation committed = new CommittedMutation(next, plan.events(), true, epoch == null ? 0L : epoch);
             if (reservationHolder != null && !plan.events().isEmpty()) {
                 reserve(taskId, next, committed, slotCallback, reservationHolder);
+            }
+
+            if (row == null) {
+                // Generation 1 is the first canonical webhook position for a new task. Persisting this
+                // metadata in the same transaction prevents first-arriving batches from choosing a baseline.
+                webhookDispatchLanes.initializeTaskLaneInCurrentTransaction(taskId, epoch == null ? 0 : epoch, 1);
             }
 
             persist(taskId, row, plan.task(), revision, epoch);
@@ -143,7 +162,8 @@ public class JpaTaskMutationTransactions {
                 // The original stamped terminal batch travels with it so replication forwards it unchanged.
                 Object terminalBatch = plan.events().isEmpty()
                         ? null : new CommittedTaskBatch(next, plan.events());
-                taskFinalizedEvent.fire(new TaskFinalizedEvent(taskId, plan.task(), terminalBatch));
+                taskFinalizedEvent.fire(new TaskFinalizedEvent(taskId, plan.task(), terminalBatch,
+                        mutation.isTaskProposal(), epoch == null ? 0L : epoch));
             }
             return committed;
         } catch (TaskMutationNotCommittedException failure) {
