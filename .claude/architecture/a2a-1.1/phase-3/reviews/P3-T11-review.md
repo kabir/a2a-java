@@ -87,3 +87,7 @@ R13 is P1 in `InMemoryWebhookDispatchGate.java:334`. Ascending removal of precom
 ## v8 — accepted within Sol review scope
 
 The same independent Sol reviewer confirmed manifest SHA-256 `54c63d3822cd00a4477bf523dde4fd5015ab7d76ec0ab84ecac73ee70bfee4ca` across 43 files. Only the in-memory gate and its test changed from v7. R13 closes because reverse removal of the oldest excess historical indexes preserves interleaved actionable entries. The regression verifies cursor 260, actionable generation 1000, and historical ranges 4–259. The final focused selector passed 31/31. The review used existing logs and read-only checks. The full frozen-head verification disposition is recorded in the handoff.
+
+## In-memory snapshot follow-up — accepted within scope
+
+The same `gpt-6.2-sol` medium reviewer confirmed that the first correction restored reads of the last committed Task/revision pair during planning and kept generation-zero migration atomic. The reviewer found a P2 public `save` regression for `Long.MAX_VALUE`: eagerly initializing the lane overflowed the successor calculation. The `gpt-6-luna` medium correction worker guarded the calculation and made the snapshot slow path return a concurrently published baselined entry directly. A new test exercises an exhausted-generation save with and without an existing lane. Sol accepted the corrected two-file scope at manifest SHA-256 `02d05060d942374e4016b88b0bfa3fe663c0adad547e10456b1b5bc49cb4a498` with 60 focused cases passing. The reviewer inspected code and existing evidence without running Maven.

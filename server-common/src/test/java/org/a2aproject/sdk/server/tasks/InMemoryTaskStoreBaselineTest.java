@@ -1,10 +1,12 @@
 package org.a2aproject.sdk.server.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -63,13 +65,44 @@ class InMemoryTaskStoreBaselineTest {
     }
 
     @Test
-    void positiveGenerationIsKeptAndNeverReset() {
+    void positiveGenerationIsKeptAndInitializesLaneBeforeLockFreeReads() {
         InMemoryTaskStore store = new InMemoryTaskStore();
         store.save(Task.builder(legacy("t3")).generation(7).build(), false);
+        WebhookDispatchLaneState initialLane = store.webhookDispatchGate().readLane("t3").orElse(null);
+        assertNotNull(initialLane,
+                "legacy save must publish the accepted task and its lane in the same map update");
+        assertEquals(8, initialLane.nextGeneration());
+
         TaskSnapshot snapshot = store.readSnapshot("t3");
         assertEquals(7, snapshot.task().generation());
         assertEquals(snapshot, store.readSnapshot("t3"));
         assertEquals(8, store.webhookDispatchGate().readLane("t3").orElseThrow().nextGeneration());
+
+        WebhookDispatchClaim held = store.webhookDispatchGate().claim("t3", 0, 8, 8).orElseThrow();
+        store.save(Task.builder(legacy("t3")).generation(9).build(), false);
+        WebhookDispatchLaneState afterSave = store.webhookDispatchGate().readLane("t3").orElseThrow();
+        assertEquals(8, afterSave.nextGeneration(), "a subsequent save must not reset the accepted cursor");
+        assertEquals(held.holderToken(), afterSave.holderToken(), "a subsequent save must preserve lane ownership");
+    }
+
+    @Test
+    void exhaustedPositiveGenerationSaveDoesNotOverflowOrDisturbAnExistingLane() {
+        InMemoryTaskStore store = new InMemoryTaskStore();
+        Task exhausted = Task.builder(legacy("t6")).generation(Long.MAX_VALUE).build();
+
+        assertDoesNotThrow(() -> store.save(exhausted, false));
+        TaskSnapshot snapshot = store.readSnapshot("t6");
+        assertNotNull(snapshot);
+        assertEquals(Long.MAX_VALUE, snapshot.task().generation());
+        assertNull(store.webhookDispatchGate().readLane("t6").orElse(null),
+                "no representable next generation exists for an initially exhausted task");
+
+        assertTrue(store.webhookDispatchGate().initializeTaskLane("t7", 0, 12));
+        WebhookDispatchClaim held = store.webhookDispatchGate().claim("t7", 0, 12, 12).orElseThrow();
+        assertDoesNotThrow(() -> store.save(Task.builder(legacy("t7")).generation(Long.MAX_VALUE).build(), false));
+        WebhookDispatchLaneState lane = store.webhookDispatchGate().readLane("t7").orElseThrow();
+        assertEquals(12, lane.nextGeneration());
+        assertEquals(held.holderToken(), lane.holderToken());
     }
 
     @Test

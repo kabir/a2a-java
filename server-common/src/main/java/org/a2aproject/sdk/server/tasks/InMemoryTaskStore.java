@@ -174,7 +174,13 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
     @Override
     public void save(Task task, boolean isReplicated) {
-        tasks.compute(task.id(), (taskId, current) -> new StoredTask(task, nextRevision(), false));
+        tasks.compute(task.id(), (taskId, current) -> {
+            boolean baselined = task.generation() >= 1;
+            if (baselined && task.generation() < Long.MAX_VALUE) {
+                webhookDispatchGate.initializeTaskLane(taskId, 0, task.generation() + 1);
+            }
+            return new StoredTask(task, nextRevision(), baselined);
+        });
         // InMemoryTaskStore doesn't fire TaskFinalizedEvent, so isReplicated is unused here
     }
 
@@ -191,16 +197,27 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
 
     @Override
     public @Nullable TaskSnapshot readSnapshot(String taskId) {
-        // Baseline accepted legacy state and initialize its lane under the same per-task map compute. A
-        // concurrent mutation cannot observe the baseline while the task still lacks its lane cursor.
-        StoredTask stored = tasks.computeIfPresent(taskId, (id, current) -> {
-            StoredTask accepted = current.baselined() ? current : baseline(current);
-            if (accepted.task().generation() >= 1) {
+        StoredTask stored = tasks.get(taskId);
+        if (stored == null) {
+            return null;
+        }
+        if (stored.baselined()) {
+            return stored.snapshot();
+        }
+
+        // Only legacy generation-zero saves need baseline migration. Keep the accepted snapshot and lane
+        // initialization under the same per-task map compute before publishing the baselined task.
+        StoredTask baselined = tasks.computeIfPresent(taskId, (id, current) -> {
+            if (current.baselined()) {
+                return current;
+            }
+            StoredTask accepted = baseline(current);
+            if (accepted.task().generation() >= 1 && accepted.task().generation() < Long.MAX_VALUE) {
                 webhookDispatchGate.initializeTaskLane(id, 0, accepted.task().generation() + 1);
             }
             return accepted;
         });
-        return stored == null ? null : stored.snapshot();
+        return baselined == null ? null : baselined.snapshot();
     }
 
     private StoredTask baseline(StoredTask stored) {
