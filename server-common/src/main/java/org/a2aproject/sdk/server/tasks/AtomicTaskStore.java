@@ -11,6 +11,16 @@ import org.jspecify.annotations.Nullable;
  */
 public interface AtomicTaskStore extends TaskStore {
 
+    /**
+     * Declares where this store's atomic mutation authority lives, so configuration can be validated before
+     * A2A 1.1 is exposed. The default is {@link TaskAuthorityCapabilities#UNDECLARED}: such a store keeps working
+     * for legacy-only registrations but cannot back 1.1. A declaration is the store's own assertion; it does not
+     * fence old writers and is not evidence that any cluster profile was verified.
+     */
+    default TaskAuthorityCapabilities authorityCapabilities() {
+        return TaskAuthorityCapabilities.UNDECLARED;
+    }
+
     /** Returns one immutable authoritative task/revision pair, or {@code null} when absent. */
     @Nullable TaskSnapshot readSnapshot(String taskId);
 

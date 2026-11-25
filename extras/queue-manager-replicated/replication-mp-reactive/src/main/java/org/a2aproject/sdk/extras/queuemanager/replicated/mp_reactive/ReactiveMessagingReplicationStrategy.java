@@ -41,6 +41,11 @@ public class ReactiveMessagingReplicationStrategy implements ReplicationStrategy
     }
 
     @Override
+    public boolean supportsCommittedReplication() {
+        return true;
+    }
+
+    @Override
     public void send(ReplicatedEventQueueItem item) {
         LOGGER.debug("Sending replicated envelope for task: {}", item.getTaskId());
         try {

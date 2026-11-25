@@ -54,6 +54,7 @@ import org.a2aproject.sdk.server.tasks.OpeningTaskInput;
 import org.a2aproject.sdk.server.tasks.PendingTaskInput;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.tasks.ResultAggregator;
 import org.a2aproject.sdk.server.tasks.TaskReadProjection;
 import org.a2aproject.sdk.server.tasks.TaskEnrollmentCoordinator;
@@ -375,6 +376,16 @@ public class DefaultRequestHandler implements RequestHandler {
         this.eventConsumerExecutor = eventConsumerExecutor;
         this.requestContextBuilder = () -> new SimpleRequestContextBuilder(taskStore, false, null);
         this.mainEventBusProcessor.start();
+    }
+
+    /**
+     * Observes the task authority topology of this handler (store, queue manager and webhook wiring) for plain
+     * Java wiring without CDI. Call {@link TaskAuthorityConfiguration#requireVersion11()} or wrap the registration
+     * resolver with {@link TaskAuthorityConfiguration#validating} before serving or advertising 1.1. A passing check is
+     * configuration validation only, not evidence that a cluster profile was verified.
+     */
+    public TaskAuthorityConfiguration taskAuthorityConfiguration() {
+        return TaskAuthorityConfiguration.of(taskStore, queueManager, mainEventBusProcessor::webhookDispatchTopology);
     }
 
     /**

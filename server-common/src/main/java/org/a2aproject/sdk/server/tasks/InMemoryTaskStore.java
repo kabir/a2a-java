@@ -173,6 +173,11 @@ public class InMemoryTaskStore implements AtomicTaskStore, TaskStateProvider {
     }
 
     @Override
+    public TaskAuthorityCapabilities authorityCapabilities() {
+        return TaskAuthorityCapabilities.processLocal();
+    }
+
+    @Override
     public void save(Task task, boolean isReplicated) {
         tasks.compute(task.id(), (taskId, current) -> {
             boolean baselined = task.generation() >= 1;

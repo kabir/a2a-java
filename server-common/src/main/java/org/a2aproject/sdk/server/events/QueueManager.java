@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.server.events;
 
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -215,4 +216,12 @@ public interface QueueManager {
      * @return number of active child queues, or -1 if the MainQueue doesn't exist
      */
     int getActiveChildQueueCount(String taskId);
+
+    /**
+     * Reports whether this manager replicates events to other nodes, for authority-topology validation.
+     * The default is a purely local manager.
+     */
+    default TaskAuthorityCapabilities.QueueReplication replication() {
+        return TaskAuthorityCapabilities.QueueReplication.NONE;
+    }
 }

@@ -328,6 +328,12 @@ public class CustomReplicationStrategy implements ReplicationStrategy {
 }
 ```
 
+A strategy that implements `send(ReplicatedEventQueueItem)` (committed envelopes, needed under a writer epoch) must also
+override `supportsCommittedReplication()` to return `true`. A strategy that does not is rejected by the A2A 1.1
+topology gate at configuration time (see [Storage & Persistence](storage.md#authority-topology-gate-before-a2a-11-is-served))
+instead of failing at the first send. The public `(..., Long)` constructor of `ReplicatedQueueManager` does not itself
+reject an epoch with an in-memory store; the topology gate does.
+
 ## Monitoring
 
 ### Logging

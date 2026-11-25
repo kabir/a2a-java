@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
 import org.a2aproject.sdk.server.config.A2AConfigProvider;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
 import org.a2aproject.sdk.server.tasks.TaskPersistenceException;
 import org.a2aproject.sdk.server.tasks.TaskSerializationException;
 import org.a2aproject.sdk.spec.Task;
@@ -73,6 +74,26 @@ public class JpaTaskMigration {
         List<Long> rows = em.createQuery("SELECT e.epoch FROM JpaWriterEpoch e WHERE e.id = :id", Long.class)
                 .setParameter("id", JpaWriterEpoch.SINGLETON_ID).getResultList();
         return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    /** Returns the activated storage epoch in its own short transaction, or {@code null} in legacy mode. */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public @Nullable Long activeEpoch() {
+        return storedEpoch();
+    }
+
+    /**
+     * Declares the shared-storage authority state for A2A 1.1 topology validation. This only observes the
+     * database: the activated epoch, this node's configured epoch and whether every task row (and its webhook
+     * lane) is baselined. It does not fence old writers and does not prove a cluster profile was verified.
+     */
+    public TaskAuthorityCapabilities authorityCapabilities() {
+        Long stored = self.activeEpoch();
+        Long node = nodeEpoch();
+        // A node whose epoch is not the active one is rejected anyway; skip the full unmigrated-row scan then.
+        boolean migrated = stored != null && node != null && node.longValue() == stored.longValue()
+                && self.unmigratedIds("").isEmpty();
+        return TaskAuthorityCapabilities.sharedStorage(stored, node, migrated);
     }
 
     /**

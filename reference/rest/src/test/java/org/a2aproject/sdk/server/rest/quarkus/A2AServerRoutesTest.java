@@ -53,6 +53,10 @@ import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
 import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities.QueueReplication;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities.WebhookDispatch;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
 import org.a2aproject.sdk.spec.AgentCapabilities;
@@ -145,6 +149,23 @@ public class A2AServerRoutesTest {
                 assertThrows(InvalidParamsError.class, () -> routes.sendMessage("{}", mockRoutingContext));
             }
         }
+    }
+
+    @Test
+    public void agentCardRoutesRefuseToServeWhenTheTaskAuthorityTopologyIsRejected() {
+        InterfaceRegistration registration = new InterfaceRegistration(TransportProtocol.HTTP_JSON,
+                "http://localhost:9999", null, Set.of("1.0", "1.1"), true);
+        InterfaceRegistrationResolver resolver = (selectedBinding, tenant) -> registration;
+        setField(routes, "interfaceRegistrationResolvers", new FixedInstance<>(resolver));
+        setField(routes, "taskAuthority", new FixedInstance<>(TaskAuthorityConfiguration.of(
+                new TaskAuthorityConfiguration.Topology(false, TaskAuthorityCapabilities.UNDECLARED,
+                        QueueReplication.NONE, WebhookDispatch.NONE, "custom.LegacyStore"))));
+        when(mockRoutingContext.pathParam("tenant")).thenReturn("");
+
+        routes.getAgentCard(mockRoutingContext);
+
+        verify(mockResponse).setStatusCode(500);
+        verifyNoInteractions(mockRestHandler);
     }
 
     @Test

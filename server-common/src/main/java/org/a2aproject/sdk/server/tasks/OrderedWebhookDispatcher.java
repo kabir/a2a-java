@@ -223,6 +223,11 @@ public class OrderedWebhookDispatcher {
         return sender != null;
     }
 
+    /** The wiring facts relevant to authority-topology validation. */
+    public TaskAuthorityCapabilities.WebhookDispatch topology() {
+        return new TaskAuthorityCapabilities.WebhookDispatch(true, sender != null, gate.isSharedStorage());
+    }
+
     /** Records a dropped known batch without moving the durable cursor or retaining its payload. */
     public boolean recordAdmissionLoss(CommittedTaskBatch batch, @Nullable Long writerEpoch, String reason) {
         List<Long> positions = batch.generationPositions();

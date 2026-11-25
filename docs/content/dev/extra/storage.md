@@ -224,6 +224,63 @@ made after the upgrade is lost. Never point an old binary at migrated data or er
 **Not provided.** In-memory storage has no persisted baseline: tasks are lost on restart, and a task written through the
 legacy `save` path is stabilized at generation 1 only for the lifetime of that process.
 
+### Authority topology gate (before A2A 1.1 is served)
+
+A2A 1.1 is exposed only when the node's actual task-authority topology is consistent. Any registration (default or
+per-tenant, any binding) that includes version `1.1`, and any request for `1.1` with no registration, is checked by
+`TaskAuthorityConfiguration`. This covers request handling on the REST, JSON-RPC and gRPC bindings (including the
+multiversion routes) and the public and per-tenant agent-card endpoints of the REST and JSON-RPC routes. A failed check
+raises `IllegalStateException` listing every violation: at startup for the default registration (single-version REST,
+JSON-RPC and gRPC), and on each request or card fetch for a dynamically resolved tenant. Nothing is narrowed or retried:
+a rejected registration is reported as a whole and never served as `{0.3, 1.0}` instead. Because the whole registration
+is rejected, a `0.3` or `1.0` request on an endpoint whose registration also lists `1.1` fails too while the topology is
+inconsistent. Registrations without `1.1`, and a custom legacy `TaskStore` with legacy-only registrations, are never
+checked and keep working.
+
+| Profile | Result |
+| --- | --- |
+| In-memory `TaskStore`, no replicated queue manager, no shared webhook gate | Accepted (single process) |
+| JPA store, epoch activated, `a2a.task-store.writer-epoch` equal on this node, every row baselined, and the shared ordered webhook dispatcher (shared gate, quiescent sender) on the bus; if replicated, the queue epoch equals the storage epoch and the strategy sends committed envelopes | Accepted by this check (not cluster acceptance) |
+| Replicated queues with an in-memory store, no writer epoch, a strategy without committed envelopes, or a queue epoch different from the storage epoch | Rejected |
+| JPA store with no activated epoch, a different node epoch, or unmigrated rows | Rejected |
+| Shared storage without the shared ordered webhook dispatcher (independent push chains), with a process-local gate, or with a sender that cannot bound and quiesce its work | Rejected |
+| Custom `TaskStore` without an `AtomicTaskStore` companion, or an `AtomicTaskStore` that does not declare its authority | Rejected for 1.1 |
+
+The JPA store reads the epoch and migration state from the database each time the gate fails and once when it passes (the
+full unmigrated-row scan runs only while this node's epoch equals the active one); a
+passing result is cached for the lifetime of the `TaskAuthorityConfiguration` object (the CDI bean for the process). This is configuration validation only. A passing check is **not** evidence that
+a cluster profile passed multi-instance verification (real PostgreSQL, Kafka and two-node execution is a separate
+verification), it does not fence old database writers or brokers (those remain the deployment preconditions above and in
+[Replicated Queue Manager](replicated-queue-manager.md#upgrading-to-a2a-11-broker-fencing)), and it does not
+detect a node that later loses its epoch (the store refuses its writes itself).
+
+**Plain Java (no CDI).** Call `DefaultRequestHandler.taskAuthorityConfiguration()` once and keep the object (each call
+builds a new one, so a pass is cached only per object), then either invoke `requireVersion11()` before advertising or
+serving 1.1, or wrap your `InterfaceRegistrationResolver` with `validating(resolver)`.
+
+**Custom stores opt in** by overriding `AtomicTaskStore.authorityCapabilities()`: return
+`TaskAuthorityCapabilities.processLocal()` for a single-JVM authority, or `TaskAuthorityCapabilities.sharedStorage(storageEpoch,
+nodeEpoch, migrationComplete)` for transactional storage shared by every node. The declaration is the store's own
+assertion; declare shared storage only if every writer of the task, on every protocol version, commits through it.
+Custom queue managers report replication through `QueueManager.replication()`; a `ReplicationStrategy` that implements
+`send(ReplicatedEventQueueItem)` must also return `true` from `supportsCommittedReplication()`.
+
+**Limits of the check.** It validates what the store, queue manager and webhook dispatcher *declare*. A custom
+`QueueManager` that replicates but does not report it through `replication()`, or a gate that reports shared storage
+while using a different datasource than the task store, passes; both are deployment preconditions. For the JPA store the
+check reads the database at startup, so activate the epoch and run `migrateAll()` as a separate step *before* starting a
+node that registers `1.1`; a node that checks before the migration completes refuses to start. While a check keeps
+failing, each request for `1.1` repeats the database read. A card route may run that first read on the I/O thread when
+no earlier check has passed, so keep the startup check (default registration) enabled for JPA-backed nodes.
+Push notifications that are not part of a committed batch (for example a bootstrap of a task created by a status update
+without an opening message) still go through the node's push sender directly, as before this check; the check does not
+route them through the shared webhook gate.
+
+The card endpoints are gated only through a registration that lists `1.1`. A card produced by an `AgentCardRouter` for a
+tenant that has no registration is not checked, because no registered version set exists to test; provision a
+registration for every tenant whose card advertises `1.1`. A failed check on a request surfaces to the client as a
+generic server error; the violations are written to the server log (error level) by the gate itself on every route.
+
 ### 4. Ownership schema and authorization selection
 
 PostgreSQL 16 ownership DDL:

@@ -24,6 +24,7 @@ import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.events.TaskStreamLifecycleHook;
 import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
 import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -121,6 +122,12 @@ public class ReplicatedQueueManager implements QueueManager {
                     + " requires a shared task store; replicated local in-memory task storage cannot provide "
                     + "committed cluster replication");
         }
+    }
+
+    @Override
+    public TaskAuthorityCapabilities.QueueReplication replication() {
+        return new TaskAuthorityCapabilities.QueueReplication(true, writerEpoch,
+                replicationStrategy.supportsCommittedReplication());
     }
 
     @Override

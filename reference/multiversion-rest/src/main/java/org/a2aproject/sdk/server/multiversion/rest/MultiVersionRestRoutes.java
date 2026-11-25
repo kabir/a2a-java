@@ -22,6 +22,7 @@ import org.a2aproject.sdk.compat03.server.rest.quarkus.A2AServerRoutes_v0_3;
 import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.rest.quarkus.A2AServerRoutes;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
 import org.a2aproject.sdk.server.version.ServerVersionPolicy;
@@ -46,6 +47,9 @@ public class MultiVersionRestRoutes {
 
     @Inject
     Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
+
+    @Inject
+    Instance<TaskAuthorityConfiguration> taskAuthority;
 
     @Inject
     VertxSecurityHelper vertxSecurityHelper;
@@ -146,6 +150,7 @@ public class MultiVersionRestRoutes {
                         InterfaceRegistration registration = VersionRouter.registration(
                                 interfaceRegistrationResolvers, TransportProtocol.HTTP_JSON, null);
                         if (registration != null) {
+                            VersionRouter.requireTaskAuthority(registration, taskAuthority);
                             registration.requireAvailableVersions(v03Routes.isResolvable()
                                     ? Set.of("0.3", "1.0", "1.1") : Set.of("1.0", "1.1"));
                             ServerVersionPolicy selected = registration.select(VersionRouter.resolveVersion(ctx));
@@ -280,6 +285,7 @@ public class MultiVersionRestRoutes {
         InterfaceRegistration registration = VersionRouter.registration(
                 interfaceRegistrationResolvers, TransportProtocol.HTTP_JSON, tenant);
         if (registration != null) {
+            VersionRouter.requireTaskAuthority(registration, taskAuthority);
             registration.requireAvailableVersions(v03Routes.isResolvable()
                     ? Set.of("0.3", "1.0", "1.1") : Set.of("1.0", "1.1"));
             registration.select(version);

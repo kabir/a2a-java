@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -27,6 +28,7 @@ import org.a2aproject.sdk.server.events.EventQueueClosedException;
 import org.a2aproject.sdk.server.events.EventQueueItem;
 import org.a2aproject.sdk.server.events.EventQueueUtil;
 import org.a2aproject.sdk.server.events.CommittedTaskBatch;
+import org.a2aproject.sdk.server.events.DefaultTaskStreamLifecycleHook;
 import org.a2aproject.sdk.server.events.MainEventBus;
 import org.a2aproject.sdk.server.events.MainEventBusProcessor;
 import org.a2aproject.sdk.server.events.QueueClosedEvent;
@@ -35,6 +37,8 @@ import org.a2aproject.sdk.server.tasks.InMemoryWebhookDispatchGate;
 import org.a2aproject.sdk.server.tasks.OrderedWebhookDispatcher;
 import org.a2aproject.sdk.server.tasks.OrderedWebhookSender;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.tasks.TaskRevision;
 import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Event;
@@ -757,6 +761,109 @@ class ReplicatedQueueManagerTest {
         return TaskStatusUpdateEvent.builder((TaskStatusUpdateEvent) testEvent).taskId(taskId).build();
     }
 
+
+    @Test
+    void replicationTopologyReportsEpochAndCommittedEnvelopeSupport() {
+        ReplicatedQueueManager legacyStrategy = new ReplicatedQueueManager(new NoOpReplicationStrategy(),
+                new MockTaskStateProvider(true), mainEventBus, new DefaultTaskStreamLifecycleHook(), 7L);
+        assertEquals(new TaskAuthorityCapabilities.QueueReplication(true, 7L, false), legacyStrategy.replication(),
+                "a strategy without send(ReplicatedEventQueueItem) is visible before the first send");
+
+        ReplicatedQueueManager committed = new ReplicatedQueueManager(new CommittedCapableStrategy(),
+                new MockTaskStateProvider(true), mainEventBus, new DefaultTaskStreamLifecycleHook(), 7L);
+        assertEquals(new TaskAuthorityCapabilities.QueueReplication(true, 7L, true), committed.replication());
+
+        // The public (..., Long) constructor has no epoch/InMemoryTaskStore fail-fast; topology validation covers it.
+        ReplicatedQueueManager publicCtor = new ReplicatedQueueManager(new CommittedCapableStrategy(), taskStore,
+                mainEventBus, new DefaultTaskStreamLifecycleHook(), 7L);
+        assertTrue(publicCtor.replication().replicated());
+        assertEquals(List.of(), TaskAuthorityConfiguration.of(new TaskAuthorityConfiguration.Topology(true,
+                taskStore.authorityCapabilities(), TaskAuthorityCapabilities.QueueReplication.NONE,
+                TaskAuthorityCapabilities.WebhookDispatch.NONE, "memory")).violations());
+        assertEquals(1, TaskAuthorityConfiguration.of(new TaskAuthorityConfiguration.Topology(true,
+                taskStore.authorityCapabilities(), publicCtor.replication(),
+                TaskAuthorityCapabilities.WebhookDispatch.NONE, "memory")).violations().size(),
+                "replicated queues with an independent in-memory store are rejected");
+
+        ReplicatedQueueManager noEpoch = new ReplicatedQueueManager(new CommittedCapableStrategy(),
+                new MockTaskStateProvider(true), mainEventBus);
+        assertEquals(new TaskAuthorityCapabilities.QueueReplication(true, null, true), noEpoch.replication());
+    }
+
+    @Test
+    void liveReplicatedSharedProfileIsValidatedThroughTheTopologyGate() {
+        InMemoryTaskStore shared = new InMemoryTaskStore() {
+            @Override
+            public TaskAuthorityCapabilities authorityCapabilities() {
+                return TaskAuthorityCapabilities.sharedStorage(7L, 7L, true);
+            }
+        };
+        InMemoryWebhookDispatchGate sharedGate = new InMemoryWebhookDispatchGate() {
+            @Override
+            public boolean isSharedStorage() {
+                return true;
+            }
+        };
+        PushNotificationSender sender = new PushNotificationSender() {
+            @Override
+            public boolean sendNotification(StreamingEventKind event, Task taskSnapshot) {
+                return true;
+            }
+
+            @Override
+            public boolean supportsOrderedDispatch() {
+                return true;
+            }
+        };
+        OrderedWebhookDispatcher dispatcher = new OrderedWebhookDispatcher(sharedGate, sender);
+        try {
+            MainEventBusProcessor processor = new MainEventBusProcessor(mainEventBus, shared, sender, queueManager,
+                    dispatcher);
+
+            ReplicatedQueueManager matching = new ReplicatedQueueManager(new CommittedCapableStrategy(), shared,
+                    mainEventBus, new DefaultTaskStreamLifecycleHook(), 7L);
+            assertEquals(List.of(), TaskAuthorityConfiguration.of(shared, matching,
+                    processor::webhookDispatchTopology).violations());
+
+            ReplicatedQueueManager mismatched = new ReplicatedQueueManager(new CommittedCapableStrategy(), shared,
+                    mainEventBus, new DefaultTaskStreamLifecycleHook(), 8L);
+            assertEquals(1, TaskAuthorityConfiguration.of(shared, mismatched,
+                    processor::webhookDispatchTopology).violations().size());
+
+            ReplicatedQueueManager legacyStrategy = new ReplicatedQueueManager(new NoOpReplicationStrategy(), shared,
+                    mainEventBus, new DefaultTaskStreamLifecycleHook(), 7L);
+            assertEquals(1, TaskAuthorityConfiguration.of(shared, legacyStrategy,
+                    processor::webhookDispatchTopology).violations().size());
+
+            ReplicatedQueueManager unfenced = new ReplicatedQueueManager(new CommittedCapableStrategy(), shared,
+                    mainEventBus);
+            assertEquals(1, TaskAuthorityConfiguration.of(shared, unfenced,
+                    processor::webhookDispatchTopology).violations().size());
+
+            // The public (..., Long) constructor accepts an epoch with local memory; the gate rejects it.
+            ReplicatedQueueManager withMemory = new ReplicatedQueueManager(new CommittedCapableStrategy(), taskStore,
+                    mainEventBus, new DefaultTaskStreamLifecycleHook(), 7L);
+            assertEquals(1, TaskAuthorityConfiguration.of(taskStore, withMemory,
+                    () -> TaskAuthorityCapabilities.WebhookDispatch.NONE).violations().size());
+        } finally {
+            dispatcher.close();
+        }
+    }
+
+    private static class CommittedCapableStrategy implements ReplicationStrategy {
+        @Override
+        public void send(String taskId, Event event) {
+        }
+
+        @Override
+        public void send(ReplicatedEventQueueItem item) {
+        }
+
+        @Override
+        public boolean supportsCommittedReplication() {
+            return true;
+        }
+    }
 
     private static class NoOpReplicationStrategy implements ReplicationStrategy {
         @Override

@@ -16,4 +16,13 @@ public interface ReplicationStrategy {
         throw new UnsupportedOperationException(
                 "This ReplicationStrategy does not support committed replication envelopes");
     }
+
+    /**
+     * Whether {@link #send(ReplicatedEventQueueItem)} is implemented. A strategy that overrides it must also
+     * return {@code true} here, otherwise A2A 1.1 topology validation rejects it at configuration time instead of
+     * the first send failing under a writer epoch.
+     */
+    default boolean supportsCommittedReplication() {
+        return false;
+    }
 }

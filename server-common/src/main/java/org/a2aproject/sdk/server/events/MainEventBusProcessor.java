@@ -25,6 +25,7 @@ import org.a2aproject.sdk.server.tasks.OrderedWebhookDispatcher;
 import org.a2aproject.sdk.server.tasks.OpeningTaskInput;
 import org.a2aproject.sdk.server.tasks.TaskEnrollmentCoordinator;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
 import org.a2aproject.sdk.server.tasks.TaskCommitSlot;
 import org.a2aproject.sdk.server.tasks.TaskManager;
 import org.a2aproject.sdk.server.tasks.TaskMutation;
@@ -1063,6 +1064,15 @@ public class MainEventBusProcessor implements Runnable {
         } else {
             decision.completeExceptionally(failure);
         }
+    }
+
+    /**
+     * Webhook wiring of this bus for authority-topology validation: without an ordered dispatcher, bus and
+     * finalization senders use independent per-task push chains.
+     */
+    public TaskAuthorityCapabilities.WebhookDispatch webhookDispatchTopology() {
+        OrderedWebhookDispatcher dispatcher = orderedWebhookDispatcher;
+        return dispatcher == null ? TaskAuthorityCapabilities.WebhookDispatch.NONE : dispatcher.topology();
     }
 
     private boolean orderedWebhookDispatchAvailable() {

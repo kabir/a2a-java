@@ -238,6 +238,16 @@ Serve multiple tenants from a single server with per-tenant `AgentExecutor` and 
 
 Add distributed tracing to your server with the [OpenTelemetry extras module](extra/opentelemetry). It decorates the request handler to create spans for every A2A protocol method, with automatic error tracking and optional request/response extraction.
 
+## A2A 1.1 Topology Validation
+
+A2A 1.1 is served and advertised only when the task store, queue manager and webhook wiring form a consistent task
+authority; otherwise startup (default registration) or the first request (dynamic tenant) fails with a message listing
+every violation. Legacy-only 0.3/1.0 registrations and custom legacy `TaskStore` implementations are unaffected. This is
+configuration validation, not proof that a cluster profile was verified. See
+[Authority topology gate](extra/storage.md#authority-topology-gate-before-a2a-11-is-served). Without CDI, call
+`DefaultRequestHandler.taskAuthorityConfiguration()` once, keep that object, and call `requireVersion11()` on it (a new
+object re-reads the store each time) or wrap your registration resolver with `validating(...)`.
+
 ## Backward Compatibility with v0.3
 
 See [Backward Compatibility](compatibility) for multi-version modules, version routing, and v0.3 client support.

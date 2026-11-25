@@ -3,6 +3,7 @@ package org.a2aproject.sdk.extras.queuemanager.replicated.mp_reactive;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -57,6 +58,11 @@ class ReactiveMessagingReplicationStrategyTest {
                 .build();
         ReplicatedEventQueueItem replicatedEvent = new ReplicatedEventQueueItem(taskId, event);
         return JsonUtil.toJson(replicatedEvent);
+    }
+
+    @Test
+    public void testDeclaresCommittedReplicationSupport() {
+        assertTrue(strategy.supportsCommittedReplication());
     }
 
     @Test

@@ -2,8 +2,13 @@ package org.a2aproject.sdk.server.common.quarkus;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
+import org.a2aproject.sdk.server.events.MainEventBusProcessor;
+import org.a2aproject.sdk.server.events.QueueManager;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
+import org.a2aproject.sdk.server.tasks.TaskStore;
 import io.quarkus.arc.DefaultBean;
 
 /**
@@ -21,6 +26,19 @@ public class DefaultProducers {
     @DefaultBean
     public AgentExecutor createDefaultAgentExecutor() {
         throw new IllegalStateException(wrap("Please provide your own AgentExecutor implementation"));
+    }
+
+    /**
+     * Observes the actual task authority topology (store, queue manager and webhook wiring) so 1.1 is rejected
+     * before it is served or advertised. It is a default bean: an application may provide its own. Evaluation is
+     * lazy, so producing the bean has no effect on legacy-only deployments.
+     */
+    @Produces
+    @DefaultBean
+    @Singleton
+    public TaskAuthorityConfiguration createTaskAuthorityConfiguration(TaskStore taskStore,
+            QueueManager queueManager, MainEventBusProcessor mainEventBusProcessor) {
+        return TaskAuthorityConfiguration.of(taskStore, queueManager, mainEventBusProcessor::webhookDispatchTopology);
     }
 
     private String wrap(String s) {

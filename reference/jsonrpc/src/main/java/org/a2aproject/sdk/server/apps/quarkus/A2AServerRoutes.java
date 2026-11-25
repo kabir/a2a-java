@@ -75,6 +75,7 @@ import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
 import org.a2aproject.sdk.server.multitenancy.TenantNotFoundException;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.util.async.Internal;
 import org.a2aproject.sdk.server.util.sse.SseFormatter;
 import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
@@ -205,6 +206,9 @@ public class A2AServerRoutes {
     Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
 
     @Inject
+    Instance<TaskAuthorityConfiguration> taskAuthority;
+
+    @Inject
     VertxSecurityHelper vertxSecurityHelper;
 
     /**
@@ -217,7 +221,7 @@ public class A2AServerRoutes {
      * @param router the Vert.x Web Router instance to configure
      */
     void setupRoutes(@Observes Router router) {
-        VersionRouter.validateDefaultRegistration(interfaceRegistrationResolvers, TransportProtocol.JSONRPC);
+        VersionRouter.validateDefaultRegistration(interfaceRegistrationResolvers, taskAuthority, TransportProtocol.JSONRPC);
         // Main JSON-RPC endpoint: POST /
         // BodyHandler is per-route (not global) to avoid interfering with gRPC routes
         // ordered=false: delegation via Vert.x WebClient can share the same event loop context as the outer request; ordered=true would serialize them, causing a 30s deadlock.
@@ -477,6 +481,8 @@ public class A2AServerRoutes {
      * @see JSONRPCHandler#getAgentCard()
      */
     public @Nullable String getAgentCard(RoutingContext rc) throws JsonProcessingException {
+        VersionRouter.requireTaskAuthorityForCard(interfaceRegistrationResolvers, taskAuthority,
+                TransportProtocol.JSONRPC, null);
         AgentCard card = jsonRpcHandler.getAgentCard();
         if (card == null) {
             return null;
@@ -500,6 +506,8 @@ public class A2AServerRoutes {
             throw new IllegalArgumentException("Missing tenant path parameter");
         }
         Utils.validateTenant(tenant);
+        VersionRouter.requireTaskAuthorityForCard(interfaceRegistrationResolvers, taskAuthority,
+                TransportProtocol.JSONRPC, tenant);
         AgentCard card = jsonRpcHandler.getAgentCard(tenant);
         if (card == null) {
             return null;
@@ -683,7 +691,7 @@ public class A2AServerRoutes {
      */
     private ServerCallContext createCallContext(RoutingContext rc) {
         ServerCallContext context = createRawCallContext(rc);
-        VersionRouter.attachRegistration(context, interfaceRegistrationResolvers, TransportProtocol.JSONRPC,
+        VersionRouter.attachRegistration(context, interfaceRegistrationResolvers, taskAuthority, TransportProtocol.JSONRPC,
                 extractTenant(rc), VersionRouter.resolveVersion(rc));
         if (context.getInterfaceRegistration() != null
                 && context.getVersionPolicy() == ServerVersionPolicy.V0_3) {

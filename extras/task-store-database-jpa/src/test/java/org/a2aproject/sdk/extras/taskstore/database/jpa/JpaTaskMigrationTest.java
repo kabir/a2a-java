@@ -1,6 +1,7 @@
 package org.a2aproject.sdk.extras.taskstore.database.jpa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -17,13 +18,23 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import org.a2aproject.sdk.server.events.InMemoryQueueManager;
+import org.a2aproject.sdk.server.events.MainEventBus;
+import org.a2aproject.sdk.server.events.MainEventBusProcessor;
+import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.tasks.CommittedMutation;
+import org.a2aproject.sdk.server.tasks.InMemoryWebhookDispatchGate;
+import org.a2aproject.sdk.server.tasks.OrderedWebhookDispatcher;
+import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.tasks.TaskMutationNotCommittedException;
 import org.a2aproject.sdk.server.tasks.TaskPersistenceException;
 import org.a2aproject.sdk.server.tasks.TaskSerializationException;
 import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
@@ -52,6 +63,9 @@ class JpaTaskMigrationTest {
 
     @Inject
     JpaTaskMigration migration;
+
+    @Inject
+    JpaWebhookDispatchGate gate;
 
     @Inject
     EntityManager em;
@@ -254,6 +268,44 @@ class JpaTaskMigrationTest {
     }
 
     @Test
+    void authorityCapabilitiesReportUnfencedThenUnmigratedThenReady() {
+        String id = id();
+        store.save(legacyTask(id), false);
+
+        TaskAuthorityCapabilities legacy = store.authorityCapabilities();
+        assertEquals(TaskAuthorityCapabilities.Scope.SHARED_STORAGE, legacy.scope());
+        assertNull(legacy.storageEpoch(), "no epoch is active: unfenced");
+        assertFalse(legacy.migrationComplete());
+        assertEquals(2L, legacy.nodeEpoch().longValue());
+
+        migration.activate(2);
+        TaskAuthorityCapabilities unmigrated = store.authorityCapabilities();
+        assertEquals(2L, unmigrated.storageEpoch().longValue());
+        assertFalse(unmigrated.migrationComplete(), "a legacy row is not baselined yet");
+
+        migration.migrateAll();
+        TaskAuthorityCapabilities ready = store.authorityCapabilities();
+        assertTrue(ready.migrationComplete());
+        assertEquals(List.of(), org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration.of(
+                new org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration.Topology(true, ready,
+                        TaskAuthorityCapabilities.QueueReplication.NONE,
+                        new TaskAuthorityCapabilities.WebhookDispatch(true, true, true), "jpa")).violations());
+    }
+
+    @Test
+    void authorityCapabilitiesExposeAStorageEpochThatDiffersFromTheNode() {
+        migration.activate(5);
+        TaskAuthorityCapabilities capabilities = store.authorityCapabilities();
+        assertEquals(5L, capabilities.storageEpoch().longValue());
+        assertEquals(2L, capabilities.nodeEpoch().longValue());
+        assertFalse(org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration.of(
+                new org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration.Topology(true, capabilities,
+                        TaskAuthorityCapabilities.QueueReplication.NONE,
+                        new TaskAuthorityCapabilities.WebhookDispatch(true, true, true), "jpa"))
+                .violations().isEmpty());
+    }
+
+    @Test
     void savingALowerGenerationOverAMigratedTaskIsRefused() {
         String id = id();
         store.mutate(id, current -> JpaAtomicTaskMutationTest.plan(id, 1));
@@ -264,5 +316,55 @@ class JpaTaskMigrationTest {
                 () -> store.save(JpaAtomicTaskMutationTest.task(id, 0, TaskState.TASK_STATE_WORKING), false));
         assertEquals(before, store.readSnapshot(id));
         assertNotEquals(0, store.readSnapshot(id).task().generation());
+    }
+
+    /** A sender that reports the ordered, quiescent adapter the shared dispatcher requires. */
+    private static final class QuiescentSender implements PushNotificationSender {
+        @Override
+        public boolean sendNotification(StreamingEventKind event, Task taskSnapshot) {
+            return true;
+        }
+
+        @Override
+        public boolean supportsOrderedDispatch() {
+            return true;
+        }
+    }
+
+    @Test
+    void liveSharedJpaCompositionPassesOnlyWithTheSharedGateDispatcher() {
+        migration.activate(2);
+        migration.migrateAll();
+        MainEventBus bus = new MainEventBus();
+        QueueManager queues = new InMemoryQueueManager(store, bus);
+
+        MainEventBusProcessor withoutDispatcher = new MainEventBusProcessor(bus, store, new QuiescentSender(), queues);
+        List<String> noDispatcher = TaskAuthorityConfiguration.of(store, queues,
+                withoutDispatcher::webhookDispatchTopology).violations();
+        assertEquals(1, noDispatcher.size(), noDispatcher.toString());
+        assertTrue(noDispatcher.get(0).contains("dispatcher"), noDispatcher.get(0));
+
+        OrderedWebhookDispatcher localGate = new OrderedWebhookDispatcher(new InMemoryWebhookDispatchGate(),
+                new QuiescentSender());
+        try {
+            MainEventBusProcessor processor = new MainEventBusProcessor(bus, store, new QuiescentSender(), queues,
+                    localGate);
+            List<String> violations = TaskAuthorityConfiguration.of(store, queues, processor::webhookDispatchTopology)
+                    .violations();
+            assertEquals(1, violations.size(), violations.toString());
+            assertTrue(violations.get(0).contains("gate"), violations.get(0));
+        } finally {
+            localGate.close();
+        }
+
+        OrderedWebhookDispatcher sharedGate = new OrderedWebhookDispatcher(gate, new QuiescentSender());
+        try {
+            MainEventBusProcessor processor = new MainEventBusProcessor(bus, store, new QuiescentSender(), queues,
+                    sharedGate);
+            assertEquals(List.of(), TaskAuthorityConfiguration.of(store, queues, processor::webhookDispatchTopology)
+                    .violations());
+        } finally {
+            sharedGate.close();
+        }
     }
 }

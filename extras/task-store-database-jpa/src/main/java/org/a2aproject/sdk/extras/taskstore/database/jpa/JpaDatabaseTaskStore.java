@@ -31,6 +31,7 @@ import org.a2aproject.sdk.server.auth.TaskOperation;
 import org.a2aproject.sdk.server.config.A2AConfigProvider;
 import org.a2aproject.sdk.server.tasks.AtomicTaskStore;
 import org.a2aproject.sdk.server.tasks.CommittedMutation;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityCapabilities;
 import org.a2aproject.sdk.server.tasks.TaskCommitSlot;
 import org.a2aproject.sdk.server.tasks.TaskCommitSlotCallback;
 import org.a2aproject.sdk.server.tasks.TaskMutation;
@@ -198,6 +199,11 @@ public class JpaDatabaseTaskStore implements AtomicTaskStore, TaskStateProvider 
             throw new TaskPersistenceException(task.id(),
                 "Database save failed for task", e);
         }
+    }
+
+    @Override
+    public TaskAuthorityCapabilities authorityCapabilities() {
+        return migration.authorityCapabilities();
     }
 
     @Override

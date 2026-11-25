@@ -18,6 +18,7 @@ import org.a2aproject.sdk.grpc.utils.JSONRPCUtils;
 import org.a2aproject.sdk.server.apps.quarkus.A2AServerRoutes;
 import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.version.InterfaceRegistration;
 import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
 import org.a2aproject.sdk.spec.A2AError;
@@ -35,6 +36,9 @@ public class MultiVersionJSONRPCRoutes {
 
     @Inject
     Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
+
+    @Inject
+    Instance<TaskAuthorityConfiguration> taskAuthority;
 
     @Inject
     VertxSecurityHelper vertxSecurityHelper;
@@ -59,6 +63,7 @@ public class MultiVersionJSONRPCRoutes {
                         InterfaceRegistration registration = VersionRouter.registration(
                                 interfaceRegistrationResolvers, TransportProtocol.JSONRPC, tenant);
                         if (registration != null) {
+                            VersionRouter.requireTaskAuthority(registration, taskAuthority);
                             registration.requireAvailableVersions(v03Routes.isResolvable()
                                     ? Set.of("0.3", "1.0", "1.1") : Set.of("1.0", "1.1"));
                             registration.select(version);

@@ -53,6 +53,7 @@ import org.a2aproject.sdk.server.common.quarkus.SseResponseWriter;
 import org.a2aproject.sdk.server.common.quarkus.VersionRouter;
 import org.a2aproject.sdk.server.common.quarkus.VertxSecurityHelper;
 import org.a2aproject.sdk.server.extensions.A2AExtensions;
+import org.a2aproject.sdk.server.tasks.TaskAuthorityConfiguration;
 import org.a2aproject.sdk.server.util.async.Internal;
 import org.a2aproject.sdk.server.util.sse.SseFormatter;
 import org.a2aproject.sdk.server.version.InterfaceRegistrationResolver;
@@ -154,6 +155,9 @@ public class A2AServerRoutes {
     Instance<InterfaceRegistrationResolver> interfaceRegistrationResolvers;
 
     @Inject
+    Instance<TaskAuthorityConfiguration> taskAuthority;
+
+    @Inject
     VertxSecurityHelper vertxSecurityHelper;
 
     /**
@@ -165,7 +169,7 @@ public class A2AServerRoutes {
      * @param router the Vert.x router to configure
      */
     void setupRouter(@Observes @Priority(10) Router router) {
-        VersionRouter.validateDefaultRegistration(interfaceRegistrationResolvers, TransportProtocol.HTTP_JSON);
+        VersionRouter.validateDefaultRegistration(interfaceRegistrationResolvers, taskAuthority, TransportProtocol.HTTP_JSON);
         // Don't add a global BodyHandler - it interferes with gRPC routes
         // Instead, BodyHandler is added per-route below
 
@@ -784,8 +788,23 @@ public class A2AServerRoutes {
      */
     @PermitAll
     public void getAgentCard(RoutingContext rc) {
+        if (!cardTaskAuthorityAllows(rc, null)) {
+            return;
+        }
         HTTPRestResponse response = jsonRestHandler.getAgentCard();
         sendResponse(rc, response);
+    }
+
+    private boolean cardTaskAuthorityAllows(RoutingContext rc, @Nullable String tenant) {
+        try {
+            VersionRouter.requireTaskAuthorityForCard(interfaceRegistrationResolvers, taskAuthority,
+                    TransportProtocol.HTTP_JSON, tenant);
+            return true;
+        } catch (IllegalStateException e) {
+            // VersionRouter has already logged the violations.
+            rc.response().setStatusCode(500).end();
+            return false;
+        }
     }
 
     /**
@@ -800,7 +819,11 @@ public class A2AServerRoutes {
      */
     @PermitAll
     public void getTenantAgentCard(RoutingContext rc) {
-        HTTPRestResponse response = jsonRestHandler.getAgentCard(extractTenant(rc));
+        String tenant = extractTenant(rc);
+        if (!cardTaskAuthorityAllows(rc, tenant)) {
+            return;
+        }
+        HTTPRestResponse response = jsonRestHandler.getAgentCard(tenant);
         sendResponse(rc, response);
     }
 
@@ -874,7 +897,7 @@ public class A2AServerRoutes {
      */
     private ServerCallContext createCallContext(RoutingContext rc, String jsonRpcMethodName) {
         ServerCallContext context = createRawCallContext(rc, jsonRpcMethodName);
-        VersionRouter.attachRegistration(context, interfaceRegistrationResolvers, TransportProtocol.HTTP_JSON,
+        VersionRouter.attachRegistration(context, interfaceRegistrationResolvers, taskAuthority, TransportProtocol.HTTP_JSON,
                 extractTenant(rc), VersionRouter.resolveVersion(rc));
         if (context.getInterfaceRegistration() != null
                 && context.getVersionPolicy() == ServerVersionPolicy.V0_3) {
