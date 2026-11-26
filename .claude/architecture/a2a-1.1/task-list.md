@@ -142,10 +142,10 @@ serving metadata is unavailable, not asserted as telemetry.
 | P3-T14 bounded publication-gap handling | T03, T07, T10 | Committed 2026-11-26 (`1234c48f6`, base `0e04f44ce`); server-common only, opt-in `publicationReconciler`. Required check 74/74 (`PublicationGapRecoveryTest` 28), full server-common 984/984 ([handoff](phase-3/handoffs/P3-T14.md), [progress](phase-3/progress-T14.md)) | Accepted within scope by fresh-context Bob review C after review A "Changes required" ([A](phase-3/reviews/P3-T14-review-A.md), [B](phase-3/reviews/P3-T14-review-B.md), [C](phase-3/reviews/P3-T14-review-C.md)); G3 limits retained |
 | P3-T15 generation/timeline reducer/TaskView | Phase 2; T02/T05 rules | Accepted; see [handoff](phase-3/handoffs/P3-T15.md), [review](phase-3/reviews/P3-T15-review.md) | Bob review accepted |
 | P3-T16 public ordinary entry-point views/reliability | T15 | Committed 2026-11-26 (`ec4fa960a`, base `0e04f44ce`); client-side only, built-in transports still lack no-cursor `observe` (T17–T19). Required plan command exit 0 (client/base 102, OTel client 33, client-propagation 8); full affected modules exit 0 ([handoff](phase-3/handoffs/P3-T16.md), [progress](phase-3/progress-T16.md)) | Accepted within scope by two fresh-context Bob reviews, no Medium+ findings ([A](phase-3/reviews/P3-T16-review-A.md), [B](phase-3/reviews/P3-T16-review-B.md)) |
-| P3-T17 JSON-RPC production integration | T07, T12, T14, T16 | Planned; not started | Pending |
+| P3-T17 JSON-RPC production integration | T07, T12, T14, T16 | Imported through `763d0e6d9238b2e8dafe483fafb29ad3638b8d38`; JSON-RPC slice and shared fixture ([handoff](phase-3/handoffs/P3-T17.md)) | Accepted within scope by fresh-context Bob targeted and [full](phase-3/reviews/P3-T17-final2-review.md) reviews; limits retained |
 | P3-T18 REST production integration | Accepted T17 shared fixture and prerequisites | Planned; not started | Pending |
 | P3-T19 gRPC production integration | Accepted T17 shared fixture and prerequisites | Planned; not started | Pending |
-| P3-T20 compatibility/migration/phase gate | All prior rows | Planned; not started | Pending independent phase audit |
+| P3-T20 compatibility/migration/phase gate | All prior rows | Planned; resolve the client message-role question recorded in the T17 handoff | Pending independent phase audit |
 
 Retain the selected experimental bootstrap/origin/no-retry policies; G4/G6
 normative residuals do not require selecting them again. G1/G2 final claims,
@@ -185,7 +185,7 @@ selected-task handoffs/reviews use `phase-3/handoffs/P3-TNN.md` and
 | 0: semantics/baseline | Retained completed research | [Historical evidence](phase-0/decisions.md); unresolved dependent gates still apply |
 | 1: exact interfaces/client versions | Committed checkpoint | [Historical handoff](phase-1/next-session.md) |
 | 2: models/adapters/public bindings | Complete within the approved experimental pinned-RC scope | [Close-out and evidence](phase-2/checkpoints/phase2-complete.md); Phase 3 needs a separate assignment |
-| 3: mutation/publication/client reducer | P3-T01 through P3-T12 and P3-T14 through P3-T16 committed and accepted within their recorded scopes; P3-T13 live suite to be re-run on final sources; P3-T17 through P3-T20 not started | See the Phase 3 table above for per-task evidence. Earlier full-reactor evidence predates later follow-ups; the required final `mvn -B -ntp clean install` and the T13 re-run belong to the T20 phase gate |
+| 3: mutation/publication/client reducer | P3-T01 through P3-T12 and P3-T14 through P3-T17 committed and accepted within their recorded scopes; P3-T13 live suite to be re-run on final sources; P3-T18 through P3-T20 not started | See the Phase 3 table above for per-task evidence. Earlier full-reactor evidence predates later follow-ups; the required final `mvn -B -ntp clean install` and the T13 re-run belong to the T20 phase gate |
 | 4: observation/versioned delivery | Not assigned | Plan after prerequisites and gates are resolved |
 | 5: live execution/bindings | Not assigned | Plan only the supported, resolved specification contract |
 | 6: final audit/docs | Not assigned | Retain all final acceptance and independent evidence requirements |
