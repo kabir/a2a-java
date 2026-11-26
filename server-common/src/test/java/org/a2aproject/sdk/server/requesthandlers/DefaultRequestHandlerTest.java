@@ -187,6 +187,29 @@ public class DefaultRequestHandlerTest {
     }
 
     /**
+     * The handler can return the AUTH_REQUIRED task before the event bus has distributed the
+     * AUTH_REQUIRED status to the child queues, so a queue tapped in that window would receive it.
+     * Returns a latch that counts down once that status has been distributed.
+     */
+    private CountDownLatch watchAuthRequiredDistribution() {
+        CountDownLatch authDistributed = new CountDownLatch(1);
+        mainEventBusProcessor.setCallback(new MainEventBusProcessorCallback() {
+            @Override
+            public void onEventProcessed(String taskId, Event event) {
+                if (event instanceof TaskStatusUpdateEvent statusUpdate
+                        && statusUpdate.status().state() == TaskState.TASK_STATE_AUTH_REQUIRED) {
+                    authDistributed.countDown();
+                }
+            }
+
+            @Override
+            public void onTaskFinalized(String taskId) {
+            }
+        });
+        return authDistributed;
+    }
+
+    /**
      * Functional interface for test agent executor methods.
      */
     protected interface AgentExecutorMethod {
@@ -396,6 +419,7 @@ public class DefaultRequestHandlerTest {
     void testAuthRequired_QueueRemainsOpen() throws Exception {
         // Arrange: Agent emits AUTH_REQUIRED then continues with late events
         CountDownLatch authEmitted = new CountDownLatch(1);
+        CountDownLatch authDistributed = watchAuthRequiredDistribution();
         CountDownLatch continueAgent = new CountDownLatch(1);
 
         agentExecutorExecute = (context, emitter) -> {
@@ -432,6 +456,8 @@ public class DefaultRequestHandlerTest {
 
         assertTrue(authEmitted.await(2, TimeUnit.SECONDS),
             "AUTH_REQUIRED should be emitted");
+        assertTrue(authDistributed.await(5, TimeUnit.SECONDS),
+            "AUTH_REQUIRED should be distributed before tapping");
 
         // Tap into the queue (simulates client resubscription after AUTH_REQUIRED)
         EventQueue tappedQueue = queueManager.tap(task.id());
@@ -545,6 +571,7 @@ public class DefaultRequestHandlerTest {
     void testAuthRequired_Streaming_ContinuesInBackground() throws Exception {
         // Arrange: Agent emits AUTH_REQUIRED, then streams artifacts
         CountDownLatch authEmitted = new CountDownLatch(1);
+        CountDownLatch authDistributed = watchAuthRequiredDistribution();
         CountDownLatch continueAgent = new CountDownLatch(1);
 
         agentExecutorExecute = (context, emitter) -> {
@@ -584,6 +611,9 @@ public class DefaultRequestHandlerTest {
         assertEquals(TaskState.TASK_STATE_AUTH_REQUIRED, result.status().state(),
             "Should receive AUTH_REQUIRED state");
 
+        assertTrue(authDistributed.await(5, TimeUnit.SECONDS),
+            "AUTH_REQUIRED should be distributed before tapping");
+
         // Tap queue to receive subsequent events
         EventQueue tappedQueue = queueManager.tap(result.id());
 
@@ -620,6 +650,7 @@ public class DefaultRequestHandlerTest {
     void testAuthRequired_Resubscription() throws Exception {
         // Arrange: Agent emits AUTH_REQUIRED, simulates client disconnect, then continues
         CountDownLatch authEmitted = new CountDownLatch(1);
+        CountDownLatch authDistributed = watchAuthRequiredDistribution();
         CountDownLatch continueAgent = new CountDownLatch(1);
 
         agentExecutorExecute = (context, emitter) -> {
@@ -659,6 +690,8 @@ public class DefaultRequestHandlerTest {
 
         // Simulate client disconnect by just waiting
         Thread.sleep(100);
+        assertTrue(authDistributed.await(5, TimeUnit.SECONDS),
+            "AUTH_REQUIRED should be distributed before resubscribing");
 
         // Client reconnects: tap into queue (resubscription)
         EventQueue resubscribedQueue = queueManager.tap(task.id());
@@ -2528,10 +2561,14 @@ public class DefaultRequestHandlerTest {
             boolean interruptBlockedTerminalEnqueue,
             boolean returnImmediately) throws Exception {
         EventQueueUtil.stop(mainEventBusProcessor);
+        // The child queue has the same capacity as the main queue, and one processed event can fan out
+        // into two child items (the initial user message and the WORKING status). A capacity of 1 lets
+        // the child be closed as "full" before the consumer polls, losing the error. Use 2, and have the
+        // agent emit a filler artifact so the main queue is still full when the terminal event is enqueued.
         queueManager = new InMemoryQueueManager((TaskStateProvider) taskStore, mainEventBus) {
             @Override
             public EventQueue.EventQueueBuilder createBaseEventQueueBuilder(String taskId) {
-                return super.createBaseEventQueueBuilder(taskId).queueSize(1);
+                return super.createBaseEventQueueBuilder(taskId).queueSize(2);
             }
         };
         mainEventBusProcessor = new MainEventBusProcessor(mainEventBus, taskStore,
@@ -2594,6 +2631,7 @@ public class DefaultRequestHandlerTest {
             agentThread.set(Thread.currentThread());
             executorRan.countDown();
             emitter.startWork();
+            emitter.addArtifact(List.of(new TextPart("filler")));
             agentAction.invoke(context, emitter);
         };
 
