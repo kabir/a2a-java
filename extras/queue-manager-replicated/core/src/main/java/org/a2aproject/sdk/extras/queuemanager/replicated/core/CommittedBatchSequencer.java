@@ -74,6 +74,35 @@ final class CommittedBatchSequencer {
         }
     }
 
+    /**
+     * Records a batch committed on this node before it is replicated and fanned out locally. Later generations
+     * received from other nodes are then ordered after it, and older ones are dropped as stale. Every call must be
+     * paired with {@link #localEnd(String)}.
+     */
+    void localBegin(CommittedTaskBatch batch) {
+        TaskSequence sequence;
+        synchronized (tasks) {
+            sequence = tasks.computeIfAbsent(batch.taskId(), id -> new TaskSequence());
+        }
+        synchronized (sequence) {
+            sequence.localBegin(batch);
+        }
+    }
+
+    /** Ends a local publication started by {@link #localBegin(CommittedTaskBatch)} and releases held batches. */
+    void localEnd(String taskId) {
+        TaskSequence sequence;
+        synchronized (tasks) {
+            sequence = tasks.get(taskId);
+        }
+        if (sequence == null) {
+            return;
+        }
+        synchronized (sequence) {
+            sequence.localEnd();
+        }
+    }
+
     int pendingCount(String taskId) {
         TaskSequence sequence;
         synchronized (tasks) {
@@ -92,6 +121,7 @@ final class CommittedBatchSequencer {
 
     private static final class TaskSequence {
         private long lastDelivered = -1;
+        private int localInFlight;
         private long closedThrough = -1;
         private final Map<Long, CommittedTaskBatch> delivered = new LinkedHashMap<>();
         private final TreeMap<Long, Entry> pending = new TreeMap<>();
@@ -105,7 +135,7 @@ final class CommittedBatchSequencer {
             if (screened != null) {
                 return screened;
             }
-            if (lastDelivered >= 0 && first > lastDelivered + 1) {
+            if (localInFlight > 0 || (lastDelivered >= 0 && first > lastDelivered + 1)) {
                 Entry buffered = pending.get(first);
                 if (buffered != null) {
                     return buffered.batch().equals(batch) ? Outcome.DUPLICATE : Outcome.CONFLICT;
@@ -123,12 +153,47 @@ final class CommittedBatchSequencer {
             }
             List<Entry> ready = new ArrayList<>();
             ready.add(new Entry(batch, delivery));
-            long cursor = last;
+            drainContiguous(ready, last);
+            runReady(ready);
+            return Outcome.DELIVERED;
+        }
+
+        /** Registers a locally committed batch whose publication is starting; remote batches wait until it ends. */
+        void localBegin(CommittedTaskBatch batch) {
+            long first = firstOf(batch);
+            long last = lastOf(batch);
+            localInFlight++;
+            if (screen(batch, first, last) == null) {
+                record(batch);
+                pending.headMap(lastDelivered, true).clear();
+            }
+        }
+
+        /** Ends one local publication and releases the remote batches that were held behind it, in order. */
+        void localEnd() {
+            if (localInFlight > 0) {
+                localInFlight--;
+            }
+            if (localInFlight > 0) {
+                return;
+            }
+            List<Entry> ready = new ArrayList<>();
+            drainContiguous(ready, lastDelivered);
+            if (!ready.isEmpty()) {
+                runReady(ready);
+            }
+        }
+
+        private void drainContiguous(List<Entry> ready, long from) {
+            long cursor = from;
             Entry next;
             while ((next = pending.remove(cursor + 1)) != null) {
                 ready.add(next);
                 cursor = lastOf(next.batch());
             }
+        }
+
+        private void runReady(List<Entry> ready) {
             RuntimeException failure = null;
             Error fatal = null;
             for (Entry entry : ready) {
@@ -168,7 +233,6 @@ final class CommittedBatchSequencer {
             if (failure != null) {
                 throw failure;
             }
-            return Outcome.DELIVERED;
         }
 
         private @Nullable Outcome screen(CommittedTaskBatch batch, long first, long last) {

@@ -47,6 +47,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.a2aproject.sdk</groupId>
+            <artifactId>a2a-java-extras-push-notification-config-store-database-jpa</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>

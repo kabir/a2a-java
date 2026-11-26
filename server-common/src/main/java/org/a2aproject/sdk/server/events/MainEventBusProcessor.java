@@ -870,6 +870,14 @@ public class MainEventBusProcessor implements Runnable {
             }
         }
 
+        if (replicateWholeBatch && batchHook != null) {
+            try {
+                batchHook.onCommittedBatchPublished(batch);
+            } catch (RuntimeException | Error failure) {
+                reportPostCommitFailure(taskId, batch, failure);
+            }
+        }
+
         // Delay lifecycle callbacks until every event in the batch has reached child queues.
         TaskStreamLifecycleHook streamHook = mainQueue.getTaskStreamLifecycleHook();
         if (streamHook != null && childCount > 0) {

@@ -264,6 +264,39 @@ class CommittedReplicationTest {
     }
 
     @Test
+    void aLocalBatchMakesALaterArrivingEarlierRemoteBatchStale() {
+        CommittedBatchSequencer sequencer = new CommittedBatchSequencer();
+        List<Long> delivered = new ArrayList<>();
+
+        sequencer.localBegin(batch("l", 2, TaskState.TASK_STATE_WORKING, 2));
+        sequencer.localEnd("l");
+
+        assertEquals(CommittedBatchSequencer.Outcome.STALE,
+                sequencer.offer(batch("l", 1, TaskState.TASK_STATE_WORKING, 1), () -> delivered.add(1L)));
+        assertEquals(CommittedBatchSequencer.Outcome.DELIVERED,
+                sequencer.offer(batch("l", 3, TaskState.TASK_STATE_WORKING, 3), () -> delivered.add(3L)));
+        assertEquals(List.of(3L), delivered);
+    }
+
+    @Test
+    void aRemoteBatchWaitsBehindALocalPublicationInFlightAndIsReleasedInOrder() {
+        CommittedBatchSequencer sequencer = new CommittedBatchSequencer();
+        List<Long> delivered = new ArrayList<>();
+
+        sequencer.localBegin(batch("m", 1, TaskState.TASK_STATE_WORKING, 1));
+        assertEquals(CommittedBatchSequencer.Outcome.BUFFERED,
+                sequencer.offer(batch("m", 3, TaskState.TASK_STATE_WORKING, 3), () -> delivered.add(3L)));
+        assertEquals(CommittedBatchSequencer.Outcome.BUFFERED,
+                sequencer.offer(batch("m", 2, TaskState.TASK_STATE_WORKING, 2), () -> delivered.add(2L)));
+        assertEquals(List.of(), delivered, "nothing is visible while the earlier local batch is still publishing");
+
+        sequencer.localEnd("m");
+
+        assertEquals(List.of(2L, 3L), delivered);
+        assertEquals(0, sequencer.pendingCount("m"));
+    }
+
+    @Test
     void legacyRecordHasNoEpochAndNoBatch() throws Exception {
         ReplicatedEventQueueItem legacy = JsonUtil.fromJson(JsonUtil.toJson(
                 new ReplicatedEventQueueItem(TASK, status(TASK, TaskState.TASK_STATE_WORKING, 0))),

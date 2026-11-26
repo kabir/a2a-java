@@ -337,7 +337,7 @@ public class ReplicatedQueueManager implements QueueManager {
             // Forward it unchanged (never a synthesized status generation), then the ordered poison pill.
             LOGGER.debug("Task {} finalized - forwarding committed terminal batch then poison pill", taskId);
             try {
-                sendCommitted(finalBatch);
+                sendCommitted(finalBatch, true);
             } catch (RuntimeException | Error replicationFailure) {
                 LOGGER.error("Could not replicate committed terminal batch for task {}", taskId, replicationFailure);
             } finally {
@@ -393,13 +393,25 @@ public class ReplicatedQueueManager implements QueueManager {
     /**
      * Replicates one locally committed batch. The same call serves the event-bus path (non-terminal batches) and
      * the post-commit finalization path (terminal batches); both carry the same {@link CommittedTaskBatch.Identity}.
+     *
+     * <p>The batch is first recorded as this node's own publication: a record from another node for a later
+     * generation then waits, and one for an earlier generation is dropped as stale, so local observers never see
+     * generations move backwards however long the broker hand-off takes. The hold ends when the local fan-out of
+     * the batch is done (signalled by the hook) or, with {@code endWithSend}, when the send returns.</p>
      */
-    private void sendCommitted(CommittedTaskBatch batch) {
+    private void sendCommitted(CommittedTaskBatch batch, boolean endWithSend) {
         Long epoch = writerEpoch;
         if (epoch == null) {
             return;
         }
-        replicationStrategy.send(ReplicatedEventQueueItem.committed(batch, epoch, originId));
+        sequencer.localBegin(batch);
+        try {
+            replicationStrategy.send(ReplicatedEventQueueItem.committed(batch, epoch, originId));
+        } finally {
+            if (endWithSend) {
+                sequencer.localEnd(batch.taskId());
+            }
+        }
     }
 
     @Override
@@ -443,7 +455,12 @@ public class ReplicatedQueueManager implements QueueManager {
 
         @Override
         public void onCommittedBatch(CommittedTaskBatch batch) {
-            sendCommitted(batch);
+            sendCommitted(batch, false);
+        }
+
+        @Override
+        public void onCommittedBatchPublished(CommittedTaskBatch batch) {
+            sequencer.localEnd(batch.taskId());
         }
 
         @Override

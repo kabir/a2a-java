@@ -27,6 +27,41 @@
             <artifactId>a2a-java-sdk-server-common</artifactId>
         </dependency>
 
+        <!-- Phase 3 test instrumentation (internal barriers); all provided by the apps -->
+        <dependency>
+            <groupId>org.a2aproject.sdk</groupId>
+            <artifactId>a2a-java-queue-manager-replicated-core</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.a2aproject.sdk</groupId>
+            <artifactId>a2a-java-queue-manager-replication-mp-reactive</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.a2aproject.sdk</groupId>
+            <artifactId>a2a-java-extras-task-store-database-jpa</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.a2aproject.sdk</groupId>
+            <artifactId>a2a-java-sdk-http-client</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- CDI -->
         <dependency>
             <groupId>jakarta.enterprise</groupId>

@@ -56,6 +56,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Direct SQL evidence (lane cursor, epochs, revisions) against the real PostgreSQL container -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Awaitility for async testing -->
         <dependency>
             <groupId>org.awaitility</groupId>

@@ -30,4 +30,13 @@ public interface EventEnqueueHook {
      */
     default void onCommittedBatch(CommittedTaskBatch batch) {
     }
+
+    /**
+     * Called once after a batch passed to {@link #onCommittedBatch(CommittedTaskBatch)} has been handed to every
+     * local child queue, so a hook can order work from other nodes behind this node's own publication.
+     *
+     * @param batch the batch that was passed to {@link #onCommittedBatch(CommittedTaskBatch)}
+     */
+    default void onCommittedBatchPublished(CommittedTaskBatch batch) {
+    }
 }
