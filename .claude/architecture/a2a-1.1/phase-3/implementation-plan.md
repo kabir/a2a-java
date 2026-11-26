@@ -1283,6 +1283,11 @@ Compile/load Phase 3 probes using fresh candidate classpaths and retained frozen
 binaries, recording exact dependency/classpath commands with the new probe POM.
 Do not overwrite historical inputs or rely on old `/tmp` files still existing.
 
+The 2026-11-26 B4-2 ordering fix (`commitAndPublish` reserve/release hook,
+`CommittedBatchSequencer.localReserve`) changed sources under T13 test 3 and has only
+in-JVM evidence, so re-run `Phase3AuthorityMultiInstanceTest` unchanged (see the
+[T13 diagnosis disposition](handoffs/P3-T13-diagnosis-commit-registration-window.md#disposition-and-fix--2026-11-26)).
+
 T13 real multi-instance evidence must match final affected sources; refresh changed
 scenarios when fixes invalidate it. Before phase completion, run the required
 Java 17 `mvn -B -ntp clean install` with the normal deadline, in a separately

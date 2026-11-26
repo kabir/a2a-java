@@ -714,12 +714,22 @@ public class MainEventBusProcessor implements Runnable {
         EventQueue queue = queueManager.get(taskId);
         EventQueue.MainQueue mainQueue = queue instanceof EventQueue.MainQueue main ? main : null;
         AtomicReference<TaskCommitSlot> reservedSlot = new AtomicReference<>();
+        // This runs on the caller's thread, concurrently with the processor thread that handles batches from other
+        // nodes. The hook is told while the store's atomic boundary is still open, so a batch committed by another
+        // node afterwards cannot be fanned out ahead of this one, even before the sequencer has seen this batch.
+        EventEnqueueHook queueHook = mainQueue == null ? null : mainQueue.getEnqueueHook();
+        EventEnqueueHook holdingHook = queueHook != null && queueHook.handlesCommittedBatches() ? queueHook : null;
+        AtomicBoolean held = new AtomicBoolean();
         boolean published = false;
         try {
             CommittedMutation committed = new TaskMutationAuthority(atomicStore).mutate(taskId, mutation,
                     (slot, planned) -> {
                         orderedTaskPublisher.reserve(slot);
                         reservedSlot.set(slot);
+                        if (holdingHook != null) {
+                            holdingHook.onCommittedBatchReserved(taskId);
+                            held.set(true);
+                        }
                     });
             TaskCommitSlot slot = reservedSlot.get();
             if (slot != null && committed.changed() && !committed.events().isEmpty()) {
@@ -742,6 +752,13 @@ public class MainEventBusProcessor implements Runnable {
                     orderedTaskPublisher.discard(slot);
                 } catch (RuntimeException discardFailure) {
                     LOGGER.warn("Could not discard unpublished input slot for task {}", taskId, discardFailure);
+                }
+            }
+            if (held.get() && holdingHook != null) {
+                try {
+                    holdingHook.onCommittedBatchReleased(taskId);
+                } catch (RuntimeException | Error releaseFailure) {
+                    LOGGER.warn("Could not release the committed-batch hold for task {}", taskId, releaseFailure);
                 }
             }
         }

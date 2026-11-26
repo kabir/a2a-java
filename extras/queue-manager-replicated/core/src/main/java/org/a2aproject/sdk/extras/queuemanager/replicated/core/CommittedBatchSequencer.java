@@ -89,6 +89,37 @@ final class CommittedBatchSequencer {
         }
     }
 
+    /**
+     * Holds batches from other nodes for the task from the moment a local mutation is about to commit, before this
+     * node's own batch is known to the sequencer. This closes the interval between the commit and
+     * {@link #localBegin(CommittedTaskBatch)}, in which a node that has no ordered state for the task (first batch
+     * since start-up, or evicted) would otherwise deliver a later generation ahead of the local one. Every call must
+     * be paired with {@link #localRelease(String)}.
+     */
+    void localReserve(String taskId) {
+        TaskSequence sequence;
+        synchronized (tasks) {
+            sequence = tasks.computeIfAbsent(taskId, id -> new TaskSequence());
+        }
+        synchronized (sequence) {
+            sequence.localReserved++;
+        }
+    }
+
+    /** Ends a hold started by {@link #localReserve(String)} and releases held batches. */
+    void localRelease(String taskId) {
+        TaskSequence sequence;
+        synchronized (tasks) {
+            sequence = tasks.get(taskId);
+        }
+        if (sequence == null) {
+            return;
+        }
+        synchronized (sequence) {
+            sequence.localRelease();
+        }
+    }
+
     /** Ends a local publication started by {@link #localBegin(CommittedTaskBatch)} and releases held batches. */
     void localEnd(String taskId) {
         TaskSequence sequence;
@@ -122,6 +153,7 @@ final class CommittedBatchSequencer {
     private static final class TaskSequence {
         private long lastDelivered = -1;
         private int localInFlight;
+        private int localReserved;
         private long closedThrough = -1;
         private final Map<Long, CommittedTaskBatch> delivered = new LinkedHashMap<>();
         private final TreeMap<Long, Entry> pending = new TreeMap<>();
@@ -135,7 +167,7 @@ final class CommittedBatchSequencer {
             if (screened != null) {
                 return screened;
             }
-            if (localInFlight > 0 || (lastDelivered >= 0 && first > lastDelivered + 1)) {
+            if (localInFlight > 0 || localReserved > 0 || (lastDelivered >= 0 && first > lastDelivered + 1)) {
                 Entry buffered = pending.get(first);
                 if (buffered != null) {
                     return buffered.batch().equals(batch) ? Outcome.DUPLICATE : Outcome.CONFLICT;
@@ -174,11 +206,26 @@ final class CommittedBatchSequencer {
             if (localInFlight > 0) {
                 localInFlight--;
             }
-            if (localInFlight > 0) {
+            releaseHeld();
+        }
+
+        /** Ends one reservation hold and releases the remote batches that were held behind it, in order. */
+        void localRelease() {
+            if (localReserved > 0) {
+                localReserved--;
+            }
+            releaseHeld();
+        }
+
+        private void releaseHeld() {
+            if (localInFlight > 0 || localReserved > 0) {
                 return;
             }
+            // Without ordered state, which happens when the local batch never reached this sequencer (for example
+            // the mutation was rolled back), the earliest held batch is the starting point, as for any first batch.
+            long from = lastDelivered < 0 && !pending.isEmpty() ? pending.firstKey() - 1 : lastDelivered;
             List<Entry> ready = new ArrayList<>();
-            drainContiguous(ready, lastDelivered);
+            drainContiguous(ready, from);
             if (!ready.isEmpty()) {
                 runReady(ready);
             }

@@ -464,6 +464,16 @@ public class ReplicatedQueueManager implements QueueManager {
         }
 
         @Override
+        public void onCommittedBatchReserved(String reservedTaskId) {
+            sequencer.localReserve(reservedTaskId);
+        }
+
+        @Override
+        public void onCommittedBatchReleased(String reservedTaskId) {
+            sequencer.localRelease(reservedTaskId);
+        }
+
+        @Override
         public void onEnqueue(EventQueueItem item) {
             if (writerEpoch != null) {
                 // Under a writer epoch only committed, epoch-stamped batches are replicated (onCommittedBatch).

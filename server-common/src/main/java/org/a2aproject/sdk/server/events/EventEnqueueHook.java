@@ -39,4 +39,28 @@ public interface EventEnqueueHook {
      */
     default void onCommittedBatchPublished(CommittedTaskBatch batch) {
     }
+
+    /**
+     * Called, only when {@link #handlesCommittedBatches()} is true, while a request-thread mutation of the task is
+     * still inside the store's atomic boundary, that is before its result can be visible to another node. It lets
+     * a hook order batches from other nodes behind a local batch that is committed but not yet handed to
+     * {@link #onCommittedBatch(CommittedTaskBatch)}. Every call is followed by exactly one
+     * {@link #onCommittedBatchReleased(String)}, whether the batch was published, never produced, or failed.
+     *
+     * <p>Mutations processed on the event-bus processor thread do not use this pair: a batch from another node is
+     * itself processed on that thread, after the local batch.</p>
+     *
+     * @param taskId the task whose mutation is being committed
+     */
+    default void onCommittedBatchReserved(String taskId) {
+    }
+
+    /**
+     * Ends the hold started by {@link #onCommittedBatchReserved(String)}, after the local publication finished or was
+     * abandoned.
+     *
+     * @param taskId the task passed to the matching {@link #onCommittedBatchReserved(String)}
+     */
+    default void onCommittedBatchReleased(String taskId) {
+    }
 }

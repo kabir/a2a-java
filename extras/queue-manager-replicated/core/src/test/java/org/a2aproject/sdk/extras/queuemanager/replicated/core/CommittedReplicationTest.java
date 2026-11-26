@@ -297,6 +297,81 @@ class CommittedReplicationTest {
     }
 
     @Test
+    void aReservedLocalCommitHoldsAColdTaskBeforeTheLocalBatchIsRegistered() {
+        CommittedBatchSequencer sequencer = new CommittedBatchSequencer();
+        List<Long> delivered = new ArrayList<>();
+
+        // No state for the task on this node: without the reservation the remote batch would be delivered at once.
+        sequencer.localReserve("c");
+        assertEquals(CommittedBatchSequencer.Outcome.BUFFERED,
+                sequencer.offer(batch("c", 3, TaskState.TASK_STATE_WORKING, 3), () -> delivered.add(3L)));
+        sequencer.localBegin(batch("c", 2, TaskState.TASK_STATE_WORKING, 2));
+        sequencer.localEnd("c");
+        assertEquals(List.of(), delivered, "the reservation still holds the batch after the local publication ended");
+
+        sequencer.localRelease("c");
+
+        assertEquals(List.of(3L), delivered);
+        assertEquals(0, sequencer.pendingCount("c"));
+    }
+
+    @Test
+    void aReleasedReservationWithoutALocalBatchDeliversTheEarliestHeldBatchAsTheStartingPoint() {
+        CommittedBatchSequencer sequencer = new CommittedBatchSequencer();
+        List<Long> delivered = new ArrayList<>();
+
+        sequencer.localReserve("r");
+        assertEquals(CommittedBatchSequencer.Outcome.BUFFERED,
+                sequencer.offer(batch("r", 6, TaskState.TASK_STATE_WORKING, 6), () -> delivered.add(6L)));
+        assertEquals(CommittedBatchSequencer.Outcome.BUFFERED,
+                sequencer.offer(batch("r", 5, TaskState.TASK_STATE_WORKING, 5), () -> delivered.add(5L)));
+
+        sequencer.localRelease("r");
+
+        assertEquals(List.of(5L, 6L), delivered);
+        assertEquals(CommittedBatchSequencer.Outcome.DELIVERED,
+                sequencer.offer(batch("r", 7, TaskState.TASK_STATE_WORKING, 7), () -> delivered.add(7L)));
+    }
+
+    @Test
+    void aBatchFromAnotherNodeCannotOvertakeALocalCommitWhoseSequencerStateIsCold() throws Exception {
+        String taskId = "cold-local";
+        store.save(Task.builder().id(taskId).contextId("ctx").status(new TaskStatus(TaskState.TASK_STATE_WORKING))
+                .generation(1).build(), false);
+        store.readSnapshot(taskId);
+        EventQueue queue = manager.createOrTap(taskId);
+        CountDownLatch committed = new CountDownLatch(1);
+        CountDownLatch proceed = new CountDownLatch(1);
+        store.afterCommit = () -> {
+            committed.countDown();
+            try {
+                proceed.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+        TaskMutation mutation = current -> {
+            Task next = Task.builder(current.task()).generation(2).build();
+            return new org.a2aproject.sdk.server.tasks.MutationPlan(next,
+                    List.of(status(taskId, TaskState.TASK_STATE_WORKING, 2)), true);
+        };
+        Thread writer = new Thread(() -> processor.commitAndPublish(taskId, mutation));
+        writer.start();
+        try {
+            assertTrue(committed.await(5, TimeUnit.SECONDS));
+            // Generation 2 is committed but not yet published; another node commits and publishes generation 3.
+            manager.onReplicatedEvent(remote(batch(taskId, 3, TaskState.TASK_STATE_WORKING, 3)));
+            assertEquals(List.of(), drainQuiet(queue), "nothing is visible while the local commit is unpublished");
+        } finally {
+            proceed.countDown();
+            writer.join(5000);
+        }
+
+        assertEquals(List.of(2L, 3L), drainGenerations(queue, 2));
+        assertEquals(List.of(), drainQuiet(queue));
+    }
+
+    @Test
     void legacyRecordHasNoEpochAndNoBatch() throws Exception {
         ReplicatedEventQueueItem legacy = JsonUtil.fromJson(JsonUtil.toJson(
                 new ReplicatedEventQueueItem(TASK, status(TASK, TaskState.TASK_STATE_WORKING, 0))),
@@ -682,12 +757,20 @@ class CommittedReplicationTest {
             super.save(task, isReplicated);
         }
 
+        /** Runs after the mutation committed and its publication slot was reserved, before mutate returns. */
+        volatile Runnable afterCommit;
+
         @Override
         public CommittedMutation mutate(String taskId, TaskMutation mutation,
                 org.a2aproject.sdk.server.tasks.TaskCommitSlotCallback callback) {
             mutations.incrementAndGet();
             mutationsByTask.computeIfAbsent(taskId, k -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
-            return super.mutate(taskId, mutation, callback);
+            CommittedMutation committed = super.mutate(taskId, mutation, callback);
+            Runnable hook = afterCommit;
+            if (hook != null) {
+                hook.run();
+            }
+            return committed;
         }
 
         void commit(String taskId, EventQueue queue) {

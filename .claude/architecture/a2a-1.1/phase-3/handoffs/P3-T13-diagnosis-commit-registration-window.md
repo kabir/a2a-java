@@ -1,5 +1,8 @@
 # P3-T13 follow-up diagnosis: commit-to-registration ordering window (review finding B4-2)
 
+> **Disposition 2026-11-26: confirmed (narrower than first stated) and fixed.** See
+> [Disposition and fix](#disposition-and-fix--2026-11-26) at the end. The text below is the original diagnosis and is kept unchanged.
+
 Written 2026-11-26 for an independent agent. Source: reading of commit `1d27f803` (branch `t13-work`, base `0e04f44c`). **Nothing below has
 been reproduced by a test**; it is derived from the code and from what the live tests do and do not exercise. Status of the claims is marked.
 
@@ -81,3 +84,52 @@ Run on the same combination only (PostgreSQL 16.16, Kafka 4.2.0 SASL, two nodes)
 * A batch committed but never published (crash, test 5) is recovered only by an explicit GetTask on the surviving node (no Phase 4 replay); the
   other nodes then see a generation gap and drop or buffer later batches according to their sequencer state.
 * Capacity (256 events / 4 MiB) and the 30 s attempt-deadline loss were not exercised live.
+
+## Disposition and fix — 2026-11-26
+
+Evaluated after T14 and T16 were merged (HEAD `f95cdcc42`). The T14/T16 changes do not alter the anchors; T14's `PublicationReconciler`
+gates per observation, it does not change `CommittedBatchSequencer` or hook placement.
+
+**Verdict: a real defect, but narrower than the diagnosis.** Reproduced by a test (the new test fails with `expected [] but was [3]` when the fix is removed).
+
+* Correction to the diagnosis: `MainEventBusProcessor` has ONE processor thread. A remote batch reaches `deliverCommittedBatch` only through
+  that thread (`enqueueReplicated` -> bus). Mutations that commit ON that thread (`processEvent`, `processProposal`) therefore always deliver
+  before any later remote batch is processed, whatever the sequencer state. The window exists only for batches committed on a REQUEST thread,
+  i.e. `MainEventBusProcessor.commitAndPublish` (ordinary guarded input to an existing task: `commitExistingTaskInput`,
+  `commitArtifactOnlyInput`), which publishes concurrently with the processor thread. T13 test 3 exercised that path.
+* In that path, with a cold sequencer (no state for the task on this node), a remote N+1 offered between the commit and `localBegin` was
+  DELIVERED at once and then local N was stale-screened but still fanned out: `[.., N+1, N]`.
+
+**Fix (additive, request-thread path only):**
+
+| File | Change |
+|---|---|
+| `server-common/.../events/EventEnqueueHook.java` | default no-op `onCommittedBatchReserved(taskId)` / `onCommittedBatchReleased(taskId)` |
+| `server-common/.../events/MainEventBusProcessor.java` | `commitAndPublish` calls `onCommittedBatchReserved` inside the store's slot callback (before the commit is visible to other nodes, next to `orderedTaskPublisher.reserve`) and `onCommittedBatchReleased` in its `finally`, after publish or discard, only if the reserve call succeeded and the hook `handlesCommittedBatches()` |
+| `extras/queue-manager-replicated/core/.../CommittedBatchSequencer.java` | `localReserve` / `localRelease`: a separate `localReserved` count buffers remote batches like `localInFlight`; on release with no ordered state the earliest held batch is the starting point (covers a rolled-back local mutation whose place another node took) |
+| `extras/queue-manager-replicated/core/.../ReplicatedQueueManager.java` | `ReplicationHook` maps the pair to the sequencer |
+
+No store fetch, no warming of `lastDelivered` from storage (one-final-snapshot / no-fetch gates unchanged); `OrderedTaskPublisher`,
+webhook dispatch and T14's reconciler are untouched.
+
+**Evidence** (`-Dmaven.repo.local=/tmp/m2-fix`, online, no `-javaagent` needed): `server-common` 984 tests and `queue-manager-replicated/core` 58 tests
+(`CommittedReplicationTest` 31, +3) pass with 0 failures/errors/skips. New: `CommittedReplicationTest.aBatchFromAnotherNodeCannotOvertakeALocalCommitWhoseSequencerStateIsCold`
+(real `ReplicatedQueueManager` + `MainEventBusProcessor` + `InMemoryTaskStore`, a barrier after the store commit and before publication) and two
+sequencer unit tests. Mutation probe: commenting out the `onCommittedBatchReserved` call makes the integration test fail
+(`/tmp/fix-probe.log`); production restored and sha256-verified.
+
+**NOT done / for later tasks (read before touching this area):**
+
+* **T13 live evidence is not refreshed.** The two-node PostgreSQL/Kafka suite (`Phase3AuthorityMultiInstanceTest`) was not re-run here (no container
+  images present). The fix touches the path test 3 exercises, so per the T20 rule ("T13 real multi-instance evidence must match final affected sources")
+  it must be re-run unchanged on the final sources. The cold-restart + hold-after-commit live scenario described above is still not a live test;
+  the new test is in-JVM only and claims nothing about Kafka/PostgreSQL timing.
+* **T16-T19:** any NEW production path that commits a mutation on a request/caller thread and publishes it through `OrderedTaskPublisher`
+  MUST bracket it with `onCommittedBatchReserved` (inside the slot callback) and `onCommittedBatchReleased` (in a `finally`), as `commitAndPublish`
+  does. Paths that commit on the event-bus processor thread need nothing. Prefer reusing `commitAndPublish`.
+* **T14 reconciler** (opt-in, wired only in `onSubscribeToTask`, no CDI auto-wiring) would independently hold a later generation behind a missing one
+  for an observation it gates. T17-T19 wiring of it is a second layer, not a substitute: the fix above is what keeps `CommittedBatchSequencer`
+  itself ordered for observers that are not gated.
+* Unchanged retained items: no release timeout for a hold (a leaked hold buffers up to `MAX_PENDING = 64`, then OVERFLOW); reviewer B4-1
+  (unguarded `cancelSubmittedFinalEvents()` can skip `onCommittedBatchPublished`) is still open and would also leak a `localInFlight` hold; the
+  sequencer's `MAX_TASKS` LRU could in theory evict an entry that holds a reservation.
