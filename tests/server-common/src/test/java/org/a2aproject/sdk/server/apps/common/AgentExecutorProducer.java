@@ -184,6 +184,10 @@ public class AgentExecutorProducer {
                     case "phase3:work" -> agentEmitter.startWork();
                     case "phase3:noop" -> { }
                     case "phase3:direct" -> agentEmitter.sendMessage("phase3 direct reply");
+                    case "phase3:agent-artifact" -> {
+                        agentEmitter.startWork();
+                        agentEmitter.addArtifact(List.of(new TextPart("agent")), "p3-agent-art", "agent", null);
+                    }
                     case "phase3:artifacts-complete" -> {
                         agentEmitter.startWork();
                         agentEmitter.addArtifact(List.of(new TextPart("first")), "p3-a1", "first", null);

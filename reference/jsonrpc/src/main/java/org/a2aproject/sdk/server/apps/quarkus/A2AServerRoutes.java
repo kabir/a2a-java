@@ -386,8 +386,9 @@ public class A2AServerRoutes {
         A2AResponse<?> nonStreamingResponse = null;
         Multi<? extends A2AResponse<?>> streamingResponse = null;
         A2AErrorResponse error = null;
+        A2ARequest<?> request = null;
         try {
-            A2ARequest<?> request = JSONRPCUtils.parseRequestBody(body, extractTenant(rc), context.getVersionPolicy().protocolVersion());
+            request = JSONRPCUtils.parseRequestBody(body, extractTenant(rc), context.getVersionPolicy().protocolVersion());
             context.getState().put(METHOD_NAME_KEY, request.getMethod());
             if (request instanceof NonStreamingJSONRPCRequest nonStreamingRequest) {
                 nonStreamingResponse = processNonStreamingRequest(nonStreamingRequest, context);
@@ -396,7 +397,8 @@ public class A2AServerRoutes {
                 streamingResponse = processStreamingRequest(request, context);
             }
         } catch (A2AError e) {
-            error = new A2AErrorResponse(e);
+            // A request that parsed owns its id, so a pre-stream rejection must echo it (JSON-RPC 2.0).
+            error = request != null ? new A2AErrorResponse(request.getId(), e) : new A2AErrorResponse(e);
         } catch (InvalidParamsJsonMappingException e) {
             error = new A2AErrorResponse(e.getId(), new org.a2aproject.sdk.spec.InvalidParamsError(null, e.getMessage(), null));
         } catch (MethodNotFoundJsonMappingException e) {

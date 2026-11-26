@@ -258,7 +258,14 @@ public class JSONRPCUtils {
                     org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder();
             parseRequestBody(params, builder, id);
             setTenantIfAbsent(builder::getTenant, builder::setTenant, tenant);
-            org.a2aproject.sdk.spec.SendInputParams input = ProtoUtils.FromProto.sendInputParams(builder);
+            org.a2aproject.sdk.spec.SendInputParams input;
+            try {
+                input = ProtoUtils.FromProto.sendInputParams(builder);
+            } catch (org.a2aproject.sdk.spec.InvalidParamsError e) {
+                // The request id is already known, so the rejection must carry it (JSON-RPC 2.0).
+                throw new InvalidParamsJsonMappingException(
+                        Utils.defaultIfNull(e.getMessage(), "Invalid parameters"), id);
+            }
             return SEND_MESSAGE_METHOD.equals(method)
                     ? new SendInputRequest(version, id, input)
                     : new SendInputStreamingRequest(version, id, input);

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
@@ -34,6 +35,7 @@ import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
+import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -88,9 +90,19 @@ class Phase3JSONRPCPublicClientTest {
                 int before = peer.requests.size();
                 assertTrue(before >= 1, route + "/" + cause + " must have reached the peer");
 
+                // the guard is refused through every public input API, each time before any I/O
+                SendInputParams guarded = guarded(1L);
                 A2AClientException rejected = assertThrows(A2AClientException.class,
-                        () -> client.sendInput(guarded(1L), List.of(), null, null));
+                        () -> client.sendInput(guarded, List.of(), null, null));
                 assertTrue(rejected.getMessage().contains("not reliable"), rejected.getMessage());
+                A2AClientException observed = assertThrows(A2AClientException.class,
+                        () -> client.sendInputObserved(guarded, null));
+                assertTrue(observed.getMessage().contains("not reliable"), observed.getMessage());
+                MessageSendParams legacy = MessageSendParams.builder().message(guarded.message())
+                        .configuration(guarded.configuration()).build();
+                A2AClientException viaSendMessage = assertThrows(A2AClientException.class,
+                        () -> client.sendMessage(legacy, List.of(), error -> { }, null));
+                assertTrue(viaSendMessage.getMessage().contains("not reliable"), viaSendMessage.getMessage());
                 assertEquals(before, peer.requests.size(), route + "/" + cause + ": guard must stop before I/O");
 
                 // The guard is never dropped or rewritten: unguarded input is still allowed and counts as one request.
@@ -182,28 +194,109 @@ class Phase3JSONRPCPublicClientTest {
         }
     }
 
-    @Test
-    void malformedKnownPayloadsAndErrorEnvelopesStillFailThroughEveryPublicEntryPoint() throws Exception {
-        String malformedStatus = "{\"statusUpdate\":{\"status\":{\"state\":\"TASK_STATE_WORKING\"},\"generation\":\"2\"}}";
-        for (Route route : new Route[] {Route.SEND_STREAMING, Route.SUBSCRIBE_NO_CURSOR}) {
-            try (Peer peer = new Peer(requestBody -> Reply.sse(frames(requestBody, eventEnvelope("task", task(1)),
-                    malformedStatus)))) {
-                Client client = client(peer.baseUrl(), "1.1", true);
-                AtomicReference<Throwable> failure = new AtomicReference<>();
-                runEntry(client, route, new CopyOnWriteArrayList<>(), failure);
-                assertTrue(failure.get() != null, route + ": malformed known payload must fail");
-                assertEquals(1, peer.requests.size());
-                client.close();
-            }
-        }
-        try (Peer peer = new Peer(requestBody -> Reply.sse(errorFrame(requestBody)))) {
-            Client client = client(peer.baseUrl(), "1.1", true);
+    @ParameterizedTest
+    @EnumSource(Route.class)
+    void malformedKnownPayloadsFailThroughEveryPublicEntryPointAttributedToTheMalformedValue(Route route)
+            throws Exception {
+        // A complete frame whose generation is not an int64: the one defect, attributed by the decoder to its value.
+        String malformed = statusUpdateJson("not-a-number");
+        String wellFormed = statusUpdateJson("2");
+        try (Peer peer = new Peer(requestBody -> route.streaming()
+                ? Reply.sse(frames(requestBody, eventEnvelope("task", task(1)), malformed))
+                : Reply.json(unaryResultJson(requestBody, taskJsonWithGeneration("not-a-number"))))) {
+            Client client = client(peer.baseUrl(), "1.1", route.streaming());
             AtomicReference<Throwable> failure = new AtomicReference<>();
-            runEntry(client, Route.SUBSCRIBE_NO_CURSOR, new CopyOnWriteArrayList<>(), failure);
-            Throwable cause = failure.get();
-            assertTrue(cause instanceof TaskNotFoundError || cause != null && cause.getCause() instanceof TaskNotFoundError,
-                    "error envelope must stay typed: " + cause);
+            runEntry(client, route, new CopyOnWriteArrayList<>(), failure);
+            assertTrue(failure.get() != null, route + ": malformed known payload must fail");
+            // The decoder reports known-content corruption as such and names the offending int64 value; it cannot
+            // name the JSON field, so the well-formed control below is what pins the cause to the generation.
+            String cause = chain(failure.get());
+            assertTrue(cause.contains("Malformed known protocol content") && cause.contains("not-a-number"),
+                    route + ": the failure must be the malformed-known-content error naming the bad value: " + cause);
             assertEquals(1, peer.requests.size());
+            client.close();
+        }
+        // control: the same frame with a valid generation is accepted, so the failure above is the generation's
+        try (Peer peer = new Peer(requestBody -> route.streaming()
+                ? Reply.sse(frames(requestBody, eventEnvelope("task", task(1)), wellFormed))
+                : Reply.json(unaryResultJson(requestBody, taskJsonWithGeneration("2"))))) {
+            Client client = client(peer.baseUrl(), "1.1", route.streaming());
+            AtomicReference<Throwable> failure = new AtomicReference<>();
+            runEntry(client, route, new CopyOnWriteArrayList<>(), failure);
+            assertEquals(null, failure.get(), route + ": the well-formed control must succeed");
+            client.close();
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(Route.class)
+    void errorEnvelopesStayTypedThroughEveryPublicEntryPoint(Route route) throws Exception {
+        try (Peer peer = new Peer(requestBody -> route.streaming()
+                ? Reply.sse(errorFrame(requestBody)) : Reply.json(errorEnvelope(requestBody)))) {
+            Client client = client(peer.baseUrl(), "1.1", route.streaming());
+            AtomicReference<Throwable> failure = new AtomicReference<>();
+            runEntry(client, route, new CopyOnWriteArrayList<>(), failure);
+            Throwable cause = failure.get();
+            assertTrue(cause != null, route + ": an error envelope must fail the call");
+            assertTrue(chainContains(cause, TaskNotFoundError.class), route + ": error envelope must stay typed: " + chain(cause));
+            assertEquals(1, peer.requests.size());
+            client.close();
+        }
+    }
+
+    @Test
+    void unknownTimelineVariantInASnapshotKeepsTheViewUncertainAndNeverFabricatesAGap() throws Exception {
+        JsonObject snapshot = toJson(task(3));
+        JsonArray timeline = new JsonArray();
+        JsonObject known = new JsonObject();
+        known.addProperty("generation", 3);
+        known.add("message", toJsonObject(agentMessage("m-known")));
+        JsonObject unknown = new JsonObject();
+        unknown.addProperty("generation", 2);
+        unknown.add("futureTimelineKind", new JsonObject());
+        timeline.add(unknown);
+        timeline.add(known);
+        snapshot.add("timeline", timeline);
+        try (Peer peer = new Peer(requestBody -> Reply.sse(frames(requestBody, eventEnvelope("task", task(1)),
+                "{\"task\":" + snapshot + "}")))) {
+            Client client = client(peer.baseUrl(), "1.1", true);
+            TaskObservation observation = client.sendInputObserved(
+                    SendInputParams.builder().message(userMessage("observed")).build(), null);
+            ObservationEnd end = observation.completion().toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+            assertEquals(ObservationEnd.Kind.COMPLETED, end.kind());
+            TaskView view = end.finalView();
+            assertEquals(ViewSync.INCOMPLETE, view.sync(), "an uninterpreted timeline entry keeps the view uncertain: " + view);
+            assertTrue(view.timeline().flags().contains(HistoryCoverage.Flag.UNKNOWN_SKIPPED), String.valueOf(view));
+            assertFalse(view.timeline().flags().contains(HistoryCoverage.Flag.NOT_ASSERTED),
+                    "the skipped entry's generation is known, so no gap is fabricated: " + view);
+            assertEquals(1, peer.requests.size());
+            client.close();
+        }
+    }
+
+    @Test
+    void cancellingALiveUncertainStreamDetachesOnlyTheObserverAndSendsNoTaskCancel() throws Exception {
+        try (Peer peer = new Peer(requestBody -> Reply.heldOpenSse(frames(requestBody,
+                eventEnvelope("task", task(1)), "{\"futureVariant\":{}}")))) {
+            Client client = client(peer.baseUrl(), "1.1", true);
+            TaskObservation observation = client.sendInputObserved(
+                    SendInputParams.builder().message(userMessage("live")).build(), null);
+            for (int i = 0; i < 100 && observation.currentView().sync() != ViewSync.INCOMPLETE; i++) {
+                Thread.sleep(50);
+            }
+            assertEquals(ViewSync.INCOMPLETE, observation.currentView().sync(), "the unknown frame arrived live");
+            assertFalse(observation.completion().toCompletableFuture().isDone(), "the stream is still open");
+
+            observation.cancel();
+
+            ObservationEnd end = observation.completion().toCompletableFuture().get(5, TimeUnit.SECONDS);
+            assertEquals(ObservationEnd.Kind.CANCELLED, end.kind());
+            assertEquals(ViewSync.INCOMPLETE, end.finalView().sync(), "cancellation keeps the retained uncertainty");
+            assertEquals(1L, end.finalView().throughGeneration());
+            Thread.sleep(300);
+            assertEquals(1, peer.requests.size(), "cancelling the observer never sends a task cancel or any request");
+            assertEquals("SendStreamingMessage", peer.requests.get(0).get("method").getAsString());
             client.close();
         }
     }
@@ -227,7 +320,11 @@ class Phase3JSONRPCPublicClientTest {
     // ---- helpers -------------------------------------------------------------------------------------------
 
     private static void runEntry(Client client, Route route, List<ClientEvent> events) throws Exception {
-        runEntry(client, route, events, new AtomicReference<>());
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runEntry(client, route, events, failure);
+        if (failure.get() instanceof A2AClientException synchronous) {
+            throw synchronous;
+        }
     }
 
     private static void runEntry(Client client, Route route, List<ClientEvent> events,
@@ -241,14 +338,19 @@ class Phase3JSONRPCPublicClientTest {
             }
             done.countDown();
         };
-        if (route == Route.SUBSCRIBE_NO_CURSOR) {
-            client.subscribeToTask(new TaskIdParams(TASK), consumers, errors, null);
-            // A finite SSE reply ends the stream cleanly without an error callback: wait for quiescence.
-            awaitQuiescent(events, done);
-        } else {
-            client.sendMessage(userMessage("send"), consumers, errors, null);
-            awaitQuiescent(events, done);
+        try {
+            if (route == Route.SUBSCRIBE_NO_CURSOR) {
+                client.subscribeToTask(new TaskIdParams(TASK), consumers, errors, null);
+            } else {
+                client.sendMessage(userMessage("send"), consumers, errors, null);
+            }
+        } catch (A2AClientException synchronous) {
+            // a unary send reports its decode or server error by throwing instead of through the error callback
+            failure.compareAndSet(null, synchronous);
+            return;
         }
+        // A finite SSE reply ends the stream cleanly without an error callback: wait for quiescence.
+        awaitQuiescent(events, done);
     }
 
     private static void awaitQuiescent(List<ClientEvent> events, CountDownLatch done) throws InterruptedException {
@@ -356,6 +458,59 @@ class Phase3JSONRPCPublicClientTest {
         return body.toString();
     }
 
+    private static String statusUpdateJson(String generation) {
+        return "{\"statusUpdate\":{\"taskId\":\"" + TASK + "\",\"contextId\":\"" + CTX
+                + "\",\"status\":{\"state\":\"TASK_STATE_WORKING\"},\"generation\":\"" + generation + "\"}}";
+    }
+
+    private static JsonObject taskJsonWithGeneration(String generation) {
+        JsonObject task = toJson(task(1));
+        task.addProperty("generation", generation);
+        return task;
+    }
+
+    private static String unaryResultJson(JsonObject requestBody, JsonObject task) {
+        JsonObject envelope = new JsonObject();
+        envelope.addProperty("jsonrpc", "2.0");
+        envelope.add("id", requestBody.get("id").deepCopy());
+        JsonObject result = new JsonObject();
+        result.add("task", task);
+        envelope.add("result", result);
+        return envelope.toString();
+    }
+
+    private static JsonObject toJsonObject(Message message) {
+        return JsonParser.parseString(json(message)).getAsJsonObject();
+    }
+
+    private static String chain(Throwable failure) {
+        StringBuilder text = new StringBuilder();
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            text.append(cause.getClass().getSimpleName()).append(':').append(cause.getMessage()).append(" <- ");
+        }
+        return text.toString();
+    }
+
+    private static boolean chainContains(Throwable failure, Class<? extends Throwable> type) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String errorEnvelope(JsonObject requestBody) {
+        JsonObject envelope = new JsonObject();
+        envelope.addProperty("jsonrpc", "2.0");
+        envelope.add("id", requestBody.get("id").deepCopy());
+        JsonObject error = new JsonObject();
+        error.addProperty("code", -32001);
+        error.addProperty("message", "task not found");
+        envelope.add("error", error);
+        return envelope.toString();
+    }
+
     private static String errorFrame(JsonObject requestBody) {
         JsonObject envelope = new JsonObject();
         envelope.addProperty("jsonrpc", "2.0");
@@ -378,13 +533,18 @@ class Phase3JSONRPCPublicClientTest {
                 .build();
     }
 
-    private record Reply(boolean sse, String body) {
+    private record Reply(boolean sse, String body, boolean hold) {
         static Reply sse(String body) {
-            return new Reply(true, body);
+            return new Reply(true, body, false);
+        }
+
+        /** An event stream that delivers its frames and then stays open until the peer is closed. */
+        static Reply heldOpenSse(String body) {
+            return new Reply(true, body, true);
         }
 
         static Reply json(String body) {
-            return new Reply(false, body);
+            return new Reply(false, body, false);
         }
     }
 
@@ -392,6 +552,7 @@ class Phase3JSONRPCPublicClientTest {
         private final HttpServer server;
         private final ExecutorService executor = Executors.newCachedThreadPool();
         private final Function<JsonObject, Reply> replies;
+        private final CountDownLatch released = new CountDownLatch(1);
         final List<JsonObject> requests = new CopyOnWriteArrayList<>();
         final List<String> versions = new CopyOnWriteArrayList<>();
 
@@ -423,17 +584,24 @@ class Phase3JSONRPCPublicClientTest {
                 Reply reply = replies.apply(requestBody);
                 byte[] body = reply.body().getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().add("Content-Type", reply.sse() ? "text/event-stream" : "application/json");
-                exchange.sendResponseHeaders(200, body.length);
+                exchange.sendResponseHeaders(200, reply.hold() ? 0 : body.length);
                 try (OutputStream output = exchange.getResponseBody()) {
                     output.write(body);
+                    if (reply.hold()) {
+                        output.flush();
+                        released.await(30, TimeUnit.SECONDS);
+                    }
                 }
             } catch (IOException ignored) {
                 // A client detaching its read ends the controlled request.
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
             }
         }
 
         @Override
         public void close() {
+            released.countDown();
             server.stop(0);
             executor.shutdownNow();
         }

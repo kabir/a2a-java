@@ -23,6 +23,7 @@ import org.a2aproject.sdk.compat03.spec.AgentCard_v0_3;
 import org.a2aproject.sdk.compat03.spec.AgentInterface_v0_3;
 import org.a2aproject.sdk.compat03.spec.Message_v0_3;
 import org.a2aproject.sdk.compat03.spec.TaskQueryParams_v0_3;
+import org.a2aproject.sdk.compat03.spec.Task_v0_3;
 import org.a2aproject.sdk.compat03.spec.TextPart_v0_3;
 
 /** Uses the unchanged public 0.3 SDK with its native configured endpoint and wire shape. */
@@ -73,6 +74,13 @@ final class Public03ClientSupport {
             }, null);
             assertTrue(completed.await(10, TimeUnit.SECONDS));
             assertNull(failure.get());
+        }
+    }
+
+    /** Reads a task, with its full history, through the unchanged public 0.3 SDK. */
+    static Task_v0_3 getTask(String endpoint, String taskId) throws Exception {
+        try (Handle handle = create(endpoint)) {
+            return handle.client().getTask(new TaskQueryParams_v0_3(taskId, 100), null);
         }
     }
 

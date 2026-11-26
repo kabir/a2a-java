@@ -161,6 +161,20 @@ class Phase2CodecTest {
     }
 
     @Test
+    void selected11BlankMessageIdIsRejectedAsInvalidParamsCarryingTheRequestId() {
+        for (String method : List.of(org.a2aproject.sdk.spec.A2AMethods.SEND_MESSAGE_METHOD,
+                org.a2aproject.sdk.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD)) {
+            String body = "{\"jsonrpc\":\"2.0\",\"id\":\"req-blank\",\"method\":\"" + method
+                    + "\",\"params\":{\"message\":{\"messageId\":\"\",\"role\":\"ROLE_USER\","
+                    + "\"parts\":[{\"text\":\"hello\"}]}}}";
+            org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException error = assertThrows(
+                    org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException.class,
+                    () -> JSONRPCUtils.parseRequestBody(body, null, "1.1"), method);
+            assertEquals("req-blank", error.getId(), method);
+        }
+    }
+
+    @Test
     void mapsVersionFieldsAndBothCompanionStreamOneofs() {
         org.a2aproject.sdk.spec.TaskStatusUpdateEvent statusEvent =
                 new org.a2aproject.sdk.spec.TaskStatusUpdateEvent("task", new TaskStatus(TaskState.TASK_STATE_WORKING),
