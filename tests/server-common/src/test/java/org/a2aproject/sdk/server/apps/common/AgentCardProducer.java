@@ -44,6 +44,10 @@ public class AgentCardProducer {
     boolean securityEnabled;
 
     @Inject
+    @ConfigProperty(name = "test.agent.user-artifacts", defaultValue = "false")
+    boolean userArtifacts;
+
+    @Inject
     Instance<InterfaceRegistrationResolver> registrations;
 
     @Produces
@@ -72,6 +76,7 @@ public class AgentCardProducer {
                         .streaming(true)
                         .pushNotifications(true)
                         .extendedAgentCard(true)
+                        .userArtifacts(userArtifacts)
                         .build())
                 .defaultInputModes(Collections.singletonList("text"))
                 .defaultOutputModes(Collections.singletonList("text"))

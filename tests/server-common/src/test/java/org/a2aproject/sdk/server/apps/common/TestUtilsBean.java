@@ -7,6 +7,7 @@ import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.TaskStore;
 import org.a2aproject.sdk.spec.Event;
+import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.Task;
 
@@ -52,6 +53,12 @@ public class TestUtilsBean {
 
     public int getChildQueueCount(String taskId) {
         return queueManager.getActiveChildQueueCount(taskId);
+    }
+
+    public int pushConfigCount(String taskId) {
+        var result = pushNotificationConfigStore.getInfo(
+                new ListTaskPushNotificationConfigsParams(taskId));
+        return result == null ? 0 : result.configs().size();
     }
 
     public void deleteTaskPushNotificationConfig(String taskId, String configId) {

@@ -73,6 +73,7 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
 import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -331,7 +332,36 @@ public class JSONRPCTransport implements VersionedClientTransport {
         if (!"1.1".equals(protocolVersion)) {
             throw new UnsupportedOperationException("Streaming input requires protocol version 1.1");
         }
+        return startObservation(SEND_STREAMING_MESSAGE_METHOD, () -> ProtoUtils.ToProto.sendInputRequest(request),
+                request.tenant(), options, context, "streaming input");
+    }
 
+    /**
+     * Starts the no-cursor ordinary subscription as a decoded observation. A cursor is rejected before any request
+     * because cursor replay is not implemented; a selected 1.0 transport keeps its callback-only subscription.
+     */
+    @Override
+    public TransportObservation observe(ObserveTaskParams request, SpiCallOptions options,
+            @Nullable ClientCallContext context) {
+        checkNotNullParam("request", request);
+        checkNotNullParam("options", options);
+        if (!"1.1".equals(protocolVersion)) {
+            throw new UnsupportedOperationException("Task observation requires protocol version 1.1");
+        }
+        if (request.lastSeenGeneration() != null) {
+            throw new UnsupportedOperationException("Cursor observation is not supported");
+        }
+        TaskIdParams subscription = new TaskIdParams(request.id(), request.tenant());
+        return startObservation(SUBSCRIBE_TO_TASK_METHOD, () -> ProtoUtils.ToProto.subscribeToTaskRequest(subscription),
+                request.tenant(), options, context, "task observation");
+    }
+
+    private interface PayloadSupplier {
+        Object get() throws JsonProcessingException;
+    }
+
+    private TransportObservation startObservation(String method, PayloadSupplier payload, @Nullable String tenant,
+            SpiCallOptions options, @Nullable ClientCallContext context, String description) {
         AtomicReference<A2AHttpClient.AsyncSSECall> requestCall = new AtomicReference<>();
         AtomicReference<TransportObservation> observationReference = new AtomicReference<>();
         AtomicBoolean cancellationRequested = new AtomicBoolean();
@@ -350,8 +380,7 @@ public class JSONRPCTransport implements VersionedClientTransport {
         activeInputObservations.add(observation);
 
         try {
-            PayloadAndHeaders payloadAndHeaders = applyInterceptors(SEND_STREAMING_MESSAGE_METHOD,
-                    ProtoUtils.ToProto.sendInputRequest(request), agentCard, context);
+            PayloadAndHeaders payloadAndHeaders = applyInterceptors(method, payload.get(), agentCard, context);
             String requestId = UUID.randomUUID().toString();
             SSEEventListener listener = new SSEEventListener(protocolVersion, requestId, observation);
             CompletableFuture<Void> cancellableFuture = new CompletableFuture<>() {
@@ -364,8 +393,8 @@ public class JSONRPCTransport implements VersionedClientTransport {
                     return super.cancel(mayInterruptIfRunning);
                 }
             };
-            A2AHttpClient.AsyncSSECall call = createPostBuilder(requestUrl(request.tenant()), payloadAndHeaders,
-                    SEND_STREAMING_MESSAGE_METHOD, false, requestId).postAsyncSSECallStatusAware(
+            A2AHttpClient.AsyncSSECall call = createPostBuilder(requestUrl(tenant), payloadAndHeaders,
+                    method, false, requestId).postAsyncSSECallStatusAware(
                             event -> listener.onMessage(event, cancellableFuture),
                             failure -> listener.onError(failure, cancellableFuture),
                             listener::onComplete);
@@ -385,7 +414,7 @@ public class JSONRPCTransport implements VersionedClientTransport {
             });
         } catch (IOException | InterruptedException | JsonProcessingException | RuntimeException failure) {
             activeInputObservations.remove(observation);
-            observation.fail(new A2AClientException("Failed to start streaming input: " + failure, failure));
+            observation.fail(new A2AClientException("Failed to start " + description + ": " + failure, failure));
         }
         return observation;
     }

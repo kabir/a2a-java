@@ -74,6 +74,7 @@ import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsParams;
 import org.a2aproject.sdk.spec.ListTaskPushNotificationConfigsResult;
 import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.MessageSendConfiguration;
 import org.a2aproject.sdk.spec.MessageSendParams;
 import org.a2aproject.sdk.spec.ObserveTaskParams;
 import org.a2aproject.sdk.spec.SendInputParams;
@@ -291,7 +292,7 @@ public class JSONRPCHandler {
     public SendMessageResponse onSendInput(SendInputRequest request, ServerCallContext context) {
         try {
             SendInputParams params = request.getParams();
-            rejectUnsupportedInputOptions(params);
+            rejectDeliveryVersion(params.configuration());
             EffectiveAgentCard effective = preflight(params.tenant(), context, AgentCardOperation.none());
             Message message = params.message();
             if (message != null) {
@@ -372,7 +373,7 @@ public class JSONRPCHandler {
             SendInputStreamingRequest request, ServerCallContext context) {
         try {
             SendInputParams params = request.getParams();
-            rejectUnsupportedStreamingInput(params);
+            rejectDeliveryVersion(params.configuration());
             EffectiveAgentCard effective = preflight(params.tenant(), context, STREAMING);
             Message message = params.message();
             if (message != null) {
@@ -631,8 +632,9 @@ public class JSONRPCHandler {
             String tenant = request.getParams() != null ? request.getParams().tenant() : null;
             EffectiveAgentCard effective = preflight(tenant, context, AgentCardOperation.none());
             TaskQueryParams params = request.getParams();
-            rejectUnsupportedQuery(params);
-            Task task = requestHandler.onGetTask(new TaskQueryParams(params.id(), params.historyLength(), effective.tenant()), context);
+            rejectUnsupportedQuery(params, context);
+            Task task = requestHandler.onGetTask(new TaskQueryParams(params.id(), params.historyLength(),
+                    effective.tenant(), null, params.timelineLength()), context);
             return new GetTaskResponse(request.getId(), task == null ? null
                     : VersionedOutputProjector.projectTask(task, context.getVersionPolicy()));
         } catch (A2AError e) {
@@ -683,10 +685,10 @@ public class JSONRPCHandler {
             String tenant = request.getParams() != null ? request.getParams().tenant() : null;
             EffectiveAgentCard effective = preflight(tenant, context, AgentCardOperation.none());
             ListTasksParams params = request.getParams();
-            rejectUnsupportedListOptions(params);
+            rejectLegacyTimeline(params.timelineLength(), context);
             ListTasksResult result = requestHandler.onListTasks(new ListTasksParams(params.contextId(), params.status(),
                     params.pageSize(), params.pageToken(), params.historyLength(), params.statusTimestampAfter(),
-                    params.includeArtifacts(), effective.tenant()), context);
+                    params.includeArtifacts(), effective.tenant(), params.timelineLength()), context);
             ListTasksResult projected = new ListTasksResult(result.tasks().stream()
                     .map(task -> VersionedOutputProjector.projectTask(task, context.getVersionPolicy())).toList(),
                     result.totalSize(), result.pageSize(), result.nextPageToken());
@@ -940,21 +942,10 @@ public class JSONRPCHandler {
         return new SendInputParams(params.message(), params.artifactUpdates(), params.configuration(), params.metadata(), tenant);
     }
 
-    private static void rejectUnsupportedInputOptions(SendInputParams params) throws UnsupportedOperationError {
-        if (params.configuration() != null
-                && (params.configuration().timelineLength() != null
-                        || params.configuration().taskPushNotificationConfig() != null
-                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
-            throw new UnsupportedOperationError();
-        }
-    }
-
-    private static void rejectUnsupportedStreamingInput(SendInputParams params) throws UnsupportedOperationError {
-        if (!params.artifactUpdates().isEmpty() || params.configuration() != null
-                && (params.configuration().ifGenerationMatch() != null
-                        || params.configuration().timelineLength() != null
-                        || params.configuration().taskPushNotificationConfig() != null
-                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+    private static void rejectDeliveryVersion(@Nullable MessageSendConfiguration configuration)
+            throws UnsupportedOperationError {
+        if (configuration != null && configuration.taskPushNotificationConfig() != null
+                && configuration.taskPushNotificationConfig().protocolVersion() != null) {
             throw new UnsupportedOperationError();
         }
     }
@@ -971,17 +962,20 @@ public class JSONRPCHandler {
         }
     }
 
-    private static void rejectUnsupportedQuery(TaskQueryParams params) throws A2AError {
-        if (params.currentGeneration() != null && params.currentGeneration() < 0) {
-            throw new InvalidParamsError("currentGeneration must be non-negative");
-        }
-        if (params.currentGeneration() != null || params.timelineLength() != null) {
+    private static void rejectLegacyTimeline(@Nullable Integer timelineLength, ServerCallContext context)
+            throws UnsupportedOperationError {
+        if (timelineLength != null
+                && context.getVersionPolicy() == org.a2aproject.sdk.server.version.ServerVersionPolicy.V1_0) {
             throw new UnsupportedOperationError();
         }
     }
 
-    private static void rejectUnsupportedListOptions(ListTasksParams params) throws UnsupportedOperationError {
-        if (params.timelineLength() != null) {
+    private static void rejectUnsupportedQuery(TaskQueryParams params, ServerCallContext context) throws A2AError {
+        rejectLegacyTimeline(params.timelineLength(), context);
+        if (params.currentGeneration() != null && params.currentGeneration() < 0) {
+            throw new InvalidParamsError("currentGeneration must be non-negative");
+        }
+        if (params.currentGeneration() != null) {
             throw new UnsupportedOperationError();
         }
     }

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
@@ -240,6 +241,11 @@ public class DefaultRequestHandler implements RequestHandler {
     private static final String A2A_REQUEST_CONTEXT_POPULATE_REFERRED_TASKS = "a2a.request-context.populate-referred-tasks";
     private static final String A2A_AUTHORIZATION_REQUIRED = "a2a.authorization.required";
     private static final String A2A_PUSH_NOTIFICATIONS_ENABLED = "a2a.push-notification.enabled";
+    private static final String A2A_PUBLICATION_RECOVERY_INTERVAL_MILLIS = "a2a.publication-recovery.interval.millis";
+    private static final String A2A_PUBLICATION_RECOVERY_READ_DEADLINE_MILLIS =
+            "a2a.publication-recovery.read-deadline.millis";
+    private static final String A2A_PUBLICATION_RECOVERY_GAP_DEADLINE_MILLIS =
+            "a2a.publication-recovery.gap-deadline.millis";
 
     @Inject
     A2AConfigProvider configProvider;
@@ -441,6 +447,32 @@ public class DefaultRequestHandler implements RequestHandler {
         this.authorizationRequired = Boolean.parseBoolean(
                 configProvider.getValue(A2A_AUTHORIZATION_REQUIRED));
         this.requestContextBuilder = () -> new SimpleRequestContextBuilder(taskStore, populateReferredTasks, authorizationProvider);
+        if (publicationReconciler == null && taskStore instanceof AtomicTaskStore) {
+            publicationReconciler = PublicationReconciler.forTaskStore(taskStore, publicationRecoveryLimits());
+        }
+    }
+
+    /** Defaults are the reconciler's own; the optional properties only shorten or lengthen the SDK-policy bounds. */
+    private PublicationReconciler.Limits publicationRecoveryLimits() {
+        PublicationReconciler.Limits defaults = PublicationReconciler.Limits.DEFAULTS;
+        return new PublicationReconciler.Limits(
+                optionalMillis(A2A_PUBLICATION_RECOVERY_INTERVAL_MILLIS, defaults.reconciliationInterval()),
+                optionalMillis(A2A_PUBLICATION_RECOVERY_READ_DEADLINE_MILLIS, defaults.authorityReadDeadline()),
+                optionalMillis(A2A_PUBLICATION_RECOVERY_GAP_DEADLINE_MILLIS, defaults.reorderGapDeadline()),
+                defaults.maxBufferedEvents(), defaults.maxBufferedBytes());
+    }
+
+    private java.time.Duration optionalMillis(String name, java.time.Duration fallback) {
+        java.util.Optional<String> value = configProvider.getOptionalValue(name);
+        return value != null && value.isPresent() ? java.time.Duration.ofMillis(Long.parseLong(value.get())) : fallback;
+    }
+
+    @PreDestroy
+    void closePublicationReconciler() {
+        PublicationReconciler reconciler = publicationReconciler;
+        if (reconciler != null) {
+            reconciler.close();
+        }
     }
 
 

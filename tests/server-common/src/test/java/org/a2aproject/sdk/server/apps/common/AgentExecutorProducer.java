@@ -3,6 +3,7 @@ package org.a2aproject.sdk.server.apps.common;
 import static org.a2aproject.sdk.server.ServerCallContext.TRANSPORT_KEY;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,6 +29,8 @@ import org.a2aproject.sdk.spec.InvalidParamsError;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.Task;
+import org.a2aproject.sdk.spec.TaskState;
+import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TextPart;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.a2aproject.sdk.spec.UnsupportedOperationError;
@@ -38,6 +41,10 @@ import io.quarkus.arc.profile.IfBuildProfile;
 public class AgentExecutorProducer {
 
     // Inject the existing AgentCard to avoid special handling for grpc
+    /** Task ids the controlled phase3 branches were invoked for, in arrival order. */
+    public static final CopyOnWriteArrayList<String> PHASE3_TASK_IDS =
+            new CopyOnWriteArrayList<>();
+
     @Inject
     @PublicAgentCard
     AgentCard agentCard;
@@ -70,6 +77,12 @@ public class AgentExecutorProducer {
                     String value = requestScopedBean.getValue();
                     agentEmitter.addArtifact(List.of(new TextPart("request-scoped:" + value)));
                     agentEmitter.complete();
+                    return;
+                }
+
+                // P3-T17 controlled branches, routed by message content prefix.
+                if (input.startsWith("phase3:")) {
+                    handlePhase3(context, agentEmitter, input);
                     return;
                 }
 
@@ -161,6 +174,30 @@ public class AgentExecutorProducer {
                     agentEmitter.cancel();
                 } else if (context.getTask().id().equals("cancel-task-not-supported-123")) {
                     throw new UnsupportedOperationError();
+                }
+            }
+
+            /** Controlled P3-T17 behaviours; input appended to an existing task by the core never reaches this. */
+            private void handlePhase3(RequestContext context, AgentEmitter agentEmitter, String input) {
+                PHASE3_TASK_IDS.add(String.valueOf(context.getTaskId()));
+                switch (input) {
+                    case "phase3:work" -> agentEmitter.startWork();
+                    case "phase3:noop" -> { }
+                    case "phase3:direct" -> agentEmitter.sendMessage("phase3 direct reply");
+                    case "phase3:artifacts-complete" -> {
+                        agentEmitter.startWork();
+                        agentEmitter.addArtifact(List.of(new TextPart("first")), "p3-a1", "first", null);
+                        agentEmitter.addArtifact(List.of(new TextPart("second")), "p3-a2", "second", null);
+                        agentEmitter.complete();
+                    }
+                    case "phase3:terminal-proposal" -> agentEmitter.addTask(Task.builder()
+                            .id(context.getTaskId())
+                            .contextId(context.getContextId())
+                            .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED))
+                            .artifacts(List.of(Artifact.builder().artifactId("p3-final")
+                                    .parts(List.of(new TextPart("final artifact"))).build()))
+                            .build());
+                    default -> throw new InvalidParamsError("Unknown phase3 branch: " + input);
                 }
             }
 

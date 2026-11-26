@@ -59,6 +59,23 @@ final class Public03ClientSupport {
         }
     }
 
+    /** Sends one unary message to an existing task with the unchanged public 0.3 SDK and waits for any reply. */
+    static void sendToTask(String endpoint, String taskId, String contextId, String text) throws Exception {
+        try (Handle handle = create(endpoint)) {
+            Message_v0_3 request = new Message_v0_3.Builder().messageId("public03-" + System.nanoTime())
+                    .taskId(taskId).contextId(contextId).role(Message_v0_3.Role.USER)
+                    .parts(new TextPart_v0_3(text)).build();
+            CountDownLatch completed = new CountDownLatch(1);
+            AtomicReference<Throwable> failure = new AtomicReference<>();
+            handle.client().sendMessage(request, List.of((event, card) -> completed.countDown()), error -> {
+                failure.set(error);
+                completed.countDown();
+            }, null);
+            assertTrue(completed.await(10, TimeUnit.SECONDS));
+            assertNull(failure.get());
+        }
+    }
+
     static void assertGetRejected(String endpoint, String taskId) throws Exception {
         try (Handle handle = create(endpoint)) {
             assertVersionFailure(assertThrows(A2AClientException_v0_3.class,

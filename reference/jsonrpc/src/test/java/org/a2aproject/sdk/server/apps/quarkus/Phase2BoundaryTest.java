@@ -6,6 +6,7 @@ import static org.a2aproject.sdk.spec.A2AMethods.SUBSCRIBE_TO_TASK_METHOD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -113,26 +114,39 @@ class Phase2BoundaryTest {
     }
 
     @Test
-    void selected11StreamingArtifactsAndGuardsAreRejectedBeforeRouteAuthorization() throws Exception {
+    void selected11StreamingDeliveryVersionIsRejectedBeforeRouteAuthorization() throws Exception {
+        String body = """
+                {"jsonrpc":"2.0","id":"r1","method":"%s","params":{"message":{"messageId":"m1","taskId":"task-1","contextId":"c1","role":"ROLE_USER","parts":[{"text":"hello"}]},"configuration":{"taskPushNotificationConfig":{"url":"https://example.com","protocolVersion":"1.0"}}}}
+                """.formatted(SEND_STREAMING_MESSAGE_METHOD);
+
+        routes.invokeJSONRPCHandler(body, routingContext);
+
+        verify(handler, never()).authorizeTaskAccess(any(), any(ServerCallContext.class), any());
+        verify(handler, never()).onSendInputStream(any(SendInputStreamingRequest.class), any(ServerCallContext.class));
+        var error = org.a2aproject.sdk.jsonrpc.common.json.JsonUtil.fromJson(
+                responseBody(), org.a2aproject.sdk.jsonrpc.common.wrappers.A2AErrorResponse.class);
+        assertInstanceOf(UnsupportedOperationError.class, error.getError());
+    }
+
+    @Test
+    void selected11StreamingArtifactsAndGuardsAreAuthorizedAndForwardedToTheCompanion() throws Exception {
         String artifactBody = """
                 {"jsonrpc":"2.0","id":"r1","method":"%s","params":{"artifactUpdates":[{"taskId":"task-1","contextId":"context-1","artifact":{"artifactId":"input-1","parts":[{"text":"payload"}]}}]}}
                 """.formatted(SEND_STREAMING_MESSAGE_METHOD);
         String guardBody = """
                 {"jsonrpc":"2.0","id":"r2","method":"%s","params":{"message":{"messageId":"m1","taskId":"task-1","contextId":"c1","role":"ROLE_USER","parts":[{"text":"hello"}]},"configuration":{"ifGenerationMatch":"0"}}}
                 """.formatted(SEND_STREAMING_MESSAGE_METHOD);
+        when(handler.onSendInputStream(any(SendInputStreamingRequest.class), any(ServerCallContext.class)))
+                .thenReturn(mutiny.zero.ZeroPublisher.fromItems());
 
         routes.invokeJSONRPCHandler(artifactBody, routingContext);
         routes.invokeJSONRPCHandler(guardBody, routingContext);
 
-        verify(handler, never()).authorizeTaskAccess(any(), any(ServerCallContext.class), any());
-        verify(handler, never()).onSendInputStream(any(SendInputStreamingRequest.class), any(ServerCallContext.class));
-        org.mockito.ArgumentCaptor<String> bodies = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(response, times(2)).end(bodies.capture());
-        for (String body : bodies.getAllValues()) {
-            var error = org.a2aproject.sdk.jsonrpc.common.json.JsonUtil.fromJson(
-                    body, org.a2aproject.sdk.jsonrpc.common.wrappers.A2AErrorResponse.class);
-            assertInstanceOf(UnsupportedOperationError.class, error.getError());
-        }
+        verify(handler, times(2)).authorizeTaskAccess(eq("task-1"), any(ServerCallContext.class), any());
+        var captor = org.mockito.ArgumentCaptor.forClass(SendInputStreamingRequest.class);
+        verify(handler, times(2)).onSendInputStream(captor.capture(), any(ServerCallContext.class));
+        assertEquals(1, captor.getAllValues().get(0).getParams().artifactUpdates().size());
+        assertEquals(0L, captor.getAllValues().get(1).getParams().configuration().ifGenerationMatch());
     }
 
     @Test

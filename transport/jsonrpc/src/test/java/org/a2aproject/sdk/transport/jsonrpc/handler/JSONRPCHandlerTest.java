@@ -139,7 +139,7 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
     }
 
     @Test
-    void selected11StreamingArtifactsAndGuardsStopBeforeAuthorization() throws InterruptedException {
+    void selected11StreamingArtifactsAndGuardsReachTheCompanionBoundaryUnchanged() throws InterruptedException {
         RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
         AgentCard card11 = AgentCard.builder(CARD)
                 .supportedInterfaces(List.of(new AgentInterface("JSONRPC", "http://localhost:9999", null, "1.1")))
@@ -153,35 +153,108 @@ public class JSONRPCHandlerTest extends AbstractA2ARequestHandlerTest {
                 SendInputParams.builder().artifactUpdates(List.of(update)).build(),
                 SendInputParams.builder()
                         .message(Message.builder(MESSAGE).taskId(MINIMAL_TASK.id()).contextId(MINIMAL_TASK.contextId()).build())
-                        .configuration(MessageSendConfiguration.builder().ifGenerationMatch(0L).build())
+                        .configuration(MessageSendConfiguration.builder().ifGenerationMatch(0L).timelineLength(2).build())
                         .build());
+        Mockito.doReturn(ZeroPublisher.fromItems(MINIMAL_TASK)).when(customHandler)
+                .onSendInputStream(Mockito.any(), Mockito.any());
 
         for (SendInputParams input : inputs) {
             List<SendStreamingMessageResponse> responses = drainStream(handler.onSendInputStream(
                     new SendInputStreamingRequest("2.0", "stream-input", input), context));
             assertEquals(1, responses.size());
-            assertInstanceOf(UnsupportedOperationError.class, responses.get(0).getError());
+            assertEquals(null, responses.get(0).getError());
+            assertEquals(MINIMAL_TASK.id(), ((Task) responses.get(0).getResult()).id());
+            Mockito.verify(customHandler).onSendInputStream(Mockito.eq(input), Mockito.any());
         }
-        Mockito.verifyNoInteractions(customHandler);
+        Mockito.verify(customHandler, Mockito.never()).onMessageSendStream(Mockito.any(), Mockito.any());
     }
 
     @Test
-    void selected11UnsupportedInputOptionsAndCursorStopBeforeCustomHandler() {
+    void selected11LegacyOnlyHandlerStillRejectsAdvancedStreamingInputAtItsOwnBoundary() throws InterruptedException {
         RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
         AgentCard card11 = AgentCard.builder(CARD)
                 .supportedInterfaces(List.of(new AgentInterface("JSONRPC", "http://localhost:9999", null, "1.1")))
                 .build();
         JSONRPCHandler handler = new JSONRPCHandler(card11, customHandler, internalExecutor);
         ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
-        SendInputParams params = SendInputParams.builder()
-                .message(MESSAGE)
-                .configuration(MessageSendConfiguration.builder().timelineLength(5).build())
+        SendInputParams guarded = SendInputParams.builder()
+                .message(Message.builder(MESSAGE).taskId(MINIMAL_TASK.id()).contextId(MINIMAL_TASK.contextId()).build())
+                .configuration(MessageSendConfiguration.builder().ifGenerationMatch(0L).build())
                 .build();
 
-        SendMessageResponse response = handler.onSendInput(new SendInputRequest("2.0", "input-2", params), context);
-        handler.onObserveTask(new ObserveTaskRequest("2.0", "observe-1", new ObserveTaskParams("task-1", 3L, null)), context);
+        List<SendStreamingMessageResponse> responses = drainStream(handler.onSendInputStream(
+                new SendInputStreamingRequest("2.0", "stream-input", guarded), context));
 
-        assertInstanceOf(UnsupportedOperationError.class, response.getError());
+        assertInstanceOf(UnsupportedOperationError.class, responses.get(0).getError());
+        Mockito.verify(customHandler, Mockito.never()).onMessageSendStream(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void selected11TimelineLengthReachesCoreForSendGetAndList() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = AgentCard.builder(CARD)
+                .supportedInterfaces(List.of(new AgentInterface("JSONRPC", "http://localhost:9999", null, "1.1")))
+                .build();
+        JSONRPCHandler handler = new JSONRPCHandler(card11, customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        SendInputParams send = SendInputParams.builder().message(MESSAGE)
+                .configuration(MessageSendConfiguration.builder().timelineLength(5).build()).build();
+        TaskQueryParams get = new TaskQueryParams("task-1", null, null, null, 3);
+        ListTasksParams list = ListTasksParams.builder().timelineLength(2).build();
+        Mockito.doReturn(MESSAGE).when(customHandler).onSendInput(Mockito.any(), Mockito.any());
+        Mockito.doReturn(MINIMAL_TASK).when(customHandler).onGetTask(Mockito.any(), Mockito.any());
+        Mockito.doReturn(new ListTasksResult(List.of())).when(customHandler).onListTasks(Mockito.any(), Mockito.any());
+
+        assertEquals(null, handler.onSendInput(new SendInputRequest("2.0", "input-2", send), context).getError());
+        assertEquals(null, handler.onGetTask(new GetTaskRequest("2.0", get), context).getError());
+        assertEquals(null, handler.onListTasks(new ListTasksRequest("2.0", list), context).getError());
+
+        Mockito.verify(customHandler).onSendInput(Mockito.eq(send), Mockito.any());
+        Mockito.verify(customHandler).onGetTask(Mockito.eq(get), Mockito.any());
+        Mockito.verify(customHandler).onListTasks(Mockito.eq(list), Mockito.any());
+    }
+
+    @Test
+    void selected11DeliveryVersionLongPollAndCursorStayRejectedBeforeCustomHandler() throws InterruptedException {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        AgentCard card11 = AgentCard.builder(CARD)
+                .supportedInterfaces(List.of(new AgentInterface("JSONRPC", "http://localhost:9999", null, "1.1")))
+                .build();
+        JSONRPCHandler handler = new JSONRPCHandler(card11, customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.1");
+        TaskPushNotificationConfig versioned = new TaskPushNotificationConfig(null, null, "https://example.com", null,
+                null, null, "1.0");
+        SendInputParams delivery = SendInputParams.builder().message(MESSAGE)
+                .configuration(MessageSendConfiguration.builder().taskPushNotificationConfig(versioned).build()).build();
+
+        SendMessageResponse unary = handler.onSendInput(new SendInputRequest("2.0", "input-2", delivery), context);
+        List<SendStreamingMessageResponse> streamed = drainStream(handler.onSendInputStream(
+                new SendInputStreamingRequest("2.0", "stream-2", delivery), context));
+        GetTaskResponse longPoll = handler.onGetTask(new GetTaskRequest("2.0",
+                new TaskQueryParams("task-1", null, null, 4L, null)), context);
+        List<SendStreamingMessageResponse> cursor = drainStream(handler.onObserveTask(
+                new ObserveTaskRequest("2.0", "observe-1", new ObserveTaskParams("task-1", 3L, null)), context));
+
+        assertInstanceOf(UnsupportedOperationError.class, unary.getError());
+        assertInstanceOf(UnsupportedOperationError.class, streamed.get(0).getError());
+        assertInstanceOf(UnsupportedOperationError.class, longPoll.getError());
+        assertInstanceOf(UnsupportedOperationError.class, cursor.get(0).getError());
+        Mockito.verifyNoInteractions(customHandler);
+    }
+
+    @Test
+    void selected10TimelineLengthOnGetAndListStaysRejectedBeforeCustomHandler() {
+        RequestHandler customHandler = Mockito.mock(RequestHandler.class, Mockito.CALLS_REAL_METHODS);
+        JSONRPCHandler handler = new JSONRPCHandler(CARD, customHandler, internalExecutor);
+        ServerCallContext context = new ServerCallContext(UnauthenticatedUser.INSTANCE, Map.of(), Set.of(), "1.0");
+
+        GetTaskResponse get = handler.onGetTask(new GetTaskRequest("2.0",
+                new TaskQueryParams("task-1", null, null, null, 3)), context);
+        ListTasksResponse list = handler.onListTasks(new ListTasksRequest("2.0",
+                ListTasksParams.builder().timelineLength(2).build()), context);
+
+        assertInstanceOf(UnsupportedOperationError.class, get.getError());
+        assertInstanceOf(UnsupportedOperationError.class, list.getError());
         Mockito.verifyNoInteractions(customHandler);
     }
 

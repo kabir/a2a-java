@@ -603,7 +603,7 @@ public class A2AServerRoutes {
             jsonRpcHandler.authorizeTaskAccess(req.getParams().id(), context,
                     TaskOperation.SUBSCRIBE_TO_TASK);
         } else if (request instanceof SendInputStreamingRequest req) {
-            rejectUnsupportedStreamingInput(req.getParams());
+            rejectUnsupportedDeliveryVersion(req.getParams());
             String taskId = req.getParams().message() != null ? req.getParams().message().taskId()
                     : req.getParams().artifactUpdates().get(0).taskId();
             jsonRpcHandler.authorizeTaskAccess(taskId, context, TaskOperation.MESSAGE_SEND_STREAM);
@@ -629,13 +629,10 @@ public class A2AServerRoutes {
         }
     }
 
-    private static void rejectUnsupportedStreamingInput(
+    private static void rejectUnsupportedDeliveryVersion(
             org.a2aproject.sdk.spec.SendInputParams params) throws UnsupportedOperationError {
-        if (!params.artifactUpdates().isEmpty() || params.configuration() != null
-                && (params.configuration().ifGenerationMatch() != null
-                        || params.configuration().timelineLength() != null
-                        || params.configuration().taskPushNotificationConfig() != null
-                                && params.configuration().taskPushNotificationConfig().protocolVersion() != null)) {
+        if (params.configuration() != null && params.configuration().taskPushNotificationConfig() != null
+                && params.configuration().taskPushNotificationConfig().protocolVersion() != null) {
             throw new UnsupportedOperationError();
         }
     }
