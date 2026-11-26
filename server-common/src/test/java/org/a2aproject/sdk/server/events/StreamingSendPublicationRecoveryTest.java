@@ -248,6 +248,45 @@ class StreamingSendPublicationRecoveryTest {
         }
     }
 
+    /**
+     * A concurrent writer commits before the starting generation is read but distributes only after the stream was
+     * handed its starting state (here: once the agent runs). The stream has no snapshot, so it must not lose that
+     * commit silently either.
+     */
+    @ParameterizedTest
+    @EnumSource(value = Variant.class, names = {"EXISTING_SEND_STREAM", "EXISTING_SEND_INPUT_STREAM"})
+    void aCoveredCommitPublishedAfterTheStartingGenerationWasReadClosesTheSendStreamWithTheResyncFailure(
+            Variant variant) throws Exception {
+        try (Rig rig = new Rig()) {
+            rig.seed(TASK_STATE_INPUT_REQUIRED, 4);
+            AtomicReference<CommittedTaskBatch> delayed = new AtomicReference<>();
+            rig.store.beforeObservedRead.set(() -> delayed.set(rig.commit(TASK_ID, TASK_STATE_WORKING)));
+            rig.script = (context, emitter) -> {
+                rig.begin(context);
+                rig.processor.deliverCommittedBatch((EventQueue.MainQueue) rig.queueManager.get(TASK_ID),
+                        delayed.get(), false);
+                emitter.addArtifact(List.of(new TextPart("later")));
+                rig.release.await();
+            };
+
+            Collector collector = rig.send(variant, rig.context(CURRENT));
+
+            assertTrue(collector.failed.await(5, TimeUnit.SECONDS),
+                    "a covered commit that arrives after the read cannot be replaced by a snapshot");
+            long covered = delayed.get().snapshot().task().generation();
+            assertTrue(covered > 4, "the delayed commit happened before the starting generation was read");
+            InternalError failure = assertInstanceOf(InternalError.class, collector.failure);
+            assertTrue(failure.getMessage().contains("call GetTask to resynchronize"), failure.getMessage());
+            assertEquals(List.of(), collector.generations(), "no event follows the lost commit");
+            assertEquals(0, collector.events.stream().filter(Task.class::isInstance).count(), "no snapshot is added");
+            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> rig.reconciler.activeObservationCount() == 0);
+            assertFalse(rig.reconciler.isScheduled());
+            // Recovery mutates nothing: GetTask shows the committed state, including the delayed commit.
+            Task resynchronized = rig.handler.onGetTask(new TaskQueryParams(TASK_ID, null, null), rig.context(CURRENT));
+            assertTrue(resynchronized.generation() >= covered, "GetTask returns the committed state");
+        }
+    }
+
     @ParameterizedTest
     @EnumSource(value = Variant.class, names = {"EXISTING_SEND_STREAM", "EXISTING_SEND_INPUT_STREAM"})
     void aCommitAfterTheStartingGenerationIsDeliveredOnce(Variant variant) throws Exception {

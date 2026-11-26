@@ -180,7 +180,11 @@ class Phase2CodecTest {
                 request("GetTask", "{\"id\":\"t\",\"historyLength\":-1}"),
                 request("GetTask", "{\"id\":\"t\",\"timelineLength\":-1}"),
                 request("ListTasks", "{\"pageSize\":-3}"),
-                request("SubscribeToTask", "{\"id\":\"t\",\"tenant\":\"bad tenant!\"}"));
+                request("SubscribeToTask", "{\"id\":\"t\",\"tenant\":\"bad tenant!\"}"),
+                request("CancelTask", "{\"id\":\"t\",\"tenant\":\"bad tenant!\"}"),
+                request("GetTaskPushNotificationConfig", "{\"taskId\":\"t\",\"id\":\"c\",\"tenant\":\"bad tenant!\"}"),
+                request("ListTaskPushNotificationConfigs", "{\"taskId\":\"t\",\"tenant\":\"bad tenant!\"}"),
+                request("DeleteTaskPushNotificationConfig", "{\"taskId\":\"t\",\"id\":\"c\",\"tenant\":\"bad tenant!\"}"));
     }
 
     private static String request(String method, String params) {
@@ -225,6 +229,19 @@ class Phase2CodecTest {
                 org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException.class,
                 () -> JSONRPCUtils.parseRequestBody("{\"jsonrpc\":\"2.0\",\"id\":\"x\",\"params\":{}}", null, "1.1"));
         assertEquals("x", noMethod.getId());
+    }
+
+    @Test
+    void selected11NonStringMethodRejectionsCarryTheRequestIdLikeTheFrozenPath() {
+        for (String method : List.of("null", "{}", "[\"GetTask\"]", "true", "5")) {
+            String body = "{\"jsonrpc\":\"2.0\",\"id\":\"req-m\",\"method\":" + method + ",\"params\":{}}";
+            for (String version : List.of("1.0", "1.1")) {
+                org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException error = assertThrows(
+                        org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException.class,
+                        () -> JSONRPCUtils.parseRequestBody(body, null, version), version + " " + body);
+                assertEquals("req-m", error.getId(), version + " " + body);
+            }
+        }
     }
 
     @Test

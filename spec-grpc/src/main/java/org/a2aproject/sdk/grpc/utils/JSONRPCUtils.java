@@ -215,18 +215,22 @@ public class JSONRPCUtils {
         }
         String version = getAndValidateJsonrpc(jsonRpc);
         Object id = getAndValidateId(jsonRpc);
-        JsonElement methodElement = jsonRpc.get("method");
-        if (!methodElement.isJsonPrimitive() || !methodElement.getAsJsonPrimitive().isString()) {
-            throw new IdJsonMappingException("Invalid JSON-RPC request: missing or invalid 'method' field",
-                    getIdIfPossible(jsonRpc));
-        }
-        String method = methodElement.getAsString();
+        String method = getAndValidateMethod(jsonRpc);
         JsonElement paramsNode = jsonRpc.get("params");
         try {
             return parseMethodRequest(version, id, method, paramsNode, tenant);
         } catch (InvalidParamsError e) {
             throw new InvalidParamsJsonMappingException(Utils.defaultIfNull(e.getMessage(), "Invalid parameters"), id);
         }
+    }
+
+    private static String getAndValidateMethod(JsonObject jsonRpc) throws IdJsonMappingException {
+        JsonElement methodElement = jsonRpc.get("method");
+        if (!methodElement.isJsonPrimitive() || !methodElement.getAsJsonPrimitive().isString()) {
+            throw new IdJsonMappingException("Invalid JSON-RPC request: missing or invalid 'method' field",
+                    getIdIfPossible(jsonRpc));
+        }
+        return methodElement.getAsString();
     }
 
     /** Parses 1.1 companion request wrappers while retaining the legacy parser for older versions. */
@@ -248,7 +252,7 @@ public class JSONRPCUtils {
         }
         String version = getAndValidateJsonrpc(request);
         Object id = getAndValidateId(request);
-        String method = request.get("method").getAsString();
+        String method = getAndValidateMethod(request);
         JsonElement params = request.get("params");
         if (params == null || params.isJsonNull()) {
             params = new JsonObject();

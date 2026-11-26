@@ -678,7 +678,8 @@ public class DefaultRequestHandler implements RequestHandler {
          * ({@code onMessageSendStream} and message-bearing {@code onSendInputStream}). A subscription or streaming send
          * then registers its delivery sink before reading the authoritative generation, and a stranded or gapped
          * observation is closed through its existing stream failure path. A streaming send is given no snapshot, so a
-         * concurrent commit that its starting generation covers closes that stream the same way (call GetTask). The
+         * concurrent commit that its starting generation covers closes that stream the same way (call GetTask), also
+         * when that commit is distributed only after the stream started. The
          * caller owns and closes the reconciler. Disabled by default.
          *
          * @param publicationReconciler the reconciler, may be {@code null}

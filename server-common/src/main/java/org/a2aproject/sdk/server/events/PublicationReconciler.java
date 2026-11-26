@@ -48,7 +48,10 @@ import org.slf4j.LoggerFactory;
  * any older-protocol filtering, so a generation hidden from an older view never creates a false gap.</p>
  *
  * <p>A streaming send has no snapshot to replace such covered events, so {@link Attachment#completeWithoutSnapshot}
- * fails its observation instead of discarding them silently.</p>
+ * fails its observation instead of discarding them silently. This holds whether a covered event reaches the observer
+ * before or after the attach is completed, because the two cases cannot be told apart from an event that was
+ * committed before the tap: either way the stream never carried it. A redelivered generation above {@code G} is
+ * still ignored, and nothing is added to a stream that has already delivered its final event.</p>
  *
  * <p>Gap detection cannot rely on another event arriving: a terminal mutation may commit and lose its publication with
  * no later mutation. Every {@link Limits#reconciliationInterval() interval} the reconciler therefore reads the
@@ -135,7 +138,8 @@ public final class PublicationReconciler implements AutoCloseable {
          * <em>not</em> given that state, so {@code G} only sets the delivery watermark. A concurrent committed event
          * at or below {@code G} that reached the observer after the tap would be discarded unseen with nothing to
          * replace it, so the observation is closed instead through the resynchronization failure of this class
-         * ({@link InternalError}: call GetTask). Events above {@code G} are delivered in generation order.
+         * ({@link InternalError}: call GetTask), also when such an event arrives after this call. Events above
+         * {@code G} are delivered in generation order.
          */
         void completeWithoutSnapshot(long snapshotGeneration);
 
@@ -532,6 +536,8 @@ public final class PublicationReconciler implements AutoCloseable {
         private boolean ended;
         private boolean terminalSeen;
         private long watermark;
+        /** Highest generation the observer was never given a snapshot for, or {@link #NONE} when it has a snapshot. */
+        private long unseenThrough = NONE;
         private int bufferedEvents;
         private long bufferedBytes;
         private long gapSince = NONE;
@@ -581,15 +587,21 @@ public final class PublicationReconciler implements AutoCloseable {
             @Nullable FailureReason overflow = null;
             boolean terminal = false;
             synchronized (lock) {
-                if (ended || childClosed.get() || attached && generation <= watermark) {
-                    // Stale or duplicate: a later generation has already been accounted, so it is never re-delivered.
+                if (ended || childClosed.get()) {
                     return;
                 }
-                if (held.containsKey(generation)) {
+                if (attached && generation <= watermark) {
+                    // Stale or duplicate: a later generation has already been accounted, so it is never re-delivered.
+                    // Only a generation at or below the starting one was never accounted, and an observer without a
+                    // snapshot would lose it, unless its stream has already ended with the final state.
+                    if (generation > unseenThrough || terminalSeen) {
+                        return;
+                    }
+                    overflow = FailureReason.COVERED_WITHOUT_SNAPSHOT;
+                } else if (held.containsKey(generation)) {
                     // A redelivered held generation grows nothing, so it must not trip the buffer limit.
                     return;
-                }
-                if (!tryChargeLocked(bytes)) {
+                } else if (!tryChargeLocked(bytes)) {
                     overflow = FailureReason.BUFFER_OVERFLOW;
                 } else {
                     held.put(generation, new Held(item, bytes));
@@ -660,6 +672,9 @@ public final class PublicationReconciler implements AutoCloseable {
                 if (overflow == null) {
                     attached = true;
                     watermark = snapshotGeneration;
+                    if (!snapshotReplacesCovered) {
+                        unseenThrough = snapshotGeneration;
+                    }
                     suspectWatermark = snapshotGeneration;
                     while (!held.isEmpty() && held.firstKey() <= snapshotGeneration) {
                         uncharge(held.pollFirstEntry().getValue().bytes);

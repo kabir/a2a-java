@@ -165,10 +165,13 @@ must set the property to `true`.
 - **Not covered.** An artifact-only `SendInput` is a single committed write with no stream to watch. A handler
   built with `DefaultRequestHandler.builder().publicationReconciler(...)` keeps the reconciler it was given, whatever the
   property says.
-- **Streaming sends.** A sender's stream carries no snapshot. If a different writer's event commits in the instant
-  between the sender's attach and its first generation read, the stream cannot show it and cannot replace it with a
-  snapshot, so the stream is closed with the same `InternalError` that asks the client to call `GetTask` (the send itself
-  is not undone). An event committed after that read is delivered once, as usual.
+- **Streaming sends.** A sender's stream carries no snapshot. If a different writer's event is committed at or before
+  the sender's first generation read but reaches the stream after its attach began, whether before or after that read,
+  the stream cannot show it and cannot replace it with a snapshot, so the stream is closed with the same `InternalError`
+  that asks the client to call `GetTask` (the send itself is not undone). An event committed after that read is
+  delivered once, as usual. A covered event that was committed before the stream's attach and is distributed only
+  afterwards looks the same and is handled the same way. Nothing is added to a stream that already ended with its
+  final event.
 
 ### Tuning Guidelines
 

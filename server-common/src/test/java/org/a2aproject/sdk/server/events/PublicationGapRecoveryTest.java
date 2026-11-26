@@ -531,6 +531,122 @@ class PublicationGapRecoveryTest {
         }
     }
 
+    /**
+     * A concurrent writer commits generation 5 and is slow to distribute it. The observer's tap and the starting
+     * generation read (5) both happen in between, so the observer, which is given no snapshot, would never see it.
+     */
+    @Test
+    void withoutASnapshotACoveredCommitPublishedAfterTheAttachClosesTheObservationWithTheResyncFailure() {
+        for (boolean remote : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture()) {
+                fixture.saveTask(4, TASK_STATE_WORKING);
+                CommittedTaskBatch delayed = fixture.commit(TASK_STATE_INPUT_REQUIRED);   // generation 5, not published
+                EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+                PublicationReconciler.Observation observation =
+                        (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+                long covered = TaskManager.readAuthoritativeTask(fixture.store, TASK_ID).generation();
+                assertEquals(5, covered);
+                observation.completeWithoutSnapshot(covered);
+                assertNull(observation.failureReason(), "nothing has arrived yet: remote=" + remote);
+                assertEquals(1, fixture.reconciler.activeObservationCount());
+
+                fixture.publish(delayed, remote);                                         // arrives after the attach
+
+                assertCoveredCommitEndedTheStream(fixture, child, observation, remote, 5);
+            }
+        }
+    }
+
+    @Test
+    void withoutASnapshotACoveredCommitPublishedAfterLaterGenerationsAreDeliveredStillClosesTheObservation() {
+        for (boolean remote : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture()) {
+                fixture.saveTask(4, TASK_STATE_WORKING);
+                CommittedTaskBatch delayed = fixture.commit(TASK_STATE_INPUT_REQUIRED);   // generation 5, not published
+                EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+                PublicationReconciler.Observation observation =
+                        (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+                observation.completeWithoutSnapshot(5);
+
+                fixture.commitAndPublish(TASK_STATE_WORKING, remote);                     // generation 6: not covered
+                assertEquals(List.of(6L), generations(drain(child)), "a later commit still progresses: " + remote);
+                fixture.publish(fixture.commit(TASK_STATE_WORKING), remote);              // generation 7
+                assertEquals(List.of(7L), generations(drain(child)), "remote=" + remote);
+                fixture.publish(delayed, remote);                                         // generation 5, now very late
+
+                assertEquals(PublicationReconciler.FailureReason.COVERED_WITHOUT_SNAPSHOT,
+                        observation.failureReason(), "remote=" + remote);
+                List<EventQueueItem> afterwards = drain(child);
+                assertEquals(1, afterwards.size(), "only the resynchronization failure: remote=" + remote);
+                assertInstanceOf(InternalError.class, afterwards.get(0).getEvent());
+                assertEquals(7, fixture.store.get(TASK_ID).generation(), "recovery changes no task");
+                assertTrue(child.isClosed());
+                assertEquals(0, fixture.reconciler.activeObservationCount());
+                assertFalse(fixture.reconciler.isScheduled());
+            }
+        }
+    }
+
+    @Test
+    void withoutASnapshotARedeliveredLaterGenerationIsStillIgnoredAndOnlyACoveredOneFails() {
+        try (Fixture fixture = new Fixture()) {
+            fixture.saveTask(4, TASK_STATE_WORKING);
+            EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+            PublicationReconciler.Observation observation =
+                    (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+            observation.completeWithoutSnapshot(4);
+
+            CommittedTaskBatch later = fixture.commit(TASK_STATE_INPUT_REQUIRED);         // generation 5
+            fixture.publish(later, false);
+            fixture.publish(later, false);                                                // duplicate of a delivered one
+            assertEquals(List.of(5L), generations(drain(child)));
+            assertNull(observation.failureReason(), "a duplicate above the starting generation is not covered");
+            assertEquals(5, observation.watermark());
+            assertEquals(1, fixture.reconciler.activeObservationCount());
+        }
+    }
+
+    @Test
+    void withoutASnapshotACoveredCommitPublishedAfterTheFinalEventDoesNotAddAFailureToAFinishedStream() {
+        try (Fixture fixture = new Fixture()) {
+            fixture.saveTask(4, TASK_STATE_WORKING);
+            CommittedTaskBatch delayed = fixture.commit(TASK_STATE_INPUT_REQUIRED);       // generation 5, not published
+            EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+            PublicationReconciler.Observation observation =
+                    (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+            observation.completeWithoutSnapshot(5);
+            fixture.commitAndPublish(TASK_STATE_COMPLETED, false);                        // generation 6, final
+            assertEquals(List.of(6L), generations(drain(child)));
+            assertEquals(0, fixture.reconciler.activeObservationCount(), "a finished observation is released");
+
+            fixture.publish(delayed, false);
+
+            assertNull(observation.failureReason());
+            assertEquals(List.of(), generations(drain(child)), "nothing is added after the final event");
+        }
+    }
+
+    @Test
+    void withASnapshotACoveredCommitPublishedAfterTheAttachIsStillDiscardedSilently() {
+        for (boolean remote : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture()) {
+                fixture.saveTask(4, TASK_STATE_WORKING);
+                CommittedTaskBatch delayed = fixture.commit(TASK_STATE_INPUT_REQUIRED);   // generation 5, not published
+                EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+                PublicationReconciler.Observation observation =
+                        (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+                observation.complete(5);                                                  // the snapshot carries 5
+
+                fixture.publish(delayed, remote);
+                fixture.commitAndPublish(TASK_STATE_WORKING, remote);                     // generation 6
+
+                assertNull(observation.failureReason(), "remote=" + remote);
+                assertEquals(List.of(6L), generations(drain(child)), "remote=" + remote);
+                assertEquals(6, observation.watermark());
+            }
+        }
+    }
+
     private static void assertCoveredCommitEndedTheStream(Fixture fixture, EventQueue.ChildQueue child,
             PublicationReconciler.Observation observation, boolean remote, long expectedHead) {
         assertEquals(PublicationReconciler.FailureReason.COVERED_WITHOUT_SNAPSHOT, observation.failureReason(),
@@ -946,7 +1062,12 @@ class PublicationGapRecoveryTest {
         }
 
         private void commitAndPublish(TaskState state, boolean remote) {
-            processor.deliverCommittedBatch(mainQueue, commit(state), remote);
+            publish(commit(state), remote);
+        }
+
+        /** Distributes a batch that was committed earlier, as a writer that was slow to publish would. */
+        private void publish(CommittedTaskBatch batch, boolean remote) {
+            processor.deliverCommittedBatch(mainQueue, batch, remote);
         }
 
         @Override

@@ -362,3 +362,114 @@ See `handoffs/P3-T17.md`: unresolved N6 sleeps (push negative control 1000 ms, `
 `Phase3OldObserver.awaitFrames`, `Phase3JSONRPCPublicClientTest` ~300 ms / `awaitQuiescent`); CDI+JPA, extras and F1.1 wire demand
 not exercised; N3/N4/N7/N8 unchanged. Status: **corrected candidate, NOT accepted.** A targeted affected-diff review, then a full
 independent final review, must precede T17 acceptance/import. T18/T19 not started.
+
+---
+
+# Fix-2 review correction session (R1, R2; R3/R4 assessed)
+
+Window 2026-11-26 21:19 UTC, original deadline 23:19 (two-hour extension authorised, **not used**); work finished ~21:46. Base HEAD
+`37aa86003cd18d7011351f469c1b554d2a74e113`, branch `work/p3-t17`, original task base `d869e957…`. Input
+`reviews/P3-T17-fix2-review.md` (untracked at start, preserved byte-identical, committed with the fix; sha256
+`b15d0fa4fb8b0eee25118e4f71ad42e6a4120e6ff8caf3286a457d5156cbfcc2`). Model: requested IBM Bob configured model
+(user-authorised); observed identifier unavailable; Sol not claimed; Astra not used; no nested agents, Serena, push.
+Maven: `mvn -B -ntp -Dmaven.repo.local=/tmp/p3-t17-fix3-m2` (seeded from `/tmp/p3-t17-fix2-m2` third-party cache, `org/a2aproject`
+removed), serial, each `timeout -k 30 1200`, logs/.exit/.start/.end in `/tmp/p3-t17-fix3-logs`. No root `test.log`.
+
+## R1 verified independently
+
+Reviewer claim confirmed by a deterministic RED, not only by reading. Root cause: `Observation.admit` returned early for any
+`attached && generation <= watermark`, and after `completeWithoutSnapshot(G)` the watermark is `G`, so a committed event with
+generation <= G distributed *after* the attach was silently dropped (the stream never carries a snapshot for it).
+Pre-tap commits and duplicates: a covered event that was committed before the tap and distributed afterwards is
+indistinguishable from one committed after the tap (both reach the child after the tap and are at or below `G`). Duplicates
+cannot be mistaken for it: any delivered generation is `> G`, and any arrival `<= G` at a snapshot-less observation is by
+definition never delivered, so there is no legitimate `<= G` duplicate. The conservative choice is the user's: close with the
+existing resync `InternalError`. Subscriptions keep the discard (snapshot replaces the covered event).
+
+Fix (`PublicationReconciler.Observation`): new field `unseenThrough` (= `G` for `completeWithoutSnapshot`, `NONE` for
+`complete`). In `admit`, an attached arrival `<= watermark` is ignored as before, except when `generation <= unseenThrough` and the
+observation has not delivered its final event (`terminalSeen`): then `fail(COVERED_WITHOUT_SNAPSHOT)`. No new wire code, no resend,
+default-off unchanged, T13 reserve/release untouched (`MainEventBusProcessor` not changed), later-generation duplicates still ignored.
+Javadoc/`configuration.md`/builder javadoc updated. Retained limit: a pre-tap commit distributed after the attach also closes the
+stream (conservative false positive of the same user decision); a stream that already delivered its final event is left alone.
+
+## Commands and results
+
+| # | Command (all `-Dmaven.repo.local=/tmp/p3-t17-fix3-m2`) | Exit | Result | Log |
+|---|---|---|---|---|
+| 1 | RED attempt 1 `-pl server-common -am -Dtest=PublicationGapRecoveryTest,StreamingSendPublicationRecoveryTest test` | 1 | test compile error (a misapplied edit in my test file); kept | `red0-compile-error` |
+| 2 | RED `…` same command, production unchanged (21:22:00–21:22:23) | 1 | 82 run, **4 failures** (Gap 2: `…PublishedAfterTheAttach…`, `…AfterLaterGenerationsAreDelivered…`; Streaming 2: `…PublishedAfterTheStartingGenerationWasRead…` both variants, `collector.failed` never fired). The three companion tests (duplicate, after-final, with-snapshot) passed on old code | `red` |
+| 3 | RED codec `-pl spec-grpc,jsonrpc-common -am -Dtest=Phase2CodecTest test` (21:23:25) | 1 | 11 run, 1 failure: 1.1 `"method":null` -> `UnsupportedOperationException` instead of `IdJsonMappingException` carrying the id. The other-method id tests (CancelTask, push-config x3) passed already | `red-codec` |
+| 4 | GREEN codec (21:23:44–21:23:50) | 0 | 11/0/0/0 | `green-codec` |
+| 5 | GREEN `-pl server-common -am -Dtest=PublicationGapRecoveryTest,StreamingSendPublicationRecoveryTest,PublicationRecoveryProvisioningTest test` | 0 | Gap 37, StreamingSend 45, Provisioning 10 = 92, 0 fail/skip | `green-recovery` |
+| 6 | `routes`: `-pl reference/jsonrpc -am -Dtest=A2AServerRoutesTest,Phase2BoundaryTest test` | 0 | 41 + 5 = 46, 0 skips | `routes` |
+| 7 | `scfull`: `-pl server-common -am test` | 0 | server-common 1048 run, 0 fail/err, 0 skips in module (3 upstream `VertxA2AHttpClientSSETest` in the reactor); Gap 37, StreamingSend 45 | `scfull` |
+| 8 | `plan1`: `-pl transport/jsonrpc,client/transport/jsonrpc -am -Dtest=JSONRPCHandlerTest,Phase2PublicClientTest,Phase3ClientGenerationTest test` | 0 | client 26 (19 + 7); `JSONRPCHandlerTest` 80 run / 1 pre-existing `@Disabled` skip | `plan1` |
+| 9 | `cbase`: `-pl client/base,reference/jsonrpc -am -Dtest=Phase3JSONRPCPublicClientTest,ExistingOrdinaryEntryPointReductionTest,Phase2BoundaryTest test` | 0 | client/base 49, `Phase2BoundaryTest` 5, 0 skips | `cbase` |
+| 10 | `jsonrpcmod` (plan check 2): `-pl tests/multiversion/jsonrpc -am -Dtest=Phase3JSONRPCMutationTest verify` (21:28:28–21:30:15) | 0 | `Phase3JSONRPCMutationTest` 21, 0 fail/skip, 1:47 | `jsonrpcmod` |
+| 11 | `jsonrpcmodfull`: `-pl tests/multiversion/jsonrpc -am verify` (21:30:15–21:35:32, 5:15) | 0 | module 164, 0 skips (`MultiVersionJSONRPCTest` 75, `Phase3JSONRPCMutationTest` 21, `Phase3JSONRPCNoUserArtifactsTest` 4); wall time normal, no anomaly | `jsonrpcmodfull` |
+| 12 | `grpcrest` first run: `-pl spec-grpc,jsonrpc-common,tests/multiversion/rest,tests/multiversion/grpc -am verify` (21:35:32–21:37:42) | **1** | **FAILED** in `extras/http-client-android`: `AndroidA2AHttpClientSSETest.cancellableSseDisconnectsHeldOpenPeer:213 SSE completion should be cancelled ==> expected true but was false` (25 run, 1 failure). Downstream REST/gRPC modules SKIPPED | `grpcrest-1-android-failure` |
+| 13 | `grpcrest-rerun` identical command (21:38:01–21:44:08, 6:05) | 0 | BUILD SUCCESS; `AndroidA2AHttpClientSSETest` 25/0 failures; multiversion REST 146 (18 skipped), gRPC 131 (22 skipped), compat-0.3 REST 200 (27), gRPC 53 (11), reference gRPC 76 (11), REST 309 (27): same counts as the previous baseline | `grpcrest-rerun` |
+
+Incomplete provenance preserved: the first background chain (`chain-1-killed.sh`) died when a tool call was cancelled; only `routes`
+had run to BUILD SUCCESS (21:24:37) without writing `.exit`/`chain.status`. Its log is kept as `routes-incomplete-chain-killed.log`
+and was **not** counted; `routes` was rerun (row 6) under `setsid` in `chain.sh`. Every counted check started after the last source edit
+(hashes below).
+
+## Android SSE cancellation intermittent failure (not fixed, deferred by the user)
+
+`AndroidA2AHttpClientSSETest.cancellableSseDisconnectsHeldOpenPeer` failed once (row 12) and passed in the identical rerun (row 13).
+`extras/http-client-android` is not touched by this task or by any T17 change; it entered the reactor through `-am` of the REST/gRPC
+multiversion modules. **The cause is not established** (no investigation, no Android code change). The user explicitly accepted deferring
+this for their later follow-up. It is not claimed fixed; both logs are kept. It is not a T17 acceptance claim either way.
+
+## Low findings
+
+- **R2 – fixed (small, demonstrated).** Selected-1.1 `parseRequestBody` used `request.get("method").getAsString()`, so `"method": null`
+  or `{}` threw `UnsupportedOperationException` (route: `InternalError`, `"id": null`) and a numeric/boolean method was treated as an
+  unknown method. A shared `getAndValidateMethod` (same check the legacy path already had, now used by both) throws `IdJsonMappingException`
+  with the request id. New test `selected11NonStringMethodRejectionsCarryTheRequestIdLikeTheFrozenPath` (null, object, array, boolean, number;
+  versions 1.0 and 1.1). RED row 3. Also added CancelTask and the three push-config methods (bad tenant) to the non-send id tests; they
+  passed on the old code (no defect there).
+- **R3 – assessed, no change.** The mutation provenance gaps (missing `mutN1.exit`, reconstructed `mut2.exit`, unpreserved sed) concern the
+  previous session's logs, which are frozen. The existing mutants were not rerun. The new tests were verified by RED against unmodified
+  production (row 2), not by a new mutant. The `getActiveChildQueueCount <= 0` weakness noted by the reviewer is unchanged.
+- **R4 – assessed, partial.** The new handler test asserts `activeObservationCount() == 0`, `!isScheduled()`, no events, no Task snapshot and
+  that `GetTask` returns the committed state. Agent-run and main-queue cleanup after an N1 close are still not asserted (same cleanup path as a
+  cancelled consumer; the input is already committed and the agent still runs, as documented). Retained Low.
+
+## Tests added
+
+`PublicationGapRecoveryTest` (+5, local and remote): covered commit published after the attach closes with the resync failure (no event,
+child closed, 0 observations, not scheduled, no task change, no webhook/replication for remote); same after later generations 6 and 7 were
+delivered (progress of non-covered events, then failure, store head unchanged); redelivered later generation ignored, no failure; covered
+commit after the final event adds nothing; with a snapshot a late covered commit is still discarded and later ones delivered. A `Fixture.publish(batch, remote)`
+helper was added. `StreamingSendPublicationRecoveryTest` (+2 parameterised): the delayed batch is distributed by the agent on its first
+run, i.e. after the observation completed; the stream ends with the resync `InternalError`, no Task snapshot or event, observation released,
+`GetTask` returns committed state. `Phase2CodecTest` +1 test and 4 more non-send cases.
+
+## Source hashes (sha256; `/tmp/p3-t17-fix3-logs/sha256.txt`)
+
+```
+08b76e5ce753261d0e7ab1408412f72957719990f5c35a6a5f9f3af53cf27bfe  docs/content/dev/configuration.md
+229be9e048f1c958e6e27e158705ac064227061c3ac39edf29ef318050d8e7e0  server-common/src/main/java/org/a2aproject/sdk/server/events/PublicationReconciler.java
+aa24708a68aa6571fc40573efa28d7ab84950f40abd6d697340baa416a6dc572  server-common/src/main/java/org/a2aproject/sdk/server/requesthandlers/DefaultRequestHandler.java
+d0b085165f934f6708be78278221fb2f8436a1f178559d65c46ceb20b4bc8123  server-common/src/test/java/org/a2aproject/sdk/server/events/PublicationGapRecoveryTest.java
+c7538e391411d5f9ac42e4f9cf6e487c63f2f28397cf3589b535ff1bb3b591ba  server-common/src/test/java/org/a2aproject/sdk/server/events/StreamingSendPublicationRecoveryTest.java
+0c7b62b0f19c53908cadcc50ff522d3809d1ce0302c6c1115a3ef5c2f48037b9  spec-grpc/src/main/java/org/a2aproject/sdk/grpc/utils/JSONRPCUtils.java
+819c208fd531ade9d47ccec4bc8cee42497ed4cf81d451ab56ba885989467c2d  spec-grpc/src/test/java/org/a2aproject/sdk/grpc/utils/Phase2CodecTest.java
+b15d0fa4fb8b0eee25118e4f71ad42e6a4120e6ff8caf3286a457d5156cbfcc2  .claude/architecture/a2a-1.1/phase-3/reviews/P3-T17-fix2-review.md
+```
+
+## Failed or non-progress attempts (not hidden)
+
+RED attempt 1 compile error (test edit misapplied; fixed). Two parallel `apply_diff` calls: one silently did not apply and one test edit
+left a syntax error (fixed by re-reading and line edits). The first check chain was killed (above). The `grpcrest` Android failure (above).
+No defect reached three consecutive substantive attempts without progress; the diagnosis stop was not triggered.
+
+## Known limits
+
+All earlier limits stand (CDI + JPA enabled path and extras modules not run, F1.1 wire demand, N3/N4/N6/N7/N8/N9, opt-in default off,
+REST/gRPC run with recovery off, artifact-only `SendInput` unwatched). Plus: pre-tap commit distributed after the attach closes the stream
+(conservative); Android SSE intermittent failure unexplained. Status: **corrected candidate, NOT accepted.** A targeted affected-diff
+re-review, then a separate fresh full review, must follow. T18/T19/T20 not started.
