@@ -473,3 +473,88 @@ All earlier limits stand (CDI + JPA enabled path and extras modules not run, F1.
 REST/gRPC run with recovery off, artifact-only `SendInput` unwatched). Plus: pre-tap commit distributed after the attach closes the stream
 (conservative); Android SSE intermittent failure unexplained. Status: **corrected candidate, NOT accepted.** A targeted affected-diff
 re-review, then a separate fresh full review, must follow. T18/T19/T20 not started.
+
+# Final-review F-2 correction session (fix4)
+
+- Assignment: start 2026-11-26 22:19 UTC, original two-hour deadline **2026-11-27 00:19 UTC** (not reached; extension not needed;
+  finished about 22:40 UTC). Base candidate `5c0369db1e55b27325c8154887a0e181ddaf0368`, task base `d869e957…`, branch `work/p3-t17`.
+- Model: requested = configured IBM Bob model (user-authorised); observed identifier unavailable; Sol not claimed; Astra not used.
+- Logs `/tmp/p3-t17-fix4-logs` (script `run.sh`: `timeout -k 30 1200 mvn -B -ntp -Dmaven.repo.local=/tmp/p3-t17-fix4-m2 …`, each run has
+  `.cmd/.start/.end/.exit`); private repo `/tmp/p3-t17-fix4-m2` was seeded by copying `/tmp/p3-t17-review-final-m2` (a prior private
+  repo; online resolution still allowed). No nested agents, no Serena, no push, shared task-list/`codex-progress.md`/`bob-progress.md` untouched.
+- Preserved reviews, committed byte-identical (sha256 `…/sha256-final.txt`): `P3-T17-final-review.md` (revision 2, `363fdb38…`),
+  `P3-T17-fix3-review.md` (`9d8c8eeb…`), and **`P3-T17-final-review-rev1.md`** (`07599c85…`), the initial full-review revision 1 copied
+  from `/tmp/p3-t17-review-final-logs/P3-T17-final-review.rev1.md`. **Revision 1 was superseded by revision 2** (revision 1 accepted
+  T17 and rated F-2 Low; revision 2 withdrew acceptance and made F-2 blocking). Its contents are unchanged.
+
+## F-2 independently verified before editing
+
+Read `Phase3MutationScenarios.metadataOnlyStatusPreservesTheMessageOccurrenceCount` and `AgentExecutorProducer.handlePhase3`: the old
+test sends an ordinary input to a task created by `phase3:work` (`startWork()`, no status message); it submits no full Task, has no
+message-bearing starting status, no metadata, no timeline status assertion, and no stream check. The gap is real (confirmed, as the review states).
+That test is kept unchanged (name and body), with only a javadoc line saying what it proves.
+
+## Design finding (root cause of the first failed scenario, retained)
+
+First attempt (`new1-npe-failure.log`): leave a message-bearing status in one invocation and submit `addTask` from the next. The
+scenario died with a `NullPointerException` on `before.status().message()` because **`TaskMutationPlanner.planInput` (lines 92-97) moves
+any status message into the history and clears it whenever an input message is committed**. An input-triggered invocation therefore never
+starts from a message-bearing status. Also `AgentEmitter.addTask` always proposes against the Task captured at invocation start
+(`ExecutionProposalContext.submitLegacyTask`), and a proposal built before the agent's own status delta conflicts (A03/A05 contract), so
+a legacy `addTask` after the agent's own `startWork(message)` would be a stale-base conflict. Only the cancel invocation starts from the
+stored status without an input. This is by design, not a production defect, so no production change was made.
+**Deviation to review:** the user asked for `addTask/emitEvent(Task)`. The scenario therefore uses the same production submission path
+(`AgentEmitter.submitTask(TaskProposal.create(refreshTask(), task))`, which `addTask` calls with the invocation-start snapshot), built from a
+freshly refreshed snapshot after the agent's own acknowledged `startWork(message M)` status commit. `addTask`/`emitEvent(Task)` from a
+message-bearing starting status is reachable only in a cancel invocation, which ends in a terminal state and was not used. The reviewer
+should rule whether `submitTask` is acceptable for the shared bullet or whether a cancel-based `addTask` variant is also required.
+
+## Test-only changes (0 production lines)
+
+- `AgentExecutorProducer`: `phase3:metadata-proposal` branch, `PHASE3_STATUS_MESSAGE_ID`, `PHASE3_METADATA_PROBE` / `MetadataProposalProbe`
+  (barriers `entered`/`release`, captured committed snapshot, correlated `ProposalResult`). The branch needs an installed probe.
+- `Phase3MutationScenarios`: new shared scenario
+  `metadataOnlyFullTaskProposalFromAMessageBearingStatusCommitsOneStatusObservationAndNoMessage` plus helpers. Subscriber (1.1,
+  streaming) is attached before the send; the writer's blocking send runs in a thread; barrier: input and message-bearing status are
+  committed and observed by the subscriber, the held agent's snapshot equals the stored task, `generation = created + 2`, spy marks
+  taken, then release. Asserted: `ProposalResult.Committed` with `changed`, exactly one event, a `TaskStatusUpdateEvent` at
+  `before+1` with the metadata and the same status message id and status; stored: exactly one new generation, earlier timeline untouched,
+  exactly one new `StatusValue` entry (status and message id unchanged), no `MessageValue` entry for the message, history/artifacts
+  unchanged, status message occurrence count 1 before and after, metadata merged; the same via public 1.1 send, get and list (and the
+  reduced stream task); server spies after the marks: only `TaskStatusUpdateEvent` published and no message event replicated; the
+  subscriber receives exactly one event, a status update (metadata + message id), no `TaskMessageUpdateEvent`; 1.0 client history ids and
+  occurrence count unchanged with status message and metadata visible; 0.3 reader history ids and state unchanged.
+- Wire views are compared by status identity (state, timestamp, message id/role/task/context/text), not record equality, because the
+  JSON codec maps absent metadata to `{}` (second failure `new2-status-equality-failure.log`, a test over-strictness, fixed in the test; exact
+  equality remains on the stored and committed server-side values).
+- Fixture hooks (`MetadataProposalProbe`, the agent branch) live in `tests/server-common`; REST/gRPC reuse the shared scenario by
+  extending `Phase3MutationScenarios` with their existing hooks (no new abstract hook was needed).
+
+## Commands and results (all serial; exit codes from `.exit`)
+
+| Log | Command (after `mvn -B -ntp -Dmaven.repo.local=/tmp/p3-t17-fix4-m2`) | Exit | Result |
+|---|---|---|---|
+| `red1-compile-error` | `-pl tests/multiversion/jsonrpc -am -Dtest=Phase3JSONRPCMutationTest … verify` | 1 | compile error: a corrupted edit of `AgentExecutorProducer` (concurrent edits); not behavioral evidence; file reset to HEAD and reapplied |
+| `new1-npe-failure` | same | 1 | 22 run, 1 error: NPE `before.status().message()` (design finding above) |
+| `new2-status-equality-failure` | same | 1 | 22 run, 1 failure: wire status equality null vs `{}` metadata (test-only fix) |
+| `new3` | same (plan check 2) | 0 | 22 run, 0 failures, 0 skips |
+| `mut1` | mutant: `applyProposalStatus` ignores `syntheticMetadata` (adds the status message to history); `-Dtest=Phase3JSONRPCMutationTest#metadataOnly*` | 1 | killed: `stored: the status message still occurs once ==> expected 1 but was 2`; old input-count test passed (2 run, 1 failure). Diff `mutant1.diff`; planner restored (sha256 identical to `TaskMutationPlanner.java.orig`, `git status` clean for production) |
+| `plan1` | plan check 1: `-pl transport/jsonrpc,client/transport/jsonrpc -am -Dtest=JSONRPCHandlerTest,Phase2PublicClientTest,Phase3ClientGenerationTest -Dsurefire.failIfNoSpecifiedTests=false test` | 0 | client 26 (19+7); `JSONRPCHandlerTest` 80 run, **1 skipped** (pre-existing `@Disabled` custom components test) |
+| `jsonrpcmodfull` | `-pl tests/multiversion/jsonrpc -am verify` (22:31-22:37) | 0 | module 165, 0 skips: `MultiVersionJSONRPCTest` 75, `Phase3JSONRPCMutationTest` 22, `Phase3JSONRPCNoUserArtifactsTest` 4, others |
+| `consumers-testcompile` | `-pl tests/multiversion/rest,tests/multiversion/grpc,reference/rest,reference/grpc,reference/jsonrpc -am test-compile` | 0 | the other consumers of the shared test fixture compile |
+
+**Reused, not rerun (unchanged sources).** Production code is byte-identical to `5c0369db` (diff is two test files). The codec, recovery,
+routes, client/base, server-common-full and REST/gRPC multiversion runs of `/tmp/p3-t17-review-final-logs` and `/tmp/p3-t17-fix3-logs`
+(REST 146/18 skipped, gRPC 131/22 skipped, compat REST 200/27, compat gRPC 53/11, reference gRPC 76/11, reference REST 309/27) stand as
+earlier evidence; this session does not claim to have observed them. They were not repeated because no production or REST/gRPC test source
+changed; only a compile check of the fixture consumers was run (user's cost direction).
+
+Android SSE cancellation (`AndroidA2AHttpClientSSETest.cancellableSseDisconnectsHeldOpenPeer:213`): first failure retained
+(`/tmp/p3-t17-fix3-logs/grpcrest-1-android-failure.log`), rerun passed, root cause unestablished, deferred by the user, no Android change.
+No defect reached three consecutive substantive attempts (two scenario failures with distinct causes, each resolved).
+
+Retained limits unchanged: N9 (input message role not validated) remains an **unresolved normative question**, not a decision; F-1
+(route `Throwable` null-id) and F-3 (interceptor test on built-in observe) remain open Low items; T13 live PostgreSQL/Kafka gate, the compatibility
+gate, the Java 17 clean install and the phase audit stay T20; Phase 4/5/6 obligations excluded; opt-in publication recovery remains default off.
+Status: **corrected candidate, NOT accepted.** Required next: independent targeted affected-diff re-review, then a separate fresh full review.
+T18/T19/T20 not started.

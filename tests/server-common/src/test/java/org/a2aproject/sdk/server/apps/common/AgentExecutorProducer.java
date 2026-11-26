@@ -3,6 +3,8 @@ package org.a2aproject.sdk.server.apps.common;
 import static org.a2aproject.sdk.server.ServerCallContext.TRANSPORT_KEY;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +24,9 @@ import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
 import org.a2aproject.sdk.server.tasks.AgentEmitter;
+import org.a2aproject.sdk.server.tasks.ProposalResult;
+import org.a2aproject.sdk.server.tasks.TaskProposal;
+import org.a2aproject.sdk.server.tasks.TaskSnapshot;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.A2AError;
 import org.a2aproject.sdk.spec.AgentCard;
@@ -53,6 +58,34 @@ public class AgentExecutorProducer {
      */
     public static final AtomicReference<CountDownLatch> PHASE3_HOLD =
             new AtomicReference<>(new CountDownLatch(0));
+
+    /** Id of the agent message carried by the status that {@code phase3:metadata-proposal} leaves on its task. */
+    public static final String PHASE3_STATUS_MESSAGE_ID = "p3-status-message";
+
+    /**
+     * Installed by a test that drives {@code phase3:metadata-proposal}. The agent first emits a WORKING status that
+     * carries the agent message {@link #PHASE3_STATUS_MESSAGE_ID} and waits until that status is committed. It then
+     * records the committed snapshot, signals {@link MetadataProposalProbe#entered}, waits for
+     * {@link MetadataProposalProbe#release}, and submits a full Task built from that snapshot that keeps the status and
+     * changes only the metadata. The correlated result is reported through {@link MetadataProposalProbe#result}.
+     * The legacy {@code addTask} cannot do this: it always proposes against the Task captured when the invocation
+     * started, and every ordinary input moves a status message into the history and clears it, so an input-triggered
+     * invocation never starts from a message-bearing status.
+     */
+    public static final AtomicReference<MetadataProposalProbe> PHASE3_METADATA_PROBE = new AtomicReference<>();
+
+    /** Barriers and observations of one {@code phase3:metadata-proposal} invocation. */
+    public static final class MetadataProposalProbe {
+        public final Map<String, Object> metadata;
+        public final CountDownLatch entered = new CountDownLatch(1);
+        public final CountDownLatch release = new CountDownLatch(1);
+        public final AtomicReference<Task> invocationTask = new AtomicReference<>();
+        public final CompletableFuture<ProposalResult> result = new CompletableFuture<>();
+
+        public MetadataProposalProbe(Map<String, Object> metadata) {
+            this.metadata = Map.copyOf(metadata);
+        }
+    }
 
     @Inject
     @PublicAgentCard
@@ -203,6 +236,7 @@ public class AgentExecutorProducer {
                         }
                     }
                     case "phase3:direct" -> agentEmitter.sendMessage("phase3 direct reply");
+                    case "phase3:metadata-proposal" -> proposeMetadataOnly(agentEmitter);
                     case "phase3:agent-artifact" -> {
                         agentEmitter.startWork();
                         agentEmitter.addArtifact(List.of(new TextPart("agent")), "p3-agent-art", "agent", null);
@@ -222,6 +256,50 @@ public class AgentExecutorProducer {
                             .build());
                     default -> throw new InvalidParamsError("Unknown phase3 branch: " + input);
                 }
+            }
+
+            /**
+             * Leaves the task with a WORKING status carrying a known agent message, then submits a full Task built from
+             * the committed snapshot that keeps that status and changes only the metadata.
+             */
+            private void proposeMetadataOnly(AgentEmitter agentEmitter) {
+                MetadataProposalProbe probe = PHASE3_METADATA_PROBE.get();
+                if (probe == null) {
+                    throw new InvalidParamsError("phase3:metadata-proposal requires an installed probe");
+                }
+                agentEmitter.startWork(agentEmitter.messageBuilder().messageId(PHASE3_STATUS_MESSAGE_ID)
+                        .parts(List.of(new TextPart("phase3 status message"))).build());
+                try {
+                    TaskSnapshot snapshot = agentEmitter.refreshTask();
+                    for (int i = 0; i < 400 && !hasStatusMessage(snapshot); i++) {
+                        Thread.sleep(50);
+                        snapshot = agentEmitter.refreshTask();
+                    }
+                    if (!hasStatusMessage(snapshot)) {
+                        throw new InternalError("the message-bearing status was never committed");
+                    }
+                    probe.invocationTask.set(snapshot.task());
+                    probe.entered.countDown();
+                    if (!probe.release.await(60, TimeUnit.SECONDS)) {
+                        throw new InternalError("phase3:metadata-proposal was never released");
+                    }
+                    Task proposed = Task.builder(snapshot.task()).metadata(probe.metadata).build();
+                    agentEmitter.submitTask(TaskProposal.create(snapshot, proposed)).whenComplete((result, failure) -> {
+                        if (failure != null) {
+                            probe.result.completeExceptionally(failure);
+                        } else {
+                            probe.result.complete(result);
+                        }
+                    });
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new InternalError("phase3:metadata-proposal interrupted");
+                }
+            }
+
+            private boolean hasStatusMessage(TaskSnapshot snapshot) {
+                Message statusMessage = snapshot.task().status().message();
+                return statusMessage != null && PHASE3_STATUS_MESSAGE_ID.equals(statusMessage.messageId());
             }
 
             /**

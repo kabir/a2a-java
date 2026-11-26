@@ -2,21 +2,27 @@ package org.a2aproject.sdk.server.apps.common;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
 import org.a2aproject.sdk.client.Client;
+import org.a2aproject.sdk.client.ClientEvent;
 import org.a2aproject.sdk.client.MessageEvent;
 import org.a2aproject.sdk.client.TaskUpdateEvent;
 import org.a2aproject.sdk.client.ViewSync;
+import org.a2aproject.sdk.server.tasks.ProposalResult;
 import org.a2aproject.sdk.spec.Artifact;
 import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.InvalidParamsError;
@@ -37,6 +43,7 @@ import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
 import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.a2aproject.sdk.spec.TextPart;
+import org.a2aproject.sdk.spec.TimelineEntry;
 import org.a2aproject.sdk.spec.VersionNotSupportedError;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -713,6 +720,11 @@ public abstract class Phase3MutationScenarios extends Phase3ScenarioSupport {
         assertTrue(read.historyMessageIds().contains("p3-legacy-terminal"), read::toString);
     }
 
+    /**
+     * Ordinary-input occurrence count only: a same-state status from a status without a message. The metadata-only full
+     * Task proposal from a message-bearing status is covered by
+     * {@link #metadataOnlyFullTaskProposalFromAMessageBearingStatusCommitsOneStatusObservationAndNoMessage()}.
+     */
     @Test
     public void metadataOnlyStatusPreservesTheMessageOccurrenceCount() throws Exception {
         Task base = createWorkingTask();
@@ -725,6 +737,207 @@ public abstract class Phase3MutationScenarios extends Phase3ScenarioSupport {
         Task after = storedTask(base.id());
         assertEquals(before + 1, after.history().size(), "one occurrence for the input; the status adds none");
         assertEquals(1, messageEntries(client.getTask(new TaskQueryParams(base.id(), null, null, null, 20)), "p3-meta"));
+    }
+
+    /**
+     * An agent leaves the task with a status that carries a known agent message, and a later invocation submits a real
+     * full Task ({@code addTask}) that keeps that status and changes only the metadata. A barrier holds the agent after
+     * its invocation Task was captured, so the committed state before the proposal is read in isolation; a 1.1
+     * subscriber is attached throughout. The commit must be exactly one new generation and one new status timeline
+     * entry carrying the same status message, a metadata change, and no newly authored message or message update.
+     */
+    @Test
+    public void metadataOnlyFullTaskProposalFromAMessageBearingStatusCommitsOneStatusObservationAndNoMessage()
+            throws Exception {
+        String messageId = AgentExecutorProducer.PHASE3_STATUS_MESSAGE_ID;
+        Task created = createWorkingTask();
+        assertEquals(TaskState.TASK_STATE_WORKING, created.status().state());
+        assertNull(created.status().message(), "the task starts without a status message");
+
+        Client subscriber = open("1.1", true, false);
+        Collected seen = new Collected();
+        subscriber.subscribeToTask(new TaskIdParams(created.id()), List.of(seen.consumer()), seen.errors(), null);
+        assertTrue(seen.awaitEvents(1, 10), "initial snapshot");
+        assertTrue(awaitChildQueues(created.id(), 1));
+
+        Map<String, Object> change = Map.of("p3-meta-key", "p3-meta-value");
+        AgentExecutorProducer.MetadataProposalProbe probe = new AgentExecutorProducer.MetadataProposalProbe(change);
+        AgentExecutorProducer.PHASE3_METADATA_PROBE.set(probe);
+        try {
+            Client writer = open("1.1", false, false);
+            CompletableFuture<Outcome> send = CompletableFuture.supplyAsync(
+                    () -> observe(writer, input(created, "p3-meta-input", "phase3:metadata-proposal", null)));
+            assertTrue(probe.entered.await(20, TimeUnit.SECONDS), "the agent must reach its proposal barrier");
+
+            // Isolated pre-state: the ordinary input (which clears any status message) and then the agent's own
+            // message-bearing status are committed, the agent is held, and nothing else can mutate the task.
+            Task before = Objects.requireNonNull(storedTask(created.id()));
+            assertEquals(before, probe.invocationTask.get(), "the proposal is built from exactly the committed state");
+            assertEquals(created.generation() + 2, before.generation(),
+                    "the input and the message-bearing status are the only mutations");
+            assertEquals(TaskState.TASK_STATE_WORKING, before.status().state());
+            assertNull(before.metadata() == null ? null : before.metadata().get("p3-meta-key"));
+            assertEquals(messageId, Objects.requireNonNull(before.status().message()).messageId());
+            assertTrue(awaitSubscriberGeneration(seen, before.generation()),
+                    () -> "the subscriber must have seen the input before the proposal: " + seen.generations());
+            int streamMark = seen.events.size();
+            int publishedMark = Phase3Spy.published(created.id()).size();
+            int replicatedMark = Phase3Spy.replicated(created.id()).size();
+            Client legacy = open("1.0", false, false);
+            Task legacyBefore = legacy.getTask(new TaskQueryParams(created.id()));
+            Phase3OldObserver.TaskRead read03Before = read03Task(created.id());
+            long occurrencesBefore = occurrences(before, messageId);
+            assertEquals(1, occurrencesBefore, "the status message occurs once before the proposal");
+            assertEquals(occurrencesBefore, occurrences(legacyBefore, messageId));
+
+            probe.release.countDown();
+            Outcome outcome = send.get(30, TimeUnit.SECONDS);
+            assertNull(outcome.failure(), () -> String.valueOf(outcome.failure()));
+
+            // The correlated local result is the committed proposal: one status event and nothing else.
+            ProposalResult result = probe.result.get(20, TimeUnit.SECONDS);
+            ProposalResult.Committed committed = assertInstanceOf(ProposalResult.Committed.class, result);
+            assertTrue(committed.changed(), "a metadata-only proposal is a change");
+            assertEquals(1, committed.events().size(), () -> String.valueOf(committed.events()));
+            TaskStatusUpdateEvent committedStatus =
+                    assertInstanceOf(TaskStatusUpdateEvent.class, committed.events().get(0));
+            assertEquals(before.generation() + 1, committedStatus.generation());
+            assertEquals(change, committedStatus.metadata());
+            assertEquals(messageId, Objects.requireNonNull(committedStatus.status().message()).messageId());
+            assertEquals(before.status(), committedStatus.status(), "the status is unchanged");
+
+            Task after = Objects.requireNonNull(storedTask(created.id()));
+            assertMetadataOnlyCommit("stored", before, after, messageId, change, true);
+            assertEquals(committed.snapshot().task().generation(), after.generation());
+            assertEquals(before.status(), after.status());
+            assertEquals(before.artifacts(), after.artifacts());
+            assertEquals(before.history(), after.history(), "no message was authored or moved into the history");
+            assertEquals(before.timeline(), after.timeline().subList(0, before.timeline().size()),
+                    "the earlier timeline is untouched");
+            assertEquals(0, messageEntries(after, messageId), "no message timeline entry for the status message");
+            assertEquals(occurrencesBefore, occurrences(after, messageId));
+
+            // send, get and list through the public 1.1 client
+            assertMetadataOnlyCommit("send", before, Objects.requireNonNull(outcome.task()), messageId, change, false);
+            Task got = writer.getTask(new TaskQueryParams(created.id(), 50, null, null, 50));
+            assertMetadataOnlyCommit("get", before, got, messageId, change, true);
+            Task listed = writer.listTasks(ListTasksParams.builder().contextId(created.contextId()).historyLength(50)
+                    .timelineLength(50).build()).tasks().stream().filter(task -> task.id().equals(created.id()))
+                    .findFirst().orElseThrow();
+            assertMetadataOnlyCommit("list", before, listed, messageId, change, true);
+
+            // the active subscriber: exactly one published status event, no message update
+            assertTrue(awaitPublished(created.id(), publishedMark), "the status event must be published");
+            List<String> publishedAll = Phase3Spy.published(created.id());
+            List<String> published = publishedAll.subList(publishedMark, publishedAll.size());
+            assertTrue(published.stream().allMatch("TaskStatusUpdateEvent"::equals),
+                    () -> "only status events are published for the proposal: " + published);
+            List<String> replicatedAll = Phase3Spy.replicated(created.id());
+            List<String> replicated = replicatedAll.subList(replicatedMark, replicatedAll.size());
+            assertTrue(replicated.stream().noneMatch(kind -> kind.equals("TaskMessageUpdateEvent")
+                    || kind.equals("Message")), () -> "nothing message-bearing is replicated: " + replicated);
+            assertTrue(seen.awaitEvents(streamMark + 1, 10), "the subscriber must receive the status update");
+            List<ClientEvent> eventsNow = List.copyOf(seen.events);
+            List<ClientEvent> streamed = eventsNow.subList(streamMark, eventsNow.size());
+            assertEquals(1, streamed.size(), () -> "exactly one event for the proposal: " + streamed);
+            TaskUpdateEvent update = assertInstanceOf(TaskUpdateEvent.class, streamed.get(0));
+            TaskStatusUpdateEvent streamedStatus = assertInstanceOf(TaskStatusUpdateEvent.class, update.getUpdateEvent());
+            assertEquals(before.generation() + 1, streamedStatus.generation());
+            assertEquals(change, streamedStatus.metadata());
+            assertEquals(messageId, Objects.requireNonNull(streamedStatus.status().message()).messageId());
+            assertTrue(streamed.stream().noneMatch(event -> event instanceof TaskUpdateEvent message
+                    && message.getUpdateEvent() instanceof TaskMessageUpdateEvent), "no message update event");
+            assertMetadataOnlyCommit("stream", before, update.getTask(), messageId, change, true);
+
+            // older readers: the same legacy occurrence count, no duplicate history entry
+            Task legacyAfter = legacy.getTask(new TaskQueryParams(created.id()));
+            assertEquals(historyIds(legacyBefore), historyIds(legacyAfter), "1.0 history is unchanged");
+            assertEquals(occurrencesBefore, occurrences(legacyAfter, messageId), "1.0 occurrence count is unchanged");
+            assertEquals(messageId, Objects.requireNonNull(legacyAfter.status().message()).messageId());
+            assertEquals("p3-meta-value", Objects.requireNonNull(legacyAfter.metadata()).get("p3-meta-key"));
+            Phase3OldObserver.TaskRead read03After = read03Task(created.id());
+            assertEquals(read03Before.historyMessageIds(), read03After.historyMessageIds(),
+                    "0.3 history is unchanged");
+            assertEquals(read03Before.state(), read03After.state());
+        } finally {
+            probe.release.countDown();
+            AgentExecutorProducer.PHASE3_METADATA_PROBE.compareAndSet(probe, null);
+        }
+    }
+
+    /**
+     * One committed generation, one new status timeline entry carrying the same status message, the metadata change,
+     * and the same message occurrences, on a view of the committed task.
+     */
+    private static void assertMetadataOnlyCommit(String what, Task before, Task view, String messageId,
+            Map<String, Object> change, boolean fullTimeline) {
+        assertEquals(before.generation() + 1, view.generation(), what + ": exactly one new generation");
+        assertEquals(TaskState.TASK_STATE_WORKING, view.status().state(), what);
+        assertEquals(messageId, Objects.requireNonNull(view.status().message(), what + ": status message").messageId(),
+                what + ": the status message id is retained");
+        assertTrue(Objects.requireNonNull(view.metadata(), what + ": metadata").entrySet().containsAll(change.entrySet()),
+                () -> what + ": the metadata change is visible: " + view.metadata());
+        assertEquals(1, occurrences(view, messageId), what + ": the status message still occurs once");
+        TimelineEntry last = view.timeline().get(view.timeline().size() - 1);
+        assertEquals(before.generation() + 1, last.generation(), what + ": the newest timeline entry");
+        TimelineEntry.StatusValue newest = assertInstanceOf(TimelineEntry.StatusValue.class, last.entry(), what);
+        assertEquals(messageId, Objects.requireNonNull(newest.status().message()).messageId(), what);
+        assertSameStatus(what + ": the observed status is the unchanged status", before.status(), newest.status());
+        assertSameStatus(what + ": the task status is the unchanged status", before.status(), view.status());
+        if (fullTimeline) {
+            assertEquals(before.timeline().size() + 1, view.timeline().size(), what + ": one new timeline entry");
+            assertEquals(1, view.timeline().stream().filter(entry -> entry.generation() > before.generation()).count(),
+                    what + ": no other entry after the starting generation");
+            assertEquals(0, messageEntries(view, messageId), what + ": no message timeline entry");
+            assertEquals(historyIds(before), historyIds(view), what + ": the history is unchanged");
+        }
+    }
+
+    /**
+     * Identity of a status across the wire: state, timestamp and the message's id, role, task/context and text. The
+     * binding codecs map an absent metadata map to an empty one, so exact record equality is asserted only on the
+     * server-side stored and committed values, never on a wire view.
+     */
+    private static void assertSameStatus(String what, TaskStatus expected, TaskStatus actual) {
+        assertEquals(expected.state(), actual.state(), what);
+        assertEquals(expected.timestamp(), actual.timestamp(), what);
+        Message expectedMessage = Objects.requireNonNull(expected.message(), what);
+        Message actualMessage = Objects.requireNonNull(actual.message(), what);
+        assertEquals(expectedMessage.messageId(), actualMessage.messageId(), what);
+        assertEquals(expectedMessage.role(), actualMessage.role(), what);
+        assertEquals(expectedMessage.taskId(), actualMessage.taskId(), what);
+        assertEquals(expectedMessage.contextId(), actualMessage.contextId(), what);
+        assertEquals(expectedMessage.parts().stream().map(part -> ((TextPart) part).text()).toList(),
+                actualMessage.parts().stream().map(part -> ((TextPart) part).text()).toList(), what);
+    }
+
+    /** Occurrences of the message in the legacy view: history entries plus the status message. */
+    private static long occurrences(Task task, String messageId) {
+        long count = task.history().stream().filter(message -> messageId.equals(message.messageId())).count();
+        Message status = task.status().message();
+        return count + (status != null && messageId.equals(status.messageId()) ? 1 : 0);
+    }
+
+    private static List<String> historyIds(Task task) {
+        return task.history().stream().map(Message::messageId).toList();
+    }
+
+    private static boolean awaitSubscriberGeneration(Collected seen, long generation) throws InterruptedException {
+        for (int i = 0; i < 200; i++) {
+            List<Long> generations = seen.generations();
+            if (!generations.isEmpty() && generations.get(generations.size() - 1) >= generation) {
+                return true;
+            }
+            Thread.sleep(50);
+        }
+        return false;
+    }
+
+    private static boolean awaitPublished(String taskId, int mark) throws InterruptedException {
+        for (int i = 0; i < 200 && Phase3Spy.published(taskId).size() <= mark; i++) {
+            Thread.sleep(50);
+        }
+        return Phase3Spy.published(taskId).size() > mark;
     }
 
     // ---- scenario 8: lost final publication ---------------------------------------------------------------------
