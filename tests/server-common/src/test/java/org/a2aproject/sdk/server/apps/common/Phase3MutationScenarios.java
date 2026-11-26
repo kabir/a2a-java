@@ -390,6 +390,12 @@ public abstract class Phase3MutationScenarios extends Phase3ScenarioSupport {
                     assertTrue(Phase3Spy.queueWasCreated(executionTask),
                             name + ": a queue existed, so the cleanup assertion is not vacuous");
                     assertTrue(awaitQueueClosed(executionTask), name + ": the no-task queue was closed");
+                    // The fixed settle period above cannot rule out a later event, so the same claim is judged again
+                    // at a server-side barrier: the stream's queue is closed, so nothing more can be emitted for it.
+                    assertNull(collected.failure.get(), name);
+                    assertEquals(1, collected.events.size(), () -> name + ": only the Message: " + collected.events);
+                    assertTrue(collected.events.stream().allMatch(MessageEvent.class::isInstance),
+                            () -> name + ": only a Message: " + collected.events);
                     assertEquals(List.of(), Phase3Spy.replicated(executionTask), name + ": nothing was replicated");
                     assertTrue(Phase3Spy.published(executionTask).stream().allMatch("Message"::equals),
                             () -> name + ": only the Message may be published: " + Phase3Spy.published(executionTask));

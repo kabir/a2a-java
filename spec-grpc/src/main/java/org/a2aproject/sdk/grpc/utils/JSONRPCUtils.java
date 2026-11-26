@@ -253,19 +253,22 @@ public class JSONRPCUtils {
         if (params == null || params.isJsonNull()) {
             params = new JsonObject();
         }
+        try {
+            return parseSelected11Method(version, id, method, params, tenant);
+        } catch (InvalidParamsError e) {
+            // The request id is already known, so a parameter rejection of any method must carry it (JSON-RPC 2.0).
+            throw new InvalidParamsJsonMappingException(Utils.defaultIfNull(e.getMessage(), "Invalid parameters"), id);
+        }
+    }
+
+    private static A2ARequest<?> parseSelected11Method(String version, Object id, String method, JsonElement params,
+            @Nullable String tenant) throws A2AError, JsonMappingException, JsonProcessingException {
         if (SEND_MESSAGE_METHOD.equals(method) || SEND_STREAMING_MESSAGE_METHOD.equals(method)) {
             org.a2aproject.sdk.grpc.SendMessageRequest.Builder builder =
                     org.a2aproject.sdk.grpc.SendMessageRequest.newBuilder();
             parseRequestBody(params, builder, id);
             setTenantIfAbsent(builder::getTenant, builder::setTenant, tenant);
-            org.a2aproject.sdk.spec.SendInputParams input;
-            try {
-                input = ProtoUtils.FromProto.sendInputParams(builder);
-            } catch (org.a2aproject.sdk.spec.InvalidParamsError e) {
-                // The request id is already known, so the rejection must carry it (JSON-RPC 2.0).
-                throw new InvalidParamsJsonMappingException(
-                        Utils.defaultIfNull(e.getMessage(), "Invalid parameters"), id);
-            }
+            org.a2aproject.sdk.spec.SendInputParams input = ProtoUtils.FromProto.sendInputParams(builder);
             return SEND_MESSAGE_METHOD.equals(method)
                     ? new SendInputRequest(version, id, input)
                     : new SendInputStreamingRequest(version, id, input);

@@ -174,6 +174,59 @@ class Phase2CodecTest {
         }
     }
 
+    /** Parse-time parameter rejections of the non-send selected-1.1 methods, each with its request id. */
+    private static List<String> nonSendInvalidParamsBodies() {
+        return List.of(
+                request("GetTask", "{\"id\":\"t\",\"historyLength\":-1}"),
+                request("GetTask", "{\"id\":\"t\",\"timelineLength\":-1}"),
+                request("ListTasks", "{\"pageSize\":-3}"),
+                request("SubscribeToTask", "{\"id\":\"t\",\"tenant\":\"bad tenant!\"}"));
+    }
+
+    private static String request(String method, String params) {
+        return "{\"jsonrpc\":\"2.0\",\"id\":\"req-np\",\"method\":\"" + method + "\",\"params\":" + params + "}";
+    }
+
+    @Test
+    void selected11NonSendParameterRejectionsCarryTheRequestId() {
+        for (String body : nonSendInvalidParamsBodies()) {
+            org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException error = assertThrows(
+                    org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException.class,
+                    () -> JSONRPCUtils.parseRequestBody(body, null, "1.1"), body);
+            assertEquals("req-np", error.getId(), body);
+            assertFalse(error.getMessage() == null || error.getMessage().isBlank(), body);
+        }
+    }
+
+    @Test
+    void selected11NonSendRejectionsKeepANumericRequestIdAndTheOriginalMessage() {
+        String body = "{\"jsonrpc\":\"2.0\",\"id\":42,\"method\":\"ListTasks\",\"params\":{\"pageSize\":-3}}";
+        org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException error = assertThrows(
+                org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException.class,
+                () -> JSONRPCUtils.parseRequestBody(body, null, "1.1"));
+        assertEquals(42, ((Number) error.getId()).intValue());
+        assertTrue(error.getMessage().contains("pageSize"), error.getMessage());
+    }
+
+    @Test
+    void theFrozenOneZeroPathAndMalformedRequestsAreNotAffectedByTheNonSendWrapping() {
+        for (String body : nonSendInvalidParamsBodies()) {
+            org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException frozen = assertThrows(
+                    org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException.class,
+                    () -> JSONRPCUtils.parseRequestBody(body, null, "1.0"), body);
+            assertEquals("req-np", frozen.getId(), body);
+        }
+        // A malformed request has no usable id: it keeps the null-id typed mapping failure on the selected version.
+        org.a2aproject.sdk.jsonrpc.common.json.JsonMappingException notAnObject = assertThrows(
+                org.a2aproject.sdk.jsonrpc.common.json.JsonMappingException.class,
+                () -> JSONRPCUtils.parseRequestBody("[1]", null, "1.1"));
+        assertFalse(notAnObject instanceof org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException);
+        org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException noMethod = assertThrows(
+                org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException.class,
+                () -> JSONRPCUtils.parseRequestBody("{\"jsonrpc\":\"2.0\",\"id\":\"x\",\"params\":{}}", null, "1.1"));
+        assertEquals("x", noMethod.getId());
+    }
+
     @Test
     void mapsVersionFieldsAndBothCompanionStreamOneofs() {
         org.a2aproject.sdk.spec.TaskStatusUpdateEvent statusEvent =

@@ -1025,4 +1025,45 @@ public class A2AServerRoutesTest {
         org.mockito.Mockito.verifyNoInteractions(mockJsonRpcHandler);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "{\"jsonrpc\":\"2.0\",\"id\":\"np-1\",\"method\":\"GetTask\",\"params\":{\"id\":\"t\",\"historyLength\":-1}}",
+        "{\"jsonrpc\":\"2.0\",\"id\":\"np-1\",\"method\":\"GetTask\",\"params\":{\"id\":\"t\",\"timelineLength\":-1}}",
+        "{\"jsonrpc\":\"2.0\",\"id\":\"np-1\",\"method\":\"ListTasks\",\"params\":{\"pageSize\":-3}}",
+        "{\"jsonrpc\":\"2.0\",\"id\":\"np-1\",\"method\":\"SubscribeToTask\",\"params\":{\"id\":\"t\",\"tenant\":\"bad tenant!\"}}"
+    })
+    public void testSelected11NonSendParseTimeInvalidParamsEchoesTheRequestId(String jsonRpcRequest) {
+        selectProtocol11();
+
+        routes.invokeJSONRPCHandler(jsonRpcRequest, mockRoutingContext);
+
+        JsonObject response = captureResponse();
+        assertFalse(response.get("id").isJsonNull(), "the parsed request id must be echoed: " + jsonRpcRequest);
+        assertEquals("np-1", response.get("id").getAsString(), jsonRpcRequest);
+        assertEquals(-32602, response.getAsJsonObject("error").get("code").getAsInt(), jsonRpcRequest);
+        verify(mockHttpResponse).setStatusCode(200);
+        org.mockito.Mockito.verifyNoInteractions(mockJsonRpcHandler);
+    }
+
+    @Test
+    public void testSelected11MalformedRequestStillHasANullId() {
+        selectProtocol11();
+
+        routes.invokeJSONRPCHandler("[{\"jsonrpc\":\"2.0\",\"id\":\"np-2\",\"method\":\"GetTask\"}]", mockRoutingContext);
+
+        JsonObject response = captureResponse();
+        assertEquals(-32600, response.getAsJsonObject("error").get("code").getAsInt());
+        assertTrue(response.get("id").isJsonNull());
+        org.mockito.Mockito.verifyNoInteractions(mockJsonRpcHandler);
+    }
+
+    /** Makes the route select the 1.1 contract: an explicit 1.1 registration and the A2A-Version header. */
+    private void selectProtocol11() {
+        InterfaceRegistration registration = new InterfaceRegistration(TransportProtocol.JSONRPC,
+                "http://localhost:9999", null, Set.of("1.0", "1.1"), true);
+        InterfaceRegistrationResolver resolver = (selectedBinding, tenant) -> registration;
+        setField(routes, "interfaceRegistrationResolvers", new FixedInstance<>(resolver));
+        when(mockRequest.getHeader(A2AHeaders.A2A_VERSION)).thenReturn("1.1");
+    }
+
 }

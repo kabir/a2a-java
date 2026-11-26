@@ -47,6 +47,9 @@ import org.slf4j.LoggerFactory;
  * is discarded; a missing generation holds later ones back. Generations are counted on arrival at the observer, before
  * any older-protocol filtering, so a generation hidden from an older view never creates a false gap.</p>
  *
+ * <p>A streaming send has no snapshot to replace such covered events, so {@link Attachment#completeWithoutSnapshot}
+ * fails its observation instead of discarding them silently.</p>
+ *
  * <p>Gap detection cannot rely on another event arriving: a terminal mutation may commit and lose its publication with
  * no later mutation. Every {@link Limits#reconciliationInterval() interval} the reconciler therefore reads the
  * authoritative head generation once per active task (coalesced across that task's observers, each read bounded by
@@ -121,10 +124,20 @@ public final class PublicationReconciler implements AutoCloseable {
     public interface Attachment {
 
         /**
-         * Completes the attach with the generation {@code G} of the snapshot read after {@link #attach}. Held events
-         * at or below {@code G} are discarded; later ones are delivered in generation order.
+         * Completes the attach with the generation {@code G} of the snapshot read after {@link #attach}, which the
+         * caller hands to the observer as its starting state. Held events at or below {@code G} are discarded as
+         * covered by that snapshot; later ones are delivered in generation order.
          */
         void complete(long snapshotGeneration);
+
+        /**
+         * Completes the attach with the generation {@code G} read after {@link #attach} when the observer is
+         * <em>not</em> given that state, so {@code G} only sets the delivery watermark. A concurrent committed event
+         * at or below {@code G} that reached the observer after the tap would be discarded unseen with nothing to
+         * replace it, so the observation is closed instead through the resynchronization failure of this class
+         * ({@link InternalError}: call GetTask). Events above {@code G} are delivered in generation order.
+         */
+        void completeWithoutSnapshot(long snapshotGeneration);
 
         /** Releases the observation and closes its queue, as when the first snapshot rejects the subscription. */
         void detach();
@@ -135,7 +148,8 @@ public final class PublicationReconciler implements AutoCloseable {
         REORDER_GAP_DEADLINE("a missing generation did not arrive in time"),
         AUTHORITY_READ_FAILED("the authoritative task could not be read"),
         AUTHORITY_READ_DEADLINE("the authoritative read did not finish in time"),
-        BUFFER_OVERFLOW("the stream buffer limit was exceeded");
+        BUFFER_OVERFLOW("the stream buffer limit was exceeded"),
+        COVERED_WITHOUT_SNAPSHOT("a concurrent publication was committed while the stream started and cannot be replaced");
 
         private final String description;
 
@@ -603,6 +617,15 @@ public final class PublicationReconciler implements AutoCloseable {
 
         @Override
         public void complete(long snapshotGeneration) {
+            complete(snapshotGeneration, true);
+        }
+
+        @Override
+        public void completeWithoutSnapshot(long snapshotGeneration) {
+            complete(snapshotGeneration, false);
+        }
+
+        private void complete(long snapshotGeneration, boolean snapshotReplacesCovered) {
             if (snapshotGeneration < 0) {
                 throw new IllegalArgumentException("A snapshot generation must not be negative");
             }
@@ -615,6 +638,12 @@ public final class PublicationReconciler implements AutoCloseable {
                 }
                 if (attached) {
                     throw new IllegalStateException("The observation is already attached");
+                }
+                if (!snapshotReplacesCovered && (!held.isEmpty() && held.firstKey() <= snapshotGeneration
+                        || beforeInstall.stream().anyMatch(item -> committedGeneration(item) <= snapshotGeneration))) {
+                    // The observer was never given the snapshot that covers this event, so dropping it would lose it.
+                    overflow = FailureReason.COVERED_WITHOUT_SNAPSHOT;
+                    beforeInstall = List.of();
                 }
                 for (EventQueueItem item : beforeInstall) {
                     long generation = committedGeneration(item);

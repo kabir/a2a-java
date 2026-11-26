@@ -491,6 +491,113 @@ class PublicationGapRecoveryTest {
         }
     }
 
+    // ---- an observer that is given no snapshot: a covered concurrent commit cannot be dropped silently ----
+
+    @Test
+    void withoutASnapshotACoveredCommitHeldAfterTheAttachClosesTheObservationWithTheResyncFailure() {
+        for (boolean remote : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture()) {
+                fixture.saveTask(4, TASK_STATE_WORKING);
+                EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+                PublicationReconciler.Observation observation =
+                        (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+
+                fixture.commitAndPublish(TASK_STATE_INPUT_REQUIRED, remote);   // generation 5, held by the gate
+                long covered = TaskManager.readAuthoritativeTask(fixture.store, TASK_ID).generation();
+                assertEquals(5, covered);
+                fixture.commitAndPublish(TASK_STATE_WORKING, remote);          // generation 6, held, not covered
+                observation.completeWithoutSnapshot(covered);
+
+                assertCoveredCommitEndedTheStream(fixture, child, observation, remote, 6);
+            }
+        }
+    }
+
+    @Test
+    void withoutASnapshotACoveredCommitQueuedBeforeTheAttachClosesTheObservationWithTheResyncFailure() {
+        for (boolean remote : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture()) {
+                fixture.saveTask(4, TASK_STATE_WORKING);
+                EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+                fixture.commitAndPublish(TASK_STATE_INPUT_REQUIRED, remote);   // generation 5, queued unobserved
+                PublicationReconciler.Observation observation =
+                        (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+                long covered = TaskManager.readAuthoritativeTask(fixture.store, TASK_ID).generation();
+                assertEquals(5, covered);
+                observation.completeWithoutSnapshot(covered);
+
+                assertCoveredCommitEndedTheStream(fixture, child, observation, remote, 5);
+            }
+        }
+    }
+
+    private static void assertCoveredCommitEndedTheStream(Fixture fixture, EventQueue.ChildQueue child,
+            PublicationReconciler.Observation observation, boolean remote, long expectedHead) {
+        assertEquals(PublicationReconciler.FailureReason.COVERED_WITHOUT_SNAPSHOT, observation.failureReason(),
+                "remote=" + remote);
+        List<EventQueueItem> delivered = drain(child);
+        assertEquals(1, delivered.size(), "only the resynchronization failure, no event: remote=" + remote);
+        InternalError error = assertInstanceOf(InternalError.class, delivered.get(0).getEvent());
+        assertTrue(error.getMessage().contains("call GetTask to resynchronize"), error.getMessage());
+        assertTrue(child.isClosed());
+        assertEquals(0, fixture.reconciler.activeObservationCount());
+        assertFalse(fixture.reconciler.isScheduled());
+        assertEquals(0, observation.bufferedEvents());
+        if (remote) {
+            assertTrue(fixture.pushes.isEmpty(), "a remote copy never dispatches a webhook");
+            assertTrue(fixture.replications.isEmpty(), "a remote copy is never replicated again");
+        }
+        assertEquals(expectedHead, fixture.store.get(TASK_ID).generation(), "recovery changes no task");
+    }
+
+    @Test
+    void withoutASnapshotOnlyLaterCommitsAreDeliveredAndNothingCoveredMeansNoFailure() {
+        for (boolean remote : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture()) {
+                fixture.saveTask(4, TASK_STATE_WORKING);
+                EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+                PublicationReconciler.Observation observation =
+                        (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+
+                fixture.commit(TASK_STATE_INPUT_REQUIRED);                         // generation 5, committed, not published
+                long read = TaskManager.readAuthoritativeTask(fixture.store, TASK_ID).generation();
+                assertEquals(5, read);
+                fixture.commitAndPublish(TASK_STATE_WORKING, remote);              // generation 6, after the read
+                observation.completeWithoutSnapshot(read);
+
+                assertNull(observation.failureReason(), "remote=" + remote);
+                assertEquals(List.of(6L), generations(drain(child)), "remote=" + remote);
+                assertEquals(6, observation.watermark());
+            }
+        }
+        try (Fixture fixture = new Fixture()) {
+            fixture.saveTask(4, TASK_STATE_WORKING);
+            EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+            PublicationReconciler.Observation observation =
+                    (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+            observation.completeWithoutSnapshot(4);                                // nothing arrived before the read
+            fixture.commitAndPublish(TASK_STATE_INPUT_REQUIRED, false);            // generation 5
+            assertNull(observation.failureReason());
+            assertEquals(List.of(5L), generations(drain(child)));
+        }
+    }
+
+    @Test
+    void withASnapshotACoveredCommitIsStillDiscardedBecauseTheSnapshotReplacesIt() {
+        try (Fixture fixture = new Fixture()) {
+            fixture.saveTask(4, TASK_STATE_WORKING);
+            EventQueue.ChildQueue child = (EventQueue.ChildQueue) fixture.mainQueue.tap();
+            PublicationReconciler.Observation observation =
+                    (PublicationReconciler.Observation) fixture.reconciler.attach(child);
+            fixture.commitAndPublish(TASK_STATE_INPUT_REQUIRED, false);            // generation 5
+            observation.complete(5);
+
+            assertNull(observation.failureReason());
+            assertEquals(List.of(), generations(drain(child)));
+            assertEquals(5, observation.watermark());
+        }
+    }
+
     // ---- recovery has no side effect on the task, webhooks or replication ----
 
     @Test

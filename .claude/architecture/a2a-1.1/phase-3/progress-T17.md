@@ -292,3 +292,73 @@ failures. No defect reached three consecutive substantive attempts without progr
   in a test hook (no production fault hook). No replay, cursor, long-poll or Phase 4/5/6 behaviour. T18/T19 not started.
 - Status: **corrected candidate, NOT accepted.** A fresh targeted affected-diff review, then a full independent final review,
   must run before import.
+
+---
+
+# Targeted-review correction 2 session
+
+Window 2026-11-26 18:47–~19:25 UTC (initial deadline 20:47; second window not used). Branch `work/p3-t17`, base HEAD
+`71abc014921417b0b353c7f970be998aa7d4861a`. Model: Bob configured model, user-authorised; observed identifier unavailable; Sol
+not claimed; Astra not used. Every Maven command: `mvn -B -Dmaven.repo.local=/tmp/p3-t17-fix2-m2 … -am`, serial, `timeout 1200`,
+log + `.exit` in `/tmp/p3-t17-fix2-logs`, no root `test.log`. Finding responses: `handoffs/P3-T17.md` (last section).
+
+## Commands and results
+
+| # | Command | Exit | Result | Log |
+|---|---------|------|--------|-----|
+| 1 | RED: `-pl spec-grpc -am -Dtest=Phase2CodecTest test` on old `JSONRPCUtils` | 1 | 10 run, 2 failures | `n2-red-codec` |
+| 2 | GREEN codec after fix | 0 | 10/0/0/0 | `n2-green-codec` |
+| 3 | RED routes: `-pl reference/jsonrpc -am` with `JSONRPCUtils` reverted to HEAD (fixed copy restored afterwards) | 1 | `A2AServerRoutesTest` 41 run, 4 errors | `n2-red-routes` |
+| 4 | server-common recovery tests, first run | 1 | 3 test-design failures (fixed in tests) | `n1-n11-green` |
+| 5 | same, second run | 0 | Gap 32, StreamingSend 43, Provisioning 10 = 85, 0 fail/skip | `n1-n11-green2` |
+| 6 | mutation probes (probe copy, 75 tests each) mutN1 / mut2 / mut3 / mut1 | 1 each (expected) | killed: 2 failures / 4 failures / 4 failures / 1 error | `mutN1`, `mut2`, `mut3`, `mut1` |
+| 7 | `-pl spec-grpc,jsonrpc-common -am -Dtest=Phase2CodecTest test` (final) | 0 | `Phase2CodecTest` 10, 0 fail/skip | `v1-codec` |
+| 8 | `-pl reference/jsonrpc -am -Dtest=A2AServerRoutesTest,Phase2BoundaryTest test` | 0 | 41 + 5 = 46, 0 skips | `v2-routes` |
+| 9 | `-pl server-common -am test` | 0 | server-common 1041 run, 0 fail/err; skips only 3 upstream `VertxA2AHttpClientSSETest` (91/3 in that module); Gap 32, StreamingSend 43, Provisioning 10 | `v3-sc-full` |
+| 10 | `-pl transport/jsonrpc,client/transport/jsonrpc -am -Dtest=JSONRPCHandlerTest,Phase2PublicClientTest,Phase3ClientGenerationTest test` | 0 | client 26 (19 + 7); `JSONRPCHandlerTest` 80 run / 1 pre-existing `@Disabled` skip | `v4-plan1` |
+| 11 | `-pl client/base,reference/jsonrpc -am -Dtest=Phase3JSONRPCPublicClientTest,ExistingOrdinaryEntryPointReductionTest,Phase2BoundaryTest test` | 0 | client/base 49 (18 + 31), `Phase2BoundaryTest` 5, 0 skips | `v5-cbase` |
+| 12 | `-pl tests/multiversion/jsonrpc -am verify` (19:09–19:15) | 0 | BUILD SUCCESS; module 164 = `MultiVersionJSONRPCTest` 75, `_v0_3_Test` 40, `WithAuth` 4, `_v0_3_WithAuth` 4, `WithTaskAuthorization` 7, `Phase3JSONRPCMutationTest` 21, `Phase3JSONRPCNoUserArtifactsTest` 4; 0 fail/skip in module | `v6-jsonrpcmod` |
+| 13 | `-pl spec-grpc,jsonrpc-common,tests/multiversion/rest,tests/multiversion/grpc -am verify` (19:15–19:21) | 0 | BUILD SUCCESS; REST 146 (18 skipped), gRPC 131 (22 skipped), compat-0.3 200 (27 skipped) and 53 (11 skipped): same counts as the previous baseline | `v7-grpcrest` |
+
+Steps 7–13 ran after the last source change (the `PublicationReconciler` javadoc note). Extras modules not run.
+
+## Mutation probes
+
+Probe copy `/tmp/p3-t17-fix2-probe` (production tree not mutated). Probe restored byte-identical to production
+(`DefaultRequestHandler` sha `e50c4cad…`) before the final run. mutN1: `observeSendStream` calls `complete` instead of
+`completeWithoutSnapshot`; mut2/mut3/mut1: the `detach()` calls at the pre-agent failure, publisher-construction failure and
+consumer `onError` removed. All killed (see row 6). The first mutation chain died when a tool call was cancelled (`mutN1.exit`
+and `mut2.exit` not written by the script; `mut2.exit` reconstructed from the log; incomplete evidence preserved); mut3/mut1
+were rerun detached.
+
+## Failed or non-progress attempts (not hidden)
+
+- RED runs 1 and 3 (expected). Three test-design failures in the new N1/N11 tests (run 4), fixed by test changes (generation
+  numbers: the status commit on the seeded task produced racing generation 6, not 5, so the "later commit" test asserts ordered
+  distinct generations ending at `racing+1`).
+- The first N2 route test passed on the old code because it ran as protocol 0.3; fixed by `selectProtocol11()`.
+- The editing tools misapplied several edits (extra blank lines, a misplaced javadoc insert); every file was re-read and
+  corrected. `diff`, `cmp` and `rsync` are not installed (used `sha256sum`). No defect reached three consecutive substantive
+  attempts without progress; the diagnosis checkpoint was not triggered.
+
+## Source hashes (sha256; `/tmp/p3-t17-fix2-logs/sha256.txt`)
+
+```
+4da21f98e4dbb6e9f235c6479696f49cc76504eb1926956092e0e8296742deac  docs/content/dev/configuration.md
+3784911b02e993abff944fc967daaa8637ef006b92e0c5f81f89726bacdd01c7  reference/jsonrpc/src/test/java/org/a2aproject/sdk/server/apps/quarkus/A2AServerRoutesTest.java
+4d1c97b446890d937426835f7e44544046de79636e0608e3d56253b650242186  server-common/src/main/java/org/a2aproject/sdk/server/events/PublicationReconciler.java
+e50c4cad5def1182949283c55404d91af75776d24cfb76861ae298ad453c687c  server-common/src/main/java/org/a2aproject/sdk/server/requesthandlers/DefaultRequestHandler.java
+d68e3514e5fc96078db1f7629b7baa484b3dadb6af2191a847428bd0c5251d8f  server-common/src/test/java/org/a2aproject/sdk/server/events/PublicationGapRecoveryTest.java
+4046a32120ad20b8667e98687d70c3808aab3502180ffe47dfcda44a923710b1  server-common/src/test/java/org/a2aproject/sdk/server/events/StreamingSendPublicationRecoveryTest.java
+21748f5338faadbe5c4ed8da757f96cdfb978f55f30d0d02a3271e4b0c7c28d8  spec-grpc/src/main/java/org/a2aproject/sdk/grpc/utils/JSONRPCUtils.java
+a792b51759bdc6cef810be6ca401a78d95c2f3848fa46bc168c1bde91eca7160  spec-grpc/src/test/java/org/a2aproject/sdk/grpc/utils/Phase2CodecTest.java
+b781f0fc54bd96717cfe11366710cbedebb67008d7c1c00e1d060ffc9eefc9c3  tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/Phase3MutationScenarios.java
+870d15866e98cca24fb2e38bf2dc5b0330130436f138fe4914f70cb3c8d3c72c  .claude/architecture/a2a-1.1/phase-3/reviews/P3-T17-correction-review.md
+```
+
+## Known limits
+
+See `handoffs/P3-T17.md`: unresolved N6 sleeps (push negative control 1000 ms, `sendCollected` 400 ms settle,
+`Phase3OldObserver.awaitFrames`, `Phase3JSONRPCPublicClientTest` ~300 ms / `awaitQuiescent`); CDI+JPA, extras and F1.1 wire demand
+not exercised; N3/N4/N7/N8 unchanged. Status: **corrected candidate, NOT accepted.** A targeted affected-diff review, then a full
+independent final review, must precede T17 acceptance/import. T18/T19 not started.

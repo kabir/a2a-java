@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -215,11 +216,45 @@ class StreamingSendPublicationRecoveryTest {
 
     @ParameterizedTest
     @EnumSource(value = Variant.class, names = {"EXISTING_SEND_STREAM", "EXISTING_SEND_INPUT_STREAM"})
-    void aCommitRacingTheAttachIsDiscardedWhenCoveredAndALaterOneIsDeliveredOnce(Variant variant) throws Exception {
+    void aCommitCoveredByTheStartingGenerationClosesTheSendStreamWithTheResyncFailure(Variant variant)
+            throws Exception {
         try (Rig rig = new Rig()) {
             rig.seed(TASK_STATE_INPUT_REQUIRED, 4);
             AtomicLong racing = new AtomicLong();
-            rig.store.afterObservationExists.set(() -> {
+            rig.store.beforeObservedRead.set(() -> {
+                rig.commitAndPublish(TASK_ID, TASK_STATE_WORKING);
+                racing.set(rig.store.get(TASK_ID).generation());
+            });
+            rig.script = (context, emitter) -> {
+                rig.begin(context);
+                emitter.addArtifact(List.of(new TextPart("later")));
+                rig.release.await();
+            };
+
+            Collector collector = rig.send(variant, rig.context(CURRENT));
+
+            assertTrue(collector.failed.await(5, TimeUnit.SECONDS),
+                    "a covered concurrent commit cannot be replaced by a snapshot, so the stream must end");
+            assertTrue(racing.get() > 4, "the racing commit happened while the observation was installed");
+            InternalError failure = assertInstanceOf(InternalError.class, collector.failure);
+            assertTrue(failure.getMessage().contains("call GetTask to resynchronize"), failure.getMessage());
+            assertEquals(1, collector.completed.getCount(), "an error, not a normal completion");
+            assertEquals(List.of(), collector.generations(), "nothing is delivered after the discarded commit");
+            assertEquals(0, collector.events.stream().filter(Task.class::isInstance).count(), "no snapshot is added");
+            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> rig.reconciler.activeObservationCount() == 0);
+            // The user must resynchronize explicitly: GetTask shows the commit the stream could not carry.
+            Task resynchronized = rig.handler.onGetTask(new TaskQueryParams(TASK_ID, null, null), rig.context(CURRENT));
+            assertTrue(resynchronized.generation() >= racing.get(), "GetTask returns the committed state");
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Variant.class, names = {"EXISTING_SEND_STREAM", "EXISTING_SEND_INPUT_STREAM"})
+    void aCommitAfterTheStartingGenerationIsDeliveredOnce(Variant variant) throws Exception {
+        try (Rig rig = new Rig()) {
+            rig.seed(TASK_STATE_INPUT_REQUIRED, 4);
+            AtomicLong racing = new AtomicLong();
+            rig.store.afterObservedRead.set(() -> {
                 rig.commitAndPublish(TASK_ID, TASK_STATE_WORKING);
                 racing.set(rig.store.get(TASK_ID).generation());
             });
@@ -233,10 +268,14 @@ class StreamingSendPublicationRecoveryTest {
 
             Awaitility.await().atMost(5, TimeUnit.SECONDS).until(
                     () -> collector.events.stream().anyMatch(TaskArtifactUpdateEvent.class::isInstance));
-            assertTrue(racing.get() > 4, "the racing commit happened while the observation was installed");
+            assertTrue(racing.get() > 4, "the racing commit happened after the starting generation was read");
             List<Long> generations = collector.generations();
-            assertEquals(List.of(racing.get() + 1), generations,
-                    "the covered commit " + racing.get() + " is discarded and the later one delivered exactly once");
+            assertTrue(generations.get(0) > 4, "nothing at or below the starting generation: " + generations);
+            assertEquals(generations.stream().distinct().sorted().toList(), generations,
+                    "every generation exactly once and in order: " + generations);
+            assertTrue(generations.contains(racing.get()), "the later commit is delivered: " + generations);
+            assertEquals(racing.get() + 1, generations.get(generations.size() - 1).longValue(),
+                    "the agent's artifact follows it: " + generations);
             assertEquals(0, collector.events.stream().filter(Task.class::isInstance).count());
             assertNull(collector.failure);
         }
@@ -380,6 +419,53 @@ class StreamingSendPublicationRecoveryTest {
         }
     }
 
+    // ---- N11: setup that fails after the observation was attached releases the child queue and the observation ----
+
+    @ParameterizedTest
+    @EnumSource(Variant.class)
+    void aFailureAfterTheAttachAndBeforeTheAgentStartsReleasesTheObservationAndTheChild(Variant variant) {
+        try (Rig rig = new Rig()) {
+            if (variant.existing) {
+                rig.seed(TASK_STATE_INPUT_REQUIRED, 4);
+            }
+            rig.script = (context, emitter) -> rig.begin(context);
+            rig.rejectAgents.set(true);
+
+            assertThrows(RejectedExecutionException.class, () -> rig.send(variant, rig.context(CURRENT)));
+
+            assertEquals(0, rig.agentRuns.get(), "the agent never started");
+            assertEquals(0, rig.reconciler.activeObservationCount(), "the observation is released");
+            assertFalse(rig.reconciler.isScheduled(), "nothing is left scheduled");
+            if (variant.existing) {
+                assertTrue(rig.queueManager.getActiveChildQueueCount(TASK_ID) <= 0, "the tapped child is closed");
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(Variant.class)
+    void aFailureBuildingThePublisherAfterTheAgentStartedReleasesTheObservationAndTheChild(Variant variant)
+            throws Exception {
+        try (Rig rig = new Rig()) {
+            if (variant.existing) {
+                rig.seed(TASK_STATE_INPUT_REQUIRED, 4);
+            }
+            rig.script = (context, emitter) -> {
+                rig.begin(context);
+                rig.release.await();
+            };
+
+            assertThrows(IllegalStateException.class,
+                    () -> rig.send(variant, rig.publisherFailingContext(CURRENT)));
+
+            assertEquals(0, rig.reconciler.activeObservationCount(), "the observation is released");
+            assertFalse(rig.reconciler.isScheduled(), "nothing is left scheduled");
+            if (variant.existing) {
+                assertTrue(rig.queueManager.getActiveChildQueueCount(TASK_ID) <= 0, "the tapped child is closed");
+            }
+        }
+    }
+
     // ---- T13: reserve and release stay paired around the input commit ----
 
     @ParameterizedTest
@@ -502,10 +588,14 @@ class StreamingSendPublicationRecoveryTest {
         }
     }
 
-    /** A store whose snapshot read can run a hook once the handler's observation is installed, or report no task. */
+    /**
+     * A store whose snapshot read can run a hook once the handler's observation is installed, either before the
+     * read (the commit is covered by the generation read) or after it (the commit is later), or report no task.
+     */
     private static final class GatedStore extends InMemoryTaskStore {
 
-        private final AtomicReference<Runnable> afterObservationExists = new AtomicReference<>();
+        private final AtomicReference<Runnable> beforeObservedRead = new AtomicReference<>();
+        private final AtomicReference<Runnable> afterObservedRead = new AtomicReference<>();
         private volatile PublicationReconciler observer;
         private volatile boolean hideWhenObserved;
 
@@ -516,10 +606,16 @@ class StreamingSendPublicationRecoveryTest {
                 if (hideWhenObserved) {
                     return null;
                 }
-                Runnable hook = afterObservationExists.getAndSet(null);
-                if (hook != null) {
-                    hook.run();
+                Runnable before = beforeObservedRead.getAndSet(null);
+                if (before != null) {
+                    before.run();
                 }
+                TaskSnapshot read = super.readSnapshot(taskId);
+                Runnable after = afterObservedRead.getAndSet(null);
+                if (after != null) {
+                    after.run();
+                }
+                return read;
             }
             return super.readSnapshot(taskId);
         }
@@ -548,6 +644,7 @@ class StreamingSendPublicationRecoveryTest {
         private final AtomicReference<String> taskId = new AtomicReference<>();
         private final AtomicInteger agentRuns = new AtomicInteger();
         private final AtomicBoolean closed = new AtomicBoolean();
+        private final AtomicBoolean rejectAgents = new AtomicBoolean();
         private volatile Script script = (context, emitter) -> {
         };
 
@@ -587,7 +684,12 @@ class StreamingSendPublicationRecoveryTest {
                     .queueManager(queueManager)
                     .pushConfigStore(new InMemoryPushNotificationConfigStore())
                     .mainEventBusProcessor(processor)
-                    .executor(executor)
+                    .executor(command -> {
+                        if (rejectAgents.get()) {
+                            throw new RejectedExecutionException("agent pool saturated");
+                        }
+                        executor.execute(command);
+                    })
                     .eventConsumerExecutor(executor)
                     .authorizationRequired(false)
                     .publicationReconciler(reconciler)
@@ -603,7 +705,15 @@ class StreamingSendPublicationRecoveryTest {
         }
 
         private ServerCallContext context(String version) {
-            ServerCallContext context = new ServerCallContext(new TestUser(), Map.of(), Set.of(), version);
+            return configured(new ServerCallContext(new TestUser(), Map.of(), Set.of(), version));
+        }
+
+        /** A context whose version policy cannot be read once the stream's consumer cancel hook is installed. */
+        private ServerCallContext publisherFailingContext(String version) {
+            return configured(new PublisherFailingContext(new TestUser(), version));
+        }
+
+        private static ServerCallContext configured(ServerCallContext context) {
             context.attachEffectiveAgentCard(null, AgentCard.builder()
                     .name("test").description("Test agent").version("1.0")
                     .supportedInterfaces(List.of()).skills(List.of())
@@ -698,6 +808,30 @@ class StreamingSendPublicationRecoveryTest {
                 }
             }
             return generations;
+        }
+    }
+
+    /** A context whose version policy is unreadable once the consumer cancel hook is installed (publisher setup). */
+    private static final class PublisherFailingContext extends ServerCallContext {
+
+        private volatile boolean armed;
+
+        private PublisherFailingContext(User user, String version) {
+            super(user, Map.of(), Set.of(), version);
+        }
+
+        @Override
+        public void setEventConsumerCancelCallback(Runnable callback) {
+            super.setEventConsumerCancelCallback(callback);
+            armed = true;
+        }
+
+        @Override
+        public org.a2aproject.sdk.server.version.ServerVersionPolicy getVersionPolicy() {
+            if (armed) {
+                throw new IllegalStateException("publisher construction failed");
+            }
+            return super.getVersionPolicy();
         }
     }
 

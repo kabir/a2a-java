@@ -674,9 +674,12 @@ public class DefaultRequestHandler implements RequestHandler {
         }
 
         /**
-         * Enables bounded detection of lost publications for task subscriptions. A subscription then registers its
-         * delivery sink before reading the authoritative snapshot, and a stranded or gapped observation is closed
-         * through its existing stream failure path. The caller owns and closes the reconciler. Disabled by default.
+         * Enables bounded detection of lost publications for task subscriptions and ordinary streaming sends
+         * ({@code onMessageSendStream} and message-bearing {@code onSendInputStream}). A subscription or streaming send
+         * then registers its delivery sink before reading the authoritative generation, and a stranded or gapped
+         * observation is closed through its existing stream failure path. A streaming send is given no snapshot, so a
+         * concurrent commit that its starting generation covers closes that stream the same way (call GetTask). The
+         * caller owns and closes the reconciler. Disabled by default.
          *
          * @param publicationReconciler the reconciler, may be {@code null}
          * @return this builder for chaining
@@ -2104,9 +2107,11 @@ public class DefaultRequestHandler implements RequestHandler {
     /**
      * Registers publication recovery for a streaming send's own child queue, before the agent starts. As for a
      * subscription, the delivery gate is installed first and the authoritative generation {@code G} is read only
-     * afterwards, so a commit racing the attach is discarded when {@code G} covers it and delivered once when it is
-     * later. No snapshot is added to the stream: {@code G} only sets the watermark. A new task has no committed
-     * generation yet, so its watermark is zero and its opening batch is delivered from generation one.
+     * afterwards, so a commit racing the attach and later than {@code G} is delivered once. No snapshot is added to
+     * the stream: {@code G} only sets the watermark, so a concurrent commit at or below {@code G} that reached the
+     * queue after the tap would be lost; the stream is then closed with the resynchronization failure (call
+     * GetTask) instead. A new task has no committed generation yet, so its watermark is zero and its opening batch is
+     * delivered from generation one.
      *
      * @return the completed attachment, or {@code null} when publication recovery is not installed
      */
@@ -2132,7 +2137,7 @@ public class DefaultRequestHandler implements RequestHandler {
                 }
                 covered = snapshot.generation();
             }
-            attachment.complete(covered);
+            attachment.completeWithoutSnapshot(covered);
             return attachment;
         } catch (RuntimeException | Error failure) {
             attachment.detach();
