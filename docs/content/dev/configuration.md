@@ -129,6 +129,46 @@ The `DefaultPushNotificationUrlValidator` enforces these policies. Custom implem
 
 > **Known limitation — DNS rebinding:** hostname resolution happens at validation time, not at connection time. An attacker controlling a domain could register a URL that initially resolves to a public IP, then change the DNS record to an internal address before the next push event fires. The DNS cache reduces this window but does not eliminate it. Deployments with strict SSRF requirements should use network-level firewall rules to block outbound traffic to internal ranges.
 
+### Publication Recovery (opt-in)
+
+```properties
+# Detect committed task results that never reached a live stream (default: false)
+a2a.publication-recovery.enabled=false
+
+# Optional bounds in milliseconds, positive, read only when enabled
+a2a.publication-recovery.interval.millis=5000
+a2a.publication-recovery.read-deadline.millis=5000
+a2a.publication-recovery.gap-deadline.millis=10000
+```
+
+A task result is committed to the task store before it is published to the streams that watch the task. If that
+publication is lost (for example a process fault between the commit and the hand-off), a stream waits for an event that
+will never arrive. With `a2a.publication-recovery.enabled=true`, the server watches each task subscription
+(`SubscribeToTask`) and each ordinary streaming send (`SendStreamingMessage`, and `SendInput` with a message on a streaming
+binding) and closes an affected stream with an `InternalError` that asks the client to call `GetTask`. `GetTask` then returns the
+committed state. Recovery never changes the task, never resends events, and never invents a final event. There is no
+replay or cursor: the client resynchronizes with an explicit `GetTask`, and resubscribes if the task is not finished.
+
+**The property is off by default. With the default, a lost publication is not detected: a stream affected by it may stay
+open with no further events until the client or the agent ends it, and no recovery is guaranteed.** Deployments that want the bounded recovery
+must set the property to `true`.
+
+- **Bound.** A stream is closed within about 30 seconds of the loss with the default bounds (a reconciliation pass every
+  5 s, then the 5 s authority-read and 10 s reorder-gap deadlines). The three `*.millis` keys change those bounds; they are
+  read only when recovery is enabled and each must be a positive integer.
+- **Invalid values.** `a2a.publication-recovery.enabled` accepts only `true` or `false` (case-insensitive); any other value, a
+  non-numeric bound or a non-positive bound fails the request handler's initialization, so a misconfiguration is not
+  silently ignored.
+- **Task store.** Recovery needs a task store with an authoritative generation (`AtomicTaskStore`). With any other task
+  store the property has no effect: the server logs a warning at startup and no stream is covered. A decorated or custom
+  task store that does not implement `AtomicTaskStore` is therefore not covered either.
+- **Not covered.** An artifact-only `SendInput` is a single committed write with no stream to watch. A handler
+  built with `DefaultRequestHandler.builder().publicationReconciler(...)` keeps the reconciler it was given, whatever the
+  property says.
+- **Streaming sends.** A sender's stream carries no snapshot, so an event committed by a different writer in the instant
+  between the sender's attach and its first generation read is covered by that read and is not repeated on this stream.
+  `GetTask` shows it.
+
 ### Tuning Guidelines
 
 - **Streaming Performance**: The executor handles streaming subscriptions. Too few threads can cause timeouts under concurrent load.

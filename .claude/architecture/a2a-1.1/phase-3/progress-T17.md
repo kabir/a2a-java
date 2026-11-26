@@ -179,3 +179,116 @@ overlapping or timed-out Maven runs are intermediate only.
 ## Source hashes after correction
 
 `/tmp/p3-t17-correction-sha256.txt` (changed and new Java files); reproduced in `handoffs/P3-T17.md`.
+
+---
+
+# F2 correction session (opt-in publication recovery) — base `5d8deaf2b9df33cc3f111edf391e93af89e989ba`
+
+- Windows (UTC, `date -u` authoritative): original correction session start **2026-11-26 17:27**, initial absolute deadline
+  **19:27**. The previous Bob session ended unexpectedly at about 18:01 without a handoff (its transcript
+  `/tmp/p3-t17-bob-f2.jsonl` is retained) while a detached serial verification chain ran (`chain.start` 17:52:06,
+  `chain.end` 18:08:30). This resumed session started about 18:09 and finished inside the initial window; the user-authorised
+  second two-hour window was **not used**. Nothing was reset or discarded: the working tree contents found were kept.
+- Model: requested = Bob's configured model (user authorisation in place of Luna/Sol). Observed = identifier unavailable, no
+  telemetry; Sol not claimed, Astra not used. No nested agents, Serena/MCP, push, or shared task-list/status change.
+- Maven: online, private repository `/tmp/p3-t17-f2-m2`, one reactor at a time, every command `timeout -k 30 <=900`, log plus
+  real exit code under `/tmp/p3-t17-f2-logs/<name>.log/.exit`. No root `test.log`.
+
+## Exact user decision (recorded verbatim in substance)
+
+"User explicitly chose opt-in via configuration, default disabled, for the reconciler." This resolves F2 of
+`reviews/P3-T17-review.md` (kept unchanged): the global default-on wiring that the first candidate shipped is **replaced** by
+opt-in. The F2 open questions in the section above are answered as: (1) opt-in property, default `false`; (2) ordinary streaming
+send paths get the same bound when enabled; (3) provisioning tests added; (4) CDI+JPA test **not** added (see limits).
+
+## What changed (6 modified, 2 new files; nothing outside server-common, the shared fixture and docs)
+
+- `DefaultRequestHandler.initConfig`: the reconciler is created only when `a2a.publication-recovery.enabled` is `true` **and**
+  the task store is an `AtomicTaskStore`. Absent key = off. Only `true`/`false` (case-insensitive, trimmed) are accepted; any
+  other value throws `IllegalArgumentException` from initialisation. With a non-atomic store the handler logs a warning and
+  installs nothing. The three bound keys (`interval`, `read-deadline`, `gap-deadline`, positive millis) are read only when
+  enabled; a bad bound still fails initialisation. A builder-installed reconciler is kept whatever the property says.
+  `@PreDestroy` closing is unchanged. Package-private accessors `publicationReconciler()` / `publicationRecoveryLimits()` for tests.
+- New `observeSendStream` in `DefaultRequestHandler`, called from `sendOrdinaryStream` (so `onMessageSendStream` and the
+  message-bearing `onSendInputStream`, 1.1 and legacy projections): attaches the child queue to the reconciler before the agent
+  starts (delivery gate first, then the authoritative generation read `G`), detaches when the agent never starts, on a failed
+  consumer, on a failed setup and on client cancel. A new task has watermark 0. No snapshot frame is added to the stream.
+  Artifact-only `SendInput` has no stream and is not observed. `onSubscribeToTask` is unchanged.
+- `a2a-defaults.properties`: `a2a.publication-recovery.enabled=false` with comment. `docs/content/dev/configuration.md`
+  (dev only): new "Publication Recovery (opt-in)" section with default, bound, invalid values, store requirement and limits.
+- Tests: `PublicationRecoveryProvisioningTest` (10), `StreamingSendPublicationRecoveryTest` (33); shared fixture
+  `Phase3TestProfile` now enables the property explicitly with 200/1000/600 ms bounds, `AgentExecutorProducer` `phase3:hold`
+  and `PHASE3_HOLD`, `Phase3MutationScenarios` new streaming-send lost-publication scenario (`Phase3JSONRPCMutationTest` 21).
+
+## Assessment against the F2 checklist
+
+| Item | Evidence |
+|---|---|
+| Default disabled | `shippedDefaultsDisablePublicationRecovery` loads the real `META-INF/a2a-defaults.properties` (`false`), absent key and `null` Optional also off; the bounds are not parsed when disabled |
+| Enabled / invalid / bounds | enabled for an atomic store gives `Limits.DEFAULTS` (5/5/10 s, 256 / 4 MiB); `TRUE`, ` True ` accepted; `yes`, `1`, `ture`, empty, `enabled` rejected; each key overrides only itself; `abc`, `1.5`, empty give `NumberFormatException`, `0`, `-1` give `IllegalArgumentException` |
+| Lifecycle | `preDestroy…` closes, is idempotent, a closed reconciler rejects new observations |
+| Unsupported store | decorated `LegacyOnlyStore` installs nothing and does not fail |
+| Subscribed + streaming sends, 1.1 and legacy | Subscribe unchanged (existing T14/T17 tests). `StreamingSendPublicationRecoveryTest` over four variants (new/existing task x message send / SendInput message) plus 1.0/0.3 projections: lost final closes with `InternalError` and GetTask returns the committed state |
+| Cleanup, ordering | healthy completion, direct message, cancel, agent failure, closed reconciler, missing task, rejected input all release the observation and queue; racing commit before/after `G` discarded/delivered exactly once; new task delivered from generation 1 |
+| Old transport protection, T13 | `theInputCommitOfAnObservedSendKeepsItsReserveAndReleasePaired`, `aRejectedInputToAnObservedSendLeavesNoHoldAndNoObservation`; REST/gRPC/compat suites green with the property off |
+| Real JSON-RPC lost final then explicit `GetTask` | subscribe scenario and the new `lostFinalPublicationOnAStreamingSendCloses…` run in `Phase3JSONRPCMutationTest` (21/21): closed within bound, `InternalError` resync message, no invented terminal, child queue released, one ingress for the GetTask, stored task unchanged |
+| No replay / cursor / Phase 4-5 | none added; recovery never mutates, resends or invents an event; `observe` cursor still unsupported |
+
+## Commands, results, chronology (all exit code from `.exit` files; times UTC)
+
+| # | Check | Exit | Result | Log |
+|---|---|---|---|---|
+| 1 | `-pl server-common -am compile` warm-up (17:31) | 0 | not acceptance evidence | `compile-1` |
+| 2 | `PublicationRecoveryProvisioningTest` `-pl server-common -am -Dtest=… test` | 1, 1, 0 | RED/fix: test-design failures (10 run, 1 failure; TaskNotFound where closed-reconciler ISE expected) fixed in the test, then 10/10 | `prov-1`, `prov-2`, `prov-3` |
+| 3 | `StreamingSendPublicationRecoveryTest` | 1, 0 | 33 run, 1 error (agent-failure test timing) then 33/33, 0 skip | `send-1`, `send-2` |
+| 4 | Mutation probe: attach removed in `DefaultRequestHandler` | 1 (expected) | 33 run, 19 failures | `mutation-1` |
+| 5 | e2e `Phase3JSONRPCMutationTest` | 1 (compile of an interrupted edit), 0 | then 25 run (21 + `Phase3JSONRPCNoUserArtifactsTest` 4), 0 fail/skip | `e2e-1`, `e2e-2` |
+| 6 | e2e mutation probe: attach removed | 1 (expected) | new streaming-send scenario fails ("stream must be closed within the recovery bound"); production restored byte-identical to `DRH.bak2` at 17:49:09 | `e2e-mutation` |
+| 7 | server-common `-am test` full (17:49:21–17:51:07) | 0 | 1027 run (984 + 10 + 33), 0 fail/err; skips only the 3 upstream `VertxA2AHttpClientSSETest` | `sc-full` |
+| 8 | Plan cmd 1 (`-pl transport/jsonrpc,client/transport/jsonrpc -am -Dtest=JSONRPCHandlerTest,Phase2PublicClientTest,Phase3ClientGenerationTest … test`) | 0 | client/transport/jsonrpc 26, `JSONRPCHandlerTest` 80 run / 1 pre-existing `@Disabled` skip | `plan1` |
+| 9 | `-pl client/base,reference/jsonrpc -am -Dtest=Phase3JSONRPCPublicClientTest,ExistingOrdinaryEntryPointReductionTest,Phase2BoundaryTest test` | 0 | client/base 49, `Phase2BoundaryTest` 5, 0 skips | `cbase` |
+| 10 | `-pl …,tests/multiversion/rest,tests/multiversion/grpc -am verify` (17:52–17:58:56, 6 min 11 s) | 0 | BUILD SUCCESS; REST 146 (18 skipped), gRPC 131 (22 skipped), compat-0.3 200 (27 skipped) and 53 (11 skipped): the JSON-RPC-specific assumption / `@Disabled` skips, same counts as the previous correction baseline | `grpcrest` |
+| 11 | `-pl tests/multiversion/jsonrpc -am verify` (17:58:57–18:08:30, 9 min 33 s) | 0 | BUILD SUCCESS; module 164 = 139 + 21 + 4 (+ client `Phase3JSONRPCPublicClientTest` 18 in the reactor); only skips are the 3 upstream Vert.x tests and the pre-existing `JSONRPCHandlerTest` one | `jsonrpcmod` |
+| 12 | Gate mutation probe (this session, 18:10): `publicationRecoveryEnabled()` replaced by `true` in `initConfig`; `-pl server-common -am -Dtest=PublicationRecoveryProvisioningTest test` | 1 (expected) | 10 run, 3 failures + 1 error (default, absent-key/`null` provider and invalid-value tests fail). Production restored from `DRH.bak3`, `sha256sum` equal to the verified hash. A first attempt did not apply the mutation (`python3` missing) and is kept as an unmutated re-run: exit 0, 10/10 | `gate-mutation`, `gate-noop-unmutated` |
+
+Every verification run in rows 7-11 started after the last source change (all candidate file mtimes are 17:49:09 or
+earlier; `find -newer chain.start` over all `*.java`, `*.properties`, `*.md` outside `target` returned nothing). The
+`DefaultRequestHandler` copy used for the e2e probe is byte-identical to `DRH.bak`, `DRH.bak2` and `DRH.bak3`.
+The detached chain completed after the previous session ended; this session only read its logs.
+`Phase3MutationScenarios.corrupt` is the preserved broken intermediate edit that caused the first e2e compile failure.
+
+## Source hashes (sha256; `/tmp/p3-t17-f2-logs/sha256.txt`)
+
+```
+e726745e05768374a328eaeb92e1a299dd18d0059243788d04609e2c75b7e758  docs/content/dev/configuration.md
+f2c1b21da16aab9e4ac492531d13794b85da80d0937b620802de4e895b6ad945  server-common/src/main/java/org/a2aproject/sdk/server/requesthandlers/DefaultRequestHandler.java
+b0a314ad7dfef992809477b201b178619c755c3b95aa3fa23a3f910c6f2dd157  server-common/src/main/resources/META-INF/a2a-defaults.properties
+219bcfb7f7ff834dc72d82269c7d26aca5682fd705eb57f4b4565a0fcd7e95e7  server-common/src/test/java/org/a2aproject/sdk/server/events/StreamingSendPublicationRecoveryTest.java
+0e01ec254a6a495d883342b66fa2c61e6ebb32f4e6ea684d15ee69cbc15be2b4  server-common/src/test/java/org/a2aproject/sdk/server/requesthandlers/PublicationRecoveryProvisioningTest.java
+bec0a2602413dddbed640e27d2c7820df5a43a77a466daa82977b36b37c5ce4a  tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/AgentExecutorProducer.java
+414fa331fd663da7134fdf70f30e55c03965c98c00d2b11fab3c3635f2a81833  tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/Phase3MutationScenarios.java
+04cf749e7ceee84523856ff3cb139ca42e5e1bede1cb1424be8bd68834a5f884  tests/server-common/src/test/java/org/a2aproject/sdk/server/apps/common/Phase3TestProfile.java
+```
+
+## Failed attempts (not hidden)
+
+`prov-1`/`prov-2` (same test-design defect twice, fixed on the third), `send-1` (timing of the agent-failure test, fixed once),
+`e2e-1` (compile error from an interrupted edit of `Phase3MutationScenarios`; the broken copy is preserved), expected mutation
+failures. No defect reached three consecutive substantive attempts without progress; the diagnosis stop was not triggered.
+
+## Known limits (explicit)
+
+- Disabled by default: with the default, a lost final publication is **not** detected on any stream (subscribe or send); the
+  stream may stay open. Deployments must set `a2a.publication-recovery.enabled=true`.
+- Needs an `AtomicTaskStore`. A decorated or custom store that is not one is silently (warning only) unprotected.
+- **CDI + JPA is incomplete:** no test wires the enabled property through CDI with the JPA task store; JPA is covered only by
+  builder-built handlers and the in-memory `AtomicTaskStore`. Extras modules (JPA, replicated queue manager, Kafka, OTel) were
+  not run in this session. The enabled CDI path is exercised only with the in-memory store in `Phase3JSONRPCMutationTest`.
+- Only JSON-RPC runs the enabled lost-publication scenario end to end; REST and gRPC are covered by the shared core path and
+  by unchanged suites run with the property off.
+- Streaming sends carry no snapshot: an event committed by another writer between attach and the first generation read is
+  covered by that read and not repeated on the sender's stream (`GetTask` shows it). Artifact-only `SendInput` is not watched.
+- Bounds are about 30 s worst case with defaults; tests use short bounds. Lost publication is simulated by a store-only commit
+  in a test hook (no production fault hook). No replay, cursor, long-poll or Phase 4/5/6 behaviour. T18/T19 not started.
+- Status: **corrected candidate, NOT accepted.** A fresh targeted affected-diff review, then a full independent final review,
+  must run before import.

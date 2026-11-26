@@ -241,6 +241,7 @@ public class DefaultRequestHandler implements RequestHandler {
     private static final String A2A_REQUEST_CONTEXT_POPULATE_REFERRED_TASKS = "a2a.request-context.populate-referred-tasks";
     private static final String A2A_AUTHORIZATION_REQUIRED = "a2a.authorization.required";
     private static final String A2A_PUSH_NOTIFICATIONS_ENABLED = "a2a.push-notification.enabled";
+    private static final String A2A_PUBLICATION_RECOVERY_ENABLED = "a2a.publication-recovery.enabled";
     private static final String A2A_PUBLICATION_RECOVERY_INTERVAL_MILLIS = "a2a.publication-recovery.interval.millis";
     private static final String A2A_PUBLICATION_RECOVERY_READ_DEADLINE_MILLIS =
             "a2a.publication-recovery.read-deadline.millis";
@@ -270,7 +271,10 @@ public class DefaultRequestHandler implements RequestHandler {
 
     private boolean pushNotificationsEnabled;
 
-    /** Optional publication-loss detection for task subscriptions; absent keeps the original attach order. */
+    /**
+     * Optional publication-loss detection for task subscriptions and ordinary streaming sends; absent keeps the
+     * original attach order. It is installed only by the builder or by {@code a2a.publication-recovery.enabled=true}.
+     */
     private @Nullable PublicationReconciler publicationReconciler;
 
     /**
@@ -447,13 +451,43 @@ public class DefaultRequestHandler implements RequestHandler {
         this.authorizationRequired = Boolean.parseBoolean(
                 configProvider.getValue(A2A_AUTHORIZATION_REQUIRED));
         this.requestContextBuilder = () -> new SimpleRequestContextBuilder(taskStore, populateReferredTasks, authorizationProvider);
-        if (publicationReconciler == null && taskStore instanceof AtomicTaskStore) {
-            publicationReconciler = PublicationReconciler.forTaskStore(taskStore, publicationRecoveryLimits());
+        if (publicationReconciler == null && publicationRecoveryEnabled()) {
+            if (taskStore instanceof AtomicTaskStore) {
+                publicationReconciler = PublicationReconciler.forTaskStore(taskStore, publicationRecoveryLimits());
+            } else {
+                LOGGER.warn("{}=true has no effect: the task store {} is not an AtomicTaskStore, so it has no "
+                        + "authoritative generation to compare. Lost publications are NOT detected on this handler.",
+                        A2A_PUBLICATION_RECOVERY_ENABLED, taskStore.getClass().getName());
+            }
         }
     }
 
+    /**
+     * Publication recovery is opt-in: an absent key is disabled, and only {@code true} or {@code false} are accepted
+     * so that a misspelled value cannot silently leave a safety feature off.
+     */
+    private boolean publicationRecoveryEnabled() {
+        Optional<String> value = configProvider.getOptionalValue(A2A_PUBLICATION_RECOVERY_ENABLED);
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        String text = value.get().trim();
+        if (text.equalsIgnoreCase("true")) {
+            return true;
+        }
+        if (text.equalsIgnoreCase("false")) {
+            return false;
+        }
+        throw new IllegalArgumentException(A2A_PUBLICATION_RECOVERY_ENABLED + " must be true or false, not '"
+                + value.get() + "'");
+    }
+
+    @Nullable PublicationReconciler publicationReconciler() {
+        return publicationReconciler;
+    }
+
     /** Defaults are the reconciler's own; the optional properties only shorten or lengthen the SDK-policy bounds. */
-    private PublicationReconciler.Limits publicationRecoveryLimits() {
+    PublicationReconciler.Limits publicationRecoveryLimits() {
         PublicationReconciler.Limits defaults = PublicationReconciler.Limits.DEFAULTS;
         return new PublicationReconciler.Limits(
                 optionalMillis(A2A_PUBLICATION_RECOVERY_INTERVAL_MILLIS, defaults.reconciliationInterval()),
@@ -463,7 +497,7 @@ public class DefaultRequestHandler implements RequestHandler {
     }
 
     private java.time.Duration optionalMillis(String name, java.time.Duration fallback) {
-        java.util.Optional<String> value = configProvider.getOptionalValue(name);
+        Optional<String> value = configProvider.getOptionalValue(name);
         return value != null && value.isPresent() ? java.time.Duration.ofMillis(Long.parseLong(value.get())) : fallback;
     }
 
@@ -1251,6 +1285,7 @@ public class DefaultRequestHandler implements RequestHandler {
         EventQueue queue;
         ResultAggregator resultAggregator;
         EventConsumer consumer;
+        PublicationReconciler.@Nullable Attachment recovery = null;
         try {
             if (mss.task() == null && mss.opening() == null) {
                 mainEventBusProcessor.registerInitialMessage(queueTaskId, params.message());
@@ -1259,6 +1294,7 @@ public class DefaultRequestHandler implements RequestHandler {
             // Create queue with real taskId (no tempId parameter needed)
             queue = queueManager.createOrTap(queueTaskId);
             retainOpening(queue, mss);
+            recovery = observeSendStream(queue, mss, queueTaskId);
             LOGGER.debug("Created/tapped queue for task {}: {}", taskId.get(), queue);
 
             // Record ownership synchronously for new tasks before agent starts
@@ -1290,8 +1326,14 @@ public class DefaultRequestHandler implements RequestHandler {
         } finally {
             if (!agentStarted) {
                 mainEventBusProcessor.clearInitialMessageAfterEvents(queueTaskId);
+                if (recovery != null) {
+                    // The agent never ran: do not leave an observation watching a stream nobody will consume.
+                    recovery.detach();
+                }
             }
         }
+
+        final PublicationReconciler.@Nullable Attachment streamRecovery = recovery;
 
         // Store cancel callback in context for closeHandler to access
         // When client disconnects, closeHandler can call this to stop EventConsumer polling loop
@@ -1371,6 +1413,11 @@ public class DefaultRequestHandler implements RequestHandler {
                     @Override
                     public void onError(Throwable throwable) {
                         LOGGER.error("onError for task {}", taskId.get(), throwable);
+                        if (streamRecovery != null) {
+                            // A failed consumer does not close its child queue; release the observation with it so
+                            // a stream that has ended is not reconciled.
+                            streamRecovery.detach();
+                        }
                         subscriber.onError(throwable);
                     }
 
@@ -1392,6 +1439,11 @@ public class DefaultRequestHandler implements RequestHandler {
                     }
                 });
             };
+        } catch (RuntimeException | Error failure) {
+            if (recovery != null) {
+                recovery.detach();
+            }
+            throw failure;
         } finally {
             // Needed to satisfy Nullaway
             String idOfTask = taskId.get();
@@ -2046,6 +2098,45 @@ public class DefaultRequestHandler implements RequestHandler {
         OpeningTaskInput opening = mss.opening();
         if (opening != null) {
             queue.retainOpeningInput(opening);
+        }
+    }
+
+    /**
+     * Registers publication recovery for a streaming send's own child queue, before the agent starts. As for a
+     * subscription, the delivery gate is installed first and the authoritative generation {@code G} is read only
+     * afterwards, so a commit racing the attach is discarded when {@code G} covers it and delivered once when it is
+     * later. No snapshot is added to the stream: {@code G} only sets the watermark. A new task has no committed
+     * generation yet, so its watermark is zero and its opening batch is delivered from generation one.
+     *
+     * @return the completed attachment, or {@code null} when publication recovery is not installed
+     */
+    private PublicationReconciler.@Nullable Attachment observeSendStream(EventQueue queue, MessageSendSetup mss,
+            String queueTaskId) {
+        PublicationReconciler reconciler = publicationReconciler;
+        if (reconciler == null) {
+            return null;
+        }
+        PublicationReconciler.Attachment attachment;
+        try {
+            attachment = reconciler.attach(queue);
+        } catch (RuntimeException | Error failure) {
+            queue.close(true);
+            throw failure;
+        }
+        try {
+            long covered = 0;
+            if (mss.task() != null) {
+                Task snapshot = TaskManager.readAuthoritativeTask(taskStore, queueTaskId);
+                if (snapshot == null) {
+                    throw new TaskNotFoundError();
+                }
+                covered = snapshot.generation();
+            }
+            attachment.complete(covered);
+            return attachment;
+        } catch (RuntimeException | Error failure) {
+            attachment.detach();
+            throw failure;
         }
     }
 

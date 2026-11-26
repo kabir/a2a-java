@@ -8,8 +8,8 @@ import java.util.Map;
 import io.quarkus.test.junit.QuarkusTestProfile;
 
 /**
- * Shared P3-T17..T19 profile: the paired-version policy plus client-written artifacts, short publication-recovery
- * bounds so a lost final publication is observable inside a test, and the spy queue manager so a scenario can tell
+ * Shared P3-T17..T19 profile: the paired-version policy plus client-written artifacts, publication recovery enabled
+ * with short bounds so a lost final publication is observable inside a test, and the spy queue manager so a scenario can tell
  * which events reached the replication and publication seams.
  */
 public class Phase3TestProfile implements QuarkusTestProfile {
@@ -31,6 +31,9 @@ public class Phase3TestProfile implements QuarkusTestProfile {
         Map<String, String> overrides = new HashMap<>();
         overrides.put("test.a2a.experimental", "true");
         overrides.put("test.agent.user-artifacts", Boolean.toString(userArtifacts()));
+        // Publication recovery is opt-in: it is off unless a deployment enables it, so the lost-publication
+        // scenarios enable it explicitly, with short bounds.
+        overrides.put("a2a.publication-recovery.enabled", "true");
         overrides.put("a2a.publication-recovery.interval.millis", "200");
         overrides.put("a2a.publication-recovery.read-deadline.millis", "1000");
         overrides.put("a2a.publication-recovery.gap-deadline.millis", "600");

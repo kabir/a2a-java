@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
@@ -756,6 +757,65 @@ public abstract class Phase3MutationScenarios extends Phase3ScenarioSupport {
         assertEquals(1, drainIngress().size(), "the explicit GetTask is the only request: nothing is resent");
         assertEquals(committedBefore, storedTask(base.id()), "recovery never mutates the task");
         assertEquals(0, pushConfigCount(base.id()));
+    }
+
+    /**
+     * The same loss on an ordinary streaming send rather than a subscription: the sender's own stream is observed from
+     * the moment it attaches, so a final publication lost while the agent is still running closes that stream with
+     * the resynchronize error, and an explicit GetTask returns the committed final state with nothing resent.
+     */
+    @Test
+    public void lostFinalPublicationOnAStreamingSendClosesTheStreamAndExplicitGetTaskReturnsTheFinalState()
+            throws Exception {
+        Task base = createWorkingTask();
+        CountDownLatch hold = new CountDownLatch(1);
+        AgentExecutorProducer.PHASE3_HOLD.set(hold);
+        try {
+            Client sender = open("1.1", true, false);
+            Collected seen = new Collected();
+            sender.sendInput(input(base, "p3-held-send", "phase3:hold", null), List.of(seen.consumer()),
+                    seen.errors(), null);
+            // The held agent has streamed its artifact, so its work is committed and published before the loss.
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
+            while (System.nanoTime() < deadline && seen.events.stream().noneMatch(event ->
+                    event instanceof TaskUpdateEvent update
+                            && update.getUpdateEvent() instanceof TaskArtifactUpdateEvent)) {
+                Thread.sleep(50);
+            }
+            assertTrue(seen.events.stream().anyMatch(event -> event instanceof TaskUpdateEvent update
+                    && update.getUpdateEvent() instanceof TaskArtifactUpdateEvent), "the held agent's artifact");
+            assertNull(seen.failure.get());
+            assertTrue(awaitChildQueues(base.id(), 1));
+
+            Task committedWork = storedTask(base.id());
+            assertNotNull(committedWork);
+            Task completed = Task.builder(committedWork)
+                    .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED)).generation(committedWork.generation() + 1)
+                    .build();
+            long lostAt = System.nanoTime();
+            commitWithoutPublication(completed);
+
+            assertTrue(seen.awaitFailure(20), () -> "the sender's stream must be closed within the recovery bound: "
+                    + seen.events);
+            long closedAfterMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lostAt);
+            assertTrue(closedAfterMillis < 15_000, "closed after " + closedAfterMillis + " ms");
+            assertTypedFailure(seen.failure.get(), InternalError.class, "GetTask");
+            assertFalse(seen.events.stream().anyMatch(event -> terminal(event)),
+                    "the lost final state is never invented");
+            assertTrue(awaitChildQueues(base.id(), 0),
+                    "the closed observation releases its child queue, count=" + childQueueCount(base.id()));
+
+            drainIngress();
+            Task committedBefore = storedTask(base.id());
+            Task explicit = sender.getTask(new TaskQueryParams(base.id()));
+            assertEquals(TaskState.TASK_STATE_COMPLETED, explicit.status().state());
+            assertEquals(completed.generation(), explicit.generation());
+            assertEquals(1, drainIngress().size(), "the explicit GetTask is the only request: nothing is resent");
+            assertEquals(committedBefore, storedTask(base.id()), "recovery never mutates the task");
+            assertEquals(0, pushConfigCount(base.id()));
+        } finally {
+            hold.countDown();
+        }
     }
 
     // ---- scenario 9: every existing entry point reduces the same stamps ------------------------------------------

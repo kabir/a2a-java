@@ -4,6 +4,8 @@ import static org.a2aproject.sdk.server.ServerCallContext.TRANSPORT_KEY;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -44,6 +46,13 @@ public class AgentExecutorProducer {
     /** Task ids the controlled phase3 branches were invoked for, in arrival order. */
     public static final CopyOnWriteArrayList<String> PHASE3_TASK_IDS =
             new CopyOnWriteArrayList<>();
+
+    /**
+     * Released by the test that holds a {@code phase3:hold} agent open. The default is already released, so a stray
+     * hold request never blocks; a holding test installs its own latch first and counts it down when it finishes.
+     */
+    public static final AtomicReference<CountDownLatch> PHASE3_HOLD =
+            new AtomicReference<>(new CountDownLatch(0));
 
     @Inject
     @PublicAgentCard
@@ -183,6 +192,16 @@ public class AgentExecutorProducer {
                 switch (input) {
                     case "phase3:work" -> agentEmitter.startWork();
                     case "phase3:noop" -> { }
+                    case "phase3:hold" -> {
+                        // Streams an artifact, then keeps the send stream open until the test releases it.
+                        agentEmitter.startWork();
+                        agentEmitter.addArtifact(List.of(new TextPart("held")), "p3-hold-art", "held", null);
+                        try {
+                            PHASE3_HOLD.get().await(60, TimeUnit.SECONDS);
+                        } catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
                     case "phase3:direct" -> agentEmitter.sendMessage("phase3 direct reply");
                     case "phase3:agent-artifact" -> {
                         agentEmitter.startWork();
