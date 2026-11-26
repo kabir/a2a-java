@@ -3,6 +3,7 @@ package org.a2aproject.sdk.client;
 import org.a2aproject.sdk.spec.A2AClientException;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.ListTasksParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
 import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.TaskPushNotificationConfig;
 import org.a2aproject.sdk.spec.TaskQueryParams;
@@ -11,6 +12,25 @@ import org.jspecify.annotations.Nullable;
 /** Preflight checks for companion parameters whose semantics are not available on every selected path. */
 final class ClientInputPolicy {
     private ClientInputPolicy() {
+    }
+
+    /**
+     * Validates a send and, for selected 1.1, rejects locally (before any I/O) an explicit generation guard on a
+     * task whose generation signal this client already found unreliable.
+     */
+    static void validateSend(String version, SendInputParams params, AgentCard card, GenerationReliability reliability)
+            throws A2AClientException {
+        validateSend(version, params, card);
+        if ("1.1".equals(version)) {
+            reliability.requireGuardAllowed(params);
+        }
+    }
+
+    /** Only a no-cursor observation is implemented; a cursor is rejected before any I/O. */
+    static void validateObserve(ObserveTaskParams params) throws A2AClientException {
+        if (params.lastSeenGeneration() != null) {
+            throw new A2AClientException("Cursor observation is not implemented yet");
+        }
     }
 
     static void validateSend(String version, SendInputParams params, AgentCard card) throws A2AClientException {

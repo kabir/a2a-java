@@ -59,6 +59,7 @@ final class ClientTaskReducer {
     private boolean uncertain;
     private boolean tainted;
     private boolean legacyGaps;
+    private boolean evidenceUnavailable;
     private @Nullable Integer historyLimit;
     private @Nullable Integer timelineLimit;
     private final Set<HistoryCoverage.Flag> historyFlags = EnumSet.noneOf(HistoryCoverage.Flag.class);
@@ -83,6 +84,20 @@ final class ClientTaskReducer {
     }
 
     synchronized TaskView view() {
+        return buildView();
+    }
+
+    /** Carries forward a taint the owning client already recorded for this task; a snapshot never clears it. */
+    synchronized void taint() {
+        tainted = true;
+    }
+
+    /**
+     * Records that the event source cannot supply skipped-variant evidence, so coverage is not asserted and a
+     * baseline-bearing view is incomplete. Known events are still reduced; this is not a generation gap.
+     */
+    synchronized TaskView markSkippedEvidenceUnavailable() {
+        evidenceUnavailable = true;
         return buildView();
     }
 
@@ -376,13 +391,14 @@ final class ClientTaskReducer {
     private TaskView buildView() {
         Long watermark = baseline ? through : null;
         ViewSync sync = !baseline ? ViewSync.NO_BASELINE
-                : (gap || uncertain || tainted || watermark == null) ? ViewSync.INCOMPLETE : ViewSync.SYNCHRONIZED;
+                : (gap || uncertain || tainted || evidenceUnavailable || watermark == null)
+                        ? ViewSync.INCOMPLETE : ViewSync.SYNCHRONIZED;
         Task current = task;
         Set<HistoryCoverage.Flag> history = EnumSet.noneOf(HistoryCoverage.Flag.class);
         history.addAll(historyFlags);
         Set<HistoryCoverage.Flag> timeline = EnumSet.noneOf(HistoryCoverage.Flag.class);
         timeline.addAll(timelineFlags);
-        if (!baseline) {
+        if (!baseline || evidenceUnavailable) {
             history.add(HistoryCoverage.Flag.NOT_ASSERTED);
             timeline.add(HistoryCoverage.Flag.NOT_ASSERTED);
         }

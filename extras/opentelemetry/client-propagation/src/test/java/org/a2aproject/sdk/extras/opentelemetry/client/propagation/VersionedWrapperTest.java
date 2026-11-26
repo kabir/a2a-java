@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -15,19 +17,34 @@ import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
 import org.a2aproject.sdk.client.transport.spi.ClientTransportConfig;
+import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
+import org.a2aproject.sdk.client.transport.spi.TaskDecodeEvidence;
+import org.a2aproject.sdk.client.transport.spi.TransportCall;
+import org.a2aproject.sdk.client.transport.spi.TransportFrame;
+import org.a2aproject.sdk.client.transport.spi.TransportObservation;
+import org.a2aproject.sdk.client.transport.spi.TransportResult;
 import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
 import org.a2aproject.sdk.client.transport.spi.interceptors.ClientCallContext;
+import org.a2aproject.sdk.spec.EventKind;
+import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
+import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.spec.TaskQueryParams;
 import org.a2aproject.sdk.spec.TaskState;
 import org.a2aproject.sdk.spec.TaskStatus;
+import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
+import org.a2aproject.sdk.spec.TextPart;
 import org.junit.jupiter.api.Test;
 
 class VersionedWrapperTest {
@@ -86,6 +103,103 @@ class VersionedWrapperTest {
         assertEquals("1.1", received.get().getHeaders().get("A2A-Version"));
         assertEquals(Map.of("scope", "tenant"), received.get().getState());
         assertEquals(Map.of("A2A-Version", "1.1"), caller.getHeaders());
+    }
+
+    @Test
+    void observeAndSendInputPassSkippedEvidenceThroughTheWrapperUnchanged() {
+        VersionedClientTransport delegate = mock(VersionedClientTransport.class);
+        when(delegate.protocolVersion()).thenReturn("1.1");
+        when(delegate.capabilities()).thenReturn(Set.of(ClientFeature.ORDINARY));
+        TaskStatusUpdateEvent update = new TaskStatusUpdateEvent("task",
+                new TaskStatus(TaskState.TASK_STATE_WORKING), "ctx", null, 3);
+        TransportFrame skipped = new TransportFrame(update, true, List.of(7L), null, 1);
+        TransportObservation observation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+        observation.markReady();
+        observation.publish(skipped);
+        ObserveTaskParams observe = new ObserveTaskParams("task", null, null);
+        when(delegate.observe(eq(observe), any(), any())).thenReturn(observation);
+        Task task = new Task("task", "ctx", new TaskStatus(TaskState.TASK_STATE_WORKING), null, null, null);
+        TransportResult<EventKind> envelope = new TransportResult<>(task,
+                List.of(new TaskDecodeEvidence("task", List.of(7L), true)));
+        TransportCall<TransportResult<EventKind>> call = TransportCall.create(() -> { });
+        call.complete(envelope);
+        SendInputParams input = SendInputParams.builder().message(Message.builder().role(Message.Role.ROLE_USER)
+                .parts(new TextPart("go")).build()).build();
+        when(delegate.sendInput(eq(input), any(), any())).thenReturn(call);
+        VersionedClientTransport wrapped = new OpenTelemetryClientPropagatorTransport(delegate, OpenTelemetry.noop());
+
+        TransportObservation observed = wrapped.observe(observe, SpiCallOptions.defaults(), null);
+        List<TransportFrame> frames = new ArrayList<>();
+        observed.frames().subscribe(new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(TransportFrame frame) {
+                frames.add(frame);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        TransportResult<EventKind> result = wrapped.sendInput(input, SpiCallOptions.defaults(), null)
+                .result().toCompletableFuture().join();
+
+        assertEquals(1, frames.size());
+        assertSame(skipped, frames.get(0));
+        assertEquals(List.of(7L), frames.get(0).skippedTimelineGenerations());
+        assertSame(envelope, result);
+        assertEquals(List.of(7L), result.taskEvidence().get(0).skippedTimelineGenerations());
+    }
+
+    @Test
+    void streamInputPassesSkippedEvidenceThroughTheWrapperUnchanged() {
+        VersionedClientTransport delegate = mock(VersionedClientTransport.class);
+        when(delegate.protocolVersion()).thenReturn("1.1");
+        when(delegate.capabilities()).thenReturn(Set.of(ClientFeature.ORDINARY));
+        TaskStatusUpdateEvent update = new TaskStatusUpdateEvent("task",
+                new TaskStatus(TaskState.TASK_STATE_WORKING), "ctx", null, 3);
+        TransportFrame skipped = new TransportFrame(update, true, List.of(9L), null, 1);
+        TransportObservation observation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
+        observation.markReady();
+        observation.publish(skipped);
+        SendInputParams input = SendInputParams.builder().message(Message.builder().role(Message.Role.ROLE_USER)
+                .parts(new TextPart("go")).build()).build();
+        when(delegate.streamInput(eq(input), any(), any())).thenReturn(observation);
+        VersionedClientTransport wrapped = new OpenTelemetryClientPropagatorTransport(delegate, OpenTelemetry.noop());
+
+        TransportObservation streamed = wrapped.streamInput(input, SpiCallOptions.defaults(), null);
+        List<TransportFrame> frames = new ArrayList<>();
+        streamed.frames().subscribe(new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(TransportFrame frame) {
+                frames.add(frame);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+
+        assertEquals(1, frames.size());
+        assertSame(skipped, frames.get(0));
+        assertEquals(List.of(9L), frames.get(0).skippedTimelineGenerations());
     }
 
     @Test

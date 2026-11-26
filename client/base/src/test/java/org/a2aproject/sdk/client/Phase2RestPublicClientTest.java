@@ -290,7 +290,8 @@ class Phase2RestPublicClientTest {
         assertEquals("kept", typedMessage.getTask().metadata().get("base"));
         assertEquals("task-stream-m2", ((TaskMessageUpdateEvent) typedMessage.getUpdateEvent()).message().messageId());
         var statusEvent = assertInstanceOf(TaskUpdateEvent.class, events.get(2));
-        assertEquals("kept", statusEvent.getTask().metadata().get("status"));
+        // the skipped future variant made the view uncertain: later updates are delivered but not applied to it
+        assertNull(statusEvent.getTask().metadata().get("status"));
         var artifactEvent = assertInstanceOf(TaskUpdateEvent.class, events.get(3));
         assertEquals("artifact-out", ((TaskArtifactUpdateEvent) artifactEvent.getUpdateEvent()).artifact().artifactId());
         var terminalEvent = assertInstanceOf(TaskUpdateEvent.class, events.get(4));

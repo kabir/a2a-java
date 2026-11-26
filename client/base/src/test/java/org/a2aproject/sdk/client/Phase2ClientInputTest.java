@@ -131,7 +131,7 @@ class Phase2ClientInputTest {
                 List.of(baselineArtifact), List.of(baselineMessage), Map.of("baseline", true), 8, baselineTimeline);
         Message updateMessage = message("next");
         TaskMessageUpdateEvent update = new TaskMessageUpdateEvent("task", "context", updateMessage,
-                Map.of("update", true), 2);
+                Map.of("update", true), 9);
         TransportObservation observation = TransportObservation.create(SpiCallOptions.defaults(), () -> { });
         observation.markReady();
         observation.publish(new TransportFrame(baseline, false, List.of(), null, 1));
@@ -162,8 +162,9 @@ class Phase2ClientInputTest {
         assertSame(update, callback.getUpdateEvent());
         assertEquals(List.of(baselineMessage, updateMessage), callback.getTask().history());
         assertEquals(Map.of("baseline", true, "update", true), callback.getTask().metadata());
-        assertEquals(8, callback.getTask().generation());
-        assertSame(baselineTimeline, callback.getTask().timeline());
+        assertEquals(9, callback.getTask().generation());
+        assertEquals(List.of(baselineTimeline.get(0), new org.a2aproject.sdk.spec.TimelineEntry(9,
+                new org.a2aproject.sdk.spec.TimelineEntry.MessageValue(updateMessage))), callback.getTask().timeline());
         assertSame(baselineArtifact, callback.getTask().artifacts().get(0));
         assertEquals(1, completionCount.get());
         assertEquals(2, eventsAtCompletion.get());

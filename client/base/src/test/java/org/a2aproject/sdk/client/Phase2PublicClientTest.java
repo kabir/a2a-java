@@ -301,8 +301,8 @@ class Phase2PublicClientTest {
             assertEquals(3, receivedMessageUpdate.generation());
 
             Task taskAfterMessageUpdate = messagePublicEvent.getTask();
-            assertEquals(2, taskAfterMessageUpdate.generation());
-            assertEquals(List.of(1L, 2L), taskAfterMessageUpdate.timeline().stream()
+            assertEquals(3, taskAfterMessageUpdate.generation());
+            assertEquals(List.of(1L, 2L, 3L), taskAfterMessageUpdate.timeline().stream()
                     .map(TimelineEntry::generation).toList());
             assertEquals(List.of("artifact-baseline"), taskAfterMessageUpdate.artifacts().stream()
                     .map(Artifact::artifactId).toList());
@@ -317,9 +317,12 @@ class Phase2PublicClientTest {
             assertEquals(TaskState.TASK_STATE_WORKING, receivedStatusUpdate.status().state());
             assertEquals(Map.of("statusMeta", "retained"), receivedStatusUpdate.metadata());
             assertEquals(4, receivedStatusUpdate.generation());
+            // The skipped future variant made the view uncertain: the shared reducer keeps the last safely
+            // interpreted state instead of applying later updates to it (the original update is still delivered).
             assertEquals("retained", statusPublicEvent.getTask().metadata().get("baseline"));
             assertEquals("retained", statusPublicEvent.getTask().metadata().get("messageMeta"));
-            assertEquals("retained", statusPublicEvent.getTask().metadata().get("statusMeta"));
+            assertFalse(statusPublicEvent.getTask().metadata().containsKey("statusMeta"));
+            assertEquals(3, statusPublicEvent.getTask().generation());
 
             TaskUpdateEvent artifactPublicEvent = assertInstanceOf(TaskUpdateEvent.class, events.get(3));
             TaskArtifactUpdateEvent receivedArtifactUpdate = assertInstanceOf(TaskArtifactUpdateEvent.class,
@@ -332,10 +335,10 @@ class Phase2PublicClientTest {
                     .map(part -> ((TextPart) part).text()).toList());
             assertEquals(Map.of("eventMeta", "retained"), receivedArtifactUpdate.metadata());
             assertEquals(5, receivedArtifactUpdate.generation());
-            assertEquals(List.of("artifact-baseline", "artifact-response"), artifactPublicEvent.getTask().artifacts()
+            assertEquals(List.of("artifact-baseline"), artifactPublicEvent.getTask().artifacts()
                     .stream().map(Artifact::artifactId).toList());
-            assertEquals(2, artifactPublicEvent.getTask().generation());
-            assertEquals(List.of(1L, 2L), artifactPublicEvent.getTask().timeline().stream()
+            assertEquals(3, artifactPublicEvent.getTask().generation());
+            assertEquals(List.of(1L, 2L, 3L), artifactPublicEvent.getTask().timeline().stream()
                     .map(TimelineEntry::generation).toList());
             assertEquals(List.of("task-public-m0", "task-public-m3"), artifactPublicEvent.getTask().history().stream()
                     .map(Message::messageId).toList());

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -15,8 +16,6 @@ import org.a2aproject.sdk.client.transport.spi.ClientFeature;
 import org.a2aproject.sdk.client.transport.spi.ClientTransport;
 import org.a2aproject.sdk.client.transport.spi.SpiCallOptions;
 import org.a2aproject.sdk.client.transport.spi.TransportCall;
-import org.a2aproject.sdk.client.transport.spi.TransportEnd;
-import org.a2aproject.sdk.client.transport.spi.TransportFrame;
 import org.a2aproject.sdk.client.transport.spi.TransportObservation;
 import org.a2aproject.sdk.client.transport.spi.TransportResult;
 import org.a2aproject.sdk.client.transport.spi.VersionedClientTransport;
@@ -37,6 +36,7 @@ import org.a2aproject.sdk.spec.ListTasksParams;
 import org.a2aproject.sdk.spec.Message;
 import org.a2aproject.sdk.spec.MessageSendConfiguration;
 import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.ObserveTaskParams;
 import org.a2aproject.sdk.spec.SendInputParams;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.Task;
@@ -200,6 +200,7 @@ public class Client extends AbstractClient {
 
     private final ClientConfig clientConfig;
     private final ClientTransport clientTransport;
+    private final GenerationReliability reliability = new GenerationReliability();
     private AgentCard agentCard;
 
     /**
@@ -330,8 +331,12 @@ public class Client extends AbstractClient {
                             @NonNull List<BiConsumer<ClientEvent, AgentCard>> consumers,
                             @Nullable Consumer<Throwable> streamingErrorHandler,
                             @Nullable ClientCallContext context) throws A2AClientException {
-        ClientInputPolicy.validateSend(clientConfig.getProtocolVersion(),
-                SendInputParams.from(messageSendParams), agentCard);
+        SendInputParams input = SendInputParams.from(messageSendParams);
+        ClientInputPolicy.validateSend(clientConfig.getProtocolVersion(), input, agentCard, reliability);
+        if (isSelectedOneOne()) {
+            sendSelectedMessage(messageSendParams, input, consumers, streamingErrorHandler, context);
+            return;
+        }
         if (! clientConfig.isStreaming() || ! agentCard.capabilities().streaming()) {
             EventKind eventKind = clientTransport.sendMessage(messageSendParams, context);
             ClientEvent clientEvent;
@@ -369,7 +374,7 @@ public class Client extends AbstractClient {
             @Nullable ClientCallContext context) throws A2AClientException {
         checkNotNullParam("params", params);
         checkNotNullParam("eventConsumers", eventConsumers);
-        ClientInputPolicy.validateSend(clientConfig.getProtocolVersion(), params, agentCard);
+        ClientInputPolicy.validateSend(clientConfig.getProtocolVersion(), params, agentCard, reliability);
 
         if ("1.0".equals(clientConfig.getProtocolVersion())) {
             sendLegacyInput(params.requireMessageOnly(), eventConsumers, errorConsumer, context);
@@ -386,7 +391,8 @@ public class Client extends AbstractClient {
             } catch (UnsupportedOperationException unsupported) {
                 throw new A2AClientException("Selected transport does not support streaming input", unsupported);
             }
-            consumeObservation(observation, eventConsumers, errorConsumer);
+            consumeObservation(OrdinaryInputObservation.stream(observation, newReducer(params), reliability),
+                    eventConsumers, failure -> notifyInputCompletion(errorConsumer, failure));
             return;
         }
 
@@ -397,6 +403,7 @@ public class Client extends AbstractClient {
             throw new A2AClientException("Selected transport does not support input", unsupported);
         }
         AtomicBoolean terminal = new AtomicBoolean();
+        ClientTaskReducer reducer = newReducer(params);
         call.result().whenComplete((result, failure) -> {
             if (!terminal.compareAndSet(false, true)) {
                 return;
@@ -407,7 +414,7 @@ public class Client extends AbstractClient {
             }
             Throwable dispatchFailure = null;
             try {
-                dispatchInputResult(result.value(), eventConsumers);
+                dispatchUnaryResult(result, reducer, eventConsumers);
             } catch (Throwable failureDuringDispatch) {
                 dispatchFailure = failureDuringDispatch;
             }
@@ -452,43 +459,197 @@ public class Client extends AbstractClient {
         }, terminalError, context);
     }
 
-    private void consumeObservation(TransportObservation observation,
-            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers,
-            @Nullable Consumer<Throwable> errorConsumer) {
+    /**
+     * Sends ordinary input and returns an observation of the reduced task state instead of callbacks.
+     * <p>
+     * Requires selected protocol version 1.1 and a transport implementing the decoded input companions. A unary
+     * result yields one update then completion; a streaming result yields one update per decoded frame, with
+     * unknown frames surfacing as view-only updates. This is not a task-subscription, replay or live-input
+     * API: the request is never resent or rebased on mismatch, timeout or uncertainty, and cancelling the
+     * observation only detaches the local read; it never cancels the task.
+     *
+     * @param params the input to send; an explicit generation guard is rejected locally, before any I/O, for a
+     *               task whose observed generations this client found unreliable
+     * @param context custom call context for request interceptors (optional)
+     * @return the observation of this request
+     * @throws A2AClientException if the request is rejected locally or the transport lacks the companion
+     */
+    public TaskObservation sendInputObserved(@NonNull SendInputParams params, @Nullable ClientCallContext context)
+            throws A2AClientException {
+        checkNotNullParam("params", params);
+        ClientInputPolicy.validateSend(clientConfig.getProtocolVersion(), params, agentCard, reliability);
+        if (!isSelectedOneOne()) {
+            throw new A2AClientException("Observed input requires protocol version 1.1");
+        }
+        if (!(clientTransport instanceof VersionedClientTransport versioned)) {
+            throw new A2AClientException("Selected transport does not support companion input");
+        }
+        ClientTaskReducer reducer = newReducer(params);
+        if (clientConfig.isStreaming() && agentCard.capabilities().streaming()) {
+            try {
+                return OrdinaryInputObservation.stream(
+                        versioned.streamInput(params, SpiCallOptions.defaults(), context), reducer, reliability);
+            } catch (UnsupportedOperationException unsupported) {
+                throw new A2AClientException("Selected transport does not support streaming input", unsupported);
+            }
+        }
+        try {
+            return OrdinaryInputObservation.unary(
+                    versioned.sendInput(params, SpiCallOptions.defaults(), context), reducer, reliability);
+        } catch (UnsupportedOperationException unsupported) {
+            throw new A2AClientException("Selected transport does not support input", unsupported);
+        }
+    }
+
+    private boolean isSelectedOneOne() {
+        return "1.1".equals(clientConfig.getProtocolVersion());
+    }
+
+    private static ClientTaskReducer newReducer(SendInputParams params) {
+        MessageSendConfiguration configuration = params.configuration();
+        return configuration == null ? new ClientTaskReducer()
+                : new ClientTaskReducer(configuration.historyLength(), configuration.timelineLength());
+    }
+
+    /**
+     * Selected-1.1 {@code sendMessage}: uses the decoded input companions and the shared reducer. Only an
+     * optional companion that is unsupported before dispatch falls back to the established transport method,
+     * still reducing every event but marking skipped-variant evidence unavailable.
+     */
+    private void sendSelectedMessage(MessageSendParams legacy, SendInputParams input,
+            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers, @Nullable Consumer<Throwable> errorHandler,
+            @Nullable ClientCallContext context) throws A2AClientException {
+        @Nullable VersionedClientTransport versioned = clientTransport instanceof VersionedClientTransport selected
+                ? selected : null;
+        ClientTaskReducer reducer = newReducer(input);
+        Consumer<Throwable> handler = getOverriddenErrorHandler(errorHandler);
+        if (clientConfig.isStreaming() && agentCard.capabilities().streaming()) {
+            @Nullable TransportObservation observation = null;
+            if (versioned != null) {
+                try {
+                    observation = versioned.streamInput(input, SpiCallOptions.defaults(), context);
+                } catch (UnsupportedOperationException unsupported) {
+                    // Optional companion unsupported before dispatch: use the established streaming method.
+                }
+            }
+            if (observation != null) {
+                consumeObservation(OrdinaryInputObservation.stream(observation, reducer, reliability),
+                        eventConsumers, failure -> reportFailure(handler, failure));
+                return;
+            }
+            clientTransport.sendMessageStreaming(legacy,
+                    event -> dispatchReduced(event, reducer, eventConsumers, handler), handler, context);
+            return;
+        }
+        @Nullable TransportCall<TransportResult<EventKind>> call = null;
+        if (versioned != null) {
+            try {
+                call = versioned.sendInput(input, SpiCallOptions.defaults(), context);
+            } catch (UnsupportedOperationException unsupported) {
+                // Optional companion unsupported before dispatch: use the established unary method.
+            }
+        }
+        if (call != null) {
+            dispatchUnaryResult(awaitUnary(call), reducer, eventConsumers);
+            return;
+        }
+        EventKind result = clientTransport.sendMessage(legacy, context);
+        if (!(result instanceof StreamingEventKind event)) {
+            throw new A2AClientException("Unsupported send response event: " + result.getClass().getName());
+        }
+        TaskView view = reliability.reduceUnaryWithoutEvidence(reducer, result);
+        consume(OrdinaryInputObservation.toClientEvent(event, view), agentCard, eventConsumers);
+    }
+
+    /** Waits for a decoded unary result on the caller's thread, preserving blocking sendMessage semantics. */
+    private static TransportResult<EventKind> awaitUnary(TransportCall<TransportResult<EventKind>> call)
+            throws A2AClientException {
+        try {
+            return call.result().toCompletableFuture().get();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            call.cancel();
+            throw new A2AClientException("Interrupted while waiting for the send result", interrupted);
+        } catch (ExecutionException failure) {
+            Throwable cause = failure.getCause() != null ? failure.getCause() : failure;
+            if (cause instanceof A2AClientException clientFailure) {
+                throw clientFailure;
+            } else if (cause instanceof RuntimeException runtimeFailure) {
+                throw runtimeFailure;
+            } else if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new A2AClientException("Failed to send message: " + cause, cause);
+        }
+    }
+
+    private void dispatchUnaryResult(TransportResult<EventKind> result, ClientTaskReducer reducer,
+            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers) throws A2AClientException {
+        EventKind value = result.value();
+        if (!(value instanceof StreamingEventKind event)) {
+            throw new A2AClientException("Unsupported input response event: " + value.getClass().getName());
+        }
+        TaskView view = reliability.reduceUnary(reducer, result);
+        consume(OrdinaryInputObservation.toClientEvent(event, view), agentCard, eventConsumers);
+    }
+
+    private void dispatchReduced(StreamingEventKind event, ClientTaskReducer reducer,
+            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers, Consumer<Throwable> errorHandler) {
+        try {
+            TaskView view = reliability.reduceEventWithoutEvidence(reducer, event);
+            consume(OrdinaryInputObservation.toClientEvent(event, view), agentCard, eventConsumers);
+        } catch (A2AClientError failure) {
+            errorHandler.accept(failure);
+        }
+    }
+
+    /** Streaming sendMessage/subscribe report failures only; normal completion and cancellation are silent. */
+    private static void reportFailure(Consumer<Throwable> handler, @Nullable Throwable failure) {
+        if (failure != null && !(failure instanceof CancellationException)) {
+            handler.accept(failure);
+        }
+    }
+
+    /**
+     * Delivers an observation's known events through the established callback shapes. View-only updates never
+     * produce a callback and a partial view never becomes a synthetic complete {@link TaskEvent}. The terminal
+     * sink receives exactly one outcome: {@code null} for clean completion, a {@link CancellationException} for
+     * cancellation, or the failure.
+     */
+    private void consumeObservation(OrdinaryInputObservation observation,
+            List<BiConsumer<ClientEvent, AgentCard>> eventConsumers, Consumer<Throwable> terminalSink) {
         AtomicBoolean terminal = new AtomicBoolean();
         Consumer<Throwable> finish = failure -> {
             if (terminal.compareAndSet(false, true)) {
-                notifyInputCompletion(errorConsumer, failure);
+                terminalSink.accept(failure);
             }
         };
-        observation.frames().subscribe(new Flow.Subscriber<>() {
+        observation.updates().subscribe(new Flow.Subscriber<>() {
+            private Flow.@Nullable Subscription subscription;
+
             @Override
-            public void onSubscribe(Flow.Subscription subscription) {
-                subscription.request(Long.MAX_VALUE);
+            public void onSubscribe(Flow.Subscription next) {
+                subscription = next;
+                next.request(1);
             }
 
             @Override
-            public void onNext(TransportFrame frame) {
-                if (frame.streamError() != null) {
-                    var rejection = frame.streamError();
-                    finish.accept(new A2AClientException("Input stream rejected (" + rejection.code() + "): "
-                            + (rejection.message() == null ? "" : rejection.message())));
-                    observation.cancel();
-                    return;
+            public void onNext(ObservationUpdate update) {
+                ClientEvent event = OrdinaryInputObservation.toClientEvent(update);
+                if (event != null) {
+                    try {
+                        consume(event, agentCard, eventConsumers);
+                    } catch (Throwable dispatchFailure) {
+                        finish.accept(dispatchFailure);
+                        observation.cancel();
+                        return;
+                    }
                 }
-                if (frame.event() == null) {
-                    return;
-                }
-                try {
-                    ClientEvent event = getClientEvent(frame.event(), tracker);
-                    consume(event, agentCard, eventConsumers);
-                } catch (Throwable dispatchFailure) {
-                    finish.accept(dispatchFailure);
-                    observation.cancel();
+                Flow.Subscription current = subscription;
+                if (current != null) {
+                    current.request(1);
                 }
             }
-
-            private final ClientTaskManager tracker = new ClientTaskManager();
 
             @Override
             public void onError(Throwable failure) {
@@ -500,11 +661,9 @@ public class Client extends AbstractClient {
                 observation.completion().whenComplete((end, failure) -> {
                     if (failure != null) {
                         finish.accept(unwrapCompletionFailure(failure));
-                    } else if (end == null) {
-                        finish.accept(new A2AClientException("Input stream completed without a terminal result"));
-                    } else if (end.kind() == TransportEnd.Kind.CANCELLED) {
+                    } else if (end.kind() == ObservationEnd.Kind.CANCELLED) {
                         finish.accept(new CancellationException("Input stream cancelled"));
-                    } else if (end.kind() == TransportEnd.Kind.COMPLETED) {
+                    } else if (end.kind() == ObservationEnd.Kind.COMPLETED) {
                         finish.accept(null);
                     } else {
                         finish.accept(end.cause() != null ? end.cause()
@@ -514,6 +673,7 @@ public class Client extends AbstractClient {
             }
         });
     }
+
 
     private void dispatchInputResult(EventKind result,
             List<BiConsumer<ClientEvent, AgentCard>> eventConsumers) throws A2AClientException {
@@ -829,6 +989,11 @@ public class Client extends AbstractClient {
         if (! clientConfig.isStreaming() || ! agentCard.capabilities().streaming()) {
             throw new A2AClientException("Client and/or server does not support resubscription");
         }
+        if (isSelectedOneOne()) {
+            subscribeSelected(request, consumers, streamingErrorHandler, context);
+            return;
+        }
+
         ClientTaskManager tracker = new ClientTaskManager();
         Consumer<Throwable> overriddenErrorHandler = getOverriddenErrorHandler(streamingErrorHandler);
         Consumer<StreamingEventKind> eventHandler = event -> {
@@ -840,6 +1005,36 @@ public class Client extends AbstractClient {
             }
         };
         clientTransport.subscribeToTask(request, eventHandler, overriddenErrorHandler, context);
+    }
+
+    /**
+     * Selected-1.1 no-cursor subscription. The versioned {@code observe} companion is used through the
+     * configured wrappers so skipped-variant evidence reaches the reducer. Only an {@code observe} that is
+     * unsupported before dispatch falls back to the established callback subscription, whose events are still
+     * reduced but whose skipped-variant evidence is unavailable (coverage not asserted, view incomplete).
+     */
+    private void subscribeSelected(TaskIdParams request, List<BiConsumer<ClientEvent, AgentCard>> eventConsumers,
+            @Nullable Consumer<Throwable> errorHandler, @Nullable ClientCallContext context)
+            throws A2AClientException {
+        Consumer<Throwable> handler = getOverriddenErrorHandler(errorHandler);
+        ClientTaskReducer reducer = new ClientTaskReducer();
+        if (clientTransport instanceof VersionedClientTransport versioned) {
+            ObserveTaskParams observe = new ObserveTaskParams(request.id(), null, request.tenant());
+            ClientInputPolicy.validateObserve(observe);
+            @Nullable TransportObservation observation = null;
+            try {
+                observation = versioned.observe(observe, SpiCallOptions.defaults(), context);
+            } catch (UnsupportedOperationException unsupported) {
+                // Optional observe unsupported before dispatch: use the established callback subscription.
+            }
+            if (observation != null) {
+                consumeObservation(OrdinaryInputObservation.stream(observation, reducer, reliability),
+                        eventConsumers, failure -> reportFailure(handler, failure));
+                return;
+            }
+        }
+        clientTransport.subscribeToTask(request,
+                event -> dispatchReduced(event, reducer, eventConsumers, handler), handler, context);
     }
 
     /**
