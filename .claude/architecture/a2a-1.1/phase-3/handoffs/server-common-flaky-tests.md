@@ -59,13 +59,17 @@ trusting the run, and the edits were reapplied sequentially.
 ## Self-review findings (open)
 
 1. Defect 1 retained timing limit above.
-2. Bookkeeping: `task-list.md` still shows P3-T13, T14 and T16 as "Planned; not started" although commits `aee64459`/`1234c48f`/
-   `ec4fa960` and their handoffs exist. Not edited here (outside this task).
-3. No independent review of this diff. The task-list workflow expects a separate review session for task rows; this is a
+2. Bookkeeping: `task-list.md` showed P3-T14 and P3-T16 as "Planned; not started" although commits `1234c48f6`/`ec4fa960a` and their
+   handoffs/reviews exist; both rows were updated afterwards. The P3-T13 row had already been updated upstream (`14a3cf07e`). Still
+   stale and not edited: the "Phase 3 — P3-T04 ..." section heading/summary paragraph and the Phase 3 line in the "Later phases"
+   table, which still describe T01–T05 as the latest state.
+3. `progress-T14.md` records `/tmp/t14-full2-preserved.log` (984 run, 1 failure in
+   `DefaultRequestHandlerTest.interruptedTerminalEnqueueStillReportsAgentFailure`) as an "unrelated timing flake, not changed". That is
+   the test fixed above (defect 1); the ledger was left intact as historical evidence.
+4. No independent review of this diff. The task-list workflow expects a separate review session for task rows; this is a
    small test-only side change, so that is the developer's call.
 
 ## Next action for the developer
 
-Decide whether to commit the test change (Conventional Commit, for example
-`test(server-common): fix races in DefaultRequestHandlerTest`; ask about an issue number) and whether to fix the stale
-task-list rows as a separate assignment.
+The test change is committed (`ae217b5f1` after rebase). The task-list row updates and this handoff edit are uncommitted and await
+commit authorization. The remaining stale Phase 3 heading/summary and "Later phases" line are open for a separate assignment.

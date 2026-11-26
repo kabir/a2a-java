@@ -87,7 +87,7 @@ work and final conformance. See the [close-out](phase-2/checkpoints/phase2-compl
 [handoff](phase-2/next-session.md); do not begin Phase 3 without a separate
 developer assignment.
 
-## Phase 3 — P3-T04 regression corrections independently accepted
+## Phase 3 — T01–T12, T14–T16 committed and accepted within scope; T13 re-run and T17–T20 pending
 
 Planning is prepared in [implementation-plan.md](phase-3/implementation-plan.md).
 **Approved at plan level by the independent Sol High/normal correction
@@ -111,9 +111,11 @@ The regression repair and subsequent admission, stream-lifecycle and sender
 corrections are now accepted by the [fourth independent correction follow-up review](phase-3/reviews/P3-T04-full-reactor-correction-review.md#fourth-follow-up-review--2026-11-20-1111-utc).
 The accepted follow-up snapshot passed 216 targeted tests with zero failures,
 errors or skips and failure-ignore disabled. The full-reactor evidence above
-predates these follow-ups. The developer assigned P3-T05 implementation only
-for this task; its hold is lifted only for that assignment. No automatic
-progression is implied.
+predates these follow-ups. Current state, from the table below: T01–T12 and
+T14–T16 are committed and accepted within their recorded scopes, T13's live
+suite must be re-run unchanged on final sources, and T17–T20 are not started.
+Developer assignments remain one task at a time; no automatic progression is
+implied.
 
 Task identifiers are in intended execution order. Dependencies below abbreviate
 `P3-TNN` as `TNN`; they require accepted predecessor contracts/behavior. Each row
@@ -137,9 +139,9 @@ serving metadata is unavailable, not asserted as telemetry.
 | P3-T11 shared ordered webhook dispatch | T03, T06, T08–T10 | Implemented and verified on v8. Required selector 95/95 including six PostgreSQL tests ([handoff](phase-3/handoffs/P3-T11.md#final-v8-verification--2026-11-25)) | Accepted within P3-T11 scope ([Sol review](phase-3/reviews/P3-T11-review.md#v8--accepted-within-sol-review-scope)) |
 | P3-T12 topology/provisioning gate | T07–T11 | Committed 2026-11-25 (see `git log -1`, base `44c276a17`); reactor green (4194 tests, 0 failures); fresh-Bob correction review H2 Accepted within scope; config validation only, not T13 evidence ([handoff](phase-3/handoffs/P3-T12.md), [ledger](phase-3/reviews/P3-T12-review.md)) | Done |
 | P3-T13 real multi-instance evidence | T10, T12 | Implementation merged, see [handoff](phase-3/handoffs/P3-T13.md). Follow-up B4-2 (commit-to-registration ordering window) fixed in-JVM only, see [disposition](phase-3/handoffs/P3-T13-diagnosis-commit-registration-window.md#disposition-and-fix--2026-11-26). The live suite must be re-run unchanged on final sources (T20). T16-T19: any new request-thread publication must pair `EventEnqueueHook.onCommittedBatchReserved`/`Released` | Pending |
-| P3-T14 bounded publication-gap handling | T03, T07, T10 | Planned; not started | Pending; G3 limits retained |
+| P3-T14 bounded publication-gap handling | T03, T07, T10 | Committed 2026-11-26 (`1234c48f6`, base `0e04f44ce`); server-common only, opt-in `publicationReconciler`. Required check 74/74 (`PublicationGapRecoveryTest` 28), full server-common 984/984 ([handoff](phase-3/handoffs/P3-T14.md), [progress](phase-3/progress-T14.md)) | Accepted within scope by fresh-context Bob review C after review A "Changes required" ([A](phase-3/reviews/P3-T14-review-A.md), [B](phase-3/reviews/P3-T14-review-B.md), [C](phase-3/reviews/P3-T14-review-C.md)); G3 limits retained |
 | P3-T15 generation/timeline reducer/TaskView | Phase 2; T02/T05 rules | Accepted; see [handoff](phase-3/handoffs/P3-T15.md), [review](phase-3/reviews/P3-T15-review.md) | Bob review accepted |
-| P3-T16 public ordinary entry-point views/reliability | T15 | Planned; not started | Pending |
+| P3-T16 public ordinary entry-point views/reliability | T15 | Committed 2026-11-26 (`ec4fa960a`, base `0e04f44ce`); client-side only, built-in transports still lack no-cursor `observe` (T17–T19). Required plan command exit 0 (client/base 102, OTel client 33, client-propagation 8); full affected modules exit 0 ([handoff](phase-3/handoffs/P3-T16.md), [progress](phase-3/progress-T16.md)) | Accepted within scope by two fresh-context Bob reviews, no Medium+ findings ([A](phase-3/reviews/P3-T16-review-A.md), [B](phase-3/reviews/P3-T16-review-B.md)) |
 | P3-T17 JSON-RPC production integration | T07, T12, T14, T16 | Planned; not started | Pending |
 | P3-T18 REST production integration | Accepted T17 shared fixture and prerequisites | Planned; not started | Pending |
 | P3-T19 gRPC production integration | Accepted T17 shared fixture and prerequisites | Planned; not started | Pending |
@@ -183,7 +185,7 @@ selected-task handoffs/reviews use `phase-3/handoffs/P3-TNN.md` and
 | 0: semantics/baseline | Retained completed research | [Historical evidence](phase-0/decisions.md); unresolved dependent gates still apply |
 | 1: exact interfaces/client versions | Committed checkpoint | [Historical handoff](phase-1/next-session.md) |
 | 2: models/adapters/public bindings | Complete within the approved experimental pinned-RC scope | [Close-out and evidence](phase-2/checkpoints/phase2-complete.md); Phase 3 needs a separate assignment |
-| 3: mutation/publication/client reducer | P3-T01 through P3-T05 implemented and independently accepted within scope | T05 [correction 9 review](phase-3/reviews/P3-T05-review.md#correction-9-independent-re-review--2026-11-20-1645-utc): 44 required and 228 retained regression cases pass (overlapping selectors). Earlier full-reactor evidence predates follow-ups. T06 unassigned |
+| 3: mutation/publication/client reducer | P3-T01 through P3-T12 and P3-T14 through P3-T16 committed and accepted within their recorded scopes; P3-T13 live suite to be re-run on final sources; P3-T17 through P3-T20 not started | See the Phase 3 table above for per-task evidence. Earlier full-reactor evidence predates later follow-ups; the required final `mvn -B -ntp clean install` and the T13 re-run belong to the T20 phase gate |
 | 4: observation/versioned delivery | Not assigned | Plan after prerequisites and gates are resolved |
 | 5: live execution/bindings | Not assigned | Plan only the supported, resolved specification contract |
 | 6: final audit/docs | Not assigned | Retain all final acceptance and independent evidence requirements |
