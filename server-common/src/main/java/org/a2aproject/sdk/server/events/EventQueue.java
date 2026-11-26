@@ -1,5 +1,6 @@
 package org.a2aproject.sdk.server.events;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1158,6 +1159,7 @@ public abstract class EventQueue implements AutoCloseable {
         private final BlockingQueue<EventQueueItem> queue;
         private final AtomicBoolean directMessageResponseSelected = new AtomicBoolean();
         private volatile @Nullable OpeningTaskInput openingInput;
+        private volatile PublicationReconciler.@Nullable Observation observation;
         private volatile boolean immediateClose = false;
         private int pendingFinalEvents;
         private int submittedFinalEvents;
@@ -1221,6 +1223,19 @@ public abstract class EventQueue implements AutoCloseable {
                 LOGGER.warn("ChildQueue is immediately closed. Event will not be enqueued. {} {}", this, event);
                 return;
             }
+            PublicationReconciler.Observation gate = observation;
+            if (gate != null) {
+                // An observed child counts delivered generations and releases committed batch positions through
+                // offerToQueue(); every other item (errors, control, direct messages) passes through the gate.
+                gate.admit(item);
+            } else {
+                offerToQueue(item);
+            }
+        }
+
+        /** Appends an item to this child's consumption queue; closes the child immediately when it is full. */
+        void offerToQueue(EventQueueItem item) {
+            Event event = item.getEvent();
             if (!queue.offer(item)) {
                   LOGGER.warn("ChildQueue {} is full. Closing immediately.", this);
                   close(true); // immediate close
@@ -1266,6 +1281,7 @@ public abstract class EventQueue implements AutoCloseable {
                 if (item != null) {
                     Event event = item.getEvent();
                     LOGGER.debug("Dequeued event item (no wait) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                    noteConsumed(item);
                 }
                 return item;
             }
@@ -1275,6 +1291,7 @@ public abstract class EventQueue implements AutoCloseable {
                 if (item != null) {
                     Event event = item.getEvent();
                     LOGGER.debug("Dequeued event item (waiting) {} {}", this, event instanceof Throwable ? event.toString() : event);
+                    noteConsumed(item);
                 } else {
                     LOGGER.trace("Dequeue timeout (null) from ChildQueue {}", System.identityHashCode(this));
                 }
@@ -1284,6 +1301,66 @@ public abstract class EventQueue implements AutoCloseable {
                 Thread.currentThread().interrupt();
                 return null;
             }
+        }
+
+        private void noteConsumed(EventQueueItem item) {
+            PublicationReconciler.Observation gate = observation;
+            if (gate != null) {
+                gate.consumed(item);
+            }
+        }
+
+        /** Task ID of the main queue this child observes. */
+        String taskId() {
+            return parent.getTaskId();
+        }
+
+        /**
+         * Installs this child's publication observation. It is installed before the observer reads its
+         * authoritative snapshot, so any later committed result reaches the observation. A child that has already
+         * closed releases the observation at once.
+         */
+        void installObservation(PublicationReconciler.Observation gate) {
+            observation = gate;
+            if (isClosed()) {
+                gate.onChildClosed();
+            }
+        }
+
+        /** Removes and returns committed-batch items that reached this child before its observation existed. */
+        List<EventQueueItem> takeQueuedCommittedItems() {
+            List<EventQueueItem> taken = new ArrayList<>();
+            queue.removeIf(item -> {
+                if (PublicationReconciler.committedGeneration(item) > 0) {
+                    taken.add(item);
+                    return true;
+                }
+                return false;
+            });
+            return taken;
+        }
+
+        /**
+         * Ends an observation through this child's existing failure path: the error is delivered to this consumer
+         * only, then the child closes gracefully. Other children of the task and the task itself are untouched.
+         *
+         * @param purge drop events still waiting for the consumer first, as when the consumer stopped demanding
+         */
+        void terminateObservation(A2AError error, boolean purge) {
+            synchronized (this) {
+                if (immediateClose) {
+                    return;
+                }
+                if (purge) {
+                    queue.clear();
+                }
+                LocalEventQueueItem failure = new LocalEventQueueItem(error);
+                if (!queue.offer(failure)) {
+                    queue.clear();
+                    queue.offer(failure);
+                }
+            }
+            close(false);
         }
 
         @Override
@@ -1327,6 +1404,10 @@ public abstract class EventQueue implements AutoCloseable {
 
         @Override
         protected void onClose(boolean immediate) {
+            PublicationReconciler.Observation gate = observation;
+            if (gate != null) {
+                gate.onChildClosed();
+            }
             // Invoked by EventQueue.doClose() while synchronized(this) is held, so closed,
             // immediateClose, and the queue clear all become visible atomically.
             if (immediate) {

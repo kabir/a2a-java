@@ -3,6 +3,7 @@ package org.a2aproject.sdk.server.events;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletionStage;
@@ -842,6 +843,7 @@ public class MainEventBusProcessor implements Runnable {
                 reportPostCommitFailure(taskId, batch, failure);
             }
         }
+        List<Long> generationPositions = batch.generationPositions();
         for (int index = 0; index < batch.events().size(); index++) {
             StreamingEventKind event = batch.events().get(index);
             boolean legacyFinal = batchLegacyFinal;
@@ -859,7 +861,7 @@ public class MainEventBusProcessor implements Runnable {
             try {
                 mainQueue.distributeToChildren(new LocalEventQueueItem(event, batch.snapshot(), lastInFinalBatch,
                         batch.snapshot().task(), lastInFinalBatch, legacyTaskSummary,
-                        legacyTaskSummary ? index : -1));
+                        legacyTaskSummary ? index : -1, generationPositions.get(index)));
             } catch (RuntimeException | Error failure) {
                 reportPostCommitFailure(taskId, batch, failure);
                 if (lastInFinalBatch) {

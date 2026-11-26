@@ -73,6 +73,22 @@ public class TaskManager {
         return contextId;
     }
 
+    /**
+     * Reads the current authoritative task straight from the store, never from a manager's cached copy. An
+     * {@link AtomicTaskStore} supplies its committed snapshot; a legacy-only store supplies {@code get}, whose task
+     * carries no canonical generation. A reader that must not miss a later committed result registers its delivery
+     * sink before calling this method and discards events at or below the returned generation.
+     */
+    public static @Nullable Task readAuthoritativeTask(TaskStore store, String taskId) {
+        checkNotNullParam("store", store);
+        checkNotNullParam("taskId", taskId);
+        if (store instanceof AtomicTaskStore atomicStore) {
+            TaskSnapshot snapshot = atomicStore.readSnapshot(taskId);
+            return snapshot == null ? null : snapshot.task();
+        }
+        return store.get(taskId);
+    }
+
     public @Nullable Task getTask() {
         if (taskId == null) {
             return null;

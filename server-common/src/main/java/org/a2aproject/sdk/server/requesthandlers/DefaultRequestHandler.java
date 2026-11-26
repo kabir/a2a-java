@@ -43,6 +43,7 @@ import org.a2aproject.sdk.server.events.EventConsumer;
 import org.a2aproject.sdk.server.events.EventQueue;
 import org.a2aproject.sdk.server.events.EventQueueItem;
 import org.a2aproject.sdk.server.events.MainEventBusProcessor;
+import org.a2aproject.sdk.server.events.PublicationReconciler;
 import org.a2aproject.sdk.server.events.QueueManager;
 import org.a2aproject.sdk.server.multitenancy.AgentExecutorRouter;
 import org.a2aproject.sdk.server.tasks.AgentEmitter;
@@ -263,6 +264,9 @@ public class DefaultRequestHandler implements RequestHandler {
 
     private boolean pushNotificationsEnabled;
 
+    /** Optional publication-loss detection for task subscriptions; absent keeps the original attach order. */
+    private @Nullable PublicationReconciler publicationReconciler;
+
     /**
      * Timeout in seconds to wait for agent execution to complete in blocking calls.
      * This allows slow agents (LLM-based, data processing, external APIs) sufficient time.
@@ -458,6 +462,7 @@ public class DefaultRequestHandler implements RequestHandler {
         private boolean authorizationRequired = true;
         private boolean populateReferredTasks;
         private boolean pushNotificationsEnabled = true;
+        private @Nullable PublicationReconciler publicationReconciler;
         private int agentCompletionTimeoutSeconds = 30;
         private int consumptionCompletionTimeoutSeconds = 5;
         private int reconciliationTimeoutSeconds = 1;
@@ -602,6 +607,19 @@ public class DefaultRequestHandler implements RequestHandler {
             return this;
         }
 
+        /**
+         * Enables bounded detection of lost publications for task subscriptions. A subscription then registers its
+         * delivery sink before reading the authoritative snapshot, and a stranded or gapped observation is closed
+         * through its existing stream failure path. The caller owns and closes the reconciler. Disabled by default.
+         *
+         * @param publicationReconciler the reconciler, may be {@code null}
+         * @return this builder for chaining
+         */
+        public Builder publicationReconciler(@Nullable PublicationReconciler publicationReconciler) {
+            this.publicationReconciler = publicationReconciler;
+            return this;
+        }
+
         @SuppressWarnings("NullAway") // pushConfigStore is intentionally @Nullable
         public DefaultRequestHandler build() {
             Assert.checkNotNullParam("agentExecutor", agentExecutor);
@@ -622,6 +640,7 @@ public class DefaultRequestHandler implements RequestHandler {
             handler.agentExecutorRouter = agentExecutorRouter;
             handler.authorizationRequired = authorizationRequired;
             handler.pushNotificationsEnabled = pushNotificationsEnabled;
+            handler.publicationReconciler = publicationReconciler;
             handler.requestContextBuilder =
                     () -> new SimpleRequestContextBuilder(taskStore, populateReferredTasks, authorizationProvider);
             return handler;
@@ -1488,13 +1507,7 @@ public class DefaultRequestHandler implements RequestHandler {
         // Per A2A spec: subscription to tasks in terminal state (completed, failed, canceled,
         // rejected) MUST return UnsupportedOperationError.
         // Check BEFORE any queue operations to ensure immediate error response.
-        if (task.status().state().isFinal()) {
-            throw new UnsupportedOperationError(
-                    null,
-                    String.format("Cannot subscribe to task %s - task is in terminal state: %s",
-                            task.id(), task.status().state()),
-                    null);
-        }
+        rejectTerminalSubscription(task);
 
         TaskManager taskManager = new TaskManager(task.id(), task.contextId(), taskStore, null);
         ResultAggregator resultAggregator = new ResultAggregator(taskManager, null, executor, eventConsumerExecutor,
@@ -1507,6 +1520,33 @@ public class DefaultRequestHandler implements RequestHandler {
             // (Note: historical events from before queue closed are not available)
             LOGGER.debug("Queue not found for active task {}, creating new queue for future events", task.id());
             queue = queueManager.createOrTap(task.id());
+        }
+
+        PublicationReconciler reconciler = publicationReconciler;
+        if (reconciler != null) {
+            // The sink is registered above; only now is the authoritative snapshot read at its generation G.
+            // Events at or below G are discarded and later ones delivered, so a commit racing this attach is
+            // not lost and a covered one is not repeated. A rejection detaches the sink instead of leaving it
+            // observing.
+            PublicationReconciler.Attachment attachment;
+            try {
+                attachment = reconciler.attach(queue);
+            } catch (RuntimeException | Error failure) {
+                queue.close(true);
+                throw failure;
+            }
+            try {
+                Task snapshot = TaskManager.readAuthoritativeTask(taskStore, task.id());
+                if (snapshot == null) {
+                    throw new TaskNotFoundError();
+                }
+                rejectTerminalSubscription(snapshot);
+                attachment.complete(snapshot.generation());
+                task = snapshot;
+            } catch (RuntimeException | Error failure) {
+                attachment.detach();
+                throw failure;
+            }
         }
 
         // Per A2A Protocol Spec 3.1.6 (Subscribe to Task):
@@ -1522,6 +1562,16 @@ public class DefaultRequestHandler implements RequestHandler {
                     item -> proposalSummaryOrEvent(item, context)),
             task
         );
+    }
+
+    private static void rejectTerminalSubscription(Task task) {
+        if (task.status().state().isFinal()) {
+            throw new UnsupportedOperationError(
+                    null,
+                    String.format("Cannot subscribe to task %s - task is in terminal state: %s",
+                            task.id(), task.status().state()),
+                    null);
+        }
     }
 
     private static Flow.Publisher<EventQueueItem> suppressCoveredProposalEvents(

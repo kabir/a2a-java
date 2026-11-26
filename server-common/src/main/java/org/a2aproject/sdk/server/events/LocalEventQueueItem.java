@@ -23,6 +23,7 @@ class LocalEventQueueItem implements EventQueueItem {
     private final @Nullable Task resultTaskSnapshot;
     private final boolean legacyTaskSummary;
     private final int proposalBatchEventIndex;
+    private final long batchGeneration;
 
     LocalEventQueueItem(Event event) {
         this(event, null, false);
@@ -52,6 +53,17 @@ class LocalEventQueueItem implements EventQueueItem {
     LocalEventQueueItem(Event event, @Nullable TaskSnapshot committedSnapshot, boolean canonicalFinal,
             @Nullable Task resultTaskSnapshot, boolean finalForLocalConsumption, boolean legacyTaskSummary,
             int proposalBatchEventIndex) {
+        this(event, committedSnapshot, canonicalFinal, resultTaskSnapshot, finalForLocalConsumption,
+                legacyTaskSummary, proposalBatchEventIndex, 0);
+    }
+
+    /**
+     * @param batchGeneration canonical generation of this event inside a committed batch, or {@code 0} when the
+     *        item is not a position of a committed batch
+     */
+    LocalEventQueueItem(Event event, @Nullable TaskSnapshot committedSnapshot, boolean canonicalFinal,
+            @Nullable Task resultTaskSnapshot, boolean finalForLocalConsumption, boolean legacyTaskSummary,
+            int proposalBatchEventIndex, long batchGeneration) {
         Assert.checkNotNullParam("event", event);
         this.event = event;
         this.committedSnapshot = committedSnapshot;
@@ -60,6 +72,12 @@ class LocalEventQueueItem implements EventQueueItem {
         this.resultTaskSnapshot = resultTaskSnapshot;
         this.legacyTaskSummary = legacyTaskSummary;
         this.proposalBatchEventIndex = proposalBatchEventIndex;
+        this.batchGeneration = Math.max(0, batchGeneration);
+    }
+
+    /** Canonical generation of a committed-batch position for delivery accounting, or {@code 0}. */
+    long batchGeneration() {
+        return batchGeneration;
     }
 
     @Override
